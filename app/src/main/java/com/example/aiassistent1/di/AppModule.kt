@@ -12,6 +12,9 @@ import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 
 object AppModule {
+	@Volatile
+	private var chatDatabase: ChatDatabase? = null
+
 	fun provideModelProvider(context: Context): ModelProvider = DebugModelProvider(
 		context.applicationContext,
 	)
@@ -25,10 +28,14 @@ object AppModule {
 	)
 
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
-		Room.databaseBuilder(
+		provideChatDatabase(context).chatMessageDao(),
+	)
+
+	private fun provideChatDatabase(context: Context): ChatDatabase = chatDatabase ?: synchronized(this) {
+		chatDatabase ?: Room.databaseBuilder(
 			context.applicationContext,
 			ChatDatabase::class.java,
 			"ai_assistant.db",
-		).build().chatMessageDao(),
-	)
+		).build().also { chatDatabase = it }
+	}
 }
