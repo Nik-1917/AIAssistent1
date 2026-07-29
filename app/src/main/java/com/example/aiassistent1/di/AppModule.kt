@@ -9,6 +9,7 @@ import com.example.aiassistent1.data.repository.RoomChatRepository
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
+import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 
 object AppModule {
 	fun provideModelProvider(context: Context): ModelProvider = DebugModelProvider(
@@ -17,6 +18,10 @@ object AppModule {
 
 	fun provideLlmEngine(context: Context): LLMEngine = LlamatikEngine(
 		modelProvider = provideModelProvider(context),
+	)
+
+	fun provideSendMessageUseCase(llmEngine: LLMEngine): SendMessageUseCase = SendMessageUseCase(
+		llmEngine,
 	)
 
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
