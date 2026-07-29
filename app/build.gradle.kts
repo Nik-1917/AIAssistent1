@@ -44,6 +44,7 @@ ksp {
 
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.llamatik)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

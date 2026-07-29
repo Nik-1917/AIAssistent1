@@ -2,11 +2,23 @@ package com.example.aiassistent1.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.aiassistent1.data.engine.LlamatikEngine
 import com.example.aiassistent1.data.local.ChatDatabase
+import com.example.aiassistent1.data.provider.DebugModelProvider
 import com.example.aiassistent1.data.repository.RoomChatRepository
 import com.example.aiassistent1.domain.interfaces.ChatRepository
+import com.example.aiassistent1.domain.interfaces.LLMEngine
+import com.example.aiassistent1.domain.interfaces.ModelProvider
 
 object AppModule {
+	fun provideModelProvider(context: Context): ModelProvider = DebugModelProvider(
+		context.applicationContext,
+	)
+
+	fun provideLlmEngine(context: Context): LLMEngine = LlamatikEngine(
+		modelProvider = provideModelProvider(context),
+	)
+
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
 		Room.databaseBuilder(
 			context.applicationContext,
