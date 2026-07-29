@@ -8,7 +8,7 @@ import java.io.File
 
 class DebugModelProvider(
     private val context: Context,
-    private val modelFileName: String = "phi-1_5-Q3_K_M.gguf",
+    private val modelFileName: String = "qwen2.5-3b-instruct-q4_k_m.gguf",
 ) : ModelProvider {
     override suspend fun getModelPath(): Result<String> = withContext(Dispatchers.IO) {
         runCatching {

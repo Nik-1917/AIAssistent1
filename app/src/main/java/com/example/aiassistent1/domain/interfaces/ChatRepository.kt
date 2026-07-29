@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface ChatRepository {
     fun observeMessages(): Flow<List<ChatMessage>>
     suspend fun saveMessage(message: ChatMessage)
+    suspend fun deleteAllMessages()
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -80,7 +81,9 @@ fun ChatScreen(
             ChatTopBar(
                 modelState = uiState.modelState,
                 isProcessing = uiState.isProcessing,
+                hasMessages = uiState.messages.isNotEmpty(),
                 onStop = viewModel::stopGeneration,
+                onClearChat = viewModel::clearChat,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -120,7 +123,9 @@ fun ChatScreen(
 private fun ChatTopBar(
     modelState: ModelState,
     isProcessing: Boolean,
+    hasMessages: Boolean,
     onStop: () -> Unit,
+    onClearChat: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -134,6 +139,11 @@ private fun ChatTopBar(
             }
         },
         actions = {
+            if (hasMessages) {
+                IconButton(onClick = onClearChat) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Удалить чат")
+                }
+            }
             if (isProcessing) {
                 IconButton(onClick = onStop) {
                     Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")

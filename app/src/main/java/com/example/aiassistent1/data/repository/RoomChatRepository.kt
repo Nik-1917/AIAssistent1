@@ -17,6 +17,10 @@ class RoomChatRepository(
     override suspend fun saveMessage(message: ChatMessage) {
         chatMessageDao.upsert(message.toEntity())
     }
+
+    override suspend fun deleteAllMessages() {
+        chatMessageDao.deleteAll()
+    }
 }
 
 private fun ChatMessageEntity.toDomain() = ChatMessage(

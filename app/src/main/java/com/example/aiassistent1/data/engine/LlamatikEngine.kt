@@ -113,10 +113,22 @@ class LlamatikEngine(
     }
 
     private fun buildPrompt(messages: List<ChatMessage>): String {
-        val templateMessages = messages.map { it.role.name.lowercase() to it.content }
-        return LlamaBridge.applyChatTemplate(templateMessages, addAssistantPrefix = true)
-            ?: templateMessages.joinToString(separator = "\n") { (role, content) -> "$role: $content" }
-                .plus("\nassistant:")
+        return buildString {
+            append("<|im_start|>system\n")
+            append("Ты полезный ассистент. Отвечай на языке пользователя кратко, связно и без повторов.\n")
+            append("<|im_end|>\n")
+            messages.forEach { message ->
+                val role = when (message.role) {
+                    com.example.aiassistent1.domain.model.MessageRole.USER -> "user"
+                    com.example.aiassistent1.domain.model.MessageRole.ASSISTANT -> "assistant"
+                    com.example.aiassistent1.domain.model.MessageRole.SYSTEM -> "system"
+                }
+                append("<|im_start|>$role\n")
+                append(message.content)
+                append("\n<|im_end|>\n")
+            }
+            append("<|im_start|>assistant\n")
+        }
     }
 
     private fun Throwable.toUserMessage(): String = when (this) {

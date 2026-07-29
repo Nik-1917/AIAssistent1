@@ -102,6 +102,24 @@ class ChatViewModel(
         generationJob?.cancel()
     }
 
+    fun clearChat() {
+        val activeGeneration = generationJob
+        llmEngine.cancelGeneration()
+        activeGeneration?.cancel()
+
+        viewModelScope.launch {
+            activeGeneration?.join()
+            withContext(Dispatchers.IO) { chatRepository.deleteAllMessages() }
+            mutableUiState.update {
+                it.copy(
+                    messages = emptyList(),
+                    isProcessing = false,
+                    error = null,
+                )
+            }
+        }
+    }
+
     fun clearError() {
         mutableUiState.update { it.copy(error = null) }
     }
