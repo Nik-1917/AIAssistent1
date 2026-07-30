@@ -234,7 +234,9 @@ private fun InputPanel(
         OutlinedTextField(
             value = text,
             onValueChange = { text = it.take(MAX_MESSAGE_LENGTH) },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .offset(y = (-15).dp),
             enabled = enabled,
             placeholder = { Text("Сообщение") },
             supportingText = {
@@ -257,7 +259,7 @@ private fun InputPanel(
             }
         } else {
             IconButton(
-                modifier = Modifier.offset(y = (-40).dp),
+                modifier = Modifier.offset(y = (-45).dp),
                 enabled = canSend,
                 onClick = {
                     onSend(text)
