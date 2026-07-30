@@ -7,5 +7,5 @@ data class GenerationParams(
     val topP: Float = 0.8f,
     val topK: Int = 20,
     val repeatPenalty: Float = 1.15f,
-    val gpuLayers: Int = 0,
+    val gpuLayers: Int = 99,
 )
