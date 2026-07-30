@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -248,11 +249,15 @@ private fun InputPanel(
         )
         Spacer(modifier = Modifier.width(8.dp))
         if (isProcessing) {
-            IconButton(onClick = onStop) {
+            IconButton(
+                modifier = Modifier.offset(y = (-40).dp),
+                onClick = onStop,
+            ) {
                 Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
             }
         } else {
             IconButton(
+                modifier = Modifier.offset(y = (-40).dp),
                 enabled = canSend,
                 onClick = {
                     onSend(text)
