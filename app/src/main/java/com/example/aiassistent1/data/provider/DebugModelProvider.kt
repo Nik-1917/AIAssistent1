@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.provider
 
 import android.content.Context
+import android.os.Environment
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,5 +27,10 @@ class DebugModelProvider(
         }
     }
 
-    fun getFile(): File = File(context.getExternalFilesDir("models"), modelFileName)
+    fun getFile(): File {
+        val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), modelFileName)
+        if (downloadFile.exists()) return downloadFile
+        
+        return File(context.getExternalFilesDir("models"), modelFileName)
+    }
 }

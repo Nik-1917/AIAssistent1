@@ -2,6 +2,7 @@ package com.example.aiassistent1.presentation.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
@@ -83,8 +84,13 @@ class ChatViewModel(
 
     private fun checkModelPresence() {
         viewModelScope.launch(Dispatchers.IO) {
-            val modelFile = File(context.getExternalFilesDir("models"), "qwen2.5-3b-instruct-q4_k_m.gguf")
-            val exists = modelFile.exists() && modelFile.length() > 0
+            val fileName = "qwen2.5-3b-instruct-q4_k_m.gguf"
+            val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+            val privateFile = File(context.getExternalFilesDir("models"), fileName)
+            
+            val exists = (downloadFile.exists() && downloadFile.length() > 0) || 
+                         (privateFile.exists() && privateFile.length() > 0)
+            
             mutableUiState.update { it.copy(isModelMissing = !exists) }
         }
     }

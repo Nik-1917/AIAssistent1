@@ -50,7 +50,7 @@ class LlamatikEngine(
                     contextLength = params.contextSize,
                     numThreads = threadCount,
                     useMmap = true,
-                    flashAttention = false,
+                    flashAttention = true,
                     batchSize = TOKEN_BATCH_SIZE,
                     gpuLayers = params.gpuLayers,
                 )
@@ -137,8 +137,14 @@ class LlamatikEngine(
     }
 
     private companion object {
-        val threadCount = maxOf(1, Runtime.getRuntime().availableProcessors() - 1)
-        const val TOKEN_BATCH_SIZE = 4
+        val threadCount = Runtime.getRuntime().availableProcessors().let { cores ->
+            when {
+                cores <= 4 -> cores
+                cores <= 8 -> 4
+                else -> 6
+            }
+        }
+        const val TOKEN_BATCH_SIZE = 512
         const val MAX_BATCH_DELAY_MILLIS = 50L
     }
 }
