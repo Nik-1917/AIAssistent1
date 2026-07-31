@@ -12,14 +12,19 @@ class DebugModelProvider(
 ) : ModelProvider {
     override suspend fun getModelPath(): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val modelFile = File(context.getExternalFilesDir("models"), modelFileName)
+            val modelFile = getFile()
+            require(modelFile.exists()) {
+                "Модель не найдена. Загрузите файл $modelFileName через приложение."
+            }
             require(modelFile.isFile && modelFile.canRead()) {
-                "Модель не найдена. Передайте $modelFileName в папку files/models через adb."
+                "Нет доступа к чтению файла модели."
             }
             require(modelFile.length() > 0L) {
-                "Файл модели пуст. Передайте GGUF заново."
+                "Файл модели пуст. Попробуйте загрузить заново."
             }
             modelFile.absolutePath
         }
     }
+
+    fun getFile(): File = File(context.getExternalFilesDir("models"), modelFileName)
 }

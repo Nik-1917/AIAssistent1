@@ -19,6 +19,7 @@ class MainActivity : ComponentActivity() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val llmEngine = AppModule.provideLlmEngine(applicationContext)
                 return ChatViewModel(
+                    context = applicationContext,
                     chatRepository = AppModule.provideChatRepository(applicationContext),
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
                     llmEngine = llmEngine,

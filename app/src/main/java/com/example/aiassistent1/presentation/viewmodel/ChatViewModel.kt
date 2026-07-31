@@ -1,11 +1,14 @@
 package com.example.aiassistent1.presentation.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
+import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -18,8 +21,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class ChatViewModel(
+    private val context: Context,
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
     private val llmEngine: LLMEngine,
@@ -32,6 +38,55 @@ class ChatViewModel(
     init {
         observeHistory()
         observeModelState()
+        checkModelPresence()
+    }
+
+    fun importModel(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                mutableUiState.update { it.copy(modelState = ModelState.Importing(0f)) }
+                withContext(Dispatchers.IO) {
+                    val contentResolver = context.contentResolver
+                    val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+                    val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Не удалось открыть файл")
+                    
+                    val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
+                    if (!targetDir.exists()) targetDir.mkdirs()
+                    
+                    val targetFile = File(targetDir, "qwen2.5-3b-instruct-q4_k_m.gguf")
+                    val outputStream = FileOutputStream(targetFile)
+                    
+                    val buffer = ByteArray(1024 * 1024) // 1MB buffer
+                    var bytesCopied = 0L
+                    
+                    inputStream.use { input ->
+                        outputStream.use { output ->
+                            while (true) {
+                                val bytesRead = input.read(buffer)
+                                if (bytesRead == -1) break
+                                output.write(buffer, 0, bytesRead)
+                                bytesCopied += bytesRead
+                                if (totalSize > 0) {
+                                    val progress = bytesCopied.toFloat() / totalSize
+                                    mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+                                }
+                            }
+                        }
+                    }
+                }
+                mutableUiState.update { it.copy(modelState = ModelState.Unloaded, isModelMissing = false) }
+            } catch (e: Exception) {
+                mutableUiState.update { it.copy(modelState = ModelState.Error(e.message ?: "Ошибка импорта")) }
+            }
+        }
+    }
+
+    private fun checkModelPresence() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val modelFile = File(context.getExternalFilesDir("models"), "qwen2.5-3b-instruct-q4_k_m.gguf")
+            val exists = modelFile.exists() && modelFile.length() > 0
+            mutableUiState.update { it.copy(isModelMissing = !exists) }
+        }
     }
 
     fun sendMessage(text: String) {

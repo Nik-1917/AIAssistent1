@@ -1,6 +1,12 @@
 package com.example.aiassistent1.presentation.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +24,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -41,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +71,12 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { viewModel.importModel(it) }
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { message ->
@@ -83,39 +100,70 @@ fun ChatScreen(
                 modelState = uiState.modelState,
                 isProcessing = uiState.isProcessing,
                 hasMessages = uiState.messages.isNotEmpty(),
+                isModelMissing = uiState.isModelMissing,
                 onStop = viewModel::stopGeneration,
                 onClearChat = viewModel::clearChat,
+                onLoadModel = { filePickerLauncher.launch("*/*") }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             InputPanel(
-                enabled = !uiState.isProcessing && uiState.modelState !is ModelState.Loading,
+                enabled = !uiState.isProcessing && uiState.modelState !is ModelState.Loading && !uiState.isModelMissing,
                 isProcessing = uiState.isProcessing,
                 onSend = viewModel::sendMessage,
                 onStop = viewModel::stopGeneration,
             )
         },
     ) { paddingValues ->
-        if (uiState.messages.isEmpty()) {
-            EmptyConversation(modifier = Modifier.padding(paddingValues))
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(
-                    items = uiState.messages,
-                    key = { message -> message.id },
-                ) { message ->
-                    MessageBubble(message = message)
+        Column(modifier = Modifier.padding(paddingValues)) {
+            val modelState = uiState.modelState
+            if (modelState is ModelState.Importing) {
+                ImportProgress(progress = modelState.progress)
+            }
+
+            if (uiState.messages.isEmpty()) {
+                EmptyConversation(
+                    isModelMissing = uiState.isModelMissing,
+                    onLoadModel = { filePickerLauncher.launch("*/*") }
+                )
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(
+                        items = uiState.messages,
+                        key = { message -> message.id },
+                    ) { message ->
+                        MessageBubble(message = message)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ImportProgress(progress: Float) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Копирование модели: ${(progress * 100).toInt()}%",
+            style = MaterialTheme.typography.labelMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth(),
+            strokeCap = StrokeCap.Round
+        )
     }
 }
 
@@ -125,21 +173,28 @@ private fun ChatTopBar(
     modelState: ModelState,
     isProcessing: Boolean,
     hasMessages: Boolean,
+    isModelMissing: Boolean,
     onStop: () -> Unit,
     onClearChat: () -> Unit,
+    onLoadModel: () -> Unit,
 ) {
     TopAppBar(
         title = {
             Column {
                 Text(text = "AI Assistant")
                 Text(
-                    text = modelState.label(),
+                    text = if (isModelMissing) "Модель не найдена" else modelState.label(),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
         actions = {
+            if (isModelMissing && modelState !is ModelState.Importing) {
+                IconButton(onClick = onLoadModel) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
+                }
+            }
             if (hasMessages) {
                 IconButton(onClick = onClearChat) {
                     Icon(Icons.Default.DeleteOutline, contentDescription = "Удалить чат")
@@ -158,16 +213,32 @@ private fun ChatTopBar(
 }
 
 @Composable
-private fun EmptyConversation(modifier: Modifier = Modifier) {
+private fun EmptyConversation(
+    isModelMissing: Boolean,
+    onLoadModel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "Напишите сообщение, чтобы начать разговор",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = if (isModelMissing) "Для начала работы нужно загрузить модель" else "Напишите сообщение, чтобы начать разговор",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
+            if (isModelMissing) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onLoadModel) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Выбрать файл .gguf")
+                }
+            }
+        }
     }
 }
 
@@ -228,6 +299,8 @@ private fun InputPanel(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
+            .navigationBarsPadding()
+            .imePadding()
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -276,7 +349,8 @@ private fun ModelState.label(): String = when (this) {
     ModelState.Unloaded -> "Модель будет загружена при первом сообщении"
     ModelState.Loading -> "Загрузка модели"
     ModelState.Ready -> "Модель готова"
-    is ModelState.Error -> "Модель недоступна"
+    is ModelState.Error -> "Ошибка: ${this.message}"
+    is ModelState.Importing -> "Импорт..."
 }
 
 private const val MAX_MESSAGE_LENGTH = 500
