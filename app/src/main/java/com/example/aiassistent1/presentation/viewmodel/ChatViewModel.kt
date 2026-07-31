@@ -1,8 +1,11 @@
 package com.example.aiassistent1.presentation.viewmodel
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
@@ -39,6 +42,10 @@ class ChatViewModel(
     init {
         observeHistory()
         observeModelState()
+        checkModelPresence()
+    }
+
+    fun refreshModelStatus() {
         checkModelPresence()
     }
 
@@ -88,10 +95,20 @@ class ChatViewModel(
             val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
             
-            val exists = (downloadFile.exists() && downloadFile.length() > 0) || 
-                         (privateFile.exists() && privateFile.length() > 0)
+            val downloadExists = downloadFile.exists() && downloadFile.length() > 0
+            val privateExists = privateFile.exists() && privateFile.length() > 0
+            val hasPermission = Environment.isExternalStorageManager()
             
-            mutableUiState.update { it.copy(isModelMissing = !exists) }
+            // Модель "есть", если она в приватной папке ИЛИ в Download с разрешением
+            val exists = privateExists || (downloadExists && hasPermission)
+            
+            // Разрешение нужно, если файл в Download, а доступа нет (и в приватной тоже нет)
+            val needsPermission = downloadExists && !hasPermission
+            
+            mutableUiState.update { it.copy(
+                isModelMissing = !exists,
+                needsPermission = needsPermission
+            ) }
         }
     }
 
@@ -183,6 +200,23 @@ class ChatViewModel(
 
     fun clearError() {
         mutableUiState.update { it.copy(error = null) }
+    }
+
+    fun openPermissionSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
+        }
     }
 
     override fun onCleared() {

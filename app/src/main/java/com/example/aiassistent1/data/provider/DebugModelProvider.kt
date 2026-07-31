@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.provider
 
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import kotlinx.coroutines.Dispatchers
@@ -14,14 +15,24 @@ class DebugModelProvider(
     override suspend fun getModelPath(): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val modelFile = getFile()
+            val isInDownload = modelFile.absolutePath.contains("Download")
+            
             require(modelFile.exists()) {
-                "Модель не найдена. Загрузите файл $modelFileName через приложение."
+                "Модель не найдена по пути: ${modelFile.absolutePath}. Загрузите файл $modelFileName."
             }
-            require(modelFile.isFile && modelFile.canRead()) {
-                "Нет доступа к чтению файла модели."
+            
+            if (isInDownload && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (!Environment.isExternalStorageManager()) {
+                    throw IllegalStateException("Нет разрешения на 'Доступ ко всем файлам'. Пожалуйста, разрешите доступ в настройках.")
+                }
             }
+
+            require(modelFile.canRead()) {
+                "Файл найден, но система запрещает его чтение. Проверьте разрешения приложения."
+            }
+            
             require(modelFile.length() > 0L) {
-                "Файл модели пуст. Попробуйте загрузить заново."
+                "Файл модели пуст. Попробуйте перезаписать его."
             }
             modelFile.absolutePath
         }
@@ -29,8 +40,20 @@ class DebugModelProvider(
 
     fun getFile(): File {
         val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), modelFileName)
-        if (downloadFile.exists()) return downloadFile
+        val privateFile = File(context.getExternalFilesDir("models"), modelFileName)
         
-        return File(context.getExternalFilesDir("models"), modelFileName)
+        if (downloadFile.exists() && Environment.isExternalStorageManager()) {
+            return downloadFile
+        }
+        
+        if (privateFile.exists()) {
+            return privateFile
+        }
+        
+        if (downloadFile.exists()) {
+            return downloadFile
+        }
+        
+        return privateFile
     }
 }

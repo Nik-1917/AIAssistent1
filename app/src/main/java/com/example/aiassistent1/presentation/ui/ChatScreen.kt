@@ -3,6 +3,8 @@ package com.example.aiassistent1.presentation.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -44,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,10 +55,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
@@ -76,6 +82,19 @@ fun ChatScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.importModel(it) }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshModelStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -101,9 +120,13 @@ fun ChatScreen(
                 isProcessing = uiState.isProcessing,
                 hasMessages = uiState.messages.isNotEmpty(),
                 isModelMissing = uiState.isModelMissing,
+                needsPermission = uiState.needsPermission,
                 onStop = viewModel::stopGeneration,
                 onClearChat = viewModel::clearChat,
-                onLoadModel = { filePickerLauncher.launch("*/*") }
+                onLoadModel = { 
+                    if (uiState.needsPermission) viewModel.openPermissionSettings()
+                    else filePickerLauncher.launch("*/*")
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -118,6 +141,13 @@ fun ChatScreen(
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
             val modelState = uiState.modelState
+            
+            if (uiState.needsPermission || (modelState is ModelState.Error && 
+                (modelState.message.contains("разрешен", ignoreCase = true) || 
+                 modelState.message.contains("доступ", ignoreCase = true)))) {
+                PermissionErrorBanner(onOpenSettings = viewModel::openPermissionSettings)
+            }
+
             if (modelState is ModelState.Importing) {
                 ImportProgress(progress = modelState.progress)
             }
@@ -125,7 +155,9 @@ fun ChatScreen(
             if (uiState.messages.isEmpty()) {
                 EmptyConversation(
                     isModelMissing = uiState.isModelMissing,
-                    onLoadModel = { filePickerLauncher.launch("*/*") }
+                    needsPermission = uiState.needsPermission,
+                    onLoadModel = { filePickerLauncher.launch("*/*") },
+                    onOpenSettings = viewModel::openPermissionSettings
                 )
             } else {
                 LazyColumn(
@@ -141,6 +173,39 @@ fun ChatScreen(
                         MessageBubble(message = message)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PermissionErrorBanner(onOpenSettings: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Нужно разрешение на доступ к файлам",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Файл модели находится в папке 'Загрузки'. Чтобы прочитать его, приложению требуется специальный доступ.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onOpenSettings,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Перейти в настройки")
             }
         }
     }
@@ -174,6 +239,7 @@ private fun ChatTopBar(
     isProcessing: Boolean,
     hasMessages: Boolean,
     isModelMissing: Boolean,
+    needsPermission: Boolean,
     onStop: () -> Unit,
     onClearChat: () -> Unit,
     onLoadModel: () -> Unit,
@@ -190,9 +256,14 @@ private fun ChatTopBar(
             }
         },
         actions = {
-            if (isModelMissing && modelState !is ModelState.Importing) {
+            if (isModelMissing && !needsPermission && modelState !is ModelState.Importing) {
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
+                }
+            }
+            if (needsPermission) {
+                IconButton(onClick = onLoadModel) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = "Выдать разрешение", tint = MaterialTheme.colorScheme.error)
                 }
             }
             if (hasMessages) {
@@ -215,7 +286,9 @@ private fun ChatTopBar(
 @Composable
 private fun EmptyConversation(
     isModelMissing: Boolean,
+    needsPermission: Boolean,
     onLoadModel: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -232,10 +305,32 @@ private fun EmptyConversation(
             )
             if (isModelMissing) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onLoadModel) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Выбрать файл .gguf")
+                if (needsPermission) {
+                    Text(
+                        text = "Файл найден в папке 'Загрузки',\nно нужно разрешение на доступ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = onOpenSettings) {
+                        Text("Выдать разрешение")
+                    }
+                } else {
+                    Text(
+                        text = "Если файл уже в папке 'Загрузки', проверьте разрешения приложения",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = onLoadModel) {
+                        Icon(Icons.Default.CloudUpload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Выбрать файл .gguf")
+                    }
                 }
             }
         }

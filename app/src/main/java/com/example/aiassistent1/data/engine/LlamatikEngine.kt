@@ -144,7 +144,7 @@ class LlamatikEngine(
                 else -> 6
             }
         }
-        const val TOKEN_BATCH_SIZE = 512
+        const val TOKEN_BATCH_SIZE = 1024
         const val MAX_BATCH_DELAY_MILLIS = 50L
     }
 }
