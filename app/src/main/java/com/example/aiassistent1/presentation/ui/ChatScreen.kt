@@ -86,6 +86,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
     val bottomMessageClearancePx = with(LocalDensity.current) { MESSAGE_BOTTOM_CLEARANCE.toPx() }
+    val viewportEndOffset = listState.layoutInfo.viewportEndOffset
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -132,6 +133,27 @@ fun ChatScreen(
                 }
             }
             delay(AUTO_SCROLL_INTERVAL_MILLIS)
+        }
+    }
+
+    LaunchedEffect(viewportEndOffset, lastMessage?.id) {
+        if (lastMessage != null) {
+            val layoutInfo = listState.layoutInfo
+            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull {
+                it.index == uiState.messages.lastIndex
+            }
+            if (lastItem == null) {
+                listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
+            } else {
+                val overflow = lastItem.offset + lastItem.size -
+                    (layoutInfo.viewportEndOffset - bottomMessageClearancePx)
+                if (overflow > 0) {
+                    listState.animateScrollBy(
+                        value = overflow.toFloat(),
+                        animationSpec = tween(durationMillis = IME_SCROLL_DURATION_MILLIS),
+                    )
+                }
+            }
         }
     }
 
@@ -456,6 +478,7 @@ private fun InputPanel(
                     fontSize = 12.sp,
                 )
             },
+            shape = RoundedCornerShape(12.dp),
             maxLines = 4,
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -491,4 +514,5 @@ private fun ModelState.label(): String = when (this) {
 
 private const val MAX_MESSAGE_LENGTH = 500
 private const val AUTO_SCROLL_INTERVAL_MILLIS = 160L
+private const val IME_SCROLL_DURATION_MILLIS = 220
 private val MESSAGE_BOTTOM_CLEARANCE = 24.dp
