@@ -51,7 +51,7 @@ class LlamatikEngine(
                     numThreads = threadCount,
                     useMmap = true,
                     flashAttention = true,
-                    batchSize = TOKEN_BATCH_SIZE,
+                    batchSize = NATIVE_BATCH_SIZE,
                     gpuLayers = params.gpuLayers,
                 )
                 check(LlamaBridge.initGenerateModel(modelPath)) { "Не удалось загрузить модель" }
@@ -83,7 +83,7 @@ class LlamatikEngine(
                 buffer.append(text)
                 bufferedTokens += 1
                 val elapsedMillis = System.currentTimeMillis() - lastEmissionAtMillis
-                if (bufferedTokens == 1 || bufferedTokens >= TOKEN_BATCH_SIZE || elapsedMillis >= MAX_BATCH_DELAY_MILLIS) {
+                if (bufferedTokens == 1 || bufferedTokens >= STREAM_FLUSH_TOKEN_COUNT || elapsedMillis >= MAX_BATCH_DELAY_MILLIS) {
                     emitBuffer()
                 }
             }
@@ -144,7 +144,8 @@ class LlamatikEngine(
                 else -> 6
             }
         }
-        const val TOKEN_BATCH_SIZE = 1200
+        const val NATIVE_BATCH_SIZE = 1200
+        const val STREAM_FLUSH_TOKEN_COUNT = 1
         const val MAX_BATCH_DELAY_MILLIS = 50L
     }
 }
