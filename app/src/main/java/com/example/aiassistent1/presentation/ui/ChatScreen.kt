@@ -3,8 +3,10 @@ package com.example.aiassistent1.presentation.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -55,7 +57,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -104,11 +109,9 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(lastMessage?.id, lastMessage?.content) {
-        if (lastMessage != null && listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-            ?.let { it >= uiState.messages.lastIndex - 1 } != false
-        ) {
-            listState.scrollToItem(uiState.messages.lastIndex)
+    LaunchedEffect(lastMessage?.id, lastMessage?.content, uiState.isProcessing) {
+        if (lastMessage != null && uiState.isProcessing) {
+            listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
     }
 
@@ -139,7 +142,11 @@ fun ChatScreen(
             )
         },
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .padding(bottom = paddingValues.calculateBottomPadding() + 10.dp)
+                .fillMaxSize(),
+        ) {
             val modelState = uiState.modelState
             
             if (uiState.needsPermission || (modelState is ModelState.Error && 
@@ -163,7 +170,12 @@ fun ChatScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = paddingValues.calculateTopPadding() + 12.dp,
+                        end = 16.dp,
+                        bottom = 36.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(
@@ -344,6 +356,7 @@ private fun MessageBubble(
 ) {
     val isUser = message.role == MessageRole.USER
     val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
+    val bubbleShape = RoundedCornerShape(12.dp)
     val containerColor = if (isUser) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
@@ -352,7 +365,11 @@ private fun MessageBubble(
 
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = alignment) {
         Card(
-            modifier = Modifier.fillMaxWidth(0.84f),
+            modifier = Modifier
+                .fillMaxWidth(0.84f)
+                .clip(bubbleShape)
+                .animateContentSize(animationSpec = tween(durationMillis = 120)),
+            shape = bubbleShape,
             colors = CardDefaults.cardColors(containerColor = containerColor),
         ) {
             Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
