@@ -190,12 +190,6 @@ fun ChatScreen(
                 .fillMaxSize(),
         ) {
             val modelState = uiState.modelState
-            
-            if (uiState.needsPermission || (modelState is ModelState.Error && 
-                (modelState.message.contains("разрешен", ignoreCase = true) || 
-                 modelState.message.contains("доступ", ignoreCase = true)))) {
-                PermissionErrorBanner(onOpenSettings = viewModel::openPermissionSettings)
-            }
 
             if (modelState is ModelState.Importing) {
                 ImportProgress(progress = modelState.progress)
@@ -227,39 +221,6 @@ fun ChatScreen(
                         MessageBubble(message = message)
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PermissionErrorBanner(onOpenSettings: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Нужно разрешение на доступ к файлам",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Файл модели находится в папке 'Загрузки'. Чтобы прочитать его, приложению требуется специальный доступ.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onOpenSettings,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text("Перейти в настройки")
             }
         }
     }
