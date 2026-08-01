@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -56,8 +57,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,6 +74,7 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun ChatScreen(
@@ -82,6 +85,7 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
+    val bottomMessageClearancePx = with(LocalDensity.current) { MESSAGE_BOTTOM_CLEARANCE.toPx() }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -109,9 +113,25 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(lastMessage?.id, lastMessage?.content, uiState.isProcessing) {
-        if (lastMessage != null && uiState.isProcessing) {
-            listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
+    LaunchedEffect(lastMessage?.id, uiState.isProcessing) {
+        while (lastMessage != null && uiState.isProcessing) {
+            val layoutInfo = listState.layoutInfo
+            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull {
+                it.index == uiState.messages.lastIndex
+            }
+            if (lastItem == null) {
+                listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
+            } else {
+                val overflow = lastItem.offset + lastItem.size -
+                    (layoutInfo.viewportEndOffset - bottomMessageClearancePx)
+                if (overflow > 0) {
+                    listState.animateScrollBy(
+                        value = overflow.toFloat(),
+                        animationSpec = tween(durationMillis = AUTO_SCROLL_INTERVAL_MILLIS.toInt()),
+                    )
+                }
+            }
+            delay(AUTO_SCROLL_INTERVAL_MILLIS)
         }
     }
 
@@ -367,7 +387,10 @@ private fun MessageBubble(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.84f)
-                .clip(bubbleShape)
+                .graphicsLayer {
+                    shape = bubbleShape
+                    clip = true
+                }
                 .animateContentSize(animationSpec = tween(durationMillis = 120)),
             shape = bubbleShape,
             colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -392,6 +415,7 @@ private fun MessageBubble(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -466,3 +490,5 @@ private fun ModelState.label(): String = when (this) {
 }
 
 private const val MAX_MESSAGE_LENGTH = 500
+private const val AUTO_SCROLL_INTERVAL_MILLIS = 160L
+private val MESSAGE_BOTTOM_CLEARANCE = 24.dp
