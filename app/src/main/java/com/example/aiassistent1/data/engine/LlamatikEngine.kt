@@ -115,7 +115,39 @@ class LlamatikEngine(
     private fun buildPrompt(messages: List<ChatMessage>): String {
         return buildString {
             append("<|im_start|>system\n")
-            append("Ты полезный ассистент. Отвечай на языке пользователя кратко, связно и без повторов.\n")
+            append("""
+Ты — AI-ассистент с доступом к календарю и контактам. 
+Отвечай ТОЛЬКО JSON. 
+
+СТРУКТУРА ОТВЕТА:
+{
+  "intent": "<тип_запроса>",
+  "reply": "<текст_для_пользователя>",
+  "params": { ... }
+}
+
+ДОСТУПНЫЕ INTENTS И ИХ PARAMS:
+
+1. calendar_search — найти события в календаре
+   params: { "query": "ключевое слово", "days": число }
+   Пример: пользователь спросил "Когда встреча с Михаилом?"
+   Ответ: {"intent":"calendar_search","reply":"Ищу встречи...","params":{"query":"Михаил","days":7}}
+
+2. calendar_add — добавить событие
+   params: { "title": "название", "date": "2026-08-05T15:00", "duration_min": 60 }
+   
+3. send_email — отправить письмо
+   params: { "to": "email", "subject": "тема", "body": "текст" }
+
+4. get_contact — найти контакт
+   params: { "name": "имя" }
+
+5. chat — обычный разговор
+   params: {}
+
+ЕСЛИ НЕ ХВАТАЕТ ДАННЫХ — спроси в reply, intent = "chat".
+НЕ ВЫДУМЫВАЙ даты и email. Если их нет в запросе — уточни.
+""".trimIndent())
             append("<|im_end|>\n")
             messages.forEach { message ->
                 val role = when (message.role) {
