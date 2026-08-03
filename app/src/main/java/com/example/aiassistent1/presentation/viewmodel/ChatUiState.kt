@@ -9,5 +9,6 @@ data class ChatUiState(
     val isModelMissing: Boolean = false,
     val needsPermission: Boolean = false,
     val isProcessing: Boolean = false,
+    val isVoiceMode: Boolean = false,
     val error: String? = null,
 )

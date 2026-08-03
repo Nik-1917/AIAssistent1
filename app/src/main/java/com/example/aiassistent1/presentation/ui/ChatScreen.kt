@@ -1,5 +1,6 @@
 package com.example.aiassistent1.presentation.ui
 
+import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -8,7 +9,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -59,7 +61,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -74,7 +75,6 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
-import kotlinx.coroutines.delay
 
 @Composable
 fun ChatScreen(
@@ -85,13 +85,17 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
-    val bottomMessageClearancePx = with(LocalDensity.current) { MESSAGE_BOTTOM_CLEARANCE.toPx() }
     val viewportEndOffset = listState.layoutInfo.viewportEndOffset
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.importModel(it) }
+    }
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) viewModel.setVoiceMode(true)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -114,46 +118,9 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(lastMessage?.id, uiState.isProcessing) {
-        while (lastMessage != null && uiState.isProcessing) {
-            val layoutInfo = listState.layoutInfo
-            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull {
-                it.index == uiState.messages.lastIndex
-            }
-            if (lastItem == null) {
-                listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
-            } else {
-                val overflow = lastItem.offset + lastItem.size -
-                    (layoutInfo.viewportEndOffset - bottomMessageClearancePx)
-                if (overflow > 0) {
-                    listState.animateScrollBy(
-                        value = overflow.toFloat(),
-                        animationSpec = tween(durationMillis = AUTO_SCROLL_INTERVAL_MILLIS.toInt()),
-                    )
-                }
-            }
-            delay(AUTO_SCROLL_INTERVAL_MILLIS)
-        }
-    }
-
-    LaunchedEffect(viewportEndOffset, lastMessage?.id) {
+    LaunchedEffect(lastMessage?.id, lastMessage?.content, viewportEndOffset) {
         if (lastMessage != null) {
-            val layoutInfo = listState.layoutInfo
-            val lastItem = layoutInfo.visibleItemsInfo.lastOrNull {
-                it.index == uiState.messages.lastIndex
-            }
-            if (lastItem == null) {
-                listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
-            } else {
-                val overflow = lastItem.offset + lastItem.size -
-                    (layoutInfo.viewportEndOffset - bottomMessageClearancePx)
-                if (overflow > 0) {
-                    listState.animateScrollBy(
-                        value = overflow.toFloat(),
-                        animationSpec = tween(durationMillis = IME_SCROLL_DURATION_MILLIS),
-                    )
-                }
-            }
+            listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
     }
 
@@ -179,8 +146,13 @@ fun ChatScreen(
             InputPanel(
                 enabled = !uiState.isProcessing && uiState.modelState !is ModelState.Loading && !uiState.isModelMissing,
                 isProcessing = uiState.isProcessing,
+                isVoiceMode = uiState.isVoiceMode,
                 onSend = viewModel::sendMessage,
                 onStop = viewModel::stopGeneration,
+                onVoiceModeClick = {
+                    if (uiState.isVoiceMode) viewModel.setVoiceMode(false)
+                    else microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                },
             )
         },
     ) { paddingValues ->
@@ -408,8 +380,10 @@ private fun MessageBubble(
 private fun InputPanel(
     enabled: Boolean,
     isProcessing: Boolean,
+    isVoiceMode: Boolean,
     onSend: (String) -> Unit,
     onStop: () -> Unit,
+    onVoiceModeClick: () -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
     val canSend = enabled && text.trim().isNotEmpty()
@@ -443,6 +417,15 @@ private fun InputPanel(
             maxLines = 4,
         )
         Spacer(modifier = Modifier.width(8.dp))
+        IconButton(
+            modifier = Modifier.offset(y = (-45).dp),
+            onClick = onVoiceModeClick,
+        ) {
+            Icon(
+                imageVector = if (isVoiceMode) Icons.Default.MicOff else Icons.Default.Mic,
+                contentDescription = if (isVoiceMode) "Выключить голосовой режим" else "Включить голосовой режим",
+            )
+        }
         if (isProcessing) {
             IconButton(
                 modifier = Modifier.offset(y = (-40).dp),
@@ -474,6 +457,3 @@ private fun ModelState.label(): String = when (this) {
 }
 
 private const val MAX_MESSAGE_LENGTH = 500
-private const val AUTO_SCROLL_INTERVAL_MILLIS = 160L
-private const val IME_SCROLL_DURATION_MILLIS = 220
-private val MESSAGE_BOTTOM_CLEARANCE = 24.dp

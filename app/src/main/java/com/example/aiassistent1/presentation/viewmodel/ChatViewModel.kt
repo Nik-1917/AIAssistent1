@@ -9,7 +9,9 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
+import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
+import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -33,6 +35,8 @@ class ChatViewModel(
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
     private val llmEngine: LLMEngine,
+    private val voiceInput: InputProvider? = null,
+    private val speechPlayback: SpeechPlayback? = null,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private var generationJob: Job? = null
@@ -42,6 +46,7 @@ class ChatViewModel(
     init {
         observeHistory()
         observeModelState()
+        observeVoiceInput()
         checkModelPresence()
     }
 
@@ -123,11 +128,14 @@ class ChatViewModel(
             mutableUiState.value.isProcessing -> return
         }
 
+        voiceInput?.stop()
+
         val userMessage = ChatMessage(role = MessageRole.USER, content = trimmedText)
         mutableUiState.update { state ->
             state.copy(
                 messages = state.messages + userMessage,
                 isProcessing = true,
+                isVoiceMode = false,
                 error = null,
             )
         }
@@ -156,6 +164,15 @@ class ChatViewModel(
                 }
 
                 withContext(Dispatchers.IO) { chatRepository.saveMessage(assistantMessage) }
+                if (mutableUiState.value.isVoiceMode) {
+                    assistantMessage?.content
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { content ->
+                            speechPlayback?.speak(content)?.onFailure { error ->
+                                mutableUiState.update { it.copy(error = error.userMessage()) }
+                            }
+                        }
+                }
             } catch (error: CancellationException) {
                 assistantMessage?.let { partialMessage ->
                     val interruptedMessage = partialMessage.copy(isInterrupted = true)
@@ -175,6 +192,17 @@ class ChatViewModel(
         }
     }
 
+    fun setVoiceMode(enabled: Boolean) {
+        val state = mutableUiState.value
+        if (state.isVoiceMode == enabled || (enabled && state.isProcessing)) return
+        mutableUiState.update { it.copy(isVoiceMode = enabled, error = null) }
+        if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
+        if (!enabled) {
+            voiceInput?.stop()
+            speechPlayback?.stop()
+        }
+    }
+
     fun stopGeneration() {
         llmEngine.cancelGeneration()
         generationJob?.cancel()
@@ -183,6 +211,8 @@ class ChatViewModel(
     fun clearChat() {
         val activeGeneration = generationJob
         llmEngine.cancelGeneration()
+        voiceInput?.stop()
+        speechPlayback?.stop()
         activeGeneration?.cancel()
 
         viewModelScope.launch {
@@ -192,6 +222,7 @@ class ChatViewModel(
                 it.copy(
                     messages = emptyList(),
                     isProcessing = false,
+                    isVoiceMode = false,
                     error = null,
                 )
             }
@@ -221,7 +252,27 @@ class ChatViewModel(
 
     override fun onCleared() {
         stopGeneration()
+        voiceInput?.stop()
+        (voiceInput as? AutoCloseable)?.close()
+        speechPlayback?.close()
         llmEngine.close()
+    }
+
+    private fun observeVoiceInput() {
+        val inputProvider = voiceInput ?: return
+        viewModelScope.launch {
+            inputProvider.observeInput().collect { transcript ->
+                if (mutableUiState.value.isVoiceMode && !mutableUiState.value.isProcessing) {
+                    inputProvider.stop()
+                    sendMessage(transcript)
+                }
+            }
+        }
+    }
+
+    private fun startVoiceInput() {
+        runCatching { voiceInput?.start() }
+            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage(), isVoiceMode = false) } }
     }
 
     private fun observeHistory() {

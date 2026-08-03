@@ -23,6 +23,8 @@ class MainActivity : ComponentActivity() {
                     chatRepository = AppModule.provideChatRepository(applicationContext),
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
                     llmEngine = llmEngine,
+                    voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
+                    speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
                 ) as T
             }
         }

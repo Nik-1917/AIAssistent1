@@ -14,3 +14,9 @@
 .cxx
 local.properties
 soft/*.gguf
+
+# Local voice runtime binaries
+*.aar
+*.onnx
+*.wav
+app/src/main/assets/voice/tts

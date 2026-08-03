@@ -1,0 +1,15 @@
+Voice model notices
+
+GigaAM v3 Russian ASR
+Copyright (c) 2024 GigaChat Team
+Licensed under the MIT License.
+Source: https://github.com/salute-developers/GigaAM
+
+Silero VAD
+Copyright (c) 2020-present Silero Team
+Licensed under the MIT License.
+Source: https://github.com/snakers4/silero-vad
+
+Denis Russian TTS voice dataset
+The source dataset is CC0 (public domain).
+Source: https://github.com/NabuCasa/voice-datasets
