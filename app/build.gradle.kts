@@ -48,6 +48,7 @@ dependencies {
     implementation(files("libs/sherpa-onnx-1.13.4.aar"))
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.datastore.preferences)
     ksp(libs.androidx.room.compiler)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

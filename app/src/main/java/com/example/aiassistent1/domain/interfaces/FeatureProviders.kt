@@ -1,6 +1,9 @@
 package com.example.aiassistent1.domain.interfaces
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import com.example.aiassistent1.domain.model.VoiceInputError
+import com.example.aiassistent1.domain.model.VoiceInputEvent
 import com.example.aiassistent1.domain.model.SynthesizedSpeech
 
 interface ModelProvider {
@@ -8,8 +11,10 @@ interface ModelProvider {
 }
 
 interface InputProvider {
-    fun observeInput(): Flow<String>
-    fun start()
+    fun observeInput(): Flow<VoiceInputEvent>
+    fun observeErrors(): Flow<VoiceInputError> = emptyFlow()
+    fun start(): Long
+    fun startContinuous() = start()
     fun stop()
 }
 

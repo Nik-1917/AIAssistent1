@@ -11,7 +11,9 @@ import com.example.aiassistent1.data.provider.SherpaOnnxSpeechRecognizer
 import com.example.aiassistent1.data.provider.SherpaOnnxSpeechSynthesizer
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceInputProvider
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceActivityDetector
+import com.example.aiassistent1.data.repository.DataStoreVoiceDraftRepository
 import com.example.aiassistent1.data.repository.RoomChatRepository
+import com.example.aiassistent1.data.repository.voiceDraftStore
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
@@ -20,12 +22,16 @@ import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
+import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 
 object AppModule {
 	@Volatile
 	private var chatDatabase: ChatDatabase? = null
+
+	@Volatile
+	private var voiceDraftRepository: VoiceDraftRepository? = null
 
 	fun provideModelProvider(context: Context): ModelProvider = DebugModelProvider(
 		context.applicationContext,
@@ -71,6 +77,12 @@ object AppModule {
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
 		provideChatDatabase(context).chatMessageDao(),
 	)
+
+	fun provideVoiceDraftRepository(context: Context): VoiceDraftRepository = voiceDraftRepository ?: synchronized(this) {
+		voiceDraftRepository ?: DataStoreVoiceDraftRepository(
+			context.applicationContext.voiceDraftStore(),
+		).also { voiceDraftRepository = it }
+	}
 
 	private fun provideChatDatabase(context: Context): ChatDatabase = chatDatabase ?: synchronized(this) {
 		chatDatabase ?: Room.databaseBuilder(

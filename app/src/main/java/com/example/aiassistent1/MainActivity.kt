@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
                     llmEngine = llmEngine,
                     voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
+                    voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),
                     speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
                 ) as T
             }

@@ -12,6 +12,7 @@ import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
+import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -37,10 +38,14 @@ class ChatViewModel(
     private val sendMessage: SendMessageUseCase,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
+    private val voiceDraftRepository: VoiceDraftRepository,
     private val speechPlayback: SpeechPlayback? = null,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private var generationJob: Job? = null
+    private var voiceDraftRestored = false
+    private var openVoiceDraftAfterRestore = false
+    private var activeVoiceInputSessionId: Long? = null
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -48,6 +53,8 @@ class ChatViewModel(
         observeHistory()
         observeModelState()
         observeVoiceInput()
+        observeVoiceInputErrors()
+        restoreVoiceDraft()
         checkModelPresence()
     }
 
@@ -119,17 +126,29 @@ class ChatViewModel(
     }
 
     fun sendMessage(text: String) {
+        sendMessageInternal(text)
+    }
+
+    fun sendVoiceDraft() {
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isVisible || !sendMessageInternal(state.voiceDraft.text)) return
+
+        mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
+        clearPersistedVoiceDraft()
+    }
+
+    private fun sendMessageInternal(text: String): Boolean {
         val trimmedText = text.trim()
         when {
-            trimmedText.isEmpty() -> return
+            trimmedText.isEmpty() -> return false
             trimmedText.length > MAX_MESSAGE_LENGTH -> {
                 mutableUiState.update { it.copy(error = "Сообщение не должно превышать 500 символов") }
-                return
+                return false
             }
-            mutableUiState.value.isProcessing -> return
+            mutableUiState.value.isProcessing -> return false
         }
 
-        voiceInput?.stop()
+        stopVoiceInput()
 
         val userMessage = ChatMessage(role = MessageRole.USER, content = trimmedText)
         mutableUiState.update { state ->
@@ -137,6 +156,7 @@ class ChatViewModel(
                 messages = state.messages + userMessage,
                 isProcessing = true,
                 isVoiceMode = false,
+                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
                 error = null,
             )
         }
@@ -193,6 +213,65 @@ class ChatViewModel(
                 GenerationForegroundService.stop(context)
             }
         }
+        return true
+    }
+
+    fun onMicrophoneTap() {
+        val state = mutableUiState.value
+        if (state.isProcessing) return
+
+        if (state.voiceDraft.isVisible) {
+            hideVoiceDraftAndEnterVoiceMode()
+        } else {
+            setVoiceMode(!state.isVoiceMode)
+        }
+    }
+
+    fun startVoiceDraft() {
+        val state = mutableUiState.value
+        if (state.isProcessing) return
+        if (!voiceDraftRestored) {
+            openVoiceDraftAfterRestore = true
+            return
+        }
+        if (state.voiceDraft.isVisible && state.voiceDraft.isRecording) return
+
+        if (state.isVoiceMode || state.voiceDraft.isRecording) stopVoiceInput()
+        mutableUiState.update { current ->
+            current.copy(
+                isVoiceMode = false,
+                voiceDraft = current.voiceDraft.copy(isVisible = true, isRecording = true),
+                error = null,
+            )
+        }
+        speechPlayback?.stop()
+        startVoiceInput(continuous = true)
+    }
+
+    fun deleteVoiceDraft() {
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(
+                isVoiceMode = false,
+                voiceDraft = VoiceDraftState(),
+            )
+        }
+        clearPersistedVoiceDraft()
+    }
+
+    fun stopVoiceCaptureForBackground() {
+        val state = mutableUiState.value
+        if (!state.isVoiceMode && !state.voiceDraft.isRecording) return
+
+        stopVoiceInput()
+        speechPlayback?.stop()
+        mutableUiState.update {
+            it.copy(
+                isVoiceMode = false,
+                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
+            )
+        }
+        persistVoiceDraft(state.voiceDraft.text)
     }
 
     fun setVoiceMode(enabled: Boolean) {
@@ -201,7 +280,7 @@ class ChatViewModel(
         mutableUiState.update { it.copy(isVoiceMode = enabled, error = null) }
         if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
         if (!enabled) {
-            voiceInput?.stop()
+            stopVoiceInput()
             speechPlayback?.stop()
         }
     }
@@ -214,11 +293,13 @@ class ChatViewModel(
 
     fun clearChat() {
         val activeGeneration = generationJob
+        val voiceDraft = mutableUiState.value.voiceDraft
         llmEngine.cancelGeneration()
-        voiceInput?.stop()
+        stopVoiceInput()
         speechPlayback?.stop()
         activeGeneration?.cancel()
         GenerationForegroundService.stop(context)
+        persistVoiceDraft(voiceDraft.text)
 
         viewModelScope.launch {
             activeGeneration?.join()
@@ -228,6 +309,7 @@ class ChatViewModel(
                     messages = emptyList(),
                     isProcessing = false,
                     isVoiceMode = false,
+                    voiceDraft = it.voiceDraft.copy(isVisible = false, isRecording = false),
                     error = null,
                 )
             }
@@ -257,7 +339,7 @@ class ChatViewModel(
 
     override fun onCleared() {
         stopGeneration()
-        voiceInput?.stop()
+        stopVoiceInput()
         (voiceInput as? AutoCloseable)?.close()
         speechPlayback?.close()
         llmEngine.close()
@@ -266,18 +348,152 @@ class ChatViewModel(
     private fun observeVoiceInput() {
         val inputProvider = voiceInput ?: return
         viewModelScope.launch {
-            inputProvider.observeInput().collect { transcript ->
-                if (mutableUiState.value.isVoiceMode && !mutableUiState.value.isProcessing) {
-                    inputProvider.stop()
-                    sendMessage(transcript)
+            inputProvider.observeInput().collect { event ->
+                if (event.sessionId != activeVoiceInputSessionId) return@collect
+                val state = mutableUiState.value
+                when {
+                    state.voiceDraft.isRecording && !state.isProcessing -> {
+                        appendVoiceDraftTranscript(event.transcript)
+                    }
+                    state.isVoiceMode && !state.isProcessing -> {
+                        sendMessage(event.transcript)
+                    }
                 }
             }
         }
     }
 
-    private fun startVoiceInput() {
-        runCatching { voiceInput?.start() }
-            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage(), isVoiceMode = false) } }
+    private fun startVoiceInput(continuous: Boolean = false) {
+        val session = runCatching {
+            if (continuous) voiceInput?.startContinuous()
+            else voiceInput?.start()
+        }
+        session.onSuccess { sessionId -> activeVoiceInputSessionId = sessionId }
+            .onFailure { error ->
+                activeVoiceInputSessionId = null
+                mutableUiState.update {
+                    it.copy(
+                        error = error.userMessage(),
+                        isVoiceMode = false,
+                        voiceDraft = it.voiceDraft.copy(isRecording = false),
+                    )
+                }
+            }
+    }
+
+    private fun observeVoiceInputErrors() {
+        val inputProvider = voiceInput ?: return
+        viewModelScope.launch {
+            inputProvider.observeErrors().collect { event ->
+                if (event.sessionId != activeVoiceInputSessionId) return@collect
+                val state = mutableUiState.value
+                if (!state.isVoiceMode && !state.voiceDraft.isRecording) return@collect
+
+                mutableUiState.update {
+                    it.copy(
+                        error = event.cause.message ?: "Не удалось обработать голосовой ввод",
+                        isVoiceMode = false,
+                        voiceDraft = it.voiceDraft.copy(isRecording = false),
+                    )
+                }
+                activeVoiceInputSessionId = null
+            }
+        }
+    }
+
+    private fun hideVoiceDraftAndEnterVoiceMode() {
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isVisible) return
+
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(
+                isVoiceMode = true,
+                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
+                error = null,
+            )
+        }
+        persistVoiceDraft(state.voiceDraft.text)
+        startVoiceInput()
+    }
+
+    private fun stopVoiceInput() {
+        activeVoiceInputSessionId = null
+        voiceInput?.stop()
+    }
+
+    private fun restoreVoiceDraft() {
+        viewModelScope.launch {
+            val draft = runCatching { voiceDraftRepository.loadDraft() }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось восстановить голосовой черновик")
+                    }
+                }
+                .getOrDefault("")
+
+            voiceDraftRestored = true
+            mutableUiState.update { state ->
+                state.copy(voiceDraft = state.voiceDraft.copy(text = draft.take(MAX_MESSAGE_LENGTH)))
+            }
+            if (openVoiceDraftAfterRestore) {
+                openVoiceDraftAfterRestore = false
+                startVoiceDraft()
+            }
+        }
+    }
+
+    private suspend fun appendVoiceDraftTranscript(transcript: String) {
+        val recognizedText = transcript.trim()
+        if (recognizedText.isEmpty()) return
+
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isRecording) return
+
+        val currentText = state.voiceDraft.text.trim()
+        val separator = if (currentText.isEmpty()) "" else " "
+        val availableLength = MAX_MESSAGE_LENGTH - currentText.length - separator.length
+        if (availableLength <= 0) {
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 500 символами") }
+            return
+        }
+
+        val appendedText = recognizedText.take(availableLength)
+        val updatedText = currentText + separator + appendedText
+        mutableUiState.update {
+            it.copy(voiceDraft = it.voiceDraft.copy(text = updatedText))
+        }
+        runCatching { voiceDraftRepository.saveDraft(updatedText) }
+            .onFailure {
+                mutableUiState.update { state ->
+                    state.copy(error = "Не удалось сохранить голосовой черновик")
+                }
+            }
+        if (appendedText.length < recognizedText.length) {
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 500 символами") }
+        }
+    }
+
+    private fun persistVoiceDraft(text: String) {
+        viewModelScope.launch {
+            runCatching { voiceDraftRepository.saveDraft(text) }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось сохранить голосовой черновик")
+                    }
+                }
+        }
+    }
+
+    private fun clearPersistedVoiceDraft() {
+        viewModelScope.launch {
+            runCatching { voiceDraftRepository.clearDraft() }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось удалить голосовой черновик")
+                    }
+                }
+        }
     }
 
     private fun observeHistory() {

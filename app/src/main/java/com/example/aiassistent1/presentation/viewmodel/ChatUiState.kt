@@ -10,5 +10,6 @@ data class ChatUiState(
     val needsPermission: Boolean = false,
     val isProcessing: Boolean = false,
     val isVoiceMode: Boolean = false,
+    val voiceDraft: VoiceDraftState = VoiceDraftState(),
     val error: String? = null,
 )

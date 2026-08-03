@@ -40,3 +40,15 @@ redistribution terms, and required attributions have been recorded here.
 
 The GPLv3 project `glowinthedark/sherpa-ttsEngine` is not a dependency of this
 closed-source application.
+
+## Live Transcription Compatibility
+
+The bundled GigaAM RNNT model is supported by the offline `OfflineRecognizer`
+configuration used by the app. It is not compatible with the `OnlineRecognizer`
+configuration in the bundled Sherpa ONNX `1.13.4` runtime: the native runtime
+requires `window_size` metadata that this model does not provide.
+
+Voice-draft capture must therefore continue recording through speech pauses and
+append completed VAD segments to the draft. Do not enable `OnlineRecognizer` for
+this model until a compatible streaming model has been packaged and verified on
+target Android devices.

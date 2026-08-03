@@ -11,6 +11,7 @@ composeBom = "2025.12.00"
 coroutines = "1.10.2"
 llamatik = "1.7.0"
 room = "2.7.2"
+dataStore = "1.1.7"
 ksp = "2.2.10-2.0.2"
 
 [libraries]
@@ -38,6 +39,7 @@ llamatik = { group = "com.llamatik", name = "library", version.ref = "llamatik" 
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

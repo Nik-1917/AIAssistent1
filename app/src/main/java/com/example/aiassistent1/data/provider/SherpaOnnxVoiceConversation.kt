@@ -14,6 +14,8 @@ import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
 import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
+import com.example.aiassistent1.domain.model.VoiceInputError
+import com.example.aiassistent1.domain.model.VoiceInputEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -34,37 +36,53 @@ class SherpaOnnxVoiceInputProvider(
     private val vad: VoiceActivityDetector,
 ) : InputProvider, AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val input = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 1)
+    private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 1)
     private val lock = Any()
     private var recordingJob: Job? = null
+    private var activeSessionId: Long? = null
+    private var nextSessionId = 0L
 
-    override fun observeInput(): Flow<String> = input
+    override fun observeInput(): Flow<VoiceInputEvent> = input
 
-    override fun start() {
+    override fun observeErrors(): Flow<VoiceInputError> = errors
+
+    override fun start(): Long = startCapture()
+
+    override fun startContinuous(): Long = startCapture()
+
+    private fun startCapture(): Long {
         synchronized(lock) {
-            if (recordingJob?.isActive == true) return
+            activeSessionId?.let { sessionId ->
+                if (recordingJob?.isActive == true) return sessionId
+            }
             check(
                 ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
                     PackageManager.PERMISSION_GRANTED,
             ) { "Нет разрешения на запись аудио" }
+            val previousRecordingJob = recordingJob
+            val sessionId = ++nextSessionId
+            activeSessionId = sessionId
             recordingJob = scope.launch {
+                previousRecordingJob?.join()
                 try {
-                    captureSpeech()
+                    captureSpeech(sessionId)
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Exception) {
                     Log.e(TAG, "Voice capture failed", error)
+                    if (isCurrentSession(sessionId)) errors.emit(VoiceInputError(sessionId, error))
                 }
             }
+            return sessionId
         }
     }
 
     override fun stop() {
         synchronized(lock) {
+            activeSessionId = null
             recordingJob?.cancel()
-            recordingJob = null
         }
-        vad.reset()
     }
 
     override fun close() {
@@ -74,7 +92,7 @@ class SherpaOnnxVoiceInputProvider(
         vad.close()
     }
 
-    private suspend fun captureSpeech() {
+    private suspend fun captureSpeech(sessionId: Long) {
         val recorder = createRecorder()
         val pcm = ShortArray(FRAME_SIZE)
         try {
@@ -83,30 +101,42 @@ class SherpaOnnxVoiceInputProvider(
                 "Не удалось запустить запись с микрофона"
             }
             Log.d(TAG, "Voice capture started")
-            while (currentCoroutineContext().isActive) {
-                val count = recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING)
-                check(count >= 0) { "Ошибка чтения данных микрофона: $count" }
-                if (count == 0) continue
-                val samples = FloatArray(count) { index -> pcm[index] / SHORT_SCALE }
-                val segments = vad.accept(samples)
-                if (segments.isNotEmpty()) Log.d(TAG, "Voice segment completed")
-                segments.forEach { segment ->
-                    val recognition = recognizer.recognize(segment)
-                    recognition.exceptionOrNull()?.let { error ->
-                        Log.e(TAG, "Speech recognition failed", error)
-                    }
-                    val transcript = recognition.getOrNull()
-                        ?.takeIf(String::isNotBlank)
-                    if (transcript != null) {
-                        Log.d(TAG, "Speech recognized, length=${transcript.length}")
-                        input.emit(transcript)
-                    }
-                }
-            }
+            captureSegmentedSpeech(recorder, pcm, sessionId)
         } finally {
             if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) recorder.stop()
             recorder.release()
+            vad.reset()
+            synchronized(lock) {
+                if (activeSessionId == sessionId) activeSessionId = null
+            }
             Log.d(TAG, "Voice capture stopped")
+        }
+    }
+
+    private suspend fun captureSegmentedSpeech(
+        recorder: AudioRecord,
+        pcm: ShortArray,
+        sessionId: Long,
+    ) {
+        while (currentCoroutineContext().isActive) {
+            val count = recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING)
+            check(count >= 0) { "Ошибка чтения данных микрофона: $count" }
+            if (count == 0) continue
+            val samples = FloatArray(count) { index -> pcm[index] / SHORT_SCALE }
+            val segments = vad.accept(samples)
+            if (segments.isNotEmpty()) Log.d(TAG, "Voice segment completed")
+            segments.forEach { segment ->
+                val recognition = recognizer.recognize(segment)
+                recognition.exceptionOrNull()?.let { error ->
+                    Log.e(TAG, "Speech recognition failed", error)
+                }
+                val transcript = recognition.getOrNull()
+                    ?.takeIf(String::isNotBlank)
+                if (transcript != null && currentCoroutineContext().isActive && isCurrentSession(sessionId)) {
+                    Log.d(TAG, "Speech recognized, length=${transcript.length}")
+                    input.emit(VoiceInputEvent(sessionId, transcript))
+                }
+            }
         }
     }
 
@@ -134,12 +164,17 @@ class SherpaOnnxVoiceInputProvider(
         return recorder
     }
 
+    private fun isCurrentSession(sessionId: Long): Boolean = synchronized(lock) {
+        activeSessionId == sessionId
+    }
+
     private companion object {
         const val SAMPLE_RATE = 16_000
         const val FRAME_SIZE = 512
         const val SHORT_SCALE = 32_768f
         const val TAG = "VoiceInput"
     }
+
 }
 
 class SherpaOnnxSpeechPlayback(
