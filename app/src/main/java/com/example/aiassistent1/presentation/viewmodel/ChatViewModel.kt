@@ -16,6 +16,7 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
+import com.example.aiassistent1.service.GenerationForegroundService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -140,6 +141,7 @@ class ChatViewModel(
             )
         }
 
+        GenerationForegroundService.start(context)
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
             try {
@@ -188,6 +190,7 @@ class ChatViewModel(
                 mutableUiState.update { it.copy(error = error.userMessage()) }
             } finally {
                 mutableUiState.update { it.copy(isProcessing = false) }
+                GenerationForegroundService.stop(context)
             }
         }
     }
@@ -206,6 +209,7 @@ class ChatViewModel(
     fun stopGeneration() {
         llmEngine.cancelGeneration()
         generationJob?.cancel()
+        GenerationForegroundService.stop(context)
     }
 
     fun clearChat() {
@@ -214,6 +218,7 @@ class ChatViewModel(
         voiceInput?.stop()
         speechPlayback?.stop()
         activeGeneration?.cancel()
+        GenerationForegroundService.stop(context)
 
         viewModelScope.launch {
             activeGeneration?.join()
