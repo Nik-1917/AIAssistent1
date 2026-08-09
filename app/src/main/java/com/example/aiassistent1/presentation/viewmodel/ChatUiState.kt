@@ -8,8 +8,10 @@ data class ChatUiState(
     val modelState: ModelState = ModelState.Unloaded,
     val isModelMissing: Boolean = false,
     val needsPermission: Boolean = false,
+    val needsCalendarPermission: Boolean = false,
     val isProcessing: Boolean = false,
     val isVoiceMode: Boolean = false,
     val voiceDraft: VoiceDraftState = VoiceDraftState(),
     val error: String? = null,
+    val snackbarMessage: String? = null,
 )

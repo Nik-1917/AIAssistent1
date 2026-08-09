@@ -133,6 +133,24 @@ fun ChatScreen(
         }
     }
 
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        viewModel.onCalendarPermissionResult(allGranted)
+    }
+
+    LaunchedEffect(uiState.needsCalendarPermission) {
+        if (uiState.needsCalendarPermission) {
+            calendarPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.READ_CALENDAR,
+                    Manifest.permission.WRITE_CALENDAR
+                )
+            )
+        }
+    }
+
     val requestMicrophoneAction: (MicrophoneAction) -> Unit = { action ->
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             when (action) {
@@ -170,6 +188,13 @@ fun ChatScreen(
         uiState.error?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearSnackbar()
         }
     }
 

@@ -38,6 +38,7 @@ interface VoiceActivityDetector : AutoCloseable {
 
 interface CalendarProvider {
     suspend fun openCalendar(): Result<Unit>
+    suspend fun addEvent(title: String, dateTime: String, durationMin: Int): Result<Unit>
 }
 
 interface AgentTool {

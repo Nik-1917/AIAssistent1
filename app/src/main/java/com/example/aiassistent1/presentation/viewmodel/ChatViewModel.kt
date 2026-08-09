@@ -1,11 +1,14 @@
 package com.example.aiassistent1.presentation.viewmodel
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
@@ -16,6 +19,7 @@ import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
 import kotlinx.coroutines.CancellationException
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 
@@ -36,6 +41,7 @@ class ChatViewModel(
     private val context: Context,
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
+    private val addCalendarEvent: AddCalendarEventUseCase,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
@@ -46,6 +52,7 @@ class ChatViewModel(
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
+    private var pendingCalendarEvent: Triple<String, String, Int>? = null
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -186,6 +193,9 @@ class ChatViewModel(
                 }
 
                 withContext(Dispatchers.IO) { chatRepository.saveMessage(assistantMessage) }
+                
+                assistantMessage?.content?.let { handleIntentIfPresent(it) }
+
                 if (mutableUiState.value.isVoiceMode) {
                     assistantMessage?.content
                         ?.takeIf(String::isNotBlank)
@@ -318,6 +328,71 @@ class ChatViewModel(
 
     fun clearError() {
         mutableUiState.update { it.copy(error = null) }
+    }
+
+    fun clearSnackbar() {
+        mutableUiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    private fun handleIntentIfPresent(text: String) {
+        try {
+            val jsonStart = text.indexOf('{')
+            val jsonEnd = text.lastIndexOf('}')
+            if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+                val jsonStr = text.substring(jsonStart, jsonEnd + 1)
+                val json = JSONObject(jsonStr)
+                val intent = json.optString("intent")
+                if (intent == "calendar_add") {
+                    val params = json.optJSONObject("params") ?: return
+                    val title = params.optString("title")
+                    val date = params.optString("date")
+                    val duration = params.optInt("duration_min", 60)
+                    if (title.isNotEmpty() && date.isNotEmpty()) {
+                        executeCalendarAdd(title, date, duration)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Игнорируем ошибки парсинга
+        }
+    }
+
+    private fun executeCalendarAdd(title: String, date: String, duration: Int) {
+        val hasWritePermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.WRITE_CALENDAR
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        val hasReadPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_CALENDAR
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasWritePermission || !hasReadPermission) {
+            pendingCalendarEvent = Triple(title, date, duration)
+            mutableUiState.update { it.copy(needsCalendarPermission = true) }
+            return
+        }
+
+        viewModelScope.launch {
+            addCalendarEvent(title, date, duration)
+                .onSuccess {
+                    mutableUiState.update { it.copy(snackbarMessage = "Событие добавлено в календарь") }
+                }
+                .onFailure { error ->
+                    mutableUiState.update { it.copy(error = error.userMessage()) }
+                }
+        }
+    }
+
+    fun onCalendarPermissionResult(granted: Boolean) {
+        mutableUiState.update { it.copy(needsCalendarPermission = false) }
+        if (granted) {
+            pendingCalendarEvent?.let { (title, date, duration) ->
+                executeCalendarAdd(title, date, duration)
+            }
+        }
+        pendingCalendarEvent = null
     }
 
     fun openPermissionSettings() {
