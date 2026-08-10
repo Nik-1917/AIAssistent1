@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -40,7 +42,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -87,7 +88,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -97,7 +97,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -131,12 +130,10 @@ fun ChatScreen(
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
-    // Логика умной прокрутки: отключаем автопрокрутку, если пользователь ушел вверх
     var shouldAutoScroll by remember { mutableStateOf(true) }
 
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
-            // Если пользователь начал скроллить вручную, проверяем, находится ли он внизу
             val isAtBottom = !listState.canScrollForward
             if (!isAtBottom) {
                 shouldAutoScroll = false
@@ -145,7 +142,6 @@ fun ChatScreen(
     }
 
     LaunchedEffect(listState.canScrollForward) {
-        // Если пользователь вернулся в самый низ, включаем автопрокрутку обратно
         if (!listState.canScrollForward) {
             shouldAutoScroll = true
         }
@@ -220,7 +216,7 @@ fun ChatScreen(
     LaunchedEffect(uiState.isProcessing) {
         if (!uiState.isProcessing) {
             isExtendingScreenOn = true
-            delay(5000) // Удерживаем экран включенным еще 5 секунд после завершения печати
+            delay(5000)
             isExtendingScreenOn = false
         }
     }
@@ -238,14 +234,13 @@ fun ChatScreen(
     }
 
     LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
+        if (uiState.snackbarMessage != null) {
+            delay(2000)
             viewModel.clearSnackbar()
         }
     }
 
     LaunchedEffect(lastMessage?.id) {
-        // При появлении нового сообщения (ID изменился) всегда включаем автопрокрутку
         if (lastMessage != null) {
             shouldAutoScroll = true
         }
@@ -297,12 +292,12 @@ fun ChatScreen(
             )
         },
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .padding(bottom = paddingValues.calculateBottomPadding() + 10.dp)
-                    .fillMaxSize(),
-            ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 val modelState = uiState.modelState
 
                 if (modelState is ModelState.Importing) {
@@ -317,33 +312,31 @@ fun ChatScreen(
                         onOpenSettings = viewModel::openPermissionSettings
                     )
                 } else {
-                    SelectionContainer {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                top = paddingValues.calculateTopPadding() + 12.dp,
-                                end = 16.dp,
-                                bottom = 36.dp,
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            itemsIndexed(
-                                items = uiState.messages,
-                                key = { _, message -> message.id },
-                            ) { index, message ->
-                                val isLast = index == uiState.messages.lastIndex
-                                val showRetry = isLast && !uiState.isProcessing
-                                    
-                                MessageBubble(
-                                    message = message,
-                                    onRetry = if (showRetry) viewModel::retry else null,
-                                    onCopy = { text ->
-                                        viewModel.copyToClipboard(text)
-                                    }
-                                )
-                            }
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            top = 12.dp,
+                            end = 16.dp,
+                            bottom = 36.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        itemsIndexed(
+                            items = uiState.messages,
+                            key = { _, message -> message.id },
+                        ) { index, message ->
+                            val isLast = index == uiState.messages.lastIndex
+                            val showRetry = isLast && !uiState.isProcessing
+                                
+                            MessageBubble(
+                                message = message,
+                                onRetry = if (showRetry) viewModel::retry else null,
+                                onCopy = { text ->
+                                    viewModel.copyToClipboard(text)
+                                }
+                            )
                         }
                     }
                 }
@@ -356,16 +349,41 @@ fun ChatScreen(
                     .padding(
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = paddingValues.calculateBottomPadding() + 8.dp,
+                        bottom = 8.dp,
                     ),
                 enter = expandVertically(expandFrom = Alignment.Bottom),
                 exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
             ) {
-                 VoiceDraftCard(
+                VoiceDraftCard(
                     state = uiState.voiceDraft,
                     onDelete = viewModel::deleteVoiceDraft,
                     onSend = viewModel::sendVoiceDraft,
                 )
+            }
+
+            // Уведомление о копировании под хедером
+            AnimatedVisibility(
+                visible = uiState.snackbarMessage != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 10.dp)
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Text(
+                        text = uiState.snackbarMessage ?: "",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
             }
         }
     }
@@ -794,7 +812,7 @@ private fun VoiceMicrophoneButton(
     var longPressTriggered by remember { mutableStateOf(false) }
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnLongPress by rememberUpdatedState(onLongPress)
-    val hapticFeedback = LocalHapticFeedback.current
+    val haptic = LocalHapticFeedback.current
     val holdProgress by animateFloatAsState(
         targetValue = if (isPressed && !longPressTriggered) 1f else 0f,
         animationSpec = tween(durationMillis = VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS.toInt()),
@@ -826,7 +844,7 @@ private fun VoiceMicrophoneButton(
                     }
                     if (!gestureFinished) {
                         longPressTriggered = true
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         currentOnLongPress()
                         waitForUpOrCancellation()
                     } else if (up != null) {
