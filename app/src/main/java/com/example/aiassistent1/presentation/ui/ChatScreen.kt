@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -316,31 +317,33 @@ fun ChatScreen(
                         onOpenSettings = viewModel::openPermissionSettings
                     )
                 } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            top = paddingValues.calculateTopPadding() + 12.dp,
-                            end = 16.dp,
-                            bottom = 36.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        itemsIndexed(
-                            items = uiState.messages,
-                            key = { _, message -> message.id },
-                        ) { index, message ->
-                            val isLast = index == uiState.messages.lastIndex
-                            val showRetry = isLast && !uiState.isProcessing
-                                
-                            MessageBubble(
-                                message = message,
-                                onRetry = if (showRetry) viewModel::retry else null,
-                                onCopy = { text ->
-                                    viewModel.copyToClipboard(text)
-                                }
-                            )
+                    SelectionContainer {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = paddingValues.calculateTopPadding() + 12.dp,
+                                end = 16.dp,
+                                bottom = 36.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            itemsIndexed(
+                                items = uiState.messages,
+                                key = { _, message -> message.id },
+                            ) { index, message ->
+                                val isLast = index == uiState.messages.lastIndex
+                                val showRetry = isLast && !uiState.isProcessing
+                                    
+                                MessageBubble(
+                                    message = message,
+                                    onRetry = if (showRetry) viewModel::retry else null,
+                                    onCopy = { text ->
+                                        viewModel.copyToClipboard(text)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
