@@ -12,6 +12,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -85,6 +86,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -94,6 +96,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -333,7 +336,10 @@ fun ChatScreen(
                                 
                             MessageBubble(
                                 message = message,
-                                onRetry = if (showRetry) viewModel::retry else null
+                                onRetry = if (showRetry) viewModel::retry else null,
+                                onCopy = { text ->
+                                    viewModel.copyToClipboard(text)
+                                }
                             )
                         }
                     }
@@ -546,6 +552,7 @@ private fun EmptyConversation(
 private fun MessageBubble(
     message: ChatMessage,
     onRetry: (() -> Unit)? = null,
+    onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.USER
@@ -556,6 +563,7 @@ private fun MessageBubble(
     } else {
         MaterialTheme.colorScheme.surfaceVariant
     }
+    val haptic = LocalHapticFeedback.current
 
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = alignment) {
         Card(
@@ -564,6 +572,14 @@ private fun MessageBubble(
                 .graphicsLayer {
                     shape = bubbleShape
                     clip = true
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onCopy(message.content)
+                        }
+                    )
                 }
                 .animateContentSize(animationSpec = tween(durationMillis = 120)),
             shape = bubbleShape,

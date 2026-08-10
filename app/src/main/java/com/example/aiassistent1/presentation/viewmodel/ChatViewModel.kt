@@ -295,6 +295,14 @@ class ChatViewModel(
         }
     }
 
+    fun copyToClipboard(text: String) {
+        if (text.isBlank()) return
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = android.content.ClipData.newPlainText("AI Assistant Message", text)
+        clipboard.setPrimaryClip(clip)
+        mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован") }
+    }
+
     fun retry() {
         val state = uiState.value
         if (state.isProcessing) return
