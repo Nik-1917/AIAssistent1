@@ -109,6 +109,7 @@ import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
@@ -191,8 +192,17 @@ fun ChatScreen(
         }
     }
 
-    DisposableEffect(view, uiState.voiceDraft.isRecording, uiState.isProcessing) {
-        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing
+    var isExtendingScreenOn by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.isProcessing) {
+        if (!uiState.isProcessing) {
+            isExtendingScreenOn = true
+            delay(5000) // Удерживаем экран включенным еще 5 секунд после завершения печати
+            isExtendingScreenOn = false
+        }
+    }
+
+    DisposableEffect(view, uiState.voiceDraft.isRecording, uiState.isProcessing, isExtendingScreenOn) {
+        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing || isExtendingScreenOn
         onDispose { view.keepScreenOn = false }
     }
 
