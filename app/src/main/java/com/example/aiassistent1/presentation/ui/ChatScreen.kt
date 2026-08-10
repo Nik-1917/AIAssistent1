@@ -127,6 +127,26 @@ fun ChatScreen(
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    // Логика умной прокрутки: отключаем автопрокрутку, если пользователь ушел вверх
+    var shouldAutoScroll by remember { mutableStateOf(true) }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            // Если пользователь начал скроллить вручную, проверяем, находится ли он внизу
+            val isAtBottom = !listState.canScrollForward
+            if (!isAtBottom) {
+                shouldAutoScroll = false
+            }
+        }
+    }
+
+    LaunchedEffect(listState.canScrollForward) {
+        // Если пользователь вернулся в самый низ, включаем автопрокрутку обратно
+        if (!listState.canScrollForward) {
+            shouldAutoScroll = true
+        }
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -220,8 +240,15 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(lastMessage?.id, lastMessage?.content, viewportEndOffset) {
+    LaunchedEffect(lastMessage?.id) {
+        // При появлении нового сообщения (ID изменился) всегда включаем автопрокрутку
         if (lastMessage != null) {
+            shouldAutoScroll = true
+        }
+    }
+
+    LaunchedEffect(lastMessage?.id, lastMessage?.content, viewportEndOffset) {
+        if (lastMessage != null && shouldAutoScroll) {
             listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
     }
