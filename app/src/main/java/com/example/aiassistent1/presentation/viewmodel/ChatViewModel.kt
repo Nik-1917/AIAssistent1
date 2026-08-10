@@ -31,7 +31,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,16 +92,6 @@ class ChatViewModel(
     fun updateModelParams(params: GenerationParams) {
         viewModelScope.launch {
             settingsRepository.updateParamsForModel(uiState.value.selectedModel, params)
-        }
-    }
-
-    fun selectModel(modelName: String) {
-        viewModelScope.launch {
-            if (uiState.value.selectedModel == modelName) return@launch
-            
-            stopGeneration()
-            llmEngine.close()
-            settingsRepository.setSelectedModel(modelName)
         }
     }
 
@@ -209,11 +198,18 @@ class ChatViewModel(
             )
         }
 
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { chatRepository.saveMessage(userMessage) }
+            startGenerationFlow()
+        }
+        return true
+    }
+
+    private fun startGenerationFlow() {
         GenerationForegroundService.start(context)
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
             try {
-                withContext(Dispatchers.IO) { chatRepository.saveMessage(userMessage) }
                 val responseFlowResult = sendMessage(mutableUiState.value.messages)
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
@@ -287,7 +283,45 @@ class ChatViewModel(
                 GenerationForegroundService.stop(context)
             }
         }
-        return true
+    }
+
+    fun selectModel(modelName: String) {
+        viewModelScope.launch {
+            if (uiState.value.selectedModel == modelName) return@launch
+            
+            stopGeneration()
+            llmEngine.close()
+            settingsRepository.setSelectedModel(modelName)
+        }
+    }
+
+    fun retry() {
+        val state = uiState.value
+        if (state.isProcessing) return
+        
+        val lastUserMessage = state.messages.findLast { it.role == MessageRole.USER } ?: return
+        val lastUserMessageIndex = state.messages.indexOf(lastUserMessage)
+
+        // Берем историю до последнего сообщения пользователя включительно
+        val historyToRetry = state.messages.take(lastUserMessageIndex + 1)
+        
+        viewModelScope.launch {
+            // Удаляем из БД сообщения после последнего пользовательского
+            val messagesToDelete = state.messages.drop(lastUserMessageIndex + 1)
+            withContext(Dispatchers.IO) {
+                messagesToDelete.forEach { chatRepository.deleteMessage(it.id) }
+            }
+            
+            // Сначала обновляем UI (удаляем лишнее), затем запускаем генерацию
+            mutableUiState.update { it.copy(
+                messages = historyToRetry,
+                isProcessing = true,
+                isVoiceMode = false,
+                error = null,
+            ) }
+            
+            startGenerationFlow()
+        }
     }
 
     fun onMicrophoneTap() {

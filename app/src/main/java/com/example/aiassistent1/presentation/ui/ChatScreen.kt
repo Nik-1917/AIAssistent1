@@ -34,7 +34,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -286,11 +287,19 @@ fun ChatScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        items(
+                        itemsIndexed(
                             items = uiState.messages,
-                            key = { message -> message.id },
-                        ) { message ->
-                            MessageBubble(message = message)
+                            key = { _, message -> message.id },
+                        ) { index, message ->
+                            val isLast = index == uiState.messages.lastIndex
+                            val showRetry = isLast && 
+                                !uiState.isProcessing && 
+                                (message.role == MessageRole.USER || message.isInterrupted)
+                                
+                            MessageBubble(
+                                message = message,
+                                onRetry = if (showRetry) viewModel::retry else null
+                            )
                         }
                     }
                 }
@@ -501,6 +510,7 @@ private fun EmptyConversation(
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.USER
@@ -524,27 +534,46 @@ private fun MessageBubble(
             shape = bubbleShape,
             colors = CardDefaults.cardColors(containerColor = containerColor),
         ) {
-            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                Text(
-                    text = if (isUser) "Вы" else "Ассистент",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = message.content.ifBlank { "Генерация ответа..." },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (message.isInterrupted) {
-                    Spacer(modifier = Modifier.height(6.dp))
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                     Text(
-                        text = "Генерация остановлена",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = if (isUser) "Вы" else "Ассистент",
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = message.content.ifBlank { "Генерация ответа..." },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (message.isInterrupted) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Генерация остановлена",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+
+                if (onRetry != null) {
+                    IconButton(
+                        onClick = onRetry,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Повторить генерацию",
+                            tint = Color(0xFF2196F3),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
     }

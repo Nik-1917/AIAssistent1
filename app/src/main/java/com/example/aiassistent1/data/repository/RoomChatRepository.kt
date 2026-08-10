@@ -18,6 +18,10 @@ class RoomChatRepository(
         chatMessageDao.upsert(message.toEntity())
     }
 
+    override suspend fun deleteMessage(id: String) {
+        chatMessageDao.deleteById(id)
+    }
+
     override suspend fun deleteAllMessages() {
         chatMessageDao.deleteAll()
     }
