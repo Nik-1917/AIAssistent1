@@ -1021,5 +1021,5 @@ private fun ModelState.label(): String = when (this) {
     is ModelState.Importing -> "Импорт..."
 }
 
-private const val MAX_MESSAGE_LENGTH = 500
+private const val MAX_MESSAGE_LENGTH = 3000
 private const val VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS = 2_000L
