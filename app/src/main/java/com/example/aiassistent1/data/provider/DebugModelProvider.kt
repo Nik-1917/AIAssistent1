@@ -4,17 +4,19 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import com.example.aiassistent1.domain.interfaces.ModelProvider
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class DebugModelProvider(
     private val context: Context,
-    private val modelFileName: String = "qwen2.5-3b-instruct-q4_k_m.gguf",
+    private val settingsRepository: SettingsRepository,
 ) : ModelProvider {
     override suspend fun getModelPath(): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val modelFile = getFile()
+            val modelFileName = settingsRepository.selectedModel.value
+            val modelFile = getFile(modelFileName)
             val isInDownload = modelFile.absolutePath.contains("Download")
             
             require(modelFile.exists()) {
@@ -38,7 +40,7 @@ class DebugModelProvider(
         }
     }
 
-    fun getFile(): File {
+    fun getFile(modelFileName: String): File {
         val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), modelFileName)
         val privateFile = File(context.getExternalFilesDir("models"), modelFileName)
         

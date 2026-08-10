@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.model.ChatMessage
@@ -46,6 +47,7 @@ class ChatViewModel(
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
     private val speechPlayback: SpeechPlayback? = null,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private var generationJob: Job? = null
@@ -59,10 +61,31 @@ class ChatViewModel(
     init {
         observeHistory()
         observeModelState()
+        observeSettings()
         observeVoiceInput()
         observeVoiceInputErrors()
         restoreVoiceDraft()
         checkModelPresence()
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            settingsRepository.selectedModel.collect { model ->
+                mutableUiState.update { it.copy(selectedModel = model) }
+                checkModelPresence()
+            }
+        }
+    }
+
+    fun selectModel(modelName: String) {
+        viewModelScope.launch {
+            if (uiState.value.selectedModel == modelName) return@launch
+            
+            stopGeneration()
+            llmEngine.close()
+            settingsRepository.setSelectedModel(modelName)
+            // После смены модели в DataStore сработает коллектор в observeSettings
+        }
     }
 
     fun refreshModelStatus() {
@@ -111,7 +134,7 @@ class ChatViewModel(
 
     private fun checkModelPresence() {
         viewModelScope.launch(Dispatchers.IO) {
-            val fileName = "qwen2.5-3b-instruct-q4_k_m.gguf"
+            val fileName = settingsRepository.selectedModel.value
             val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
             

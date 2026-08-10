@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
                     voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
                     voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),
                     speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
+                    settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                 ) as T
             }
         }

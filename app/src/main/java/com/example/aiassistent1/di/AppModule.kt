@@ -13,11 +13,13 @@ import com.example.aiassistent1.data.provider.SherpaOnnxSpeechSynthesizer
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceInputProvider
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceActivityDetector
 import com.example.aiassistent1.data.repository.DataStoreVoiceDraftRepository
+import com.example.aiassistent1.data.repository.DataStoreSettingsRepository
 import com.example.aiassistent1.data.repository.RoomChatRepository
 import com.example.aiassistent1.data.repository.voiceDraftStore
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
@@ -28,6 +30,9 @@ import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
 import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 object AppModule {
 	@Volatile
@@ -36,8 +41,19 @@ object AppModule {
 	@Volatile
 	private var voiceDraftRepository: VoiceDraftRepository? = null
 
+	@Volatile
+	private var settingsRepository: SettingsRepository? = null
+
+	fun provideSettingsRepository(context: Context): SettingsRepository = settingsRepository ?: synchronized(this) {
+		settingsRepository ?: DataStoreSettingsRepository(
+			context.applicationContext,
+			CoroutineScope(SupervisorJob() + Dispatchers.Main)
+		).also { settingsRepository = it }
+	}
+
 	fun provideModelProvider(context: Context): ModelProvider = DebugModelProvider(
 		context.applicationContext,
+		provideSettingsRepository(context),
 	)
 
 	fun provideLlmEngine(context: Context): LLMEngine = LlamatikEngine(

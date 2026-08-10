@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,6 +40,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -48,6 +51,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -213,12 +218,15 @@ fun ChatScreen(
                 hasMessages = uiState.messages.isNotEmpty(),
                 isModelMissing = uiState.isModelMissing,
                 needsPermission = uiState.needsPermission,
+                selectedModel = uiState.selectedModel,
+                availableModels = uiState.availableModels,
                 onStop = viewModel::stopGeneration,
                 onClearChat = viewModel::clearChat,
                 onLoadModel = { 
                     if (uiState.needsPermission) viewModel.openPermissionSettings()
                     else filePickerLauncher.launch("*/*")
-                }
+                },
+                onSelectModel = viewModel::selectModel
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -332,19 +340,57 @@ private fun ChatTopBar(
     hasMessages: Boolean,
     isModelMissing: Boolean,
     needsPermission: Boolean,
+    selectedModel: String,
+    availableModels: List<String>,
     onStop: () -> Unit,
     onClearChat: () -> Unit,
     onLoadModel: () -> Unit,
+    onSelectModel: (String) -> Unit,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
-            Column {
+            Column(
+                modifier = Modifier.clickable { showMenu = true }
+            ) {
                 Text(text = "AI Assistant")
-                Text(
-                    text = if (isModelMissing) "Модель не найдена" else modelState.label(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isModelMissing) "Модель не найдена" else modelState.label(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "($selectedModel)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 120.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    availableModels.forEach { model ->
+                        DropdownMenuItem(
+                            text = { Text(model) },
+                            onClick = {
+                                onSelectModel(model)
+                                showMenu = false
+                            },
+                            trailingIcon = {
+                                if (model == selectedModel) {
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                                }
+                            }
+                        )
+                    }
+                }
             }
         },
         actions = {

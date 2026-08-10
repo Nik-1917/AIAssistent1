@@ -108,38 +108,14 @@ class LlamatikEngine(
     override fun close() {
         cancelGeneration()
         LlamaBridge.shutdown()
-        executor.shutdown()
+        // Не вызываем executor.shutdown(), чтобы можно было загрузить модель снова
         mutableState.value = ModelState.Unloaded
     }
 
     private fun buildPrompt(messages: List<ChatMessage>): String {
         return buildString {
             append("<|im_start|>system\n")
-            append("""
-Ты — AI-ассистент с доступом к календарю, контактам и email. 
-СТРУКТУРА ОТВЕТА:
-{
-  "intent": "<тип_запроса>",
-  "reply": "<тема_запроса>",
-  "params": { ... }
-}
-ДОСТУПНЫЕ INTENTS И ИХ PARAMS:
-1. calendar_search — найти события в календаре
-   params: { "query": "ключевое слово", "days": число }
-   Пример: пользователь спросил "Когда встреча с Михаилом?" поиск в календаре
-   Ответ: {"intent":"calendar_search","reply":"Ищу встречи...","params":{"query":"Михаил","days":7}}
-2. calendar_add — добавить событие в календарь
-   params: { "title": "название события", "date": "YYYY-MM-DDTHH:MM", "duration_min": 60 }
-   ВАЖНО: Если пользователь не указал длительность, всегда ставь duration_min: 60. 
-   Не путай время начала (например, 10:00) с длительностью.
-   3. send_email — отправить письмо
-   params: { "to": "email", "subject": "тема", "body": "вежливый и содержательный литературный текст" }
-4. get_contact — найти контакт
-   params: { "name": "имя" }
-   
-Будь вежлив, в ответе используй литературные речевые обороты.
-
-""".trimIndent())
+            append("""""".trimIndent())
             append("<|im_end|>\n")
             messages.forEach { message ->
                 val role = when (message.role) {
