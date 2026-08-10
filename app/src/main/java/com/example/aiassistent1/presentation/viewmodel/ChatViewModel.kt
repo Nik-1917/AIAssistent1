@@ -103,7 +103,6 @@ class ChatViewModel(
             stopGeneration()
             llmEngine.close()
             settingsRepository.setSelectedModel(modelName)
-            // После смены модели в DataStore сработает коллектор в observeSettings
         }
     }
 
@@ -215,14 +214,15 @@ class ChatViewModel(
             var assistantMessage: ChatMessage? = null
             try {
                 withContext(Dispatchers.IO) { chatRepository.saveMessage(userMessage) }
-                val response = sendMessage(mutableUiState.value.messages).getOrElse { error ->
+                val responseFlowResult = sendMessage(mutableUiState.value.messages)
+                val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                     return@launch
                 }
 
                 assistantMessage = ChatMessage(role = MessageRole.ASSISTANT, content = "")
                 mutableUiState.update { state ->
-                    state.copy(messages = state.messages + assistantMessage)
+                    state.copy(messages = state.messages + assistantMessage!!)
                 }
 
                 response.collect { delta ->
@@ -234,9 +234,19 @@ class ChatViewModel(
                     updateMessage(updatedAssistantMessage)
                 }
 
-                withContext(Dispatchers.IO) { chatRepository.saveMessage(assistantMessage) }
-                
-                assistantMessage?.content?.let { handleIntentIfPresent(it) }
+                // Сохраняем в БД только если есть контент
+                val finalMessage = assistantMessage
+                if (finalMessage != null) {
+                    if (finalMessage.content.isNotBlank()) {
+                        withContext(Dispatchers.IO) { chatRepository.saveMessage(finalMessage) }
+                        finalMessage.content.let { handleIntentIfPresent(it) }
+                    } else {
+                        // Если сообщение пустое после завершения (например, сброс), удаляем из UI
+                        mutableUiState.update { state ->
+                            state.copy(messages = state.messages.filterNot { it.id == finalMessage.id })
+                        }
+                    }
+                }
 
                 if (mutableUiState.value.isVoiceMode) {
                     assistantMessage?.content
@@ -249,9 +259,13 @@ class ChatViewModel(
                 }
             } catch (error: CancellationException) {
                 assistantMessage?.let { partialMessage ->
-                    val interruptedMessage = partialMessage.copy(isInterrupted = true)
-                    updateMessage(interruptedMessage)
-                    if (interruptedMessage.content.isNotBlank()) {
+                    if (partialMessage.content.isBlank()) {
+                        mutableUiState.update { state ->
+                            state.copy(messages = state.messages.filterNot { it.id == partialMessage.id })
+                        }
+                    } else {
+                        val interruptedMessage = partialMessage.copy(isInterrupted = true)
+                        updateMessage(interruptedMessage)
                         withContext(NonCancellable + Dispatchers.IO) {
                             chatRepository.saveMessage(interruptedMessage)
                         }
@@ -261,6 +275,14 @@ class ChatViewModel(
             } catch (error: Exception) {
                 mutableUiState.update { it.copy(error = error.userMessage()) }
             } finally {
+                // Финальная проверка: если в списке осталось пустое сообщение, удаляем его
+                assistantMessage?.let { final ->
+                    if (final.content.isBlank()) {
+                        mutableUiState.update { state ->
+                            state.copy(messages = state.messages.filterNot { it.id == final.id })
+                        }
+                    }
+                }
                 mutableUiState.update { it.copy(isProcessing = false) }
                 GenerationForegroundService.stop(context)
             }
