@@ -191,8 +191,8 @@ fun ChatScreen(
         }
     }
 
-    DisposableEffect(view, uiState.voiceDraft.isRecording) {
-        view.keepScreenOn = uiState.voiceDraft.isRecording
+    DisposableEffect(view, uiState.voiceDraft.isRecording, uiState.isProcessing) {
+        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing
         onDispose { view.keepScreenOn = false }
     }
 
@@ -292,9 +292,7 @@ fun ChatScreen(
                             key = { _, message -> message.id },
                         ) { index, message ->
                             val isLast = index == uiState.messages.lastIndex
-                            val showRetry = isLast && 
-                                !uiState.isProcessing && 
-                                (message.role == MessageRole.USER || message.isInterrupted)
+                            val showRetry = isLast && !uiState.isProcessing
                                 
                             MessageBubble(
                                 message = message,

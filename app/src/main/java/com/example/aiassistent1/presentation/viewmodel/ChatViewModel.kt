@@ -394,8 +394,13 @@ class ChatViewModel(
     }
 
     fun stopGeneration() {
+        // Мы вызываем cancelGeneration() у движка, чтобы он прервал native процесс
         llmEngine.cancelGeneration()
+        // Отменяем саму корутину генерации
         generationJob?.cancel()
+        // Сбрасываем флаг обработки
+        mutableUiState.update { it.copy(isProcessing = false) }
+        // Останавливаем сервис переднего плана
         GenerationForegroundService.stop(context)
     }
 
