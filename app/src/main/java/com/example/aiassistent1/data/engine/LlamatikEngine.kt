@@ -23,12 +23,13 @@ import kotlinx.coroutines.withContext
 
 class LlamatikEngine(
     private val modelProvider: ModelProvider,
-    private val params: GenerationParams = GenerationParams(),
+    initialParams: GenerationParams = GenerationParams(),
 ) : LLMEngine {
     private val modelMutex = Mutex()
     private val executor = Executors.newFixedThreadPool(threadCount)
     private val engineDispatcher: CoroutineDispatcher = executor.asCoroutineDispatcher()
     private val mutableState = MutableStateFlow<ModelState>(ModelState.Unloaded)
+    private var params = initialParams
 
     override val state: StateFlow<ModelState> = mutableState.asStateFlow()
 
@@ -103,6 +104,25 @@ class LlamatikEngine(
 
     override fun cancelGeneration() {
         LlamaBridge.nativeCancelGenerate()
+    }
+
+    override fun updateParams(params: GenerationParams) {
+        this.params = params
+        if (state.value is ModelState.Ready) {
+            LlamaBridge.updateGenerateParams(
+                temperature = params.temperature,
+                maxTokens = params.maxTokens,
+                topP = params.topP,
+                topK = params.topK,
+                repeatPenalty = params.repeatPenalty,
+                contextLength = params.contextSize,
+                numThreads = threadCount,
+                useMmap = true,
+                flashAttention = true,
+                batchSize = NATIVE_BATCH_SIZE,
+                gpuLayers = params.gpuLayers,
+            )
+        }
     }
 
     override fun close() {

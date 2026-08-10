@@ -18,6 +18,7 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
@@ -55,6 +56,7 @@ class ChatViewModel(
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
     private var pendingCalendarEvent: Triple<String, String, Int>? = null
+    private var paramsJob: Job? = null
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -73,7 +75,24 @@ class ChatViewModel(
             settingsRepository.selectedModel.collect { model ->
                 mutableUiState.update { it.copy(selectedModel = model) }
                 checkModelPresence()
+                observeParams(model)
             }
+        }
+    }
+
+    private fun observeParams(modelName: String) {
+        paramsJob?.cancel()
+        paramsJob = viewModelScope.launch {
+            settingsRepository.getParamsForModel(modelName).collect { params ->
+                mutableUiState.update { it.copy(modelParams = params) }
+                llmEngine.updateParams(params)
+            }
+        }
+    }
+
+    fun updateModelParams(params: GenerationParams) {
+        viewModelScope.launch {
+            settingsRepository.updateParamsForModel(uiState.value.selectedModel, params)
         }
     }
 

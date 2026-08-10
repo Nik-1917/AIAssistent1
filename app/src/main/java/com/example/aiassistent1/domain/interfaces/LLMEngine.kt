@@ -11,4 +11,5 @@ interface LLMEngine : AutoCloseable {
     suspend fun ensureLoaded(): Result<Unit>
     fun generate(messages: List<ChatMessage>): Flow<String>
     fun cancelGeneration()
+    fun updateParams(params: com.example.aiassistent1.domain.model.GenerationParams)
 }

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Stop
@@ -60,6 +61,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -99,6 +101,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
@@ -118,6 +121,7 @@ fun ChatScreen(
     val lastMessage = uiState.messages.lastOrNull()
     val viewportEndOffset = listState.layoutInfo.viewportEndOffset
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -226,7 +230,8 @@ fun ChatScreen(
                     if (uiState.needsPermission) viewModel.openPermissionSettings()
                     else filePickerLauncher.launch("*/*")
                 },
-                onSelectModel = viewModel::selectModel
+                onSelectModel = viewModel::selectModel,
+                onOpenSettings = { showSettingsDialog = true }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -301,13 +306,25 @@ fun ChatScreen(
                 enter = expandVertically(expandFrom = Alignment.Bottom),
                 exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
             ) {
-                VoiceDraftCard(
+                 VoiceDraftCard(
                     state = uiState.voiceDraft,
                     onDelete = viewModel::deleteVoiceDraft,
                     onSend = viewModel::sendVoiceDraft,
                 )
             }
         }
+    }
+
+    if (showSettingsDialog) {
+        ModelSettingsDialog(
+            modelName = uiState.selectedModel,
+            params = uiState.modelParams,
+            onDismiss = { showSettingsDialog = false },
+            onSave = { updatedParams ->
+                viewModel.updateModelParams(updatedParams)
+                showSettingsDialog = false
+            }
+        )
     }
 }
 
@@ -346,6 +363,7 @@ private fun ChatTopBar(
     onClearChat: () -> Unit,
     onLoadModel: () -> Unit,
     onSelectModel: (String) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -403,6 +421,9 @@ private fun ChatTopBar(
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Выдать разрешение", tint = MaterialTheme.colorScheme.error)
                 }
+            }
+            IconButton(onClick = onOpenSettings) {
+                Icon(Icons.Default.Settings, contentDescription = "Настройки модели")
             }
             if (hasMessages) {
                 IconButton(onClick = onClearChat) {
@@ -741,6 +762,118 @@ private fun VoiceMicrophoneButton(
         Icon(
             imageVector = if (isVoiceMode) Icons.Default.MicOff else Icons.Default.Mic,
             contentDescription = null,
+        )
+    }
+}
+
+@Composable
+fun ModelSettingsDialog(
+    modelName: String,
+    params: GenerationParams,
+    onDismiss: () -> Unit,
+    onSave: (GenerationParams) -> Unit,
+) {
+    var temperature by remember { mutableStateOf(params.temperature) }
+    var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
+    var maxTokens by remember { mutableStateOf(params.maxTokens.toFloat()) }
+    var topP by remember { mutableStateOf(params.topP) }
+    var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Настройки для $modelName",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                SettingSlider(
+                    label = "Temperature: ${String.format("%.2f", temperature)}",
+                    value = temperature,
+                    onValueChange = { temperature = it },
+                    valueRange = 0f..2f
+                )
+
+                SettingSlider(
+                    label = "Context Size: ${contextSize.toInt()}",
+                    value = contextSize,
+                    onValueChange = { contextSize = it },
+                    valueRange = 512f..8192f,
+                    steps = 15
+                )
+
+                SettingSlider(
+                    label = "Max Tokens: ${maxTokens.toInt()}",
+                    value = maxTokens,
+                    onValueChange = { maxTokens = it },
+                    valueRange = 64f..2048f,
+                    steps = 30
+                )
+
+                SettingSlider(
+                    label = "Top P: ${String.format("%.2f", topP)}",
+                    value = topP,
+                    onValueChange = { topP = it },
+                    valueRange = 0f..1f
+                )
+
+                SettingSlider(
+                    label = "Repeat Penalty: ${String.format("%.2f", repeatPenalty)}",
+                    value = repeatPenalty,
+                    onValueChange = { repeatPenalty = it },
+                    valueRange = 1f..2f
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    androidx.compose.material3.TextButton(onClick = onDismiss) {
+                        Text("Отмена")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        onSave(params.copy(
+                            temperature = temperature,
+                            contextSize = contextSize.toInt(),
+                            maxTokens = maxTokens.toInt(),
+                            topP = topP,
+                            repeatPenalty = repeatPenalty
+                        ))
+                    }) {
+                        Text("Сохранить")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingSlider(
+    label: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int = 0
+) {
+    Column {
+        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            steps = steps
         )
     }
 }
