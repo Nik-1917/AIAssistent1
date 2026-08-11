@@ -839,7 +839,7 @@ private fun InputPanel(
                 )
             },
             shape = RoundedCornerShape(12.dp),
-            maxLines = 8,
+            maxLines = if (isKeyboardVisible) 8 else 1,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(
                 onSend = {
