@@ -10,6 +10,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -86,6 +88,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -126,6 +129,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun ChatScreen(
     viewModel: ChatViewModel,
     modifier: Modifier = Modifier,
@@ -143,6 +147,45 @@ fun ChatScreen(
     var showClearChatDialog by remember { mutableStateOf(false) }
 
     var shouldAutoScroll by remember { mutableStateOf(true) }
+
+    // --- Автоматическое скрытие футера при прокрутке ---
+    var isFooterVisible by remember { mutableStateOf(true) }
+    var previousIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
+    var previousScrollOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
+
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        val currentIndex = listState.firstVisibleItemIndex
+        val currentOffset = listState.firstVisibleItemScrollOffset
+
+        if (listState.isScrollInProgress) {
+            val isScrollingUp = if (currentIndex != previousIndex) {
+                currentIndex < previousIndex
+            } else {
+                currentOffset < previousScrollOffset
+            }
+
+            if (isScrollingUp) {
+                isFooterVisible = true
+            } else {
+                isFooterVisible = false
+            }
+        }
+
+        previousIndex = currentIndex
+        previousScrollOffset = currentOffset
+    }
+
+    // Показываем футер при появлении клавиатуры
+    val isImeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isImeVisible, uiState.isProcessing) {
+        if (isImeVisible) {
+            isFooterVisible = true
+        } else if (uiState.isProcessing) {
+            // Скрываем футер, как только началась генерация
+            isFooterVisible = false
+        }
+    }
+    // ------------------------------------------------
 
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
@@ -292,25 +335,6 @@ fun ChatScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            InputPanel(
-                textInputEnabled = !uiState.isProcessing &&
-                    !uiState.isStopping &&
-                    uiState.modelState !is ModelState.Loading &&
-                    !uiState.isModelMissing &&
-                    !uiState.voiceDraft.isVisible,
-                microphoneEnabled = !uiState.isProcessing &&
-                    !uiState.isStopping &&
-                    uiState.modelState !is ModelState.Loading &&
-                    !uiState.isModelMissing,
-                isProcessing = uiState.isProcessing,
-                isVoiceMode = uiState.isVoiceMode,
-                onSend = viewModel::sendMessage,
-                onStop = viewModel::stopGeneration,
-                onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
-                onVoiceLongPress = { requestMicrophoneAction(MicrophoneAction.LONG_PRESS) },
-            )
-        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -366,7 +390,7 @@ fun ChatScreen(
                             start = 16.dp,
                             top = 12.dp,
                             end = 16.dp,
-                            bottom = 36.dp,
+                            bottom = 28.dp, // Отступ в одну строку
                         ),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -398,16 +422,43 @@ fun ChatScreen(
                         }
                     }
                 }
+
+            }
+
+            // Футер перенесен сюда для плавной анимации вместе с фоном
+            AnimatedVisibility(
+                visible = isFooterVisible,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            ) {
+                InputPanel(
+                    textInputEnabled = !uiState.isProcessing &&
+                        !uiState.isStopping &&
+                        uiState.modelState !is ModelState.Loading &&
+                        !uiState.isModelMissing &&
+                        !uiState.voiceDraft.isVisible,
+                    microphoneEnabled = !uiState.isProcessing &&
+                        !uiState.isStopping &&
+                        uiState.modelState !is ModelState.Loading &&
+                        !uiState.isModelMissing,
+                    isProcessing = uiState.isProcessing,
+                    isVoiceMode = uiState.isVoiceMode,
+                    onSend = viewModel::sendMessage,
+                    onStop = viewModel::stopGeneration,
+                    onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
+                    onVoiceLongPress = { requestMicrophoneAction(MicrophoneAction.LONG_PRESS) },
+                )
             }
 
             AnimatedVisibility(
-                visible = uiState.voiceDraft.isVisible,
+                visible = uiState.voiceDraft.isVisible && isFooterVisible,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
                         start = 16.dp,
                         end = 16.dp,
-                        bottom = 8.dp,
+                        bottom = 100.dp, // Поднимаем черновик над скрывающимся футером
                     ),
                 enter = expandVertically(expandFrom = Alignment.Bottom),
                 exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
@@ -419,7 +470,7 @@ fun ChatScreen(
                 )
             }
 
-            // Уведомление о копировании под хедером
+            // Уведомление о копировании остается поверх всего (в Box)
             AnimatedVisibility(
                 visible = uiState.snackbarMessage != null,
                 enter = fadeIn() + expandVertically(),
@@ -843,7 +894,6 @@ private fun InputPanel(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .offset(y = (-10).dp)
             .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
             .imePadding()
