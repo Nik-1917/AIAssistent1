@@ -9,4 +9,13 @@ interface SettingsRepository {
 
     fun getParamsForModel(modelName: String): StateFlow<GenerationParams>
     suspend fun updateParamsForModel(modelName: String, params: GenerationParams)
+
+    val showDeleteMessageConfirmation: StateFlow<Boolean>
+    suspend fun setShowDeleteMessageConfirmation(show: Boolean)
+
+    val showClearChatConfirmation: StateFlow<Boolean>
+    suspend fun setShowClearChatConfirmation(show: Boolean)
+
+    val isFirstRun: StateFlow<Boolean>
+    suspend fun setFirstRunCompleted()
 }

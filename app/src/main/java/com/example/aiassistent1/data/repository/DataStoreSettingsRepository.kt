@@ -3,6 +3,7 @@ package com.example.aiassistent1.data.repository
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -28,6 +29,9 @@ class DataStoreSettingsRepository(
 ) : SettingsRepository {
 
     private val selectedModelKey = stringPreferencesKey("selected_model")
+    private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
+    private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
+    private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
     private val paramsFlows = mutableMapOf<String, StateFlow<GenerationParams>>()
@@ -40,6 +44,36 @@ class DataStoreSettingsRepository(
             scope = scope,
             started = SharingStarted.Eagerly,
             initialValue = "qwen2.5-3b-instruct-q4_k_m.gguf"
+        )
+
+    override val showDeleteMessageConfirmation: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences ->
+            preferences[showDeleteMessageConfirmationKey] ?: true
+        }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true
+        )
+
+    override val showClearChatConfirmation: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences ->
+            preferences[showClearChatConfirmationKey] ?: true
+        }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true
+        )
+
+    override val isFirstRun: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences ->
+            preferences[isFirstRunKey] ?: true
+        }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true
         )
 
     override suspend fun setSelectedModel(modelName: String) {
@@ -79,6 +113,24 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey("${modelName}_topK")] = params.topK
             preferences[floatPreferencesKey("${modelName}_repeatPenalty")] = params.repeatPenalty
             preferences[intPreferencesKey("${modelName}_gpuLayers")] = params.gpuLayers
+        }
+    }
+
+    override suspend fun setShowDeleteMessageConfirmation(show: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[showDeleteMessageConfirmationKey] = show
+        }
+    }
+
+    override suspend fun setShowClearChatConfirmation(show: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[showClearChatConfirmationKey] = show
+        }
+    }
+
+    override suspend fun setFirstRunCompleted() {
+        context.settingsStore.edit { preferences ->
+            preferences[isFirstRunKey] = false
         }
     }
 }

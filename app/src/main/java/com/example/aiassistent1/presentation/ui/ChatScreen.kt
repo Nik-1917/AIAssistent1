@@ -58,6 +58,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -268,7 +269,13 @@ fun ChatScreen(
                 selectedModel = uiState.selectedModel,
                 availableModels = uiState.availableModels,
                 onStop = viewModel::stopGeneration,
-                onClearChat = { showClearChatDialog = true },
+                onClearChat = {
+                    if (uiState.showClearChatConfirmation) {
+                        showClearChatDialog = true
+                    } else {
+                        viewModel.clearChat()
+                    }
+                },
                 onLoadModel = { 
                     if (uiState.needsPermission) viewModel.openPermissionSettings()
                     else filePickerLauncher.launch("*/*")
@@ -335,13 +342,21 @@ fun ChatScreen(
                         ) { index, message ->
                             val isLast = index == uiState.messages.lastIndex
                             val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
-                            val showDelete = showRetry && message.role == MessageRole.USER
+                            val showDelete = showRetry
                                 
                             MessageBubble(
                                 message = message,
                                 isStopping = uiState.isStopping,
                                 onRetry = if (showRetry) viewModel::retry else null,
-                                onDelete = if (showDelete) { { messageToDelete = message } } else null,
+                                onDelete = if (showDelete) {
+                                    {
+                                        if (uiState.showDeleteMessageConfirmation) {
+                                            messageToDelete = message
+                                        } else {
+                                            viewModel.deleteMessage(message.id)
+                                        }
+                                    }
+                                } else null,
                                 onCopy = { text ->
                                     viewModel.copyToClipboard(text)
                                 }
@@ -410,13 +425,34 @@ fun ChatScreen(
     }
 
     if (showClearChatDialog) {
+        var dontAskAgain by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showClearChatDialog = false },
             title = { Text("Очистить чат?") },
-            text = { Text("Все сообщения будут удалены навсегда. Это действие нельзя отменить.") },
+            text = {
+                Column {
+                    Text("Все сообщения будут удалены навсегда. Это действие нельзя отменить.")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { dontAskAgain = !dontAskAgain }
+                    ) {
+                        Checkbox(
+                            checked = dontAskAgain,
+                            onCheckedChange = { dontAskAgain = it }
+                        )
+                        Text(
+                            text = "Больше не спрашивать",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (dontAskAgain) viewModel.setShowClearChatConfirmation(false)
                         viewModel.clearChat()
                         showClearChatDialog = false
                     }
@@ -433,13 +469,34 @@ fun ChatScreen(
     }
 
     if (messageToDelete != null) {
+        var dontAskAgain by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { messageToDelete = null },
             title = { Text("Удалить сообщение?") },
-            text = { Text("Это действие нельзя будет отменить. Контекст диалога может измениться.") },
+            text = {
+                Column {
+                    Text("Это действие нельзя будет отменить. Контекст диалога может измениться.")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { dontAskAgain = !dontAskAgain }
+                    ) {
+                        Checkbox(
+                            checked = dontAskAgain,
+                            onCheckedChange = { dontAskAgain = it }
+                        )
+                        Text(
+                            text = "Больше не спрашивать",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (dontAskAgain) viewModel.setShowDeleteMessageConfirmation(false)
                         messageToDelete?.let { viewModel.deleteMessage(it.id) }
                         messageToDelete = null
                     }
