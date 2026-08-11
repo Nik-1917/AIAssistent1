@@ -277,10 +277,12 @@ fun ChatScreen(
         bottomBar = {
             InputPanel(
                 textInputEnabled = !uiState.isProcessing &&
+                    !uiState.isStopping &&
                     uiState.modelState !is ModelState.Loading &&
                     !uiState.isModelMissing &&
                     !uiState.voiceDraft.isVisible,
                 microphoneEnabled = !uiState.isProcessing &&
+                    !uiState.isStopping &&
                     uiState.modelState !is ModelState.Loading &&
                     !uiState.isModelMissing,
                 isProcessing = uiState.isProcessing,
@@ -328,10 +330,11 @@ fun ChatScreen(
                             key = { _, message -> message.id },
                         ) { index, message ->
                             val isLast = index == uiState.messages.lastIndex
-                            val showRetry = isLast && !uiState.isProcessing
+                            val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
                                 
                             MessageBubble(
                                 message = message,
+                                isStopping = uiState.isStopping,
                                 onRetry = if (showRetry) viewModel::retry else null,
                                 onCopy = { text ->
                                     viewModel.copyToClipboard(text)
@@ -572,6 +575,7 @@ private fun EmptyConversation(
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    isStopping: Boolean = false,
     onRetry: (() -> Unit)? = null,
     onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -615,7 +619,11 @@ private fun MessageBubble(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = message.content.ifBlank { "Генерация ответа..." },
+                        text = if (message.content.isBlank()) {
+                            if (isStopping) "Остановка..." else "Генерация ответа..."
+                        } else {
+                            message.content
+                        },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )

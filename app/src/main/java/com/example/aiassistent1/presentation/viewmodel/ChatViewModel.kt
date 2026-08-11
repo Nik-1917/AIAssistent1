@@ -192,6 +192,7 @@ class ChatViewModel(
             state.copy(
                 messages = state.messages + userMessage,
                 isProcessing = true,
+                isStopping = false, // Сбрасываем флаг при новом сообщении
                 isVoiceMode = false,
                 voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
                 error = null,
@@ -279,7 +280,7 @@ class ChatViewModel(
                         }
                     }
                 }
-                mutableUiState.update { it.copy(isProcessing = false) }
+                mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
                 GenerationForegroundService.stop(context)
             }
         }
@@ -324,6 +325,7 @@ class ChatViewModel(
             mutableUiState.update { it.copy(
                 messages = historyToRetry,
                 isProcessing = true,
+                isStopping = false, // Сбрасываем флаг остановки при повторе
                 isVoiceMode = false,
                 error = null,
             ) }
@@ -402,11 +404,14 @@ class ChatViewModel(
     }
 
     fun stopGeneration() {
-        // Мы вызываем cancelGeneration() у движка, чтобы он прервал native процесс
+        // Устанавливаем флаг остановки для изменения текста в UI
+        mutableUiState.update { it.copy(isStopping = true) }
+        
+        // Прерываем native процесс
         llmEngine.cancelGeneration()
-        // Отменяем саму корутину генерации
+        // Отменяем корутину генерации
         generationJob?.cancel()
-        // Сбрасываем флаг обработки
+        // Возвращаем немедленный сброс флага обработки, как было раньше
         mutableUiState.update { it.copy(isProcessing = false) }
         // Останавливаем сервис переднего плана
         GenerationForegroundService.stop(context)
@@ -713,6 +718,6 @@ class ChatViewModel(
     private fun Throwable.userMessage(): String = message ?: "Не удалось сгенерировать ответ"
 
     private companion object {
-        const val MAX_MESSAGE_LENGTH = 500
+        const val MAX_MESSAGE_LENGTH = 3000
     }
 }
