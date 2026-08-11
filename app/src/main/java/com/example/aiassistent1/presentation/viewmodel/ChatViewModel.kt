@@ -60,6 +60,7 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
     init {
+        checkFirstRun()
         observeHistory()
         observeModelState()
         observeSettings()
@@ -69,12 +70,33 @@ class ChatViewModel(
         checkModelPresence()
     }
 
+    private fun checkFirstRun() {
+        viewModelScope.launch {
+            if (settingsRepository.isFirstRun.value) {
+                withContext(Dispatchers.IO) {
+                    chatRepository.deleteAllMessages()
+                }
+                settingsRepository.setFirstRunCompleted()
+            }
+        }
+    }
+
     private fun observeSettings() {
         viewModelScope.launch {
             settingsRepository.selectedModel.collect { model ->
                 mutableUiState.update { it.copy(selectedModel = model) }
                 checkModelPresence()
                 observeParams(model)
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.showDeleteMessageConfirmation.collect { show ->
+                mutableUiState.update { it.copy(showDeleteMessageConfirmation = show) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.showClearChatConfirmation.collect { show ->
+                mutableUiState.update { it.copy(showClearChatConfirmation = show) }
             }
         }
     }
@@ -302,6 +324,18 @@ class ChatViewModel(
         val clip = android.content.ClipData.newPlainText("AI Assistant Message", text)
         clipboard.setPrimaryClip(clip)
         mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован") }
+    }
+
+    fun setShowDeleteMessageConfirmation(show: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowDeleteMessageConfirmation(show)
+        }
+    }
+
+    fun setShowClearChatConfirmation(show: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowClearChatConfirmation(show)
+        }
     }
 
     fun deleteMessage(id: String) {
