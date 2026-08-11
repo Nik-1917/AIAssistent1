@@ -76,6 +76,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
@@ -339,7 +340,7 @@ fun ChatScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding()) // Только верхний отступ для топбара
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 val modelState = uiState.modelState
@@ -894,11 +895,11 @@ private fun InputPanel(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f))
             .navigationBarsPadding()
             .imePadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.Bottom,
+            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
             value = text,
@@ -907,6 +908,11 @@ private fun InputPanel(
                 .weight(1f)
                 .offset(y = 0.dp),
             enabled = textInputEnabled,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surface,
+            ),
             placeholder = { Text("Сообщение") },
             supportingText = {
                 Text(
@@ -932,7 +938,6 @@ private fun InputPanel(
         if (!isKeyboardVisible) {
             Spacer(modifier = Modifier.width(8.dp))
             VoiceMicrophoneButton(
-                modifier = Modifier.offset(y = (-30).dp),
                 enabled = microphoneEnabled,
                 isVoiceMode = isVoiceMode,
                 onTap = onVoiceTap,
@@ -940,14 +945,12 @@ private fun InputPanel(
             )
             if (isProcessing) {
                 IconButton(
-                    modifier = Modifier.offset(y = (-30).dp),
                     onClick = onStop,
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
                 }
             } else {
                 IconButton(
-                    modifier = Modifier.offset(y = (-30).dp),
                     enabled = canSend,
                     onClick = {
                         onSend(text)
