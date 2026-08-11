@@ -768,7 +768,7 @@ private fun MessageBubble(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (message.content.isBlank()) {
-                            if (isStopping) "Остановка..." else "Генерация ответа..."
+                            if (isStopping) "Остановка..." else "Думаю..."
                         } else {
                             message.content
                         },
