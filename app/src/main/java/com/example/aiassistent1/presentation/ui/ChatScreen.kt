@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +72,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -129,6 +131,7 @@ fun ChatScreen(
     val viewportEndOffset = listState.layoutInfo.viewportEndOffset
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
 
     var shouldAutoScroll by remember { mutableStateOf(true) }
 
@@ -337,7 +340,7 @@ fun ChatScreen(
                                 message = message,
                                 isStopping = uiState.isStopping,
                                 onRetry = if (showRetry) viewModel::retry else null,
-                                onDelete = if (showDelete) { { viewModel.deleteMessage(message.id) } } else null,
+                                onDelete = if (showDelete) { { messageToDelete = message } } else null,
                                 onCopy = { text ->
                                     viewModel.copyToClipboard(text)
                                 }
@@ -401,6 +404,29 @@ fun ChatScreen(
             onSave = { updatedParams ->
                 viewModel.updateModelParams(updatedParams)
                 showSettingsDialog = false
+            }
+        )
+    }
+
+    if (messageToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { messageToDelete = null },
+            title = { Text("Удалить сообщение?") },
+            text = { Text("Это действие нельзя будет отменить. Контекст диалога может измениться.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        messageToDelete?.let { viewModel.deleteMessage(it.id) }
+                        messageToDelete = null
+                    }
+                ) {
+                    Text("Удалить", color = Color(0xFFF44336))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { messageToDelete = null }) {
+                    Text("Отмена")
+                }
             }
         )
     }
