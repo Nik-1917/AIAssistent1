@@ -19,6 +19,6 @@ data class ChatUiState(
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,
     val availableModels: List<String> = listOf("qwen2.5-3b-instruct-q4_k_m.gguf", "ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf"),
-    val selectedModel: String = "qwen2.5-3b-instruct-q4_k_m.gguf",
+    val selectedModel: String = "ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf",
     val modelParams: GenerationParams = GenerationParams(),
 )

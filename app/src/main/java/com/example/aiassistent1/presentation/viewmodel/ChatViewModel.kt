@@ -67,7 +67,7 @@ class ChatViewModel(
         observeVoiceInput()
         observeVoiceInputErrors()
         restoreVoiceDraft()
-        checkModelPresence()
+        checkModelPresence(settingsRepository.selectedModel.value)
     }
 
     private fun checkFirstRun() {
@@ -76,6 +76,8 @@ class ChatViewModel(
                 withContext(Dispatchers.IO) {
                     chatRepository.deleteAllMessages()
                 }
+                // Сбрасываем модель на дефолтную (русскую) при первом запуске
+                settingsRepository.setSelectedModel("ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf")
                 settingsRepository.setFirstRunCompleted()
             }
         }
@@ -85,7 +87,7 @@ class ChatViewModel(
         viewModelScope.launch {
             settingsRepository.selectedModel.collect { model ->
                 mutableUiState.update { it.copy(selectedModel = model) }
-                checkModelPresence()
+                checkModelPresence(model)
                 observeParams(model)
             }
         }
@@ -118,7 +120,7 @@ class ChatViewModel(
     }
 
     fun refreshModelStatus() {
-        checkModelPresence()
+        checkModelPresence(settingsRepository.selectedModel.value)
     }
 
     fun importModel(uri: Uri) {
@@ -133,7 +135,8 @@ class ChatViewModel(
                     val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
                     if (!targetDir.exists()) targetDir.mkdirs()
                     
-                    val targetFile = File(targetDir, "qwen2.5-3b-instruct-q4_k_m.gguf")
+                    val currentModelName = settingsRepository.selectedModel.value
+                    val targetFile = File(targetDir, currentModelName)
                     val outputStream = FileOutputStream(targetFile)
                     
                     val buffer = ByteArray(1024 * 1024) // 1MB buffer
@@ -161,9 +164,8 @@ class ChatViewModel(
         }
     }
 
-    private fun checkModelPresence() {
+    private fun checkModelPresence(fileName: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val fileName = settingsRepository.selectedModel.value
             val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
             
@@ -314,6 +316,8 @@ class ChatViewModel(
             
             stopGeneration()
             llmEngine.close()
+            // Принудительно сбрасываем флаги при смене модели
+            mutableUiState.update { it.copy(isStopping = false, isProcessing = false) }
             settingsRepository.setSelectedModel(modelName)
         }
     }
@@ -449,6 +453,8 @@ class ChatViewModel(
     }
 
     fun stopGeneration() {
+        if (!uiState.value.isProcessing) return
+
         // Устанавливаем флаг остановки для изменения текста в UI
         mutableUiState.update { it.copy(isStopping = true) }
         

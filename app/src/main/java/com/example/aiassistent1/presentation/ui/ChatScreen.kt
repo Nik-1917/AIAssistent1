@@ -19,12 +19,13 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -105,10 +106,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -321,6 +322,33 @@ fun ChatScreen(
 
                 if (modelState is ModelState.Importing) {
                     ImportProgress(progress = modelState.progress)
+                }
+
+                if (uiState.isModelMissing && uiState.messages.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (uiState.needsPermission) 
+                                    "Файл модели в 'Загрузках', но нужен доступ" 
+                                else "Файл модели не найден",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            if (uiState.needsPermission) {
+                                TextButton(onClick = viewModel::openPermissionSettings) {
+                                    Text("Выдать разрешение")
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (uiState.messages.isEmpty()) {
@@ -769,7 +797,7 @@ private fun MessageBubble(
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Удалить сообщение",
-                            tint = Color(0xFF2196F3), // Перекрашено в синий для соответствия стилю
+                            tint = Color(0xFF2196F3),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -1133,7 +1161,7 @@ fun ModelSettingsDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    androidx.compose.material3.TextButton(onClick = onDismiss) {
+                    TextButton(onClick = onDismiss) {
                         Text("Отмена")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
