@@ -807,6 +807,7 @@ private fun InputPanel(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .offset(y = (-10).dp)
             .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
             .imePadding()
@@ -818,7 +819,7 @@ private fun InputPanel(
             onValueChange = { text = it.take(MAX_MESSAGE_LENGTH) },
             modifier = Modifier
                 .weight(1f)
-                .offset(y = (-15).dp),
+                .offset(y = 0.dp),
             enabled = textInputEnabled,
             placeholder = { Text("Сообщение") },
             supportingText = {
@@ -830,11 +831,11 @@ private fun InputPanel(
                 )
             },
             shape = RoundedCornerShape(12.dp),
-            maxLines = 4,
+            maxLines = 8,
         )
         Spacer(modifier = Modifier.width(8.dp))
         VoiceMicrophoneButton(
-            modifier = Modifier.offset(y = (-45).dp),
+            modifier = Modifier.offset(y = (-30).dp),
             enabled = microphoneEnabled,
             isVoiceMode = isVoiceMode,
             onTap = onVoiceTap,
@@ -842,14 +843,14 @@ private fun InputPanel(
         )
         if (isProcessing) {
             IconButton(
-                modifier = Modifier.offset(y = (-40).dp),
+                modifier = Modifier.offset(y = (-30).dp),
                 onClick = onStop,
             ) {
                 Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
             }
         } else {
             IconButton(
-                modifier = Modifier.offset(y = (-45).dp),
+                modifier = Modifier.offset(y = (-30).dp),
                 enabled = canSend,
                 onClick = {
                     onSend(text)
