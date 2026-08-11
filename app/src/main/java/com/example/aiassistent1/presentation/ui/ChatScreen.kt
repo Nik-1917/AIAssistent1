@@ -132,6 +132,7 @@ fun ChatScreen(
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
+    var showClearChatDialog by remember { mutableStateOf(false) }
 
     var shouldAutoScroll by remember { mutableStateOf(true) }
 
@@ -267,13 +268,13 @@ fun ChatScreen(
                 selectedModel = uiState.selectedModel,
                 availableModels = uiState.availableModels,
                 onStop = viewModel::stopGeneration,
-                onClearChat = viewModel::clearChat,
+                onClearChat = { showClearChatDialog = true },
                 onLoadModel = { 
                     if (uiState.needsPermission) viewModel.openPermissionSettings()
                     else filePickerLauncher.launch("*/*")
                 },
                 onSelectModel = viewModel::selectModel,
-                onOpenSettings = { showSettingsDialog = true }
+                onOpenSettings = { showSettingsDialog = true },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -408,6 +409,29 @@ fun ChatScreen(
         )
     }
 
+    if (showClearChatDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearChatDialog = false },
+            title = { Text("Очистить чат?") },
+            text = { Text("Все сообщения будут удалены навсегда. Это действие нельзя отменить.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearChat()
+                        showClearChatDialog = false
+                    }
+                ) {
+                    Text("Очистить", color = Color(0xFFF44336))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearChatDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+
     if (messageToDelete != null) {
         AlertDialog(
             onDismissRequest = { messageToDelete = null },
@@ -531,7 +555,11 @@ private fun ChatTopBar(
             }
             if (hasMessages) {
                 IconButton(onClick = onClearChat) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = "Удалить чат")
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Удалить чат",
+                        tint = Color(0xFF2196F3)
+                    )
                 }
             }
             if (isProcessing) {
@@ -678,7 +706,7 @@ private fun MessageBubble(
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Удалить сообщение",
-                            tint = Color(0xFFF44336), // Красный цвет для удаления
+                            tint = Color(0xFF2196F3), // Перекрашено в синий для соответствия стилю
                             modifier = Modifier.size(20.dp)
                         )
                     }
