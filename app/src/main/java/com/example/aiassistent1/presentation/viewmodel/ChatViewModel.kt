@@ -304,6 +304,17 @@ class ChatViewModel(
         mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован") }
     }
 
+    fun deleteMessage(id: String) {
+        viewModelScope.launch {
+            // Сначала немедленно удаляем из UI
+            mutableUiState.update { it.copy(messages = it.messages.filterNot { it.id == id }) }
+            // Затем удаляем из базы данных
+            withContext(Dispatchers.IO) {
+                chatRepository.deleteMessage(id)
+            }
+        }
+    }
+
     fun retry() {
         val state = uiState.value
         if (state.isProcessing) return

@@ -331,11 +331,13 @@ fun ChatScreen(
                         ) { index, message ->
                             val isLast = index == uiState.messages.lastIndex
                             val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
+                            val showDelete = showRetry && message.role == MessageRole.USER
                                 
                             MessageBubble(
                                 message = message,
                                 isStopping = uiState.isStopping,
                                 onRetry = if (showRetry) viewModel::retry else null,
+                                onDelete = if (showDelete) { { viewModel.deleteMessage(message.id) } } else null,
                                 onCopy = { text ->
                                     viewModel.copyToClipboard(text)
                                 }
@@ -577,6 +579,7 @@ private fun MessageBubble(
     message: ChatMessage,
     isStopping: Boolean = false,
     onRetry: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -636,6 +639,23 @@ private fun MessageBubble(
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                if (onDelete != null) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Удалить сообщение",
+                            tint = Color(0xFFF44336), // Красный цвет для удаления
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 if (onRetry != null) {
@@ -873,6 +893,11 @@ private fun VoiceMicrophoneButton(
         Icon(
             imageVector = if (isVoiceMode) Icons.Default.MicOff else Icons.Default.Mic,
             contentDescription = null,
+            tint = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            }
         )
     }
 }
