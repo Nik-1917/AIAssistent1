@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,6 +45,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -100,6 +105,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -791,6 +797,7 @@ private fun MessageBubble(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun InputPanel(
     textInputEnabled: Boolean,
     microphoneEnabled: Boolean,
@@ -803,6 +810,7 @@ private fun InputPanel(
 ) {
     var text by remember { mutableStateOf("") }
     val canSend = textInputEnabled && text.trim().isNotEmpty()
+    val isKeyboardVisible = WindowInsets.isImeVisible
 
     Row(
         modifier = Modifier
@@ -832,32 +840,44 @@ private fun InputPanel(
             },
             shape = RoundedCornerShape(12.dp),
             maxLines = 8,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(
+                onSend = {
+                    if (canSend) {
+                        onSend(text)
+                        text = ""
+                    }
+                }
+            )
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        VoiceMicrophoneButton(
-            modifier = Modifier.offset(y = (-30).dp),
-            enabled = microphoneEnabled,
-            isVoiceMode = isVoiceMode,
-            onTap = onVoiceTap,
-            onLongPress = onVoiceLongPress,
-        )
-        if (isProcessing) {
-            IconButton(
+        
+        if (!isKeyboardVisible) {
+            Spacer(modifier = Modifier.width(8.dp))
+            VoiceMicrophoneButton(
                 modifier = Modifier.offset(y = (-30).dp),
-                onClick = onStop,
-            ) {
-                Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
-            }
-        } else {
-            IconButton(
-                modifier = Modifier.offset(y = (-30).dp),
-                enabled = canSend,
-                onClick = {
-                    onSend(text)
-                    text = ""
-                },
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
+                enabled = microphoneEnabled,
+                isVoiceMode = isVoiceMode,
+                onTap = onVoiceTap,
+                onLongPress = onVoiceLongPress,
+            )
+            if (isProcessing) {
+                IconButton(
+                    modifier = Modifier.offset(y = (-30).dp),
+                    onClick = onStop,
+                ) {
+                    Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
+                }
+            } else {
+                IconButton(
+                    modifier = Modifier.offset(y = (-30).dp),
+                    enabled = canSend,
+                    onClick = {
+                        onSend(text)
+                        text = ""
+                    },
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
+                }
             }
         }
     }
