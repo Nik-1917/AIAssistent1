@@ -82,9 +82,9 @@ class DataStoreSettingsRepository(
             context.settingsStore.data
                 .map { preferences ->
                     GenerationParams(
-                        contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 4048,
+                        contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 2048,
                         maxTokens = preferences[intPreferencesKey("${modelName}_maxTokens")] ?: 512,
-                        temperature = preferences[floatPreferencesKey("${modelName}_temperature")] ?: 0.7f,
+                        temperature = preferences[floatPreferencesKey("${modelName}_temperature")] ?: 0.35f,
                         topP = preferences[floatPreferencesKey("${modelName}_topP")] ?: 0.8f,
                         topK = preferences[intPreferencesKey("${modelName}_topK")] ?: 20,
                         repeatPenalty = preferences[floatPreferencesKey("${modelName}_repeatPenalty")] ?: 1.15f,
@@ -94,7 +94,13 @@ class DataStoreSettingsRepository(
                 .stateIn(
                     scope = scope,
                     started = SharingStarted.Eagerly,
-                    initialValue = GenerationParams(temperature = 0.7f) // Default for new models
+                    initialValue = GenerationParams(
+                        contextSize = 2048,
+                        maxTokens = 512,
+                        temperature = 0.35f,
+                        topP = 0.8f,
+                        repeatPenalty = 1.15f
+                    )
                 )
         }
     }
