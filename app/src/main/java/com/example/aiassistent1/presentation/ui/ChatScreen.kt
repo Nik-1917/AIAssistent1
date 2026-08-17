@@ -350,122 +350,119 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            Column(
+            // Основной контейнер с навигационными отступами
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .navigationBarsPadding() // Весь контент теперь всегда над системными кнопками
+                    .navigationBarsPadding()
             ) {
-                // Область контента (сообщения), которая сжимается при появлении футера
-                Box(modifier = Modifier.weight(1f)) {
-                    Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding() // Весь контент теперь всегда над системными кнопками
-            ) {
-                        val modelState = uiState.modelState
+                // Область сообщений
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val modelState = uiState.modelState
 
-                        if (modelState is ModelState.Importing) {
-                            ImportProgress(progress = modelState.progress)
-                        }
+                    if (modelState is ModelState.Importing) {
+                        ImportProgress(progress = modelState.progress)
+                    }
 
-                        if (uiState.isModelMissing && uiState.messages.isNotEmpty()) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = if (uiState.needsPermission) 
-                                            "Файл модели в 'Загрузках', но нужен доступ" 
-                                        else "Файл модели не найден",
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                    if (uiState.needsPermission) {
-                                        TextButton(onClick = viewModel::openPermissionSettings) {
-                                            Text("Выдать разрешение")
-                                        }
+                    if (uiState.isModelMissing && uiState.messages.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = if (uiState.needsPermission) 
+                                        "Файл модели в 'Загрузках', но нужен доступ" 
+                                    else "Файл модели не найден",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                if (uiState.needsPermission) {
+                                    TextButton(onClick = viewModel::openPermissionSettings) {
+                                        Text("Выдать разрешение")
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (uiState.messages.isEmpty()) {
-                            EmptyConversation(
-                                isModelMissing = uiState.isModelMissing,
-                                needsPermission = uiState.needsPermission,
-                                onLoadModel = { filePickerLauncher.launch("*/*") },
-                                onOpenSettings = viewModel::openPermissionSettings,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            LazyColumn(
-                                state = listState,
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(
-                                    start = 16.dp,
-                                    top = 12.dp,
-                                    end = 16.dp,
-                                    bottom = 16.dp, // Уменьшено, так как теперь поле ввода не перекрывает список
-                                ),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                itemsIndexed(
-                                    items = uiState.messages,
-                                    key = { _, message -> message.id },
-                                ) { index, message ->
-                                    val isLast = index == uiState.messages.lastIndex
-                                    val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
-                                    val showDelete = showRetry
-                                        
-                                    MessageBubble(
-                                        message = message,
-                                        isStopping = uiState.isStopping,
-                                        onRetry = if (showRetry) viewModel::retry else null,
-                                        onDelete = if (showDelete) {
-                                            {
-                                                if (uiState.showDeleteMessageConfirmation) {
-                                                    messageToDelete = message
-                                                } else {
-                                                    viewModel.deleteMessage(message.id)
-                                                }
+                    if (uiState.messages.isEmpty()) {
+                        EmptyConversation(
+                            isModelMissing = uiState.isModelMissing,
+                            needsPermission = uiState.needsPermission,
+                            onLoadModel = { filePickerLauncher.launch("*/*") },
+                            onOpenSettings = viewModel::openPermissionSettings,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                top = 12.dp,
+                                end = 16.dp,
+                                bottom = 120.dp, // Увеличено для overlay поля ввода
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            itemsIndexed(
+                                items = uiState.messages,
+                                key = { _, message -> message.id },
+                            ) { index, message ->
+                                val isLast = index == uiState.messages.lastIndex
+                                val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
+                                val showDelete = showRetry
+                                    
+                                MessageBubble(
+                                    message = message,
+                                    isStopping = uiState.isStopping,
+                                    onRetry = if (showRetry) viewModel::retry else null,
+                                    onDelete = if (showDelete) {
+                                        {
+                                            if (uiState.showDeleteMessageConfirmation) {
+                                                messageToDelete = message
+                                            } else {
+                                                viewModel.deleteMessage(message.id)
                                             }
-                                        } else null,
-                                        onCopy = { text ->
-                                            viewModel.copyToClipboard(text)
                                         }
-                                    )
-                                }
+                                    } else null,
+                                    onCopy = { text ->
+                                        viewModel.copyToClipboard(text)
+                                    }
+                                )
                             }
                         }
                     }
-
-                    // Голосовой черновик теперь привязан к нижней части области сообщений
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = uiState.voiceDraft.isVisible && isFooterVisible,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                        enter = expandVertically(expandFrom = Alignment.Bottom),
-                        exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
-                    ) {
-                        VoiceDraftCard(
-                            state = uiState.voiceDraft,
-                            onDelete = viewModel::deleteVoiceDraft,
-                            onSend = viewModel::sendVoiceDraft,
-                        )
-                    }
                 }
 
-                // Панель ввода, которая выталкивает список вверх
+                // Голосовой черновик (overlay)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = uiState.voiceDraft.isVisible && isFooterVisible,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 110.dp),
+                    enter = expandVertically(expandFrom = Alignment.Bottom),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
+                ) {
+                    VoiceDraftCard(
+                        state = uiState.voiceDraft,
+                        onDelete = viewModel::deleteVoiceDraft,
+                        onSend = viewModel::sendVoiceDraft,
+                    )
+                }
+
+                // Панель ввода (overlay), больше не выталкивает чат
                 androidx.compose.animation.AnimatedVisibility(
                     visible = isFooterVisible,
-                    modifier = Modifier,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
@@ -489,7 +486,7 @@ fun ChatScreen(
                 }
             }
 
-            // Уведомление о копировании остается поверх всего (в Box)
+            // Уведомление о копировании
             androidx.compose.animation.AnimatedVisibility(
                 visible = uiState.snackbarMessage != null,
                 enter = fadeIn() + expandVertically(),
