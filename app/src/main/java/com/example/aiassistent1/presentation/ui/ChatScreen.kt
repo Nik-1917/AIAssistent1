@@ -176,12 +176,12 @@ fun ChatScreen(
         previousScrollOffset = currentOffset
     }
 
-    // Показываем футер при появлении клавиатуры
+    // Показываем футер при появлении клавиатуры, окончании генерации или изменении списка сообщений (удаление/очистка)
     val isImeVisible = WindowInsets.isImeVisible
-    LaunchedEffect(isImeVisible, uiState.isProcessing) {
-        if (isImeVisible) {
+    LaunchedEffect(isImeVisible, uiState.isProcessing, uiState.messages.size) {
+        if (isImeVisible || !uiState.isProcessing) {
             isFooterVisible = true
-        } else if (uiState.isProcessing) {
+        } else {
             // Скрываем футер, как только началась генерация
             isFooterVisible = false
         }
