@@ -66,15 +66,10 @@ class DataStoreSettingsRepository(
             initialValue = true
         )
 
-    override val isFirstRun: StateFlow<Boolean> = context.settingsStore.data
+    override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = context.settingsStore.data
         .map { preferences ->
             preferences[isFirstRunKey] ?: true
         }
-        .stateIn(
-            scope = scope,
-            started = SharingStarted.Eagerly,
-            initialValue = true
-        )
 
     override suspend fun setSelectedModel(modelName: String) {
         context.settingsStore.edit { preferences ->

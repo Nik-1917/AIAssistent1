@@ -31,6 +31,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -72,7 +73,7 @@ class ChatViewModel(
 
     private fun checkFirstRun() {
         viewModelScope.launch {
-            if (settingsRepository.isFirstRun.value) {
+            if (settingsRepository.isFirstRun.first()) {
                 withContext(Dispatchers.IO) {
                     chatRepository.deleteAllMessages()
                 }

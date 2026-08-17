@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.interfaces
 
 import com.example.aiassistent1.domain.model.GenerationParams
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface SettingsRepository {
@@ -16,6 +17,6 @@ interface SettingsRepository {
     val showClearChatConfirmation: StateFlow<Boolean>
     suspend fun setShowClearChatConfirmation(show: Boolean)
 
-    val isFirstRun: StateFlow<Boolean>
+    val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()
 }
