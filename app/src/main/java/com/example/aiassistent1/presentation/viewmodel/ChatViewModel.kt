@@ -18,11 +18,15 @@ import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
+import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.parser.AssistantResponseParser
 import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
+import com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
 import kotlinx.coroutines.CancellationException
@@ -50,6 +54,8 @@ class ChatViewModel(
     private val voiceDraftRepository: VoiceDraftRepository,
     private val speechPlayback: SpeechPlayback? = null,
     private val settingsRepository: SettingsRepository,
+    private val searchCalendarEvents: SearchCalendarEventsUseCase,
+    private val assistantResponseParser: AssistantResponseParser,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private var generationJob: Job? = null
@@ -320,8 +326,26 @@ class ChatViewModel(
                 val finalMessage = assistantMessage
                 if (finalMessage != null) {
                     if (finalMessage.content.isNotBlank()) {
-                        withContext(Dispatchers.IO) { chatRepository.saveMessage(finalMessage) }
-                        finalMessage.content.let { handleIntentIfPresent(it) }
+                        val parsed = assistantResponseParser.parse(finalMessage.content)
+                        val messageToSave = if (parsed != null) {
+                            finalMessage.copy(content = parsed.reply)
+                        } else {
+                            finalMessage
+                        }
+
+                        // Update UI with the reply if parsed
+                        if (parsed != null) {
+                            assistantMessage = messageToSave
+                            updateMessage(messageToSave)
+                        }
+
+                        withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
+                        
+                        if (parsed != null) {
+                            handleParsedResponse(parsed, messageToSave.id)
+                        } else {
+                            handleIntentIfPresent(finalMessage.content)
+                        }
                     } else {
                         // Если сообщение пустое после завершения (например, сброс), удаляем из UI
                         mutableUiState.update { state ->
@@ -560,6 +584,38 @@ class ChatViewModel(
 
     fun clearSnackbar() {
         mutableUiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
+        when (val params = response.params) {
+            is com.example.aiassistent1.domain.model.CalendarAddParams -> {
+                executeCalendarAdd(params.title, params.date, params.duration_min)
+            }
+            is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
+                viewModelScope.launch {
+                    searchCalendarEvents(params.query, params.days).onSuccess { events ->
+                        val resultsText = if (events.isNotEmpty()) {
+                            "\n\nНайдено:\n" + events.joinToString("\n") {
+                                "- ${it.title} (${it.dateTime}, ${it.durationMin} мин)"
+                            }
+                        } else {
+                            "\n\nНичего не найдено."
+                        }
+                        
+                        val updatedMessage = ChatMessage(
+                            id = messageId,
+                            role = MessageRole.ASSISTANT,
+                            content = response.reply + resultsText
+                        )
+                        updateMessage(updatedMessage)
+                        withContext(Dispatchers.IO) { chatRepository.saveMessage(updatedMessage) }
+                    }.onFailure { error ->
+                        mutableUiState.update { it.copy(error = "Ошибка поиска: ${error.message}") }
+                    }
+                }
+            }
+            else -> {}
+        }
     }
 
     private fun handleIntentIfPresent(text: String) {

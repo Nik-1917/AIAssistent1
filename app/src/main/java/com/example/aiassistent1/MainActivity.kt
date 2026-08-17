@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.aiassistent1.di.AppModule
 import com.example.aiassistent1.presentation.ui.ChatScreen
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
-import com.example.aiassistent1.ui.theme.AIAssistent1Theme
+import com.example.aiassistent1.ui.theme.*
 
 class MainActivity : ComponentActivity() {
     private val chatViewModel: ChatViewModel by viewModels {
@@ -28,6 +28,8 @@ class MainActivity : ComponentActivity() {
                     voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),
                     speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
                     settingsRepository = AppModule.provideSettingsRepository(applicationContext),
+                    searchCalendarEvents = AppModule.provideSearchCalendarEventsUseCase(applicationContext),
+                    assistantResponseParser = AppModule.provideAssistantResponseParser(),
                 ) as T
             }
         }

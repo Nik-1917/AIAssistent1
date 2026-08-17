@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import java.io.IOException
 
+fun Context.voiceDraftStore(): DataStore<Preferences> = voiceDraftDataStore
+
 private const val VOICE_DRAFT_DATA_STORE_NAME = "voice_draft"
 private val Context.voiceDraftDataStore: DataStore<Preferences> by preferencesDataStore(
     name = VOICE_DRAFT_DATA_STORE_NAME,
@@ -41,5 +43,3 @@ class DataStoreVoiceDraftRepository(
         val DRAFT_TEXT = stringPreferencesKey("text")
     }
 }
-
-fun Context.voiceDraftStore(): DataStore<Preferences> = voiceDraftDataStore

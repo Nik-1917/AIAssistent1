@@ -56,6 +56,61 @@ class AndroidCalendarProvider(
         }
     }
 
+    override suspend fun searchEvents(
+        query: String,
+        days: Int
+    ): Result<List<com.example.aiassistent1.domain.model.CalendarEvent>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val startMillis = System.currentTimeMillis()
+            val endMillis = startMillis + (days.toLong() * 24 * 60 * 60 * 1000)
+
+            val projection = arrayOf(
+                CalendarContract.Events.TITLE,
+                CalendarContract.Events.DTSTART,
+                CalendarContract.Events.DTEND
+            )
+
+            val selection = "${CalendarContract.Events.DTSTART} >= ? AND ${CalendarContract.Events.DTSTART} <= ? AND ${CalendarContract.Events.TITLE} LIKE ?"
+            val selectionArgs = arrayOf(
+                startMillis.toString(),
+                endMillis.toString(),
+                "%$query%"
+            )
+
+            val cursor = context.contentResolver.query(
+                CalendarContract.Events.CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                "${CalendarContract.Events.DTSTART} ASC"
+            )
+
+            val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+            cursor?.use {
+                val events = mutableListOf<com.example.aiassistent1.domain.model.CalendarEvent>()
+                val titleIdx = it.getColumnIndex(CalendarContract.Events.TITLE)
+                val startIdx = it.getColumnIndex(CalendarContract.Events.DTSTART)
+                val endIdx = it.getColumnIndex(CalendarContract.Events.DTEND)
+
+                while (it.moveToNext()) {
+                    val title = it.getString(titleIdx)
+                    val start = it.getLong(startIdx)
+                    val end = it.getLong(endIdx)
+                    val duration = ((end - start) / (60 * 1000)).toInt()
+                    
+                    val dateTime = LocalDateTime.ofInstant(
+                        java.time.Instant.ofEpochMilli(start),
+                        ZoneId.systemDefault()
+                    ).format(formatter)
+
+                    events.add(com.example.aiassistent1.domain.model.CalendarEvent(title, dateTime, duration))
+                }
+                events
+            } ?: emptyList()
+        }
+    }
+
     private fun getDefaultCalendarId(): Long? {
         val projection = arrayOf(
             CalendarContract.Calendars._ID,

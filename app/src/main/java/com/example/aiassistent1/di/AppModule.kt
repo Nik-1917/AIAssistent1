@@ -1,6 +1,7 @@
 package com.example.aiassistent1.di
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.example.aiassistent1.data.engine.LlamatikEngine
 import com.example.aiassistent1.data.local.ChatDatabase
@@ -12,10 +13,7 @@ import com.example.aiassistent1.data.provider.SherpaOnnxSpeechRecognizer
 import com.example.aiassistent1.data.provider.SherpaOnnxSpeechSynthesizer
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceInputProvider
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceActivityDetector
-import com.example.aiassistent1.data.repository.DataStoreVoiceDraftRepository
-import com.example.aiassistent1.data.repository.DataStoreSettingsRepository
-import com.example.aiassistent1.data.repository.RoomChatRepository
-import com.example.aiassistent1.data.repository.voiceDraftStore
+import com.example.aiassistent1.data.repository.*
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
@@ -89,8 +87,15 @@ object AppModule {
 		provideSpeechSynthesizer(context),
 	)
 
+	fun provideSystemPromptProvider(): com.example.aiassistent1.domain.provider.SystemPromptProvider = 
+        com.example.aiassistent1.domain.provider.SystemPromptProvider()
+
+    fun provideAssistantResponseParser(): com.example.aiassistent1.domain.parser.AssistantResponseParser = 
+        com.example.aiassistent1.domain.parser.AssistantResponseParser()
+
 	fun provideSendMessageUseCase(llmEngine: LLMEngine): SendMessageUseCase = SendMessageUseCase(
 		llmEngine,
+        provideSystemPromptProvider()
 	)
 
 	fun provideCalendarProvider(context: Context): CalendarProvider = AndroidCalendarProvider(
@@ -100,6 +105,11 @@ object AppModule {
 	fun provideAddCalendarEventUseCase(context: Context): AddCalendarEventUseCase = AddCalendarEventUseCase(
 		provideCalendarProvider(context),
 	)
+
+	fun provideSearchCalendarEventsUseCase(context: Context): com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase = 
+        com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase(
+		    provideCalendarProvider(context),
+	    )
 
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
 		provideChatDatabase(context).chatMessageDao(),

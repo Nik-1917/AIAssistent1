@@ -299,7 +299,7 @@ fun ChatScreen(
 
     LaunchedEffect(uiState.snackbarMessage) {
         if (uiState.snackbarMessage != null) {
-            delay(2000)
+            delay(5000)
             viewModel.clearSnackbar()
         }
     }
