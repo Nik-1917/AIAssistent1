@@ -174,8 +174,8 @@ fun ChatScreen(
             }
         }
 
-        // Если достигли самого конца (или чат короткий), всегда показываем поле
-        if (!listState.canScrollForward && !uiState.isProcessing) {
+        // Если достигли самого конца (или чат короткий, или чат пуст), всегда показываем поле
+        if ((uiState.messages.isEmpty() || !listState.canScrollForward) && !uiState.isProcessing) {
             isFooterVisible = true
         }
 
@@ -190,7 +190,7 @@ fun ChatScreen(
             isFooterVisible = true
         } else if (uiState.isProcessing) {
             isFooterVisible = false
-        } else if (!listState.canScrollForward) {
+        } else if (uiState.messages.isEmpty() || !listState.canScrollForward) {
             isFooterVisible = true
         }
     }
