@@ -154,36 +154,44 @@ fun ChatScreen(
     var previousIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
     var previousScrollOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
 
-    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, listState.canScrollForward) {
         val currentIndex = listState.firstVisibleItemIndex
         val currentOffset = listState.firstVisibleItemScrollOffset
 
         if (listState.isScrollInProgress) {
-            val isScrollingUp = if (currentIndex != previousIndex) {
+            val isMovingTowardsTop = if (currentIndex != previousIndex) {
                 currentIndex < previousIndex
             } else {
                 currentOffset < previousScrollOffset
             }
 
-            if (isScrollingUp) {
-                isFooterVisible = true
-            } else {
+            if (isMovingTowardsTop) {
+                // Прокрутка вверх — скрываем поле
+                isFooterVisible = false
+            } else if (listState.canScrollForward) {
+                // Прокрутка вниз, но еще не конец — скрываем
                 isFooterVisible = false
             }
+        }
+
+        // Если достигли самого конца (или чат короткий), всегда показываем поле
+        if (!listState.canScrollForward && !uiState.isProcessing) {
+            isFooterVisible = true
         }
 
         previousIndex = currentIndex
         previousScrollOffset = currentOffset
     }
 
-    // Показываем футер при появлении клавиатуры, окончании генерации или изменении списка сообщений (удаление/очистка)
+    // Показываем футер при появлении клавиатуры или изменении состояния
     val isImeVisible = WindowInsets.isImeVisible
-    LaunchedEffect(isImeVisible, uiState.isProcessing, uiState.messages.size) {
-        if (isImeVisible || !uiState.isProcessing) {
+    LaunchedEffect(isImeVisible, uiState.isProcessing, uiState.messages.size, listState.canScrollForward) {
+        if (isImeVisible) {
             isFooterVisible = true
-        } else {
-            // Скрываем футер, как только началась генерация
+        } else if (uiState.isProcessing) {
             isFooterVisible = false
+        } else if (!listState.canScrollForward) {
+            isFooterVisible = true
         }
     }
     // ------------------------------------------------
@@ -342,10 +350,18 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding() // Весь контент теперь всегда над системными кнопками
+            ) {
                 // Область контента (сообщения), которая сжимается при появлении футера
                 Box(modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding() // Весь контент теперь всегда над системными кнопками
+            ) {
                         val modelState = uiState.modelState
 
                         if (modelState is ModelState.Importing) {
@@ -898,7 +914,6 @@ private fun InputPanel(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f))
-            .navigationBarsPadding()
             .imePadding()
             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
