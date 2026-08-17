@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -69,6 +70,7 @@ class ChatViewModel(
         observeVoiceInputErrors()
         restoreVoiceDraft()
         checkModelPresence(settingsRepository.selectedModel.value)
+        updateAvailableModels()
     }
 
     private fun checkFirstRun() {
@@ -122,22 +124,50 @@ class ChatViewModel(
 
     fun refreshModelStatus() {
         checkModelPresence(settingsRepository.selectedModel.value)
+        updateAvailableModels()
+    }
+
+    private fun updateAvailableModels() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val modelsDir = context.getExternalFilesDir("models")
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            
+            val modelFiles = mutableSetOf<String>()
+            
+            // Добавляем модели из приватной папки
+            modelsDir?.listFiles { file -> file.extension == "gguf" }?.forEach { 
+                if (it.length() > 0) modelFiles.add(it.name) 
+            }
+            
+            // Добавляем модели из папки загрузок, если есть разрешение
+            if (Environment.isExternalStorageManager()) {
+                downloadsDir?.listFiles { file -> file.extension == "gguf" }?.forEach { 
+                    if (it.length() > 0) modelFiles.add(it.name) 
+                }
+            }
+            
+            val sortedModels = modelFiles.toList().sorted()
+            mutableUiState.update { it.copy(availableModels = sortedModels) }
+        }
     }
 
     fun importModel(uri: Uri) {
         viewModelScope.launch {
             try {
                 mutableUiState.update { it.copy(modelState = ModelState.Importing(0f)) }
-                withContext(Dispatchers.IO) {
+                val importedFileName = withContext(Dispatchers.IO) {
                     val contentResolver = context.contentResolver
+                    
+                    // Получаем реальное имя файла
+                    val fileName = getFileName(uri) ?: "model_${System.currentTimeMillis()}.gguf"
+                    
                     val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
                     val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Не удалось открыть файл")
                     
                     val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
                     if (!targetDir.exists()) targetDir.mkdirs()
                     
-                    val currentModelName = settingsRepository.selectedModel.value
-                    val targetFile = File(targetDir, currentModelName)
+                    val targetFile = File(targetDir, fileName)
                     val outputStream = FileOutputStream(targetFile)
                     
                     val buffer = ByteArray(1024 * 1024) // 1MB buffer
@@ -157,12 +187,42 @@ class ChatViewModel(
                             }
                         }
                     }
+                    fileName
                 }
+                
+                // После успешного импорта выбираем эту модель
+                selectModel(importedFileName)
+                updateAvailableModels()
                 mutableUiState.update { it.copy(modelState = ModelState.Unloaded, isModelMissing = false) }
             } catch (e: Exception) {
                 mutableUiState.update { it.copy(modelState = ModelState.Error(e.message ?: "Ошибка импорта")) }
             }
         }
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) {
+                        result = cursor.getString(index)
+                    }
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/') ?: -1
+            if (cut != -1) {
+                result = result?.substring(cut + 1)
+            }
+        }
+        return result
     }
 
     private fun checkModelPresence(fileName: String) {
