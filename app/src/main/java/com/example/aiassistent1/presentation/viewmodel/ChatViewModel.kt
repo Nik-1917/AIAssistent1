@@ -26,11 +26,13 @@ import com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
+import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import com.example.aiassistent1.presentation.playback.SpeechStopReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,6 +67,8 @@ class ChatViewModel(
     private var activeVoiceInputSessionId: Long? = null
     private var pendingCalendarEvent: Triple<String, String, Int>? = null
     private var paramsJob: Job? = null
+    private var voiceModeShutdownJob: Job? = null
+    private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -483,6 +487,7 @@ class ChatViewModel(
         }
         if (state.voiceDraft.isVisible && state.voiceDraft.isRecording) return
 
+        cancelPendingVoiceModeShutdown()
         if (state.isVoiceMode || state.voiceDraft.isRecording) stopVoiceInput()
         mutableUiState.update { current ->
             current.copy(
@@ -524,6 +529,7 @@ class ChatViewModel(
     fun setVoiceMode(enabled: Boolean) {
         val state = mutableUiState.value
         if (state.isVoiceMode == enabled || (enabled && state.isProcessing)) return
+        if (enabled) cancelPendingVoiceModeShutdown()
         mutableUiState.update { it.copy(isVoiceMode = enabled, error = null) }
         if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
         if (!enabled) {
@@ -696,6 +702,7 @@ class ChatViewModel(
     }
 
     override fun onCleared() {
+        cancelPendingVoiceModeShutdown()
         stopGeneration()
         stopVoiceInput()
         (voiceInput as? AutoCloseable)?.close()
@@ -708,8 +715,31 @@ class ChatViewModel(
         viewModelScope.launch {
             controller.state.collect { playbackState ->
                 mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
+                if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
+                    playbackState is SpeechPlaybackState.Idle
+                ) {
+                    scheduleVoiceModeShutdown()
+                } else if (playbackState !is SpeechPlaybackState.Idle) {
+                    cancelPendingVoiceModeShutdown()
+                }
+                previousSpeechPlaybackState = playbackState
             }
         }
+    }
+
+    private fun scheduleVoiceModeShutdown() {
+        cancelPendingVoiceModeShutdown()
+        voiceModeShutdownJob = viewModelScope.launch {
+            delay(VOICE_MODE_SHUTDOWN_DELAY_MILLIS)
+            if (uiState.value.speechPlaybackState is SpeechPlaybackState.Idle) {
+                setVoiceMode(false)
+            }
+        }
+    }
+
+    private fun cancelPendingVoiceModeShutdown() {
+        voiceModeShutdownJob?.cancel()
+        voiceModeShutdownJob = null
     }
 
     private fun observeVoiceInput() {
@@ -897,5 +927,6 @@ class ChatViewModel(
         const val MAX_MESSAGE_LENGTH = 3000
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
+        const val VOICE_MODE_SHUTDOWN_DELAY_MILLIS = 1_000L
     }
 }

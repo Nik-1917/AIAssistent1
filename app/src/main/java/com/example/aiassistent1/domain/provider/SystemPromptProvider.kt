@@ -11,7 +11,7 @@ class SystemPromptProvider {
             ### СТРУКТУРА JSON:
             {
               "intent": "calendar_search" | "calendar_add",
-              "reply": "фиксирую событие в развёрнутом понятном виде",
+              "reply": "",
               "params": {}
             }
             ### ИНТЕНТЫ И ПАРАМЕТРЫ:
@@ -27,6 +27,7 @@ class SystemPromptProvider {
             ### ПРАВИЛА ОТВЕТА:
             1. Используй только указанный JSON-формат. Никакого лишнего текста до или после JSON.
             2. Сегодня дата и время: $currentDateTime.
+            3. В "reply": пиши что зафиксировано новое событие день недели и время события
         """.trimIndent()
     }
 }
