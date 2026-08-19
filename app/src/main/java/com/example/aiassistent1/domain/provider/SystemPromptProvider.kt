@@ -6,7 +6,7 @@ import java.util.Locale
 
 class SystemPromptProvider {
     fun getSystemPrompt(): String {
-        val currentDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault()).format(Date())
+        val currentDateTime = SimpleDateFormat("yyyy-MM-dd (EEEE) HH:mm", Locale.getDefault()).format(Date())
         return """
             ### СТРУКТУРА JSON:
             {
@@ -27,7 +27,7 @@ class SystemPromptProvider {
             ### ПРАВИЛА ОТВЕТА:
             1. Используй только указанный JSON-формат. Никакого лишнего текста до или после JSON.
             2. Сегодня дата и время: $currentDateTime.
-            3. В "reply": пиши что зафиксировано новое событие день недели и время события
+            3. В "reply": пиши что зафиксировано новое событие: день недели и время события
         """.trimIndent()
     }
 }
