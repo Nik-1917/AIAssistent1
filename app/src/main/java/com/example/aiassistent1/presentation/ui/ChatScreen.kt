@@ -121,11 +121,13 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
+import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -324,7 +326,6 @@ fun ChatScreen(
                 isProcessing = uiState.isProcessing,
                 hasMessages = uiState.messages.isNotEmpty(),
                 isModelMissing = uiState.isModelMissing,
-                needsPermission = uiState.needsPermission,
                 selectedModel = uiState.selectedModel,
                 availableModels = uiState.availableModels,
                 onStop = viewModel::stopGeneration,
@@ -335,10 +336,7 @@ fun ChatScreen(
                         viewModel.clearChat()
                     }
                 },
-                onLoadModel = { 
-                    if (uiState.needsPermission) viewModel.openPermissionSettings()
-                    else filePickerLauncher.launch("*/*")
-                },
+                onLoadModel = { filePickerLauncher.launch("*/*") },
                 onSelectModel = viewModel::selectModel,
                 onOpenSettings = { showSettingsDialog = true },
             )
@@ -379,16 +377,9 @@ fun ChatScreen(
                         ) {
                             Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = if (uiState.needsPermission) 
-                                        "Файл модели в 'Загрузках', но нужен доступ" 
-                                    else "Файл модели не найден",
+                                    text = "Файл модели не найден",
                                     style = MaterialTheme.typography.labelLarge
                                 )
-                                if (uiState.needsPermission) {
-                                    TextButton(onClick = viewModel::openPermissionSettings) {
-                                        Text("Выдать разрешение")
-                                    }
-                                }
                             }
                         }
                     }
@@ -396,9 +387,7 @@ fun ChatScreen(
                     if (uiState.messages.isEmpty()) {
                         EmptyConversation(
                             isModelMissing = uiState.isModelMissing,
-                            needsPermission = uiState.needsPermission,
                             onLoadModel = { filePickerLauncher.launch("*/*") },
-                            onOpenSettings = viewModel::openPermissionSettings,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -458,6 +447,19 @@ fun ChatScreen(
                         onSend = viewModel::sendVoiceDraft,
                     )
                 }
+
+                SpeechPlaybackStatusCard(
+                    state = uiState.speechPlaybackState,
+                    isVoiceMode = uiState.isVoiceMode,
+                    onStop = viewModel::stopSpeechPlayback,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = if (uiState.voiceDraft.isVisible) 246.dp else 112.dp,
+                        ),
+                )
 
                 // Панель ввода (overlay), больше не выталкивает чат
                 androidx.compose.animation.AnimatedVisibility(
@@ -522,6 +524,14 @@ fun ChatScreen(
                 viewModel.updateModelParams(updatedParams)
                 showSettingsDialog = false
             }
+        )
+    }
+
+    uiState.calendarEventToConfirm?.let { event ->
+        CalendarEventConfirmationDialog(
+            event = event,
+            onConfirm = viewModel::confirmCalendarEvent,
+            onDismiss = viewModel::dismissCalendarEventConfirmation,
         )
     }
 
@@ -615,6 +625,29 @@ fun ChatScreen(
 }
 
 @Composable
+private fun CalendarEventConfirmationDialog(
+    event: CalendarAddParams,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Добавить событие в календарь?") },
+        text = { Text("${event.title}\n${event.date}\n${event.duration_min} мин") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Добавить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        },
+    )
+}
+
+@Composable
 private fun ImportProgress(progress: Float) {
     Column(
         modifier = Modifier
@@ -642,7 +675,6 @@ private fun ChatTopBar(
     isProcessing: Boolean,
     hasMessages: Boolean,
     isModelMissing: Boolean,
-    needsPermission: Boolean,
     selectedModel: String,
     availableModels: List<String>,
     onStop: () -> Unit,
@@ -698,14 +730,9 @@ private fun ChatTopBar(
             }
         },
         actions = {
-            if (isModelMissing && !needsPermission && modelState !is ModelState.Importing) {
+            if (isModelMissing && modelState !is ModelState.Importing) {
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
-                }
-            }
-            if (needsPermission) {
-                IconButton(onClick = onLoadModel) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = "Выдать разрешение", tint = MaterialTheme.colorScheme.error)
                 }
             }
             IconButton(onClick = onOpenSettings) {
@@ -735,9 +762,7 @@ private fun ChatTopBar(
 @Composable
 private fun EmptyConversation(
     isModelMissing: Boolean,
-    needsPermission: Boolean,
     onLoadModel: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -754,32 +779,18 @@ private fun EmptyConversation(
             )
             if (isModelMissing) {
                 Spacer(modifier = Modifier.height(16.dp))
-                if (needsPermission) {
-                    Text(
-                        text = "Файл найден в папке 'Загрузки',\nно нужно разрешение на доступ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = onOpenSettings) {
-                        Text("Выдать разрешение")
-                    }
-                } else {
-                    Text(
-                        text = "Если файл уже в папке 'Загрузки', проверьте разрешения приложения",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = onLoadModel) {
-                        Icon(Icons.Default.CloudUpload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Выбрать файл .gguf")
-                    }
+                Text(
+                    text = "Выберите файл модели .gguf для импорта",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onLoadModel) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Выбрать файл .gguf")
                 }
             }
         }

@@ -4,6 +4,7 @@ import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.provider.SystemPromptProvider
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `returns streamed deltas after successful model loading`() = runTest {
         val engine = FakeLlmEngine(loadResult = Result.success(Unit))
-        val useCase = SendMessageUseCase(engine)
+        val useCase = SendMessageUseCase(engine, SystemPromptProvider())
 
         val result = useCase(listOf(ChatMessage(role = MessageRole.USER, content = "Привет")))
 
@@ -30,7 +31,7 @@ class SendMessageUseCaseTest {
     @Test
     fun `does not generate when model loading fails`() = runTest {
         val engine = FakeLlmEngine(loadResult = Result.failure(IllegalStateException("Нет модели")))
-        val useCase = SendMessageUseCase(engine)
+        val useCase = SendMessageUseCase(engine, SystemPromptProvider())
 
         val result = useCase(emptyList())
 
@@ -54,6 +55,8 @@ class SendMessageUseCaseTest {
         }
 
         override fun cancelGeneration() = Unit
+
+        override fun updateParams(params: com.example.aiassistent1.domain.model.GenerationParams) = Unit
 
         override fun close() = Unit
     }

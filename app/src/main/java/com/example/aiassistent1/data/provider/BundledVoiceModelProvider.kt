@@ -5,6 +5,8 @@ import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
 import com.example.aiassistent1.domain.model.VoiceModelAssets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class BundledVoiceModelProvider(
     private val context: Context,
@@ -19,9 +21,40 @@ class BundledVoiceModelProvider(
                 asrTokens = ASR_TOKENS,
                 ttsModel = TTS_MODEL,
                 ttsTokens = TTS_TOKENS,
-                ttsDataDirectory = TTS_DATA_DIRECTORY,
+                ttsDataDirectory = copyTtsDataDirectory().absolutePath,
                 vadModel = VAD_MODEL,
             )
+        }
+    }
+
+    private fun copyTtsDataDirectory(): File {
+        val targetDirectory = File(context.filesDir, TTS_DATA_DIRECTORY)
+        val completedMarker = File(targetDirectory, COPY_COMPLETED_MARKER)
+        if (completedMarker.exists()) return targetDirectory
+
+        copyAssetDirectory(TTS_DATA_DIRECTORY, targetDirectory)
+        check(completedMarker.createNewFile() || completedMarker.exists()) {
+            "Не удалось завершить подготовку голосовых данных"
+        }
+        return targetDirectory
+    }
+
+    private fun copyAssetDirectory(assetPath: String, targetDirectory: File) {
+        check(targetDirectory.exists() || targetDirectory.mkdirs()) {
+            "Не удалось создать папку голосовых данных"
+        }
+        val entries = context.assets.list(assetPath).orEmpty()
+        entries.forEach { entry ->
+            val sourcePath = "$assetPath/$entry"
+            val children = context.assets.list(sourcePath).orEmpty()
+            val target = File(targetDirectory, entry)
+            if (children.isEmpty()) {
+                context.assets.open(sourcePath).use { input ->
+                    FileOutputStream(target).use { output -> input.copyTo(output) }
+                }
+            } else {
+                copyAssetDirectory(sourcePath, target)
+            }
         }
     }
 
@@ -42,6 +75,7 @@ class BundledVoiceModelProvider(
         const val TTS_TOKENS = "$TTS_DIRECTORY/tokens.txt"
         const val TTS_DATA_DIRECTORY = "$TTS_DIRECTORY/espeak-ng-data"
         const val VAD_MODEL = "voice/vad.onnx"
+        const val COPY_COMPLETED_MARKER = ".copy-complete"
 
         val REQUIRED_FILES = listOf(
             ASR_ENCODER,

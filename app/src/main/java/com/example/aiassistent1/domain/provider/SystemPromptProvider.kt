@@ -11,7 +11,7 @@ class SystemPromptProvider {
             ### СТРУКТУРА JSON:
             {
               "intent": "calendar_search" | "calendar_add",
-              "reply": "Текст события",
+              "reply": "фиксирую событие в развёрнутом понятном виде",
               "params": {}
             }
             ### ИНТЕНТЫ И ПАРАМЕТРЫ:

@@ -23,12 +23,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicBoolean
 
 class SherpaOnnxVoiceInputProvider(
     private val context: Context,
@@ -141,6 +143,10 @@ class SherpaOnnxVoiceInputProvider(
     }
 
     private fun createRecorder(): AudioRecord {
+        check(
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED,
+        ) { "Нет разрешения на запись аудио" }
         val minimumBufferSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             AudioFormat.CHANNEL_IN_MONO,
@@ -181,16 +187,29 @@ class SherpaOnnxSpeechPlayback(
     private val synthesizer: SpeechSynthesizer,
 ) : SpeechPlayback {
     private val mutex = Mutex()
+    private val playbackStopped = AtomicBoolean(false)
     private var track: AudioTrack? = null
 
-    override suspend fun speak(text: String): Result<Unit> = runCatching {
+    override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> = runCatching {
         mutex.withLock {
+            playbackStopped.set(false)
             val speech = synthesizer.synthesize(text).getOrThrow()
+            check(!playbackStopped.get()) { "Воспроизведение остановлено" }
             val activeTrack = createTrack(speech.sampleRate, speech.samples.size).also { track = it }
             try {
                 activeTrack.play()
-                activeTrack.write(speech.samples, 0, speech.samples.size, AudioTrack.WRITE_BLOCKING)
-                activeTrack.stop()
+                onPlaybackStarted()
+                val writtenSamples = activeTrack.write(
+                    speech.samples,
+                    0,
+                    speech.samples.size,
+                    AudioTrack.WRITE_BLOCKING,
+                )
+                check(writtenSamples == speech.samples.size) {
+                    "Не удалось полностью записать аудиобуфер: $writtenSamples/${speech.samples.size}"
+                }
+                awaitPlaybackCompletion(activeTrack, speech.samples.size, speech.sampleRate)
+                if (!playbackStopped.get()) activeTrack.stop()
             } finally {
                 activeTrack.release()
                 if (track === activeTrack) track = null
@@ -199,6 +218,7 @@ class SherpaOnnxSpeechPlayback(
     }
 
     override fun stop() {
+        playbackStopped.set(true)
         track?.pause()
         track?.flush()
     }
@@ -208,6 +228,20 @@ class SherpaOnnxSpeechPlayback(
         track?.release()
         track = null
         synthesizer.close()
+    }
+
+    private suspend fun awaitPlaybackCompletion(
+        activeTrack: AudioTrack,
+        sampleCount: Int,
+        sampleRate: Int,
+    ) {
+        val timeoutMillis = ((sampleCount.toLong() * MILLIS_PER_SECOND) / sampleRate) + PLAYBACK_TIMEOUT_MARGIN_MILLIS
+        var elapsedMillis = 0L
+        while (!playbackStopped.get() && activeTrack.playbackHeadPosition < sampleCount) {
+            check(elapsedMillis <= timeoutMillis) { "Превышено время ожидания воспроизведения речи" }
+            delay(PLAYBACK_POLL_INTERVAL_MILLIS)
+            elapsedMillis += PLAYBACK_POLL_INTERVAL_MILLIS
+        }
     }
 
     private fun createTrack(sampleRate: Int, sampleCount: Int): AudioTrack = AudioTrack.Builder()
@@ -230,5 +264,8 @@ class SherpaOnnxSpeechPlayback(
 
     private companion object {
         const val MINIMUM_BUFFER_BYTES = 8_192
+        const val PLAYBACK_POLL_INTERVAL_MILLIS = 10L
+        const val PLAYBACK_TIMEOUT_MARGIN_MILLIS = 1_000L
+        const val MILLIS_PER_SECOND = 1_000L
     }
 }

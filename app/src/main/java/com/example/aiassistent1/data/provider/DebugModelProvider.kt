@@ -1,8 +1,6 @@
 package com.example.aiassistent1.data.provider
 
 import android.content.Context
-import android.os.Build
-import android.os.Environment
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import kotlinx.coroutines.Dispatchers
@@ -17,16 +15,8 @@ class DebugModelProvider(
         runCatching {
             val modelFileName = settingsRepository.selectedModel.value
             val modelFile = getFile(modelFileName)
-            val isInDownload = modelFile.absolutePath.contains("Download")
-            
             require(modelFile.exists()) {
                 "Модель не найдена по пути: ${modelFile.absolutePath}. Загрузите файл $modelFileName."
-            }
-            
-            if (isInDownload && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (!Environment.isExternalStorageManager()) {
-                    throw IllegalStateException("Нет разрешения на 'Доступ ко всем файлам'. Пожалуйста, разрешите доступ в настройках.")
-                }
             }
 
             require(modelFile.canRead()) {
@@ -41,21 +31,20 @@ class DebugModelProvider(
     }
 
     fun getFile(modelFileName: String): File {
-        val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), modelFileName)
-        val privateFile = File(context.getExternalFilesDir("models"), modelFileName)
-        
-        if (downloadFile.exists() && Environment.isExternalStorageManager()) {
-            return downloadFile
-        }
-        
-        if (privateFile.exists()) {
-            return privateFile
-        }
-        
-        if (downloadFile.exists()) {
-            return downloadFile
-        }
-        
-        return privateFile
+        require(modelFileName.isSafeModelFileName()) { "Некорректное имя файла модели" }
+        val modelsDirectory = requireNotNull(context.getExternalFilesDir("models")) {
+            "Папка моделей приложения недоступна"
+        }.canonicalFile
+        val modelFile = File(modelsDirectory, modelFileName).canonicalFile
+        require(modelFile.parentFile == modelsDirectory) { "Некорректный путь к модели" }
+        return modelFile
+    }
+
+    private fun String.isSafeModelFileName(): Boolean =
+        isNotBlank() && length <= MAX_MODEL_FILE_NAME_LENGTH &&
+            !contains('/') && !contains('\\') && endsWith(".gguf", ignoreCase = true)
+
+    private companion object {
+        const val MAX_MODEL_FILE_NAME_LENGTH = 128
     }
 }

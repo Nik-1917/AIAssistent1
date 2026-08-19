@@ -2,13 +2,9 @@ package com.example.aiassistent1.presentation.viewmodel
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
 import android.provider.OpenableColumns
-import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +25,8 @@ import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
 import com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
+import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
+import com.example.aiassistent1.presentation.playback.SpeechStopReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,6 +56,9 @@ class ChatViewModel(
     private val assistantResponseParser: AssistantResponseParser,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
+    private val speechPlaybackController = speechPlayback?.let {
+        SpeechPlaybackController(context, it)
+    }
     private var generationJob: Job? = null
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
@@ -74,6 +75,7 @@ class ChatViewModel(
         observeSettings()
         observeVoiceInput()
         observeVoiceInputErrors()
+        observeSpeechPlayback()
         restoreVoiceDraft()
         checkModelPresence(settingsRepository.selectedModel.value)
         updateAvailableModels()
@@ -136,22 +138,10 @@ class ChatViewModel(
     private fun updateAvailableModels() {
         viewModelScope.launch(Dispatchers.IO) {
             val modelsDir = context.getExternalFilesDir("models")
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            
             val modelFiles = mutableSetOf<String>()
-            
-            // Добавляем модели из приватной папки
-            modelsDir?.listFiles { file -> file.extension == "gguf" }?.forEach { 
+            modelsDir?.listFiles { file -> file.extension.equals("gguf", ignoreCase = true) }?.forEach {
                 if (it.length() > 0) modelFiles.add(it.name) 
             }
-            
-            // Добавляем модели из папки загрузок, если есть разрешение
-            if (Environment.isExternalStorageManager()) {
-                downloadsDir?.listFiles { file -> file.extension == "gguf" }?.forEach { 
-                    if (it.length() > 0) modelFiles.add(it.name) 
-                }
-            }
-            
             val sortedModels = modelFiles.toList().sorted()
             mutableUiState.update { it.copy(availableModels = sortedModels) }
         }
@@ -164,34 +154,45 @@ class ChatViewModel(
                 val importedFileName = withContext(Dispatchers.IO) {
                     val contentResolver = context.contentResolver
                     
-                    // Получаем реальное имя файла
-                    val fileName = getFileName(uri) ?: "model_${System.currentTimeMillis()}.gguf"
+                    val fileName = requireModelFileName(getFileName(uri))
                     
                     val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
                     val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Не удалось открыть файл")
                     
                     val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
-                    if (!targetDir.exists()) targetDir.mkdirs()
+                    check(targetDir.exists() || targetDir.mkdirs()) { "Не удалось создать папку моделей" }
+                    if (totalSize >= 0) {
+                        require(totalSize <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                        require(totalSize <= targetDir.usableSpace) { "Недостаточно места для импорта модели" }
+                    }
                     
-                    val targetFile = File(targetDir, fileName)
-                    val outputStream = FileOutputStream(targetFile)
-                    
+                    val canonicalTargetDir = targetDir.canonicalFile
+                    val targetFile = File(canonicalTargetDir, fileName).canonicalFile
+                    require(targetFile.parentFile == canonicalTargetDir) { "Некорректный путь к модели" }
+                    require(!targetFile.exists()) { "Модель с таким именем уже импортирована" }
+                    val temporaryFile = File.createTempFile("model_", ".part", canonicalTargetDir)
                     val buffer = ByteArray(1024 * 1024) // 1MB buffer
                     var bytesCopied = 0L
-                    
-                    inputStream.use { input ->
-                        outputStream.use { output ->
-                            while (true) {
-                                val bytesRead = input.read(buffer)
-                                if (bytesRead == -1) break
-                                output.write(buffer, 0, bytesRead)
-                                bytesCopied += bytesRead
-                                if (totalSize > 0) {
-                                    val progress = bytesCopied.toFloat() / totalSize
-                                    mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+                    try {
+                        inputStream.use { input ->
+                            FileOutputStream(temporaryFile).use { output ->
+                                while (true) {
+                                    val bytesRead = input.read(buffer)
+                                    if (bytesRead == -1) break
+                                    bytesCopied += bytesRead
+                                    require(bytesCopied <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                                    output.write(buffer, 0, bytesRead)
+                                    if (totalSize > 0) {
+                                        val progress = bytesCopied.toFloat() / totalSize
+                                        mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+                                    }
                                 }
                             }
                         }
+                        require(bytesCopied > 0) { "Файл модели пуст" }
+                        check(temporaryFile.renameTo(targetFile)) { "Не удалось завершить импорт модели" }
+                    } finally {
+                        if (temporaryFile.exists()) temporaryFile.delete()
                     }
                     fileName
                 }
@@ -231,25 +232,20 @@ class ChatViewModel(
         return result
     }
 
+    private fun requireModelFileName(fileName: String?): String {
+        val safeFileName = fileName?.trim().orEmpty()
+        require(safeFileName.isNotBlank()) { "Не удалось определить имя файла модели" }
+        require(safeFileName.length <= MAX_MODEL_FILE_NAME_LENGTH) { "Слишком длинное имя файла модели" }
+        require(!safeFileName.contains('/') && !safeFileName.contains('\\')) { "Некорректное имя файла модели" }
+        require(safeFileName.endsWith(".gguf", ignoreCase = true)) { "Поддерживаются только модели .gguf" }
+        return safeFileName
+    }
+
     private fun checkModelPresence(fileName: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val downloadFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
-            
-            val downloadExists = downloadFile.exists() && downloadFile.length() > 0
             val privateExists = privateFile.exists() && privateFile.length() > 0
-            val hasPermission = Environment.isExternalStorageManager()
-            
-            // Модель "есть", если она в приватной папке ИЛИ в Download с разрешением
-            val exists = privateExists || (downloadExists && hasPermission)
-            
-            // Разрешение нужно, если файл в Download, а доступа нет (и в приватной тоже нет)
-            val needsPermission = downloadExists && !hasPermission
-            
-            mutableUiState.update { it.copy(
-                isModelMissing = !exists,
-                needsPermission = needsPermission
-            ) }
+            mutableUiState.update { it.copy(isModelMissing = !privateExists) }
         }
     }
 
@@ -265,18 +261,19 @@ class ChatViewModel(
         clearPersistedVoiceDraft()
     }
 
-    private fun sendMessageInternal(text: String): Boolean {
+    private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
         val trimmedText = text.trim()
         when {
             trimmedText.isEmpty() -> return false
             trimmedText.length > MAX_MESSAGE_LENGTH -> {
-                mutableUiState.update { it.copy(error = "Сообщение не должно превышать 500 символов") }
+                mutableUiState.update { it.copy(error = "Сообщение не должно превышать 3000 символов") }
                 return false
             }
             mutableUiState.value.isProcessing -> return false
         }
 
         stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.NewMessage)
 
         val userMessage = ChatMessage(role = MessageRole.USER, content = trimmedText)
         mutableUiState.update { state ->
@@ -284,7 +281,7 @@ class ChatViewModel(
                 messages = state.messages + userMessage,
                 isProcessing = true,
                 isStopping = false, // Сбрасываем флаг при новом сообщении
-                isVoiceMode = false,
+                isVoiceMode = preserveVoiceMode,
                 voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
                 error = null,
             )
@@ -358,9 +355,7 @@ class ChatViewModel(
                     assistantMessage?.content
                         ?.takeIf(String::isNotBlank)
                         ?.let { content ->
-                            speechPlayback?.speak(content)?.onFailure { error ->
-                                mutableUiState.update { it.copy(error = error.userMessage()) }
-                            }
+                            speechPlaybackController?.speak(content)
                         }
                 }
             } catch (error: CancellationException) {
@@ -496,7 +491,7 @@ class ChatViewModel(
                 error = null,
             )
         }
-        speechPlayback?.stop()
+        speechPlaybackController?.stop(SpeechStopReason.User)
         startVoiceInput(continuous = true)
     }
 
@@ -513,10 +508,10 @@ class ChatViewModel(
 
     fun stopVoiceCaptureForBackground() {
         val state = mutableUiState.value
+        speechPlaybackController?.stop(SpeechStopReason.Background)
         if (!state.isVoiceMode && !state.voiceDraft.isRecording) return
 
         stopVoiceInput()
-        speechPlayback?.stop()
         mutableUiState.update {
             it.copy(
                 isVoiceMode = false,
@@ -533,11 +528,12 @@ class ChatViewModel(
         if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
         if (!enabled) {
             stopVoiceInput()
-            speechPlayback?.stop()
+            speechPlaybackController?.stop(SpeechStopReason.User)
         }
     }
 
     fun stopGeneration() {
+        speechPlaybackController?.stop(SpeechStopReason.User)
         if (!uiState.value.isProcessing) return
 
         // Устанавливаем флаг остановки для изменения текста в UI
@@ -558,7 +554,7 @@ class ChatViewModel(
         val voiceDraft = mutableUiState.value.voiceDraft
         llmEngine.cancelGeneration()
         stopVoiceInput()
-        speechPlayback?.stop()
+        speechPlaybackController?.stop(SpeechStopReason.User)
         activeGeneration?.cancel()
         GenerationForegroundService.stop(context)
         persistVoiceDraft(voiceDraft.text)
@@ -586,10 +582,14 @@ class ChatViewModel(
         mutableUiState.update { it.copy(snackbarMessage = null) }
     }
 
+    fun stopSpeechPlayback() {
+        speechPlaybackController?.stop(SpeechStopReason.User)
+    }
+
     private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
         when (val params = response.params) {
             is com.example.aiassistent1.domain.model.CalendarAddParams -> {
-                executeCalendarAdd(params.title, params.date, params.duration_min)
+                requestCalendarEventConfirmation(params.title, params.date, params.duration_min)
             }
             is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
                 viewModelScope.launch {
@@ -632,13 +632,29 @@ class ChatViewModel(
                     val date = params.optString("date")
                     val duration = params.optInt("duration_min", 60)
                     if (title.isNotEmpty() && date.isNotEmpty()) {
-                        executeCalendarAdd(title, date, duration)
+                        requestCalendarEventConfirmation(title, date, duration)
                     }
                 }
             }
         } catch (e: Exception) {
             // Игнорируем ошибки парсинга
         }
+    }
+
+    private fun requestCalendarEventConfirmation(title: String, date: String, duration: Int) {
+        mutableUiState.update {
+            it.copy(calendarEventToConfirm = CalendarAddParams(title, date, duration))
+        }
+    }
+
+    fun confirmCalendarEvent() {
+        val event = uiState.value.calendarEventToConfirm ?: return
+        mutableUiState.update { it.copy(calendarEventToConfirm = null) }
+        executeCalendarAdd(event.title, event.date, event.duration_min)
+    }
+
+    fun dismissCalendarEventConfirmation() {
+        mutableUiState.update { it.copy(calendarEventToConfirm = null) }
     }
 
     private fun executeCalendarAdd(title: String, date: String, duration: Int) {
@@ -679,29 +695,21 @@ class ChatViewModel(
         pendingCalendarEvent = null
     }
 
-    fun openPermissionSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } catch (e: Exception) {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            }
-        }
-    }
-
     override fun onCleared() {
         stopGeneration()
         stopVoiceInput()
         (voiceInput as? AutoCloseable)?.close()
-        speechPlayback?.close()
+        speechPlaybackController?.close()
         llmEngine.close()
+    }
+
+    private fun observeSpeechPlayback() {
+        val controller = speechPlaybackController ?: return
+        viewModelScope.launch {
+            controller.state.collect { playbackState ->
+                mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
+            }
+        }
     }
 
     private fun observeVoiceInput() {
@@ -715,7 +723,7 @@ class ChatViewModel(
                         appendVoiceDraftTranscript(event.transcript)
                     }
                     state.isVoiceMode && !state.isProcessing -> {
-                        sendMessage(event.transcript)
+                        sendMessageInternal(event.transcript, preserveVoiceMode = true)
                     }
                 }
             }
@@ -813,7 +821,7 @@ class ChatViewModel(
         val separator = if (currentText.isEmpty()) "" else " "
         val availableLength = MAX_MESSAGE_LENGTH - currentText.length - separator.length
         if (availableLength <= 0) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 500 символами") }
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
             return
         }
 
@@ -829,7 +837,7 @@ class ChatViewModel(
                 }
             }
         if (appendedText.length < recognizedText.length) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 500 символами") }
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
         }
     }
 
@@ -887,5 +895,7 @@ class ChatViewModel(
 
     private companion object {
         const val MAX_MESSAGE_LENGTH = 3000
+        const val MAX_MODEL_FILE_NAME_LENGTH = 128
+        const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
     }
 }

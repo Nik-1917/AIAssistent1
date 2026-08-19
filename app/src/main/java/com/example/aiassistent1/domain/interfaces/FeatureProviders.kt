@@ -27,7 +27,7 @@ interface SpeechSynthesizer : AutoCloseable {
 }
 
 interface SpeechPlayback : AutoCloseable {
-    suspend fun speak(text: String): Result<Unit>
+    suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit>
     fun stop()
 }
 
