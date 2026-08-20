@@ -16,6 +16,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -98,6 +99,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
@@ -113,6 +115,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
@@ -122,6 +125,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
+import kotlin.math.roundToInt
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.GenerationParams
@@ -249,6 +253,9 @@ fun ChatScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     var isSpeechCardCollapsed by remember { mutableStateOf(true) }
+    var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
+    var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -442,9 +449,18 @@ fun ChatScreen(
                     onCollapsedChange = { isSpeechCardCollapsed = it },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
+                        .offset { 
+                            IntOffset(speechCardOffset.x.roundToInt(), speechCardOffset.y.roundToInt()) 
+                        }
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                speechCardOffset += dragAmount
+                            }
+                        }
                         .padding(
                             start = 16.dp,
-                            end = if (isSpeechCardCollapsed) 55.dp else 16.dp,
+                            end = 16.dp,
                             bottom = if (uiState.voiceDraft.isVisible) 246.dp else 112.dp,
                         ),
                 )
@@ -476,18 +492,53 @@ fun ChatScreen(
                 }
             }
 
-            FilledTonalIconButton(
+            Card(
                 onClick = onOpenCalendar,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .offset(y = (-100).dp)
+                    .offset {
+                        IntOffset(
+                            calendarButtonOffset.x.roundToInt(),
+                            calendarButtonOffset.y.roundToInt() - 100.dp.roundToPx()
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            calendarButtonOffset += dragAmount
+                        }
+                    }
                     .padding(end = 4.dp)
+                    .size(66.dp)
                     .semantics { contentDescription = "Открыть календарь" },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(27.dp)
+                        )
+                    }
+                }
             }
 
             // Уведомление о копировании
