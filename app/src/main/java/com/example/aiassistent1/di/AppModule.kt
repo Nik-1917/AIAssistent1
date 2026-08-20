@@ -5,7 +5,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.example.aiassistent1.calendar.core.domain.CalendarEventRepository
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
+import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventRepository
 import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.engine.LlamatikEngine
@@ -118,6 +121,15 @@ object AppModule {
 
 	fun provideSearchCalendarEventsUseCase(context: Context): SearchCalendarEventsUseCase =
 		SearchCalendarEventsUseCase(provideCalendarEventRepository(context))
+
+	fun provideObserveCalendarEventsUseCase(context: Context): ObserveCalendarEventsUseCase =
+		ObserveCalendarEventsUseCase(provideCalendarEventRepository(context))
+
+	fun provideUpdateCalendarEventUseCase(context: Context): UpdateCalendarEventUseCase =
+		UpdateCalendarEventUseCase(provideCalendarEventRepository(context))
+
+	fun provideDeleteCalendarEventUseCase(context: Context): DeleteCalendarEventUseCase =
+		DeleteCalendarEventUseCase(provideCalendarEventRepository(context))
 
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
 		provideChatDatabase(context).chatMessageDao(),

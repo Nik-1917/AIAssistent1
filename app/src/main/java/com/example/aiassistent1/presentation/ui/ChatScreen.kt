@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
@@ -71,6 +72,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -135,6 +137,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 @OptIn(ExperimentalLayoutApi::class)
 fun ChatScreen(
     viewModel: ChatViewModel,
+    onOpenCalendar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -468,6 +471,20 @@ fun ChatScreen(
                         onVoiceLongPress = { requestMicrophoneAction(MicrophoneAction.LONG_PRESS) },
                     )
                 }
+            }
+
+            FilledTonalIconButton(
+                onClick = onOpenCalendar,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(y = (-100).dp)
+                    .padding(end = 4.dp)
+                    .semantics { contentDescription = "Открыть календарь" },
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                )
             }
 
             // Уведомление о копировании

@@ -8,7 +8,8 @@ import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.aiassistent1.di.AppModule
-import com.example.aiassistent1.presentation.ui.ChatScreen
+import com.example.aiassistent1.presentation.ui.AIAssistantApp
+import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.ui.theme.*
 
@@ -35,12 +36,30 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val calendarViewModel: CalendarViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                check(modelClass.isAssignableFrom(CalendarViewModel::class.java))
+                return CalendarViewModel(
+                    observeCalendarEvents = AppModule.provideObserveCalendarEventsUseCase(applicationContext),
+                    createCalendarEvent = AppModule.provideCreateCalendarEventUseCase(applicationContext),
+                    updateCalendarEvent = AppModule.provideUpdateCalendarEventUseCase(applicationContext),
+                    deleteCalendarEvent = AppModule.provideDeleteCalendarEventUseCase(applicationContext),
+                ) as T
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             AIAssistent1Theme {
-                ChatScreen(viewModel = chatViewModel)
+                AIAssistantApp(
+                    chatViewModel = chatViewModel,
+                    calendarViewModel = calendarViewModel,
+                )
             }
         }
     }
