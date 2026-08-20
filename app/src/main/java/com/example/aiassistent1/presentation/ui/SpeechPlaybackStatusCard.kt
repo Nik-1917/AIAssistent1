@@ -1,18 +1,22 @@
 package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +35,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,6 +51,8 @@ fun SpeechPlaybackStatusCard(
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isCollapsed by remember { mutableStateOf(true) }
+
     AnimatedVisibility(
         visible = state !is SpeechPlaybackState.Idle || isVoiceMode,
         modifier = modifier,
@@ -82,19 +91,25 @@ fun SpeechPlaybackStatusCard(
         )
 
         Card(
-            shape = RoundedCornerShape(24.dp),
+            onClick = { isCollapsed = !isCollapsed },
+            shape = if (isCollapsed) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = palette.copy(alpha = 0.15f),
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+            modifier = Modifier
+                .animateContentSize()
+                .then(
+                    if (isCollapsed) Modifier.size(66.dp) else Modifier.fillMaxWidth()
+                )
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 11.dp),
+                    .then(if (isCollapsed) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
+                    .padding(horizontal = if (isCollapsed) 0.dp else 14.dp, vertical = if (isCollapsed) 0.dp else 11.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = if (isCollapsed) Arrangement.Center else Arrangement.spacedBy(10.dp),
             ) {
                 Box(
                     modifier = Modifier
@@ -116,42 +131,45 @@ fun SpeechPlaybackStatusCard(
                         SpeechPlaybackState.Playing -> Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = null,
-                            tint = palette,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(27.dp),
                         )
                         is SpeechPlaybackState.Stopped -> Icon(
                             imageVector = Icons.Default.Stop,
                             contentDescription = null,
-                            tint = palette,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                         is SpeechPlaybackState.Error -> Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = null,
-                            tint = palette,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                         SpeechPlaybackState.Idle -> Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = null,
-                            tint = palette,
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.labelLarge)
-                    Spacer(modifier = Modifier.size(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (isActive) {
-                    IconButton(onClick = onStop) {
-                        Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = "Остановить озвучивание",
-                            tint = palette,
+                
+                if (!isCollapsed) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(title, style = MaterialTheme.typography.labelLarge)
+                        Spacer(modifier = Modifier.size(2.dp))
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    if (isActive) {
+                        IconButton(onClick = onStop) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "Остановить озвучивание",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                     }
                 }
             }
