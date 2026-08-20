@@ -16,7 +16,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -252,6 +252,7 @@ fun ChatScreen(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val haptic = LocalHapticFeedback.current
     var isSpeechCardCollapsed by remember { mutableStateOf(true) }
     var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
@@ -453,10 +454,15 @@ fun ChatScreen(
                             IntOffset(speechCardOffset.x.roundToInt(), speechCardOffset.y.roundToInt()) 
                         }
                         .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                speechCardOffset += dragAmount
-                            }
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    speechCardOffset += dragAmount
+                                }
+                            )
                         }
                         .padding(
                             start = 16.dp,
@@ -503,10 +509,15 @@ fun ChatScreen(
                         )
                     }
                     .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            calendarButtonOffset += dragAmount
-                        }
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                calendarButtonOffset += dragAmount
+                            }
+                        )
                     }
                     .padding(end = 4.dp)
                     .size(66.dp)
