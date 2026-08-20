@@ -203,7 +203,7 @@ class CalendarViewModel(
 
     private companion object {
         const val MILLIS_PER_MINUTE = 60_000L
-        const val MINIMUM_REFRESH_INDICATOR_MILLIS = 3_000L
+        const val MINIMUM_REFRESH_INDICATOR_MILLIS = 1_000L
     }
 
     private data class MonthRefreshRequest(
