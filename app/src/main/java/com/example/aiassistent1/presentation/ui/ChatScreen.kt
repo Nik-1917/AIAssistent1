@@ -248,6 +248,7 @@ fun ChatScreen(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    var isSpeechCardCollapsed by remember { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -437,11 +438,13 @@ fun ChatScreen(
                     state = uiState.speechPlaybackState,
                     isVoiceMode = uiState.isVoiceMode,
                     onStop = viewModel::stopSpeechPlayback,
+                    isCollapsed = isSpeechCardCollapsed,
+                    onCollapsedChange = { isSpeechCardCollapsed = it },
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
+                        .align(Alignment.BottomEnd)
                         .padding(
                             start = 16.dp,
-                            end = 16.dp,
+                            end = if (isSpeechCardCollapsed) 55.dp else 16.dp,
                             bottom = if (uiState.voiceDraft.isVisible) 246.dp else 112.dp,
                         ),
                 )

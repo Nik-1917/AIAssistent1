@@ -50,9 +50,9 @@ fun SpeechPlaybackStatusCard(
     isVoiceMode: Boolean,
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
+    isCollapsed: Boolean = true,
+    onCollapsedChange: (Boolean) -> Unit = {},
 ) {
-    var isCollapsed by remember { mutableStateOf(true) }
-
     AnimatedVisibility(
         visible = state !is SpeechPlaybackState.Idle || isVoiceMode,
         modifier = modifier,
@@ -91,7 +91,7 @@ fun SpeechPlaybackStatusCard(
         )
 
         Card(
-            onClick = { isCollapsed = !isCollapsed },
+            onClick = { onCollapsedChange(!isCollapsed) },
             shape = if (isCollapsed) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = palette.copy(alpha = 0.15f),

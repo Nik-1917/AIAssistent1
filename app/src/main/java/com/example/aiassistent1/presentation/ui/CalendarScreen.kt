@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -42,6 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -128,6 +130,14 @@ fun CalendarScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
+                actions = {
+                    IconButton(onClick = viewModel::refreshCalendar) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Обновить календарь",
+                        )
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -141,46 +151,50 @@ fun CalendarScreen(
             )
         },
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = viewModel::refreshCalendar,
+            modifier = Modifier.padding(paddingValues),
         ) {
-            item {
-                MonthNavigation(
-                    month = uiState.visibleMonth,
-                    onPrevious = viewModel::showPreviousMonth,
-                    onNext = viewModel::showNextMonth,
-                )
-            }
-            item {
-                MonthGrid(
-                    month = uiState.visibleMonth,
-                    selectedDate = uiState.selectedDate,
-                    eventDates = uiState.events.mapTo(mutableSetOf()) { it.localDate() },
-                    onDateSelected = viewModel::selectDate,
-                )
-            }
-            item {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    text = uiState.selectedDate.format(selectedDateFormatter()),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            if (selectedDayEvents.isEmpty()) {
-                item { EmptyDayCard() }
-            } else {
-                items(selectedDayEvents, key = CalendarEvent::id) { event ->
-                    CalendarEventCard(
-                        event = event,
-                        onEdit = { eventToEdit = event },
-                        onDelete = { eventToDelete = event },
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    MonthNavigation(
+                        month = uiState.visibleMonth,
+                        onPrevious = viewModel::showPreviousMonth,
+                        onNext = viewModel::showNextMonth,
                     )
+                }
+                item {
+                    MonthGrid(
+                        month = uiState.visibleMonth,
+                        selectedDate = uiState.selectedDate,
+                        eventDates = uiState.events.mapTo(mutableSetOf()) { it.localDate() },
+                        onDateSelected = viewModel::selectDate,
+                    )
+                }
+                item {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(
+                        text = uiState.selectedDate.format(selectedDateFormatter()),
+                        modifier = Modifier.padding(top = 12.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                if (selectedDayEvents.isEmpty()) {
+                    item { EmptyDayCard() }
+                } else {
+                    items(selectedDayEvents, key = CalendarEvent::id) { event ->
+                        CalendarEventCard(
+                            event = event,
+                            onEdit = { eventToEdit = event },
+                            onDelete = { eventToDelete = event },
+                        )
+                    }
                 }
             }
         }

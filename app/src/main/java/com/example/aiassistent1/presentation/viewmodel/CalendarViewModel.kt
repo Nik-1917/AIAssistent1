@@ -12,6 +12,8 @@ import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +28,7 @@ data class CalendarUiState(
     val visibleMonth: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
     val events: List<CalendarEvent> = emptyList(),
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val snackbarMessage: String? = null,
 )
@@ -39,18 +42,23 @@ class CalendarViewModel(
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(CalendarUiState())
     private val visibleMonth = MutableStateFlow(mutableUiState.value.visibleMonth)
+    private val refreshRequests = MutableStateFlow(0)
 
     val uiState: StateFlow<CalendarUiState> = mutableUiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            visibleMonth.flatMapLatest { month ->
+            combine(visibleMonth, refreshRequests) { month, _ -> month }
+                .flatMapLatest { month ->
                 observeCalendarEvents(
                     month.atDay(1).atStartOfDay().toEpochMillis(),
                     month.plusMonths(1).atDay(1).atStartOfDay().toEpochMillis(),
                 )
+            }.catch { error ->
+                showError(error)
+                mutableUiState.update { it.copy(isRefreshing = false) }
             }.collect { events ->
-                mutableUiState.update { it.copy(events = events) }
+                mutableUiState.update { it.copy(events = events, isRefreshing = false) }
             }
         }
     }
@@ -61,6 +69,12 @@ class CalendarViewModel(
 
     fun selectDate(date: LocalDate) {
         mutableUiState.update { it.copy(selectedDate = date) }
+    }
+
+    fun refreshCalendar() {
+        if (mutableUiState.value.isRefreshing) return
+        mutableUiState.update { it.copy(isRefreshing = true) }
+        refreshRequests.update { current -> current + 1 }
     }
 
     fun createEvent(title: String, date: LocalDate, startTime: LocalTime, durationMinutes: Int) {
