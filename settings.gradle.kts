@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "AIAssistent1"
 include(":app")
- 
+include(":calendar-core")
+include(":calendar-storage-android")

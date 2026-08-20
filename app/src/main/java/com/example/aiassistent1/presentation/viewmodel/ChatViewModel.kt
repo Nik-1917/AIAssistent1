@@ -1,13 +1,13 @@
 package com.example.aiassistent1.presentation.viewmodel
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.aiassistent1.calendar.core.domain.CalendarEventDraft
+import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
@@ -21,8 +21,6 @@ import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.parser.AssistantResponseParser
-import com.example.aiassistent1.domain.usecase.AddCalendarEventUseCase
-import com.example.aiassistent1.domain.usecase.SearchCalendarEventsUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
@@ -43,12 +41,16 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class ChatViewModel(
     private val context: Context,
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
-    private val addCalendarEvent: AddCalendarEventUseCase,
+    private val createCalendarEvent: CreateCalendarEventUseCase,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
@@ -65,7 +67,6 @@ class ChatViewModel(
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
-    private var pendingCalendarEvent: Triple<String, String, Int>? = null
     private var paramsJob: Job? = null
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
@@ -599,10 +600,19 @@ class ChatViewModel(
             }
             is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
                 viewModelScope.launch {
-                    searchCalendarEvents(params.query, params.days).onSuccess { events ->
+                    val rangeStart = System.currentTimeMillis()
+                    val rangeEnd = runCatching {
+                        require(params.days > 0) { "Число дней для поиска должно быть больше нуля." }
+                        Math.addExact(rangeStart, Math.multiplyExact(params.days.toLong(), MILLIS_PER_DAY))
+                    }.getOrElse { error ->
+                        mutableUiState.update { it.copy(error = error.userMessage()) }
+                        return@launch
+                    }
+
+                    searchCalendarEvents(params.query, rangeStart, rangeEnd).onSuccess { events ->
                         val resultsText = if (events.isNotEmpty()) {
                             "\n\nНайдено:\n" + events.joinToString("\n") {
-                                "- ${it.title} (${it.dateTime}, ${it.durationMin} мин)"
+                                "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)"
                             }
                         } else {
                             "\n\nНичего не найдено."
@@ -664,26 +674,15 @@ class ChatViewModel(
     }
 
     private fun executeCalendarAdd(title: String, date: String, duration: Int) {
-        val hasWritePermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.WRITE_CALENDAR
-        ) == PackageManager.PERMISSION_GRANTED
-        
-        val hasReadPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_CALENDAR
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (!hasWritePermission || !hasReadPermission) {
-            pendingCalendarEvent = Triple(title, date, duration)
-            mutableUiState.update { it.copy(needsCalendarPermission = true) }
-            return
-        }
-
         viewModelScope.launch {
-            addCalendarEvent(title, date, duration)
+            val draft = toCalendarEventDraft(title, date, duration).getOrElse { error ->
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+                return@launch
+            }
+
+            createCalendarEvent(draft)
                 .onSuccess {
-                    mutableUiState.update { it.copy(snackbarMessage = "Событие добавлено в календарь") }
+                    mutableUiState.update { it.copy(snackbarMessage = "Событие сохранено в локальном календаре") }
                 }
                 .onFailure { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
@@ -691,15 +690,32 @@ class ChatViewModel(
         }
     }
 
-    fun onCalendarPermissionResult(granted: Boolean) {
-        mutableUiState.update { it.copy(needsCalendarPermission = false) }
-        if (granted) {
-            pendingCalendarEvent?.let { (title, date, duration) ->
-                executeCalendarAdd(title, date, duration)
-            }
-        }
-        pendingCalendarEvent = null
+    private fun toCalendarEventDraft(
+        title: String,
+        date: String,
+        durationMinutes: Int,
+    ): Result<CalendarEventDraft> = runCatching {
+        require(durationMinutes > 0) { "Длительность события должна быть больше нуля." }
+        val start = LocalDateTime.parse(date, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        val durationMillis = Math.multiplyExact(durationMinutes.toLong(), MILLIS_PER_MINUTE)
+        CalendarEventDraft(
+            title = title,
+            startsAtEpochMillis = start,
+            endsAtEpochMillis = Math.addExact(start, durationMillis),
+        )
     }
+
+    private fun formatCalendarEventStart(epochMillis: Long): String =
+        Instant.ofEpochMilli(epochMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+
+    private fun eventDurationMinutes(startEpochMillis: Long, endEpochMillis: Long): Long =
+        (endEpochMillis - startEpochMillis) / MILLIS_PER_MINUTE
 
     override fun onCleared() {
         cancelPendingVoiceModeShutdown()
@@ -928,5 +944,7 @@ class ChatViewModel(
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
         const val VOICE_MODE_SHUTDOWN_DELAY_MILLIS = 1_000L
+        const val MILLIS_PER_MINUTE = 60_000L
+        const val MILLIS_PER_DAY = 24L * 60L * MILLIS_PER_MINUTE
     }
 }

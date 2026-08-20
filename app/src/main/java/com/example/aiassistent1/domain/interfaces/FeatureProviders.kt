@@ -36,12 +36,6 @@ interface VoiceActivityDetector : AutoCloseable {
     fun reset()
 }
 
-interface CalendarProvider {
-    suspend fun openCalendar(): Result<Unit>
-    suspend fun addEvent(title: String, dateTime: String, durationMin: Int): Result<Unit>
-    suspend fun searchEvents(query: String, days: Int): Result<List<com.example.aiassistent1.domain.model.CalendarEvent>>
-}
-
 interface AgentTool {
     suspend fun execute(input: String): Result<String>
 }

@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
                     context = applicationContext,
                     chatRepository = AppModule.provideChatRepository(applicationContext),
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
-                    addCalendarEvent = AppModule.provideAddCalendarEventUseCase(applicationContext),
+                    createCalendarEvent = AppModule.provideCreateCalendarEventUseCase(applicationContext),
                     llmEngine = llmEngine,
                     voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
                     voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),

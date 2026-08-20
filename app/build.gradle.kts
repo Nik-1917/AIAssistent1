@@ -43,6 +43,8 @@ ksp {
 }
 
 dependencies {
+    implementation(project(":calendar-core"))
+    implementation(project(":calendar-storage-android"))
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.llamatik)
     implementation(files("libs/sherpa-onnx-1.13.4.aar"))

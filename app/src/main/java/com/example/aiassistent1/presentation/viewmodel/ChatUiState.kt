@@ -10,7 +10,6 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val modelState: ModelState = ModelState.Unloaded,
     val isModelMissing: Boolean = false,
-    val needsCalendarPermission: Boolean = false,
     val calendarEventToConfirm: CalendarAddParams? = null,
     val isProcessing: Boolean = false,
     val isVoiceMode: Boolean = false,
