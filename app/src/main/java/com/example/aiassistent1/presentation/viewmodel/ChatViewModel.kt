@@ -131,6 +131,11 @@ class ChatViewModel(
                 mutableUiState.update { it.copy(systemPromptEnabled = enabled) }
             }
         }
+        viewModelScope.launch {
+            settingsRepository.speechRate.collect { rate ->
+                mutableUiState.update { it.copy(speechRate = rate) }
+            }
+        }
     }
 
     private fun observeParams(modelName: String) {
@@ -670,6 +675,12 @@ class ChatViewModel(
     fun setSystemPromptEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSystemPromptEnabled(enabled)
+        }
+    }
+
+    fun setSpeechRate(rate: Float) {
+        viewModelScope.launch {
+            settingsRepository.setSpeechRate(rate)
         }
     }
 

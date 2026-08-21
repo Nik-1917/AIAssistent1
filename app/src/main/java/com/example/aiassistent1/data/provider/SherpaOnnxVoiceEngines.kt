@@ -2,9 +2,11 @@ package com.example.aiassistent1.data.provider
 
 import android.content.Context
 import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
 import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
+import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.SynthesizedSpeech
 import com.example.aiassistent1.domain.model.VoiceModelAssets
 import com.k2fsa.sherpa.onnx.FeatureConfig
@@ -80,6 +82,7 @@ class SherpaOnnxSpeechRecognizer(
 class SherpaOnnxSpeechSynthesizer(
     private val context: Context,
     private val modelProvider: VoiceModelProvider,
+    private val settingsRepository: SettingsRepository,
 ) : SpeechSynthesizer {
     private val mutex = Mutex()
     private var tts: OfflineTts? = null
@@ -90,7 +93,11 @@ class SherpaOnnxSpeechSynthesizer(
             mutex.withLock {
                 val activeTts = tts ?: createTts(modelProvider.getAssets().getOrThrow())
                     .also { tts = it }
-                val audio = activeTts.generate(text.trim())
+                val audio = activeTts.generate(
+                    text.trim(),
+                    0,
+                    SpeechRate.normalize(settingsRepository.speechRate.value),
+                )
                 SynthesizedSpeech(samples = audio.samples, sampleRate = audio.sampleRate)
             }
         }

@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.SpeechRate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,6 +34,7 @@ class DataStoreSettingsRepository(
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
+    private val speechRateKey = floatPreferencesKey("speech_rate")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -82,6 +84,14 @@ class DataStoreSettingsRepository(
             scope = scope,
             started = SharingStarted.Eagerly,
             initialValue = false,
+        )
+
+    override val speechRate: StateFlow<Float> = context.settingsStore.data
+        .map { preferences -> SpeechRate.normalize(preferences[speechRateKey] ?: SpeechRate.DEFAULT) }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = SpeechRate.DEFAULT,
         )
 
     override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = context.settingsStore.data
@@ -156,6 +166,12 @@ class DataStoreSettingsRepository(
     override suspend fun setSystemPromptEnabled(enabled: Boolean) {
         context.settingsStore.edit { preferences ->
             preferences[systemPromptEnabledKey] = enabled
+        }
+    }
+
+    override suspend fun setSpeechRate(rate: Float) {
+        context.settingsStore.edit { preferences ->
+            preferences[speechRateKey] = SpeechRate.normalize(rate)
         }
     }
 

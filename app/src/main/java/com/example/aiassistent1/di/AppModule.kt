@@ -82,6 +82,7 @@ object AppModule {
 	fun provideSpeechSynthesizer(context: Context): SpeechSynthesizer = SherpaOnnxSpeechSynthesizer(
 		context.applicationContext,
 		provideVoiceModelProvider(context),
+		provideSettingsRepository(context),
 	)
 
 	fun provideVoiceActivityDetector(context: Context): VoiceActivityDetector = SherpaOnnxVoiceActivityDetector(

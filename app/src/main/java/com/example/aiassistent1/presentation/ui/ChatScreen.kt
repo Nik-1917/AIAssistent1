@@ -137,6 +137,7 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
@@ -598,11 +599,13 @@ fun ChatScreen(
             params = uiState.modelParams,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
             systemPromptEnabled = uiState.systemPromptEnabled,
+            speechRate = uiState.speechRate,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled ->
+            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, speechRate ->
                 viewModel.updateModelParams(updatedParams)
                 viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
                 viewModel.setSystemPromptEnabled(systemPromptEnabled)
+                viewModel.setSpeechRate(speechRate)
                 showSettingsDialog = false
             }
         )
@@ -983,7 +986,15 @@ private fun MessageBubble(
                         message.content
                     }
                     if (smoothResponseEnabled) {
-                        StreamingMessageText(text = messageText, isStreaming = isStreaming)
+                        StreamingMessageText(
+                            text = message.content,
+                            isStreaming = isStreaming,
+                            placeholderText = when {
+                                isStreaming -> "Думаю..."
+                                message.content.isBlank() -> messageText
+                                else -> null
+                            },
+                        )
                     } else {
                         Text(
                             text = messageText,
@@ -1044,6 +1055,7 @@ private fun MessageBubble(
 private fun StreamingMessageText(
     text: String,
     isStreaming: Boolean,
+    placeholderText: String?,
 ) {
     val enteringAlpha = remember { Animatable(1f) }
     var settledText by remember { mutableStateOf("") }
@@ -1113,12 +1125,31 @@ private fun StreamingMessageText(
     } else {
         Modifier.fillMaxWidth()
     }
-    Text(
-        text = annotatedText,
-        modifier = textModifier,
-        style = MaterialTheme.typography.bodyLarge,
-        color = textColor,
-    )
+    val showPlaceholder = visibleText.isBlank() && placeholderText != null
+    Box(modifier = textModifier) {
+        AnimatedVisibility(
+            visible = showPlaceholder,
+            enter = fadeIn(animationSpec = tween(THINKING_INDICATOR_DURATION_MILLIS)),
+            exit = fadeOut(animationSpec = tween(THINKING_INDICATOR_DURATION_MILLIS)),
+        ) {
+            Text(
+                text = placeholderText.orEmpty(),
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor,
+            )
+        }
+        AnimatedVisibility(
+            visible = !showPlaceholder,
+            enter = fadeIn(animationSpec = tween(THINKING_INDICATOR_DURATION_MILLIS)),
+            exit = fadeOut(animationSpec = tween(THINKING_INDICATOR_DURATION_MILLIS)),
+        ) {
+            Text(
+                text = annotatedText,
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor,
+            )
+        }
+    }
 }
 
 private fun String.nextCompleteWordOrNull(): String? {
@@ -1129,6 +1160,7 @@ private fun String.nextCompleteWordOrNull(): String? {
 private const val WORD_REVEAL_DURATION_MILLIS = 140
 private const val STREAM_POLL_INTERVAL_MILLIS = 32L
 private const val STREAM_SCROLL_DURATION_MILLIS = 180
+private const val THINKING_INDICATOR_DURATION_MILLIS = 160
 private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 
 @Composable
@@ -1375,8 +1407,9 @@ fun ModelSettingsDialog(
     params: GenerationParams,
     smoothResponseEnabled: Boolean,
     systemPromptEnabled: Boolean,
+    speechRate: Float,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean, Float) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -1385,6 +1418,7 @@ fun ModelSettingsDialog(
     var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
     var systemPrompt by remember { mutableStateOf(systemPromptEnabled) }
+    var selectedSpeechRate by remember { mutableStateOf(speechRate) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1478,6 +1512,14 @@ fun ModelSettingsDialog(
                     )
                 }
 
+                SettingSlider(
+                    label = "Скорость речи: ${String.format("%.2f", selectedSpeechRate)}",
+                    value = selectedSpeechRate,
+                    onValueChange = { selectedSpeechRate = SpeechRate.normalize(it) },
+                    valueRange = SpeechRate.MINIMUM..SpeechRate.MAXIMUM,
+                    steps = 9,
+                )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1524,6 +1566,7 @@ fun ModelSettingsDialog(
                             ),
                             smoothResponse,
                             systemPrompt,
+                            selectedSpeechRate,
                         )
                     }) {
                         Text("Сохранить")

@@ -3,6 +3,7 @@ package com.example.aiassistent1.presentation.viewmodel
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
 data class ChatUiState(
@@ -21,6 +22,7 @@ data class ChatUiState(
     val showClearChatConfirmation: Boolean = true,
     val smoothResponseEnabled: Boolean = false,
     val systemPromptEnabled: Boolean = false,
+    val speechRate: Float = SpeechRate.DEFAULT,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",
     val modelParams: GenerationParams = GenerationParams(),

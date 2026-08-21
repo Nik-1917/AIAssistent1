@@ -23,6 +23,9 @@ interface SettingsRepository {
     val systemPromptEnabled: StateFlow<Boolean>
     suspend fun setSystemPromptEnabled(enabled: Boolean)
 
+    val speechRate: StateFlow<Float>
+    suspend fun setSpeechRate(rate: Float)
+
     val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()
 }
