@@ -12,6 +12,7 @@ import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventRepository
 import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.engine.LlamatikEngine
+import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.data.local.ChatDatabase
 import com.example.aiassistent1.data.provider.DebugModelProvider
 import com.example.aiassistent1.data.provider.BundledVoiceModelProvider
@@ -100,6 +101,8 @@ object AppModule {
 
 	fun provideSystemPromptProvider(): com.example.aiassistent1.domain.provider.SystemPromptProvider = 
         com.example.aiassistent1.domain.provider.SystemPromptProvider()
+
+	fun provideModelContextBuilder(): ModelContextBuilder = ModelContextBuilder()
 
     fun provideAssistantResponseParser(): com.example.aiassistent1.domain.parser.AssistantResponseParser = 
         com.example.aiassistent1.domain.parser.AssistantResponseParser()

@@ -15,6 +15,7 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatter
+import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
@@ -59,6 +60,7 @@ class ChatViewModel(
     private val settingsRepository: SettingsRepository,
     private val searchCalendarEvents: SearchCalendarEventsUseCase,
     private val assistantResponseParser: AssistantResponseParser,
+    private val modelContextBuilder: ModelContextBuilder,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private val speechPlaybackController = speechPlayback?.let {
@@ -306,7 +308,9 @@ class ChatViewModel(
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
             try {
-                val responseFlowResult = sendMessage(mutableUiState.value.messages)
+                val responseFlowResult = sendMessage(
+                    modelContextBuilder.build(mutableUiState.value.messages),
+                )
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                     return@launch

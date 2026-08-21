@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
                     settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                     searchCalendarEvents = AppModule.provideSearchCalendarEventsUseCase(applicationContext),
                     assistantResponseParser = AppModule.provideAssistantResponseParser(),
+                    modelContextBuilder = AppModule.provideModelContextBuilder(),
                 ) as T
             }
         }

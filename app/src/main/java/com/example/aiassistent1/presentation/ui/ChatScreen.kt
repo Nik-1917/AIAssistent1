@@ -13,6 +13,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -119,6 +121,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -409,6 +414,8 @@ fun ChatScreen(
                                 MessageBubble(
                                     message = message,
                                     isStopping = uiState.isStopping,
+                                    isStreaming = !uiState.isStopping && uiState.isProcessing &&
+                                        isLast && message.role == MessageRole.ASSISTANT,
                                     isVoiceMode = uiState.isVoiceMode,
                                     onRetry = if (showRetry) viewModel::retry else null,
                                     onDelete = if (showDelete) {
@@ -917,6 +924,7 @@ private fun EmptyConversation(
 private fun MessageBubble(
     message: ChatMessage,
     isStopping: Boolean = false,
+    isStreaming: Boolean = false,
     isVoiceMode: Boolean,
     onRetry: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
@@ -962,14 +970,13 @@ private fun MessageBubble(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
+                    StreamingMessageText(
                         text = if (message.content.isBlank()) {
                             if (isStopping) "Остановка..." else "Думаю..."
                         } else {
                             message.content
                         },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        isStreaming = isStreaming,
                     )
                     if (message.isInterrupted) {
                         Spacer(modifier = Modifier.height(6.dp))
@@ -1019,6 +1026,97 @@ private fun MessageBubble(
         }
     }
 }
+
+@Composable
+private fun StreamingMessageText(
+    text: String,
+    isStreaming: Boolean,
+) {
+    val enteringAlpha = remember { Animatable(1f) }
+    var settledText by remember { mutableStateOf("") }
+    var enteringText by remember { mutableStateOf("") }
+    val latestText by rememberUpdatedState(text)
+    val visibleText = settledText + enteringText
+    val scrollState = rememberScrollState()
+    val textColor = MaterialTheme.colorScheme.onSurface
+
+    LaunchedEffect(isStreaming) {
+        if (!isStreaming) {
+            settledText = latestText
+            enteringText = ""
+            enteringAlpha.snapTo(1f)
+            return@LaunchedEffect
+        }
+
+        while (isStreaming) {
+            val currentVisible = settledText + enteringText
+            when {
+                !latestText.startsWith(currentVisible) -> {
+                    settledText = latestText
+                    enteringText = ""
+                    enteringAlpha.snapTo(1f)
+                }
+                enteringText.isNotEmpty() -> {
+                    enteringAlpha.animateTo(1f, tween(WORD_REVEAL_DURATION_MILLIS, easing = FastOutSlowInEasing))
+                    settledText += enteringText
+                    enteringText = ""
+                }
+                else -> {
+                    val nextSegment = latestText.drop(currentVisible.length).nextCompleteWordOrNull()
+                    if (nextSegment == null) {
+                        delay(STREAM_POLL_INTERVAL_MILLIS)
+                    } else {
+                        enteringText = nextSegment
+                        enteringAlpha.snapTo(0f)
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(visibleText, isStreaming) {
+        if (isStreaming) scrollState.animateScrollTo(scrollState.maxValue, tween(STREAM_SCROLL_DURATION_MILLIS))
+    }
+
+    val annotatedText = buildAnnotatedString {
+        append(settledText)
+        if (enteringText.isNotEmpty()) {
+            pushStyle(
+                SpanStyle(
+                    color = textColor.copy(alpha = enteringAlpha.value),
+                    baselineShift = BaselineShift(-0.12f * (1f - enteringAlpha.value)),
+                ),
+            )
+            append(enteringText)
+            pop()
+        }
+    }
+
+    val textModifier = if (isStreaming) {
+        Modifier
+            .fillMaxWidth()
+            .height(STREAMING_TEXT_VIEWPORT_HEIGHT)
+            .verticalScroll(scrollState)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+    Text(
+        text = annotatedText,
+        modifier = textModifier,
+        style = MaterialTheme.typography.bodyLarge,
+        color = textColor,
+    )
+}
+
+private fun String.nextCompleteWordOrNull(): String? {
+    val boundary = indexOfFirst(Char::isWhitespace)
+    return if (boundary < 0) null else substring(0, boundary + 1)
+}
+
+private const val WORD_REVEAL_DURATION_MILLIS = 140
+private const val STREAM_POLL_INTERVAL_MILLIS = 32L
+private const val STREAM_SCROLL_DURATION_MILLIS = 180
+private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
