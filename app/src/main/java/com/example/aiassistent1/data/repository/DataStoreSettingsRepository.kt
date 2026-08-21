@@ -31,6 +31,8 @@ class DataStoreSettingsRepository(
     private val selectedModelKey = stringPreferencesKey("selected_model")
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
+    private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
+    private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -64,6 +66,22 @@ class DataStoreSettingsRepository(
             scope = scope,
             started = SharingStarted.Eagerly,
             initialValue = true
+        )
+
+    override val smoothResponseEnabled: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences -> preferences[smoothResponseEnabledKey] ?: false }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
+
+    override val systemPromptEnabled: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences -> preferences[systemPromptEnabledKey] ?: false }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
         )
 
     override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = context.settingsStore.data
@@ -126,6 +144,18 @@ class DataStoreSettingsRepository(
     override suspend fun setShowClearChatConfirmation(show: Boolean) {
         context.settingsStore.edit { preferences ->
             preferences[showClearChatConfirmationKey] = show
+        }
+    }
+
+    override suspend fun setSmoothResponseEnabled(enabled: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[smoothResponseEnabledKey] = enabled
+        }
+    }
+
+    override suspend fun setSystemPromptEnabled(enabled: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[systemPromptEnabledKey] = enabled
         }
     }
 

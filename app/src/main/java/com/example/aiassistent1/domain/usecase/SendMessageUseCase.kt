@@ -10,12 +10,15 @@ class SendMessageUseCase(
     private val llmEngine: LLMEngine,
     private val systemPromptProvider: SystemPromptProvider,
 ) {
-    suspend operator fun invoke(messages: List<ChatMessage>): Result<Flow<String>> {
+    suspend operator fun invoke(
+        messages: List<ChatMessage>,
+        useSystemPrompt: Boolean = false,
+    ): Result<Flow<String>> {
         val systemMessage = ChatMessage(
             role = MessageRole.SYSTEM,
             content = systemPromptProvider.getSystemPrompt()
         )
-        val messagesWithSystem = listOf(systemMessage) + messages
-        return llmEngine.ensureLoaded().map { llmEngine.generate(messagesWithSystem) }
+        val modelMessages = if (useSystemPrompt) listOf(systemMessage) + messages else messages
+        return llmEngine.ensureLoaded().map { llmEngine.generate(modelMessages) }
     }
 }

@@ -84,6 +84,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -416,6 +417,7 @@ fun ChatScreen(
                                     isStopping = uiState.isStopping,
                                     isStreaming = !uiState.isStopping && uiState.isProcessing &&
                                         isLast && message.role == MessageRole.ASSISTANT,
+                                    smoothResponseEnabled = uiState.smoothResponseEnabled,
                                     isVoiceMode = uiState.isVoiceMode,
                                     onRetry = if (showRetry) viewModel::retry else null,
                                     onDelete = if (showDelete) {
@@ -594,9 +596,13 @@ fun ChatScreen(
         ModelSettingsDialog(
             modelName = uiState.selectedModel,
             params = uiState.modelParams,
+            smoothResponseEnabled = uiState.smoothResponseEnabled,
+            systemPromptEnabled = uiState.systemPromptEnabled,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams ->
+            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled ->
                 viewModel.updateModelParams(updatedParams)
+                viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
+                viewModel.setSystemPromptEnabled(systemPromptEnabled)
                 showSettingsDialog = false
             }
         )
@@ -925,6 +931,7 @@ private fun MessageBubble(
     message: ChatMessage,
     isStopping: Boolean = false,
     isStreaming: Boolean = false,
+    smoothResponseEnabled: Boolean,
     isVoiceMode: Boolean,
     onRetry: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
@@ -970,14 +977,20 @@ private fun MessageBubble(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    StreamingMessageText(
-                        text = if (message.content.isBlank()) {
-                            if (isStopping) "Остановка..." else "Думаю..."
-                        } else {
-                            message.content
-                        },
-                        isStreaming = isStreaming,
-                    )
+                    val messageText = if (message.content.isBlank()) {
+                        if (isStopping) "Остановка..." else "Думаю..."
+                    } else {
+                        message.content
+                    }
+                    if (smoothResponseEnabled) {
+                        StreamingMessageText(text = messageText, isStreaming = isStreaming)
+                    } else {
+                        Text(
+                            text = messageText,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                     if (message.isInterrupted) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -1360,14 +1373,18 @@ private fun VoiceMicrophoneButton(
 fun ModelSettingsDialog(
     modelName: String,
     params: GenerationParams,
+    smoothResponseEnabled: Boolean,
+    systemPromptEnabled: Boolean,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
     var maxTokens by remember { mutableStateOf(params.maxTokens.toFloat()) }
     var topP by remember { mutableStateOf(params.topP) }
     var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
+    var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
+    var systemPrompt by remember { mutableStateOf(systemPromptEnabled) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1424,6 +1441,43 @@ fun ModelSettingsDialog(
                     valueRange = 1f..2f
                 )
 
+                Text("Чат", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Мягкое появление ответа")
+                        Text(
+                            "Показывать ответ словами с плавной анимацией",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = smoothResponse,
+                        onCheckedChange = { smoothResponse = it },
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Использовать системный промпт")
+                        Text(
+                            "Передавать модели инструкции формата ответов и работы с календарём",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = systemPrompt,
+                        onCheckedChange = { systemPrompt = it },
+                    )
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1460,13 +1514,17 @@ fun ModelSettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        onSave(params.copy(
-                            temperature = temperature,
-                            contextSize = contextSize.toInt(),
-                            maxTokens = maxTokens.toInt(),
-                            topP = topP,
-                            repeatPenalty = repeatPenalty
-                        ))
+                        onSave(
+                            params.copy(
+                                temperature = temperature,
+                                contextSize = contextSize.toInt(),
+                                maxTokens = maxTokens.toInt(),
+                                topP = topP,
+                                repeatPenalty = repeatPenalty,
+                            ),
+                            smoothResponse,
+                            systemPrompt,
+                        )
                     }) {
                         Text("Сохранить")
                     }

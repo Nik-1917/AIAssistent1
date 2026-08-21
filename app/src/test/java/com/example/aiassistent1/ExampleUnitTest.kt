@@ -26,6 +26,20 @@ class SendMessageUseCaseTest {
 
         assertEquals(listOf("Первый", " ответ"), result.getOrThrow().toList())
         assertEquals(1, engine.generateCalls)
+        assertEquals(listOf(MessageRole.USER), engine.lastMessages.map(ChatMessage::role))
+    }
+
+    @Test
+    fun `adds the system prompt only when enabled`() = runTest {
+        val engine = FakeLlmEngine(loadResult = Result.success(Unit))
+        val useCase = SendMessageUseCase(engine, SystemPromptProvider())
+
+        useCase(
+            messages = listOf(ChatMessage(role = MessageRole.USER, content = "Привет")),
+            useSystemPrompt = true,
+        ).getOrThrow().toList()
+
+        assertEquals(listOf(MessageRole.SYSTEM, MessageRole.USER), engine.lastMessages.map(ChatMessage::role))
     }
 
     @Test
@@ -44,6 +58,7 @@ class SendMessageUseCaseTest {
     ) : LLMEngine {
         private val mutableState = MutableStateFlow<ModelState>(ModelState.Unloaded)
         var generateCalls = 0
+        var lastMessages: List<ChatMessage> = emptyList()
 
         override val state: StateFlow<ModelState> = mutableState
 
@@ -51,6 +66,7 @@ class SendMessageUseCaseTest {
 
         override fun generate(messages: List<ChatMessage>): Flow<String> {
             generateCalls += 1
+            lastMessages = messages
             return flowOf("Первый", " ответ")
         }
 

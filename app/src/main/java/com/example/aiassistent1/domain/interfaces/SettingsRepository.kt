@@ -17,6 +17,12 @@ interface SettingsRepository {
     val showClearChatConfirmation: StateFlow<Boolean>
     suspend fun setShowClearChatConfirmation(show: Boolean)
 
+    val smoothResponseEnabled: StateFlow<Boolean>
+    suspend fun setSmoothResponseEnabled(enabled: Boolean)
+
+    val systemPromptEnabled: StateFlow<Boolean>
+    suspend fun setSystemPromptEnabled(enabled: Boolean)
+
     val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()
 }

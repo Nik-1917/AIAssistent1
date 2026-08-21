@@ -19,6 +19,8 @@ data class ChatUiState(
     val isStopping: Boolean = false,
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,
+    val smoothResponseEnabled: Boolean = false,
+    val systemPromptEnabled: Boolean = false,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",
     val modelParams: GenerationParams = GenerationParams(),

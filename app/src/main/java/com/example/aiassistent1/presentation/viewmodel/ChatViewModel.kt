@@ -121,6 +121,16 @@ class ChatViewModel(
                 mutableUiState.update { it.copy(showClearChatConfirmation = show) }
             }
         }
+        viewModelScope.launch {
+            settingsRepository.smoothResponseEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(smoothResponseEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.systemPromptEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(systemPromptEnabled = enabled) }
+            }
+        }
     }
 
     private fun observeParams(modelName: String) {
@@ -310,6 +320,7 @@ class ChatViewModel(
             try {
                 val responseFlowResult = sendMessage(
                     modelContextBuilder.build(mutableUiState.value.messages),
+                    useSystemPrompt = mutableUiState.value.systemPromptEnabled,
                 )
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
@@ -647,6 +658,18 @@ class ChatViewModel(
                 }
             }
             else -> {}
+        }
+    }
+
+    fun setSmoothResponseEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSmoothResponseEnabled(enabled)
+        }
+    }
+
+    fun setSystemPromptEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSystemPromptEnabled(enabled)
         }
     }
 
