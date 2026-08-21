@@ -14,6 +14,7 @@ import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
+import com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatter
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
@@ -70,6 +71,7 @@ class ChatViewModel(
     private var paramsJob: Job? = null
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
+    private var isManualMessagePlayback = false
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -330,7 +332,7 @@ class ChatViewModel(
                     if (finalMessage.content.isNotBlank()) {
                         val parsed = assistantResponseParser.parse(finalMessage.content)
                         val messageToSave = if (parsed != null) {
-                            finalMessage.copy(content = parsed.reply)
+                            finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
                         } else {
                             finalMessage
                         }
@@ -534,7 +536,6 @@ class ChatViewModel(
         if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
         if (!enabled) {
             stopVoiceInput()
-            speechPlaybackController?.stop(SpeechStopReason.User)
         }
     }
 
@@ -592,6 +593,17 @@ class ChatViewModel(
         speechPlaybackController?.stop(SpeechStopReason.User)
     }
 
+    fun speakMessage(text: String) {
+        val state = uiState.value
+        if (!state.isVoiceMode || text.isBlank()) return
+        val controller = speechPlaybackController ?: return
+
+        cancelPendingVoiceModeShutdown()
+        isManualMessagePlayback = true
+        stopVoiceInput()
+        controller.speak(text)
+    }
+
     private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
         when (val params = response.params) {
             is com.example.aiassistent1.domain.model.CalendarAddParams -> {
@@ -632,6 +644,16 @@ class ChatViewModel(
             }
             else -> {}
         }
+    }
+
+    private fun com.example.aiassistent1.domain.model.AssistantResponse.calendarReplyOrNull(): String? {
+        val params = params as? CalendarAddParams ?: return null
+        val title = params.title ?: return null
+        val startsAt = params.startsAt ?: return null
+        val duration = params.durationMin ?: return null
+        return runCatching {
+            CalendarReplyTimeFormatter.formatCreationReply(title, startsAt, duration)
+        }.getOrNull()
     }
 
     private fun startCalendarEventDraft(params: CalendarAddParams) {
@@ -847,7 +869,12 @@ class ChatViewModel(
         viewModelScope.launch {
             controller.state.collect { playbackState ->
                 mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
-                if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
+                if (isManualMessagePlayback &&
+                    (playbackState is SpeechPlaybackState.Idle || playbackState is SpeechPlaybackState.Error)
+                ) {
+                    isManualMessagePlayback = false
+                    if (uiState.value.isVoiceMode && !uiState.value.isProcessing) startVoiceInput()
+                } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
                     playbackState is SpeechPlaybackState.Idle
                 ) {
                     scheduleVoiceModeShutdown()

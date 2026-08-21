@@ -409,6 +409,7 @@ fun ChatScreen(
                                 MessageBubble(
                                     message = message,
                                     isStopping = uiState.isStopping,
+                                    isVoiceMode = uiState.isVoiceMode,
                                     onRetry = if (showRetry) viewModel::retry else null,
                                     onDelete = if (showDelete) {
                                         {
@@ -421,7 +422,8 @@ fun ChatScreen(
                                     } else null,
                                     onCopy = { text ->
                                         viewModel.copyToClipboard(text)
-                                    }
+                                    },
+                                    onSpeak = viewModel::speakMessage,
                                 )
                             }
                         }
@@ -915,9 +917,11 @@ private fun EmptyConversation(
 private fun MessageBubble(
     message: ChatMessage,
     isStopping: Boolean = false,
+    isVoiceMode: Boolean,
     onRetry: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     onCopy: (String) -> Unit,
+    onSpeak: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.USER
@@ -942,7 +946,7 @@ private fun MessageBubble(
                     detectTapGestures(
                         onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onCopy(message.content)
+                            if (isVoiceMode) onSpeak(message.content) else onCopy(message.content)
                         }
                     )
                 }
