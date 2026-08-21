@@ -18,14 +18,16 @@ class AssistantResponseParser {
                 "calendar_search" -> {
                     CalendarSearchParams(
                         query = paramsJson?.optString("query") ?: "",
-                        days = paramsJson?.optInt("days", 7) ?: 7
+                        rangeStart = paramsJson?.optionalNonBlankString("range_start"),
+                        rangeEnd = paramsJson?.optionalNonBlankString("range_end"),
                     )
                 }
                 "calendar_add" -> {
                     CalendarAddParams(
-                        title = paramsJson?.optString("title") ?: "Событие",
-                        date = paramsJson?.optString("date") ?: "",
-                        duration_min = paramsJson?.optInt("duration_min", 60) ?: 60
+                        title = paramsJson?.optionalNonBlankString("title"),
+                        startsAt = paramsJson?.optionalNonBlankString("starts_at")
+                            ?: paramsJson?.optionalNonBlankString("date"),
+                        durationMin = paramsJson?.optionalPositiveInt("duration_min"),
                     )
                 }
                 else -> null
@@ -46,3 +48,14 @@ class AssistantResponseParser {
         return null
     }
 }
+
+private fun JSONObject.optionalNonBlankString(name: String): String? =
+    takeIf { has(name) && !isNull(name) }
+        ?.optString(name)
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+
+private fun JSONObject.optionalPositiveInt(name: String): Int? =
+    takeIf { has(name) && !isNull(name) }
+        ?.optInt(name, 0)
+        ?.takeIf { it > 0 }

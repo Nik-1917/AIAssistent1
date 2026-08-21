@@ -10,11 +10,12 @@ sealed interface AssistantParams
 
 data class CalendarSearchParams(
     val query: String,
-    val days: Int = 7
+    val rangeStart: String?,
+    val rangeEnd: String?,
 ) : AssistantParams
 
 data class CalendarAddParams(
-    val title: String,
-    val date: String,
-    val duration_min: Int = 60
+    val title: String?,
+    val startsAt: String?,
+    val durationMin: Int?,
 ) : AssistantParams

@@ -345,8 +345,6 @@ class ChatViewModel(
                         
                         if (parsed != null) {
                             handleParsedResponse(parsed, messageToSave.id)
-                        } else {
-                            handleIntentIfPresent(finalMessage.content)
                         }
                     } else {
                         // Если сообщение пустое после завершения (например, сброс), удаляем из UI
@@ -512,7 +510,8 @@ class ChatViewModel(
         clearPersistedVoiceDraft()
     }
 
-    fun stopVoiceCaptureForBackground() {
+    fun stopVoiceCaptureForBackground(isChangingConfigurations: Boolean) {
+        if (isChangingConfigurations) return
         val state = mutableUiState.value
         speechPlaybackController?.stop(SpeechStopReason.Background)
         if (!state.isVoiceMode && !state.voiceDraft.isRecording) return
@@ -596,20 +595,21 @@ class ChatViewModel(
     private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
         when (val params = response.params) {
             is com.example.aiassistent1.domain.model.CalendarAddParams -> {
-                requestCalendarEventConfirmation(params.title, params.date, params.duration_min)
+                startCalendarEventDraft(params)
             }
             is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
                 viewModelScope.launch {
-                    val rangeStart = System.currentTimeMillis()
-                    val rangeEnd = runCatching {
-                        require(params.days > 0) { "Число дней для поиска должно быть больше нуля." }
-                        Math.addExact(rangeStart, Math.multiplyExact(params.days.toLong(), MILLIS_PER_DAY))
+                    val range = runCatching {
+                        val rangeStart = parseCalendarDateTime(params.rangeStart, "Начало диапазона поиска")
+                        val rangeEnd = parseCalendarDateTime(params.rangeEnd, "Конец диапазона поиска")
+                        require(rangeStart < rangeEnd) { "Начало диапазона поиска должно быть раньше его конца." }
+                        rangeStart to rangeEnd
                     }.getOrElse { error ->
                         mutableUiState.update { it.copy(error = error.userMessage()) }
                         return@launch
                     }
 
-                    searchCalendarEvents(params.query, rangeStart, rangeEnd).onSuccess { events ->
+                    searchCalendarEvents(params.query, range.first, range.second).onSuccess { events ->
                         val resultsText = if (events.isNotEmpty()) {
                             "\n\nНайдено:\n" + events.joinToString("\n") {
                                 "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)"
@@ -634,44 +634,160 @@ class ChatViewModel(
         }
     }
 
-    private fun handleIntentIfPresent(text: String) {
-        try {
-            val jsonStart = text.indexOf('{')
-            val jsonEnd = text.lastIndexOf('}')
-            if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
-                val jsonStr = text.substring(jsonStart, jsonEnd + 1)
-                val json = JSONObject(jsonStr)
-                val intent = json.optString("intent")
-                if (intent == "calendar_add") {
-                    val params = json.optJSONObject("params") ?: return
-                    val title = params.optString("title")
-                    val date = params.optString("date")
-                    val duration = params.optInt("duration_min", 60)
-                    if (title.isNotEmpty() && date.isNotEmpty()) {
-                        requestCalendarEventConfirmation(title, date, duration)
-                    }
+    private fun startCalendarEventDraft(params: CalendarAddParams) {
+        val draft = CalendarEventDraftUiState(
+            title = params.title,
+            startsAt = params.startsAt?.takeIf { isCalendarDateTime(it) },
+            durationMinutes = params.durationMin,
+        )
+        mutableUiState.update { it.copy(calendarEventDraft = draft.withNextField()) }
+    }
+
+    fun updateCalendarDraftInput(value: String) {
+        mutableUiState.update { state ->
+            state.copy(calendarEventDraft = state.calendarEventDraft?.copy(input = value, error = null))
+        }
+    }
+
+    fun submitCalendarDraftField() {
+        val draft = uiState.value.calendarEventDraft ?: return
+        val field = draft.activeField
+        if (draft.isComplete) {
+            confirmCalendarEventDraft(draft)
+            return
+        }
+        if (field == null || draft.isFormatting) return
+
+        validateCalendarField(field, draft.input)
+            .onSuccess { value -> applyCalendarDraftField(field, value) }
+            .onFailure {
+                if (field == CalendarEventField.Title) {
+                    setCalendarDraftError(it.message ?: "Введите название события.")
+                } else {
+                    formatCalendarDraftField(field, draft.input)
                 }
             }
-        } catch (e: Exception) {
-            // Игнорируем ошибки парсинга
+    }
+
+    fun cancelCalendarEventDraft() {
+        stopCalendarDraftVoiceInput()
+        mutableUiState.update { it.copy(calendarEventDraft = null) }
+    }
+
+    fun startCalendarDraftVoiceInput() {
+        val draft = uiState.value.calendarEventDraft ?: return
+        if (draft.activeField == null || draft.isFormatting) return
+        stopVoiceInput()
+        val result = runCatching { voiceInput?.start() ?: error("Голосовой ввод недоступен.") }
+        result.onSuccess { sessionId ->
+            activeVoiceInputSessionId = sessionId
+            mutableUiState.update { state ->
+                state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isVoiceInputActive = true, error = null))
+            }
+        }.onFailure { error -> setCalendarDraftError(error.userMessage()) }
+    }
+
+    private fun stopCalendarDraftVoiceInput() {
+        if (uiState.value.calendarEventDraft?.isVoiceInputActive == true) stopVoiceInput()
+        mutableUiState.update { state ->
+            state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isVoiceInputActive = false))
         }
     }
 
-    private fun requestCalendarEventConfirmation(title: String, date: String, duration: Int) {
-        mutableUiState.update {
-            it.copy(calendarEventToConfirm = CalendarAddParams(title, date, duration))
+    private fun confirmCalendarEventDraft(draft: CalendarEventDraftUiState) {
+        val title = draft.title ?: return
+        val startsAt = draft.startsAt ?: return
+        val duration = draft.durationMinutes ?: return
+        mutableUiState.update { it.copy(calendarEventDraft = null) }
+        executeCalendarAdd(title, startsAt, duration)
+    }
+
+    private fun applyCalendarDraftField(field: CalendarEventField, value: String) {
+        mutableUiState.update { state ->
+            val current = state.calendarEventDraft ?: return@update state
+            val changed = when (field) {
+                CalendarEventField.Title -> current.copy(title = value)
+                CalendarEventField.StartsAt -> current.copy(startsAt = value)
+                CalendarEventField.DurationMinutes -> current.copy(durationMinutes = value.toInt())
+            }
+            state.copy(calendarEventDraft = changed.withNextField())
         }
     }
 
-    fun confirmCalendarEvent() {
-        val event = uiState.value.calendarEventToConfirm ?: return
-        mutableUiState.update { it.copy(calendarEventToConfirm = null) }
-        executeCalendarAdd(event.title, event.date, event.duration_min)
+    private fun setCalendarDraftError(message: String) {
+        mutableUiState.update { state ->
+            state.copy(calendarEventDraft = state.calendarEventDraft?.copy(error = message, isFormatting = false))
+        }
     }
 
-    fun dismissCalendarEventConfirmation() {
-        mutableUiState.update { it.copy(calendarEventToConfirm = null) }
+    private fun formatCalendarDraftField(field: CalendarEventField, rawValue: String) {
+        if (rawValue.isBlank()) {
+            setCalendarDraftError("Заполните поле «${field.label}».")
+            return
+        }
+        mutableUiState.update { state ->
+            state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isFormatting = true, error = null))
+        }
+        viewModelScope.launch {
+            val result = runCatching {
+                llmEngine.ensureLoaded().getOrThrow()
+                val request = ChatMessage(
+                    role = MessageRole.USER,
+                    content = """
+                        {"intent":"calendar_field_format","field":"${field.modelName}","value":${JSONObject.quote(rawValue)},"expected_format":"${field.expectedFormat}","instruction":"Format only the requested field. Return JSON with exactly field and value. Do not change other event data."}
+                    """.trimIndent(),
+                )
+                var response = ""
+                llmEngine.generate(
+                    listOf(
+                        ChatMessage(
+                            role = MessageRole.SYSTEM,
+                            content = "Return only valid JSON. Never create, search, or modify calendar events.",
+                        ),
+                        request,
+                    ),
+                ).collect { response += it }
+                parseFormattedCalendarField(field, response)
+            }
+            result.onSuccess { value -> applyCalendarDraftField(field, value) }
+                .onFailure { error -> setCalendarDraftError(error.userMessage()) }
+        }
     }
+
+    private fun parseFormattedCalendarField(field: CalendarEventField, response: String): String {
+        val jsonStart = response.indexOf('{')
+        val jsonEnd = response.lastIndexOf('}')
+        require(jsonStart >= 0 && jsonEnd > jsonStart) { "Модель не вернула JSON для форматирования поля." }
+        val json = JSONObject(response.substring(jsonStart, jsonEnd + 1))
+        require(json.optString("field") == field.modelName) { "Модель вернула другое поле." }
+        val value = when (field) {
+            CalendarEventField.DurationMinutes -> json.optInt("value", 0).toString()
+            else -> json.optString("value")
+        }
+        return validateCalendarField(field, value).getOrThrow()
+    }
+
+    private fun validateCalendarField(field: CalendarEventField, rawValue: String): Result<String> = runCatching {
+        when (field) {
+            CalendarEventField.Title -> rawValue.trim().also { require(it.isNotEmpty()) { "Название события не может быть пустым." } }
+            CalendarEventField.StartsAt -> LocalDateTime.parse(rawValue.trim(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            CalendarEventField.DurationMinutes -> rawValue.trim().toInt().also {
+                require(it > 0) { "Длительность должна быть больше нуля." }
+            }.toString()
+        }
+    }
+
+    private fun parseCalendarDateTime(value: String?, label: String): Long {
+        require(!value.isNullOrBlank()) { "$label не указано." }
+        return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    private fun isCalendarDateTime(value: String): Boolean =
+        runCatching { LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }.isSuccess
 
     private fun executeCalendarAdd(title: String, date: String, duration: Int) {
         viewModelScope.launch {
@@ -765,6 +881,10 @@ class ChatViewModel(
                 if (event.sessionId != activeVoiceInputSessionId) return@collect
                 val state = mutableUiState.value
                 when {
+                    state.calendarEventDraft?.isVoiceInputActive == true -> {
+                        updateCalendarDraftInput(event.transcript)
+                        stopCalendarDraftVoiceInput()
+                    }
                     state.voiceDraft.isRecording && !state.isProcessing -> {
                         appendVoiceDraftTranscript(event.transcript)
                     }
@@ -800,13 +920,16 @@ class ChatViewModel(
             inputProvider.observeErrors().collect { event ->
                 if (event.sessionId != activeVoiceInputSessionId) return@collect
                 val state = mutableUiState.value
-                if (!state.isVoiceMode && !state.voiceDraft.isRecording) return@collect
+                if (!state.isVoiceMode && !state.voiceDraft.isRecording &&
+                    state.calendarEventDraft?.isVoiceInputActive != true
+                ) return@collect
 
                 mutableUiState.update {
                     it.copy(
                         error = event.cause.message ?: "Не удалось обработать голосовой ввод",
                         isVoiceMode = false,
                         voiceDraft = it.voiceDraft.copy(isRecording = false),
+                        calendarEventDraft = it.calendarEventDraft?.copy(isVoiceInputActive = false),
                     )
                 }
                 activeVoiceInputSessionId = null

@@ -97,6 +97,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -127,11 +128,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
 import com.example.aiassistent1.domain.model.ChatMessage
-import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
+import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
@@ -156,10 +157,10 @@ fun ChatScreen(
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
     var showClearChatDialog by remember { mutableStateOf(false) }
 
-    var shouldAutoScroll by remember { mutableStateOf(true) }
+    var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
 
     // --- Автоматическое скрытие футера при прокрутке ---
-    var isFooterVisible by remember { mutableStateOf(true) }
+    var isFooterVisible by rememberSaveable { mutableStateOf(true) }
     var previousIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
     var previousScrollOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
 
@@ -253,7 +254,7 @@ fun ChatScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
-    var isSpeechCardCollapsed by remember { mutableStateOf(true) }
+    var isSpeechCardCollapsed by rememberSaveable { mutableStateOf(true) }
     var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -263,7 +264,8 @@ fun ChatScreen(
                 viewModel.refreshModelStatus()
             }
             if (event == Lifecycle.Event.ON_STOP) {
-                viewModel.stopVoiceCaptureForBackground()
+                val isChangingConfigurations = (context as? android.app.Activity)?.isChangingConfigurations ?: false
+                viewModel.stopVoiceCaptureForBackground(isChangingConfigurations)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -591,11 +593,13 @@ fun ChatScreen(
         )
     }
 
-    uiState.calendarEventToConfirm?.let { event ->
-        CalendarEventConfirmationDialog(
-            event = event,
-            onConfirm = viewModel::confirmCalendarEvent,
-            onDismiss = viewModel::dismissCalendarEventConfirmation,
+    uiState.calendarEventDraft?.let { draft ->
+        CalendarEventDraftDialog(
+            draft = draft,
+            onValueChange = viewModel::updateCalendarDraftInput,
+            onSubmit = viewModel::submitCalendarDraftField,
+            onVoiceInput = viewModel::startCalendarDraftVoiceInput,
+            onDismiss = viewModel::cancelCalendarEventDraft,
         )
     }
 
@@ -689,18 +693,64 @@ fun ChatScreen(
 }
 
 @Composable
-private fun CalendarEventConfirmationDialog(
-    event: CalendarAddParams,
-    onConfirm: () -> Unit,
+private fun CalendarEventDraftDialog(
+    draft: CalendarEventDraftUiState,
+    onValueChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onVoiceInput: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Добавить событие в календарь?") },
-        text = { Text("${event.title}\n${event.date}\n${event.duration_min} мин") },
+        title = { Text(if (draft.isComplete) "Создать событие?" else "Заполните данные события") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Сохранённые поля", style = MaterialTheme.typography.labelLarge)
+                draft.title?.let { Text("Название: $it") }
+                draft.startsAt?.let { Text("Дата и время: $it") }
+                draft.durationMinutes?.let { Text("Длительность: $it мин") }
+
+                if (!draft.isComplete) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    val field = requireNotNull(draft.activeField)
+                    Text(field.label, style = MaterialTheme.typography.labelLarge)
+                    OutlinedTextField(
+                        value = draft.input,
+                        onValueChange = onValueChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = !draft.isFormatting,
+                        isError = draft.error != null,
+                        supportingText = draft.error?.let { { Text(it) } },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = onVoiceInput,
+                                enabled = !draft.isFormatting && !draft.isVoiceInputActive,
+                            ) {
+                                Icon(
+                                    imageVector = if (draft.isVoiceInputActive) Icons.Filled.MicOff else Icons.Filled.Mic,
+                                    contentDescription = "Голосовой ввод поля ${field.label}",
+                                )
+                            }
+                        },
+                    )
+                    if (draft.isFormatting) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Форматирование значения…")
+                        }
+                    }
+                }
+            }
+        },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Добавить")
+            TextButton(
+                onClick = onSubmit,
+                enabled = !draft.isFormatting && (draft.isComplete || draft.input.isNotBlank()),
+            ) {
+                Text(if (draft.isComplete) "Создать событие" else "Далее")
             }
         },
         dismissButton = {
