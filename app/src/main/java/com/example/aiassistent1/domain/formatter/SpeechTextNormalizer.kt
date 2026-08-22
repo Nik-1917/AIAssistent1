@@ -11,7 +11,7 @@ object SpeechTextNormalizer {
     private val atxHeading = Regex("(?m)^[\\t ]{0,3}#{1,6}[\\t ]+(.+?)(?:[\\t ]+#+)?[\\t ]*$")
     private val starredHeading = Regex(
         "(?m)^[\\t ]*(?:\\d{1,3}[\\t ]*(?:[.)]|[-—–:])[\\t ]+)?" +
-            "(\\*{1,3})[\\t ]*(.+?)[\\t ]*\\1(?=[\\t ]|$)",
+            "(\\*{1,3})[\\t ]*(.+?)[\\t ]*\\1",
     )
     private val setextHeading = Regex("(?m)^([^\\r\\n]+)\\r?\\n[\\t ]*(?:=+|-{3,})[\\t ]*$")
     private val englishPhrase = Regex(
@@ -71,6 +71,7 @@ object SpeechTextNormalizer {
             val trailing = raw.takeLastWhile { it in ".,!?;:" }
             protect(speakUrl(raw.dropLast(trailing.length))) + trailing
         }
+        text = protectParentheticals(text) { value -> protect(value) }
 
         text = setextHeading.replace(text) { match -> speechSection(match.groupValues[1]) }
         text = atxHeading.replace(text) { match -> speechSection(match.groupValues[1]) }
@@ -114,6 +115,51 @@ object SpeechTextNormalizer {
 
     private fun markEnglishPhrases(value: String): String = englishPhrase.replace(value) { match ->
         "$SPEECH_ENGLISH_PHRASE_BOUNDARY${match.value}$SPEECH_ENGLISH_PHRASE_BOUNDARY"
+    }
+
+    private fun protectParentheticals(text: String, protect: (String) -> String): String {
+        val result = StringBuilder(text.length)
+        var copiedUntil = 0
+        var scan = 0
+        while (scan < text.length) {
+            if (text[scan] != '(') {
+                scan++
+                continue
+            }
+
+            val openingIndex = scan
+            var depth = 0
+            var closingIndex = -1
+            var current = openingIndex
+            while (current < text.length) {
+                when (text[current]) {
+                    '(' -> depth++
+                    ')' -> {
+                        depth--
+                        if (depth == 0) {
+                            closingIndex = current
+                            break
+                        }
+                    }
+                }
+                current++
+            }
+            if (closingIndex < 0) {
+                scan = openingIndex + 1
+                continue
+            }
+
+            var endExclusive = closingIndex + 1
+            while (endExclusive < text.length && text[endExclusive] in PARENTHETICAL_TRAILING_PUNCTUATION) {
+                endExclusive++
+            }
+            result.append(text, copiedUntil, openingIndex)
+            result.append(protect(speechSection(text.substring(openingIndex, endExclusive))))
+            copiedUntil = endExclusive
+            scan = endExclusive
+        }
+        result.append(text, copiedUntil, text.length)
+        return result.toString()
     }
 
     private fun speakDate(year: String, month: String, day: String): String = runCatching {
@@ -256,4 +302,5 @@ object SpeechTextNormalizer {
     private val YEAR_ENDINGS = mapOf("один" to "первого", "два" to "второго", "три" to "третьего", "четыре" to "четвёртого", "пять" to "пятого", "шесть" to "шестого", "семь" to "седьмого", "восемь" to "восьмого", "девять" to "девятого", "десять" to "десятого", "двадцать" to "двадцатого", "тридцать" to "тридцатого", "сорок" to "сорокового", "пятьдесят" to "пятидесятого", "сто" to "сотого", "двести" to "двухсотого")
     private val LETTERS = mapOf('А' to "а", 'Б' to "бэ", 'В' to "вэ", 'Г' to "гэ", 'Д' to "дэ", 'Е' to "е", 'Ё' to "ё", 'Ж' to "жэ", 'З' to "зэ", 'И' to "и", 'Й' to "й", 'К' to "ка", 'Л' to "эл", 'М' to "эм", 'Н' to "эн", 'О' to "о", 'П' to "пэ", 'Р' to "эр", 'С' to "эс", 'Т' to "тэ", 'У' to "у", 'Ф' to "эф", 'Х' to "ха", 'Ц' to "цэ", 'Ч' to "че", 'Ш' to "ша", 'Щ' to "ща", 'Ы' to "ы", 'Э' to "э", 'Ю' to "ю", 'Я' to "я", 'A' to "эй", 'B' to "би", 'C' to "си", 'D' to "ди", 'E' to "и", 'F' to "эф", 'G' to "джи", 'H' to "эйч", 'I' to "ай", 'J' to "джей", 'K' to "кей", 'L' to "эл", 'M' to "эм", 'N' to "эн", 'O' to "оу", 'P' to "пи", 'Q' to "кью", 'R' to "ар", 'S' to "эс", 'T' to "ти", 'U' to "ю", 'V' to "ви", 'W' to "дабл ю", 'X' to "икс", 'Y' to "уай", 'Z' to "зэд", '0' to "ноль", '1' to "один", '2' to "два", '3' to "три", '4' to "четыре", '5' to "пять", '6' to "шесть", '7' to "семь", '8' to "восемь", '9' to "девять")
     private val CODE_SYMBOLS = mapOf('=' to "равно", '+' to "плюс", '-' to "минус", '*' to "звёздочка", '/' to "слэш", '\\' to "обратный слэш", '_' to "подчёркивание", '.' to "точка", ':' to "двоеточие", ';' to "точка с запятой", ',' to "запятая", '(' to "открывающая скобка", ')' to "закрывающая скобка", '{' to "открывающая фигурная скобка", '}' to "закрывающая фигурная скобка", '[' to "открывающая квадратная скобка", ']' to "закрывающая квадратная скобка", '"' to "кавычка", '\'' to "апостроф", '<' to "меньше", '>' to "больше")
+    private val PARENTHETICAL_TRAILING_PUNCTUATION = setOf(',', ';', ':', '.', '!', '?', '…')
 }

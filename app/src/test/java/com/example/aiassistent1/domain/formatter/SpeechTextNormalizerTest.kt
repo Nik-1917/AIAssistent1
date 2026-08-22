@@ -215,6 +215,21 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
+    fun `isolates starred headings without whitespace after closing stars`() {
+        listOf(
+            "*Один*Описание." to listOf("Один", "Описание."),
+            "**Два**Описание." to listOf("Два", "Описание."),
+            "***Три***Описание." to listOf("Три", "Описание."),
+            "7. **Заголовок:**Продолжение." to listOf("Заголовок:", "Продолжение."),
+        ).forEach { (source, expected) ->
+            assertEquals(
+                expected,
+                SpeechTextChunker.split(SpeechTextNormalizer.normalize(source)),
+            )
+        }
+    }
+
+    @Test
     fun `isolates a setext markdown heading`() {
         assertEquals(
             listOf("Заголовок", "Описание."),
@@ -287,6 +302,56 @@ class SpeechTextNormalizerTest {
             SpeechTextChunker.split(
                 SpeechTextNormalizer.normalize("Код `getUserName()`"),
             ).size,
+        )
+    }
+
+    @Test
+    fun `isolates russian text inside parentheses`() {
+        assertEquals(
+            listOf("Основной текст", "(важное уточнение)", "продолжение."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Основной текст (важное уточнение) продолжение."),
+            ),
+        )
+    }
+
+    @Test
+    fun `keeps a nested parenthetical block together`() {
+        assertEquals(
+            listOf("Текст", "(параметр (расширенный режим))", "продолжение."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Текст (параметр (расширенный режим)) продолжение."),
+            ),
+        )
+    }
+
+    @Test
+    fun `keeps an english phrase together inside parentheses`() {
+        assertEquals(
+            listOf("Метод", "(machine learning),", "работает."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Метод (machine learning), работает."),
+            ),
+        )
+    }
+
+    @Test
+    fun `isolates multiple parenthetical blocks`() {
+        assertEquals(
+            listOf("Текст", "(первое)", "между", "(второе)", "дальше."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Текст (первое) между (второе) дальше."),
+            ),
+        )
+    }
+
+    @Test
+    fun `leaves unmatched parentheses in surrounding text`() {
+        assertEquals(
+            listOf("Текст (незакрытое продолжение."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Текст (незакрытое продолжение."),
+            ),
         )
     }
 }

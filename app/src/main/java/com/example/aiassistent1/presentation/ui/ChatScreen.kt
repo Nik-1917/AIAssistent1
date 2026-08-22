@@ -669,7 +669,6 @@ fun ChatScreen(
 
     if (showSettingsDialog) {
         ModelSettingsDialog(
-            modelName = uiState.selectedModel,
             params = uiState.modelParams,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
             systemPromptEnabled = uiState.systemPromptEnabled,
@@ -1484,7 +1483,6 @@ private fun VoiceMicrophoneButton(
 
 @Composable
 fun ModelSettingsDialog(
-    modelName: String,
     params: GenerationParams,
     smoothResponseEnabled: Boolean,
     systemPromptEnabled: Boolean,
@@ -1517,7 +1515,7 @@ fun ModelSettingsDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Настройки для $modelName",
+                    text = "Модель",
                     style = MaterialTheme.typography.titleLarge
                 )
 
