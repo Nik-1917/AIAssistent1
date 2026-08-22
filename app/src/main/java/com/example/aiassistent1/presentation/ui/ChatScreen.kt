@@ -169,9 +169,9 @@ fun ChatScreen(
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
     var showClearChatDialog by remember { mutableStateOf(false) }
 
-    var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
+    var shouldAutoScroll by rememberSaveable { mutableStateOf(false) }
     var hasRestoredChatScrollPosition by remember { mutableStateOf(false) }
-    var isRestoringChatScrollPosition by remember { mutableStateOf(false) }
+    var restoredLastMessageId by remember { mutableStateOf<String?>(null) }
     val latestMessages = rememberUpdatedState(uiState.messages)
 
     // --- Автоматическое скрытие футера при прокрутке ---
@@ -230,8 +230,8 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(listState.canScrollForward) {
-        if (!listState.canScrollForward) {
+    LaunchedEffect(listState.canScrollForward, hasRestoredChatScrollPosition) {
+        if (hasRestoredChatScrollPosition && !listState.canScrollForward) {
             shouldAutoScroll = true
         }
     }
@@ -279,6 +279,14 @@ fun ChatScreen(
                 viewModel.refreshModelStatus()
             }
             if (event == Lifecycle.Event.ON_STOP) {
+                latestMessages.value.getOrNull(listState.firstVisibleItemIndex)?.let { message ->
+                    viewModel.saveChatScrollPosition(
+                        ChatScrollPosition(
+                            anchorMessageId = message.id,
+                            offset = listState.firstVisibleItemScrollOffset,
+                        ),
+                    )
+                }
                 val isChangingConfigurations = (context as? android.app.Activity)?.isChangingConfigurations ?: false
                 viewModel.stopVoiceCaptureForBackground(isChangingConfigurations)
             }
@@ -353,15 +361,10 @@ fun ChatScreen(
                 .takeIf { it >= 0 }
         }
         if (savedIndex != null) {
-            isRestoringChatScrollPosition = true
-            try {
-                shouldAutoScroll = false
-                listState.scrollToItem(savedIndex, savedPosition.offset)
-            } finally {
-                shouldAutoScroll = false
-                isRestoringChatScrollPosition = false
-            }
+            shouldAutoScroll = false
+            listState.scrollToItem(savedIndex, savedPosition.offset)
         }
+        restoredLastMessageId = uiState.messages.lastOrNull()?.id
         hasRestoredChatScrollPosition = true
     }
 
@@ -382,14 +385,24 @@ fun ChatScreen(
             .collect(viewModel::saveChatScrollPosition)
     }
 
-    LaunchedEffect(lastMessage?.id) {
-        if (!isRestoringChatScrollPosition && lastMessage != null) {
+    LaunchedEffect(
+        lastMessage?.id,
+        hasRestoredChatScrollPosition,
+        restoredLastMessageId,
+    ) {
+        if (!hasRestoredChatScrollPosition) return@LaunchedEffect
+
+        if (lastMessage?.id != null && lastMessage.id != restoredLastMessageId) {
             shouldAutoScroll = true
         }
-    }
-
-    LaunchedEffect(lastMessage?.id, hasRestoredChatScrollPosition) {
-        if (hasRestoredChatScrollPosition && lastMessage != null && shouldAutoScroll) {
+        if (
+            shouldAutoScrollToNewestMessage(
+                hasRestoredPosition = hasRestoredChatScrollPosition,
+                isAutoScrollEnabled = shouldAutoScroll,
+                restoredLastMessageId = restoredLastMessageId,
+                lastMessageId = lastMessage?.id,
+            )
+        ) {
             listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
     }
@@ -532,6 +545,7 @@ fun ChatScreen(
                 SpeechPlaybackStatusCard(
                     state = uiState.speechPlaybackState,
                     isVoiceMode = uiState.isVoiceMode,
+                    autoPlaybackEnabled = uiState.autoPlaybackEnabled,
                     onStop = viewModel::stopSpeechPlayback,
                     onDisableVoiceMode = { viewModel.setVoiceMode(false) },
                     isCollapsed = isSpeechCardCollapsed,
@@ -673,13 +687,15 @@ fun ChatScreen(
             smoothResponseEnabled = uiState.smoothResponseEnabled,
             systemPromptEnabled = uiState.systemPromptEnabled,
             dialogueModeEnabled = uiState.dialogueModeEnabled,
+            autoPlaybackEnabled = uiState.autoPlaybackEnabled,
             speechRate = uiState.speechRate,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, speechRate ->
+            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate ->
                 viewModel.updateModelParams(updatedParams)
                 viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
                 viewModel.setSystemPromptEnabled(systemPromptEnabled)
                 viewModel.setDialogueModeEnabled(dialogueModeEnabled)
+                viewModel.setAutoPlaybackEnabled(autoPlaybackEnabled)
                 viewModel.setSpeechRate(speechRate)
                 showSettingsDialog = false
             }
@@ -1487,9 +1503,10 @@ fun ModelSettingsDialog(
     smoothResponseEnabled: Boolean,
     systemPromptEnabled: Boolean,
     dialogueModeEnabled: Boolean,
+    autoPlaybackEnabled: Boolean,
     speechRate: Float,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean, Boolean, Float) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean, Boolean, Boolean, Float) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -1499,6 +1516,7 @@ fun ModelSettingsDialog(
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
     var systemPrompt by remember { mutableStateOf(systemPromptEnabled) }
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
+    var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -1611,6 +1629,24 @@ fun ModelSettingsDialog(
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Автовоспроизведение")
+                        Text(
+                            "Автоматически озвучивать каждый ответ ассистента",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = autoPlayback,
+                        onCheckedChange = { autoPlayback = it },
+                    )
+                }
+
                 SettingSlider(
                     label = "Скорость речи: ${String.format("%.2f", selectedSpeechRate)}",
                     value = selectedSpeechRate,
@@ -1666,6 +1702,7 @@ fun ModelSettingsDialog(
                             smoothResponse,
                             systemPrompt,
                             dialogueMode,
+                            autoPlayback,
                             selectedSpeechRate,
                         )
                     }) {

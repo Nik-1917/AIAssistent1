@@ -138,6 +138,11 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
+            settingsRepository.autoPlaybackEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(autoPlaybackEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.speechRate.collect { rate ->
                 mutableUiState.update { it.copy(speechRate = rate) }
             }
@@ -358,6 +363,7 @@ class ChatViewModel(
                     val updatedAssistantMessage = currentAssistantMessage.copy(
                         content = currentAssistantMessage.content + delta,
                     )
+                    withContext(Dispatchers.IO) { chatRepository.saveMessage(updatedAssistantMessage) }
                     assistantMessage = updatedAssistantMessage
                     updateMessage(updatedAssistantMessage)
                 }
@@ -392,7 +398,7 @@ class ChatViewModel(
                     }
                 }
 
-                if (mutableUiState.value.isVoiceMode) {
+                if (mutableUiState.value.isVoiceMode || mutableUiState.value.autoPlaybackEnabled) {
                     assistantMessage?.content
                         ?.takeIf(String::isNotBlank)
                         ?.let { content ->
@@ -717,6 +723,12 @@ class ChatViewModel(
     fun setDialogueModeEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setDialogueModeEnabled(enabled)
+        }
+    }
+
+    fun setAutoPlaybackEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAutoPlaybackEnabled(enabled)
         }
     }
 

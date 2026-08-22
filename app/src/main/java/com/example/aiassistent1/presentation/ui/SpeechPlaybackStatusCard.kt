@@ -53,6 +53,7 @@ fun SpeechPlaybackStatusCard(
     modifier: Modifier = Modifier,
     isCollapsed: Boolean = true,
     onCollapsedChange: (Boolean) -> Unit = {},
+    autoPlaybackEnabled: Boolean = false,
 ) {
     AnimatedVisibility(
         visible = state !is SpeechPlaybackState.Idle || isVoiceMode,
@@ -78,7 +79,7 @@ fun SpeechPlaybackStatusCard(
             SpeechPlaybackState.Playing -> "Нажмите стоп, чтобы прервать"
             is SpeechPlaybackState.Stopped -> state.reason.label
             is SpeechPlaybackState.Error -> state.message
-            SpeechPlaybackState.Idle -> "Ответ будет озвучен автоматически"
+            SpeechPlaybackState.Idle -> if (isVoiceMode || autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
         }
         val infiniteTransition = rememberInfiniteTransition(label = "speechPlaybackPulse")
         val pulse by infiniteTransition.animateFloat(

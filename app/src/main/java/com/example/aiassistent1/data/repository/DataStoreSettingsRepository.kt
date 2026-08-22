@@ -36,6 +36,7 @@ class DataStoreSettingsRepository(
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
+    private val autoPlaybackEnabledKey = booleanPreferencesKey("auto_playback_enabled")
     private val speechRateKey = floatPreferencesKey("speech_rate")
     private val chatScrollAnchorMessageIdKey = stringPreferencesKey("chat_scroll_anchor_message_id")
     private val chatScrollOffsetKey = intPreferencesKey("chat_scroll_offset")
@@ -92,6 +93,14 @@ class DataStoreSettingsRepository(
 
     override val dialogueModeEnabled: StateFlow<Boolean> = context.settingsStore.data
         .map { preferences -> preferences[dialogueModeEnabledKey] ?: false }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
+
+    override val autoPlaybackEnabled: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences -> preferences[autoPlaybackEnabledKey] ?: false }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
@@ -192,6 +201,12 @@ class DataStoreSettingsRepository(
     override suspend fun setDialogueModeEnabled(enabled: Boolean) {
         context.settingsStore.edit { preferences ->
             preferences[dialogueModeEnabledKey] = enabled
+        }
+    }
+
+    override suspend fun setAutoPlaybackEnabled(enabled: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[autoPlaybackEnabledKey] = enabled
         }
     }
 

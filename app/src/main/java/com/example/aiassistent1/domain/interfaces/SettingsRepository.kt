@@ -27,6 +27,9 @@ interface SettingsRepository {
     val dialogueModeEnabled: StateFlow<Boolean>
     suspend fun setDialogueModeEnabled(enabled: Boolean)
 
+    val autoPlaybackEnabled: StateFlow<Boolean>
+    suspend fun setAutoPlaybackEnabled(enabled: Boolean)
+
     val speechRate: StateFlow<Float>
     suspend fun setSpeechRate(rate: Float)
 
