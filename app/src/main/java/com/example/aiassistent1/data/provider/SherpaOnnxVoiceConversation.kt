@@ -8,6 +8,7 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.util.Log
+import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
@@ -193,26 +194,33 @@ class SherpaOnnxSpeechPlayback(
     override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> = runCatching {
         mutex.withLock {
             playbackStopped.set(false)
-            val speech = synthesizer.synthesize(text).getOrThrow()
-            check(!playbackStopped.get()) { "Воспроизведение остановлено" }
-            val activeTrack = createTrack(speech.sampleRate, speech.samples.size).also { track = it }
-            try {
-                activeTrack.play()
-                onPlaybackStarted()
-                val writtenSamples = activeTrack.write(
-                    speech.samples,
-                    0,
-                    speech.samples.size,
-                    AudioTrack.WRITE_BLOCKING,
-                )
-                check(writtenSamples == speech.samples.size) {
-                    "Не удалось полностью записать аудиобуфер: $writtenSamples/${speech.samples.size}"
+            var playbackStarted = false
+            SpeechTextChunker.split(text).forEach { chunk ->
+                check(!playbackStopped.get()) { "Воспроизведение остановлено" }
+                val speech = synthesizer.synthesize(chunk).getOrThrow()
+                check(!playbackStopped.get()) { "Воспроизведение остановлено" }
+                val activeTrack = createTrack(speech.sampleRate, speech.samples.size).also { track = it }
+                try {
+                    activeTrack.play()
+                    if (!playbackStarted) {
+                        playbackStarted = true
+                        onPlaybackStarted()
+                    }
+                    val writtenSamples = activeTrack.write(
+                        speech.samples,
+                        0,
+                        speech.samples.size,
+                        AudioTrack.WRITE_BLOCKING,
+                    )
+                    check(writtenSamples == speech.samples.size) {
+                        "Не удалось полностью записать аудиобуфер: $writtenSamples/${speech.samples.size}"
+                    }
+                    awaitPlaybackCompletion(activeTrack, speech.samples.size, speech.sampleRate)
+                    if (!playbackStopped.get()) activeTrack.stop()
+                } finally {
+                    activeTrack.release()
+                    if (track === activeTrack) track = null
                 }
-                awaitPlaybackCompletion(activeTrack, speech.samples.size, speech.sampleRate)
-                if (!playbackStopped.get()) activeTrack.stop()
-            } finally {
-                activeTrack.release()
-                if (track === activeTrack) track = null
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.provider
 
 import android.os.SystemClock
+import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
 import com.example.aiassistent1.domain.model.SynthesizedSpeech
 import kotlinx.coroutines.runBlocking
@@ -34,6 +35,22 @@ class SherpaOnnxSpeechPlaybackInstrumentedTest {
         )
         assertEquals(1, synthesizer.calls)
         assertTrue("Synthesizer was not released", synthesizer.closed)
+    }
+
+    @Test
+    fun `plays every chunk of a long message`() = runBlocking {
+        val synthesizer = FakeSpeechSynthesizer()
+        val playback = SherpaOnnxSpeechPlayback(synthesizer)
+        val text = "слово ".repeat(SpeechTextChunker.MAX_CHUNK_LENGTH / 3)
+
+        val result = try {
+            playback.speak(text) {}
+        } finally {
+            playback.close()
+        }
+
+        assertTrue(result.exceptionOrNull()?.message ?: "Длинный текст не был воспроизведён", result.isSuccess)
+        assertTrue("Длинный текст должен быть синтезирован несколькими фрагментами", synthesizer.calls > 1)
     }
 
     private class FakeSpeechSynthesizer : SpeechSynthesizer {

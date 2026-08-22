@@ -8,6 +8,7 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import androidx.core.content.ContextCompat
+import com.example.aiassistent1.domain.formatter.SpeechTextNormalizer
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -90,7 +91,7 @@ class SpeechPlaybackController(
         val activeSessionId = ++sessionId
         mutableState.value = SpeechPlaybackState.Generating
         playbackJob = scope.launch {
-            val result = speechPlayback.speak(text) {
+            val result = speechPlayback.speak(SpeechTextNormalizer.normalize(text)) {
                 if (activeSessionId == sessionId) {
                     mutableState.value = SpeechPlaybackState.Playing
                 }
