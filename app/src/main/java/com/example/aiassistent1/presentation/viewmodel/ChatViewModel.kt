@@ -132,6 +132,11 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
+            settingsRepository.dialogueModeEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(dialogueModeEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.speechRate.collect { rate ->
                 mutableUiState.update { it.copy(speechRate = rate) }
             }
@@ -461,6 +466,8 @@ class ChatViewModel(
     fun retry() {
         val state = uiState.value
         if (state.isProcessing) return
+
+        setVoiceMode(false)
         
         val lastUserMessage = state.messages.findLast { it.role == MessageRole.USER } ?: return
         val lastUserMessageIndex = state.messages.indexOf(lastUserMessage)
@@ -480,7 +487,6 @@ class ChatViewModel(
                 messages = historyToRetry,
                 isProcessing = true,
                 isStopping = false, // Сбрасываем флаг остановки при повторе
-                isVoiceMode = false,
                 error = null,
             ) }
             
@@ -614,8 +620,7 @@ class ChatViewModel(
     }
 
     fun speakMessage(text: String) {
-        val state = uiState.value
-        if (!state.isVoiceMode || text.isBlank()) return
+        if (text.isBlank()) return
         val controller = speechPlaybackController ?: return
 
         cancelPendingVoiceModeShutdown()
@@ -675,6 +680,12 @@ class ChatViewModel(
     fun setSystemPromptEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSystemPromptEnabled(enabled)
+        }
+    }
+
+    fun setDialogueModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setDialogueModeEnabled(enabled)
         }
     }
 
@@ -911,11 +922,23 @@ class ChatViewModel(
                     (playbackState is SpeechPlaybackState.Idle || playbackState is SpeechPlaybackState.Error)
                 ) {
                     isManualMessagePlayback = false
-                    if (uiState.value.isVoiceMode && !uiState.value.isProcessing) startVoiceInput()
+                    if (uiState.value.dialogueModeEnabled && uiState.value.isVoiceMode &&
+                        !uiState.value.isProcessing
+                    ) {
+                        startVoiceInput()
+                    } else {
+                        scheduleVoiceModeShutdown()
+                    }
                 } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
                     playbackState is SpeechPlaybackState.Idle
                 ) {
-                    scheduleVoiceModeShutdown()
+                    if (uiState.value.dialogueModeEnabled && uiState.value.isVoiceMode &&
+                        !uiState.value.isProcessing
+                    ) {
+                        startVoiceInput()
+                    } else {
+                        scheduleVoiceModeShutdown()
+                    }
                 } else if (playbackState !is SpeechPlaybackState.Idle) {
                     cancelPendingVoiceModeShutdown()
                 }

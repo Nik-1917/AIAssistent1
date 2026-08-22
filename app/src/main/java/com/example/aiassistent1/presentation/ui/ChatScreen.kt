@@ -158,7 +158,6 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
-    val viewportEndOffset = listState.layoutInfo.viewportEndOffset
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
@@ -282,16 +281,33 @@ fun ChatScreen(
     }
 
     var isExtendingScreenOn by remember { mutableStateOf(false) }
-    LaunchedEffect(uiState.isProcessing) {
-        if (!uiState.isProcessing) {
+    var previousSpeechPlaybackState by remember { mutableStateOf(uiState.speechPlaybackState) }
+    val isSpeechPlaybackActive = uiState.speechPlaybackState is SpeechPlaybackState.Generating ||
+        uiState.speechPlaybackState is SpeechPlaybackState.Playing
+
+    LaunchedEffect(uiState.isProcessing, uiState.speechPlaybackState) {
+        val currentSpeechPlaybackState = uiState.speechPlaybackState
+        if (uiState.isProcessing || isSpeechPlaybackActive) {
+            isExtendingScreenOn = false
+        } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
+            currentSpeechPlaybackState is SpeechPlaybackState.Idle
+        ) {
             isExtendingScreenOn = true
-            delay(5000)
+            delay(SCREEN_ON_GRACE_PERIOD_MILLIS)
             isExtendingScreenOn = false
         }
+        previousSpeechPlaybackState = currentSpeechPlaybackState
     }
 
-    DisposableEffect(view, uiState.voiceDraft.isRecording, uiState.isProcessing, isExtendingScreenOn) {
-        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing || isExtendingScreenOn
+    DisposableEffect(
+        view,
+        uiState.voiceDraft.isRecording,
+        uiState.isProcessing,
+        isSpeechPlaybackActive,
+        isExtendingScreenOn,
+    ) {
+        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing ||
+            isSpeechPlaybackActive || isExtendingScreenOn
         onDispose { view.keepScreenOn = false }
     }
 
@@ -315,7 +331,7 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(lastMessage?.id, lastMessage?.content, viewportEndOffset) {
+    LaunchedEffect(lastMessage?.id) {
         if (lastMessage != null && shouldAutoScroll) {
             listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
@@ -599,12 +615,14 @@ fun ChatScreen(
             params = uiState.modelParams,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
             systemPromptEnabled = uiState.systemPromptEnabled,
+            dialogueModeEnabled = uiState.dialogueModeEnabled,
             speechRate = uiState.speechRate,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, speechRate ->
+            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, speechRate ->
                 viewModel.updateModelParams(updatedParams)
                 viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
                 viewModel.setSystemPromptEnabled(systemPromptEnabled)
+                viewModel.setDialogueModeEnabled(dialogueModeEnabled)
                 viewModel.setSpeechRate(speechRate)
                 showSettingsDialog = false
             }
@@ -962,6 +980,9 @@ private fun MessageBubble(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onDoubleTap = {
+                            onSpeak(message.content)
+                        },
                         onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             if (isVoiceMode) onSpeak(message.content) else onCopy(message.content)
@@ -1161,6 +1182,7 @@ private const val WORD_REVEAL_DURATION_MILLIS = 140
 private const val STREAM_POLL_INTERVAL_MILLIS = 32L
 private const val STREAM_SCROLL_DURATION_MILLIS = 180
 private const val THINKING_INDICATOR_DURATION_MILLIS = 160
+private const val SCREEN_ON_GRACE_PERIOD_MILLIS = 25_000L
 private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 
 @Composable
@@ -1407,9 +1429,10 @@ fun ModelSettingsDialog(
     params: GenerationParams,
     smoothResponseEnabled: Boolean,
     systemPromptEnabled: Boolean,
+    dialogueModeEnabled: Boolean,
     speechRate: Float,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean, Float) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean, Boolean, Float) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -1418,6 +1441,7 @@ fun ModelSettingsDialog(
     var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
     var systemPrompt by remember { mutableStateOf(systemPromptEnabled) }
+    var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -1512,6 +1536,24 @@ fun ModelSettingsDialog(
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Режим диалога")
+                        Text(
+                            "После озвучивания автоматически включать микрофон для следующей реплики",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = dialogueMode,
+                        onCheckedChange = { dialogueMode = it },
+                    )
+                }
+
                 SettingSlider(
                     label = "Скорость речи: ${String.format("%.2f", selectedSpeechRate)}",
                     value = selectedSpeechRate,
@@ -1566,6 +1608,7 @@ fun ModelSettingsDialog(
                             ),
                             smoothResponse,
                             systemPrompt,
+                            dialogueMode,
                             selectedSpeechRate,
                         )
                     }) {

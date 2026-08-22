@@ -23,6 +23,9 @@ interface SettingsRepository {
     val systemPromptEnabled: StateFlow<Boolean>
     suspend fun setSystemPromptEnabled(enabled: Boolean)
 
+    val dialogueModeEnabled: StateFlow<Boolean>
+    suspend fun setDialogueModeEnabled(enabled: Boolean)
+
     val speechRate: StateFlow<Float>
     suspend fun setSpeechRate(rate: Float)
 

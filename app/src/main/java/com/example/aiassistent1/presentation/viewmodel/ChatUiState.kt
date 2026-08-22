@@ -22,6 +22,7 @@ data class ChatUiState(
     val showClearChatConfirmation: Boolean = true,
     val smoothResponseEnabled: Boolean = false,
     val systemPromptEnabled: Boolean = false,
+    val dialogueModeEnabled: Boolean = false,
     val speechRate: Float = SpeechRate.DEFAULT,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",

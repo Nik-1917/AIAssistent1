@@ -34,6 +34,7 @@ class DataStoreSettingsRepository(
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
+    private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
     private val speechRateKey = floatPreferencesKey("speech_rate")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
@@ -80,6 +81,14 @@ class DataStoreSettingsRepository(
 
     override val systemPromptEnabled: StateFlow<Boolean> = context.settingsStore.data
         .map { preferences -> preferences[systemPromptEnabledKey] ?: false }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
+
+    override val dialogueModeEnabled: StateFlow<Boolean> = context.settingsStore.data
+        .map { preferences -> preferences[dialogueModeEnabledKey] ?: false }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
@@ -166,6 +175,12 @@ class DataStoreSettingsRepository(
     override suspend fun setSystemPromptEnabled(enabled: Boolean) {
         context.settingsStore.edit { preferences ->
             preferences[systemPromptEnabledKey] = enabled
+        }
+    }
+
+    override suspend fun setDialogueModeEnabled(enabled: Boolean) {
+        context.settingsStore.edit { preferences ->
+            preferences[dialogueModeEnabledKey] = enabled
         }
     }
 
