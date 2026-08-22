@@ -272,6 +272,34 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
+    fun `includes a standalone cyrillic letter before an english phrase`() {
+        assertEquals(
+            listOf("Работа", "в Python", "и", "с Android Studio", "удобна."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Работа в Python и с Android Studio удобна."),
+            ),
+        )
+    }
+
+    @Test
+    fun `does not take a letter from a russian word before english`() {
+        assertEquals(
+            listOf("Русское слово", "Python"),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Русское слово Python"),
+            ),
+        )
+    }
+
+    @Test
+    fun `keeps a standalone latin letter in the same english phrase`() {
+        assertEquals(
+            listOf("A language model"),
+            SpeechTextChunker.split(SpeechTextNormalizer.normalize("A language model")),
+        )
+    }
+
+    @Test
     fun `keeps punctuation attached to an isolated english word`() {
         assertEquals(
             listOf("Параметры", "(Hyperparameters):", "описание."),

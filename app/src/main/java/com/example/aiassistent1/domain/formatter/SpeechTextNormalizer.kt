@@ -15,8 +15,8 @@ object SpeechTextNormalizer {
     )
     private val setextHeading = Regex("(?m)^([^\\r\\n]+)\\r?\\n[\\t ]*(?:=+|-{3,})[\\t ]*$")
     private val englishPhrase = Regex(
-        "(?<![A-Za-z0-9_])" +
-            "([('\\[\"«]?[A-Za-z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*" +
+        "(?<![\\p{L}\\p{N}_])" +
+            "((?:[А-Яа-яЁё][\\t ]+)?[('\\[\"«]?[A-Za-z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*" +
             "(?:[\\t ]+[A-Za-z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*)*" +
             "[)'\\]\"»]*[,;:.!?]?)" +
             "(?![A-Za-z0-9_])",
