@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -150,6 +151,9 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withTimeoutOrNull
+
+private val CALENDAR_BUTTON_SIZE = 66.dp
+private val CALENDAR_BUTTON_VERTICAL_OFFSET = 167.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
@@ -432,11 +436,14 @@ fun ChatScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
+            val calendarButtonBottom =
+                (maxHeight / 2f) + (CALENDAR_BUTTON_SIZE / 2f) - CALENDAR_BUTTON_VERTICAL_OFFSET
+
             // Основной контейнер с навигационными отступами
             Box(
                 modifier = Modifier
@@ -542,37 +549,6 @@ fun ChatScreen(
                     )
                 }
 
-                SpeechPlaybackStatusCard(
-                    state = uiState.speechPlaybackState,
-                    isVoiceMode = uiState.isVoiceMode,
-                    autoPlaybackEnabled = uiState.autoPlaybackEnabled,
-                    onStop = viewModel::stopSpeechPlayback,
-                    onDisableVoiceMode = { viewModel.setVoiceMode(false) },
-                    isCollapsed = isSpeechCardCollapsed,
-                    onCollapsedChange = { isSpeechCardCollapsed = it },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset { 
-                            IntOffset(speechCardOffset.x.roundToInt(), speechCardOffset.y.roundToInt()) 
-                        }
-                        .pointerInput(Unit) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    speechCardOffset += dragAmount
-                                }
-                            )
-                        }
-                        .padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            bottom = if (uiState.voiceDraft.isVisible) 246.dp else 112.dp,
-                        ),
-                )
-
                 // Панель ввода (overlay), больше не выталкивает чат
                 androidx.compose.animation.AnimatedVisibility(
                     visible = isFooterVisible,
@@ -600,6 +576,36 @@ fun ChatScreen(
                 }
             }
 
+            SpeechPlaybackStatusCard(
+                state = uiState.speechPlaybackState,
+                isVoiceMode = uiState.isVoiceMode,
+                autoPlaybackEnabled = uiState.autoPlaybackEnabled,
+                onStop = viewModel::stopSpeechPlayback,
+                onDisableVoiceMode = { viewModel.setVoiceMode(false) },
+                isCollapsed = isSpeechCardCollapsed,
+                onCollapsedChange = { isSpeechCardCollapsed = it },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset {
+                        IntOffset(
+                            speechCardOffset.x.roundToInt(),
+                            speechCardOffset.y.roundToInt() + calendarButtonBottom.roundToPx(),
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                speechCardOffset += dragAmount
+                            }
+                        )
+                    }
+                    .padding(end = 4.dp),
+            )
+
             Card(
                 onClick = onOpenCalendar,
                 modifier = Modifier
@@ -607,7 +613,7 @@ fun ChatScreen(
                     .offset {
                         IntOffset(
                             calendarButtonOffset.x.roundToInt(),
-                            calendarButtonOffset.y.roundToInt() - 100.dp.roundToPx()
+                            calendarButtonOffset.y.roundToInt() - CALENDAR_BUTTON_VERTICAL_OFFSET.roundToPx()
                         )
                     }
                     .pointerInput(Unit) {
@@ -622,7 +628,7 @@ fun ChatScreen(
                         )
                     }
                     .padding(end = 4.dp)
-                    .size(66.dp)
+                    .size(CALENDAR_BUTTON_SIZE)
                     .semantics { contentDescription = "Открыть календарь" },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(

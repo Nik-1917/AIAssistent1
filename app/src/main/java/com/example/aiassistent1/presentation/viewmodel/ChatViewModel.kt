@@ -591,6 +591,9 @@ class ChatViewModel(
     fun stopGeneration(resumeDialogue: Boolean = true) {
         speechPlaybackController?.stop(SpeechStopReason.User)
         if (!uiState.value.isProcessing) return
+        if (resumeDialogue && !uiState.value.dialogueModeEnabled) {
+            setVoiceMode(false)
+        }
 
         val activeGeneration = generationJob
 

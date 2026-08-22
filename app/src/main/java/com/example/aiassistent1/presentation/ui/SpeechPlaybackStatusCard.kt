@@ -72,7 +72,7 @@ fun SpeechPlaybackStatusCard(
             SpeechPlaybackState.Playing -> "Ответ озвучивается"
             is SpeechPlaybackState.Stopped -> "Озвучивание остановлено"
             is SpeechPlaybackState.Error -> "Голосовой вывод недоступен"
-            SpeechPlaybackState.Idle -> "Голосовой вывод готов"
+            SpeechPlaybackState.Idle -> null
         }
         val subtitle = when (state) {
             SpeechPlaybackState.Generating -> "Создаю аудио на устройстве"
@@ -96,7 +96,11 @@ fun SpeechPlaybackStatusCard(
             onClick = { onCollapsedChange(!isCollapsed) },
             shape = if (isCollapsed) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = palette.copy(alpha = 0.15f),
+                containerColor = if (isCollapsed) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                } else {
+                    palette.copy(alpha = 0.65f)
+                },
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
@@ -156,8 +160,10 @@ fun SpeechPlaybackStatusCard(
                 
                 if (!isCollapsed) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(title, style = MaterialTheme.typography.labelLarge)
-                        Spacer(modifier = Modifier.size(2.dp))
+                        title?.let {
+                            Text(it, style = MaterialTheme.typography.labelLarge)
+                            Spacer(modifier = Modifier.size(2.dp))
+                        }
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
