@@ -424,7 +424,7 @@ class ChatViewModel(
         viewModelScope.launch {
             if (uiState.value.selectedModel == modelName) return@launch
             
-            stopGeneration()
+            stopGeneration(resumeDialogue = false)
             llmEngine.close()
             // Принудительно сбрасываем флаги при смене модели
             mutableUiState.update { it.copy(isStopping = false, isProcessing = false) }
@@ -565,9 +565,11 @@ class ChatViewModel(
         }
     }
 
-    fun stopGeneration() {
+    fun stopGeneration(resumeDialogue: Boolean = true) {
         speechPlaybackController?.stop(SpeechStopReason.User)
         if (!uiState.value.isProcessing) return
+
+        val activeGeneration = generationJob
 
         // Устанавливаем флаг остановки для изменения текста в UI
         mutableUiState.update { it.copy(isStopping = true) }
@@ -575,11 +577,17 @@ class ChatViewModel(
         // Прерываем native процесс
         llmEngine.cancelGeneration()
         // Отменяем корутину генерации
-        generationJob?.cancel()
+        activeGeneration?.cancel()
         // Возвращаем немедленный сброс флага обработки, как было раньше
         mutableUiState.update { it.copy(isProcessing = false) }
         // Останавливаем сервис переднего плана
         GenerationForegroundService.stop(context)
+        if (resumeDialogue) {
+            viewModelScope.launch {
+                activeGeneration?.join()
+                resumeDialogueVoiceInput()
+            }
+        }
     }
 
     fun clearChat() {
@@ -616,7 +624,9 @@ class ChatViewModel(
     }
 
     fun stopSpeechPlayback() {
+        isManualMessagePlayback = false
         speechPlaybackController?.stop(SpeechStopReason.User)
+        resumeDialogueVoiceInput()
     }
 
     fun speakMessage(text: String) {
@@ -906,7 +916,7 @@ class ChatViewModel(
 
     override fun onCleared() {
         cancelPendingVoiceModeShutdown()
-        stopGeneration()
+        stopGeneration(resumeDialogue = false)
         stopVoiceInput()
         (voiceInput as? AutoCloseable)?.close()
         speechPlaybackController?.close()
@@ -960,6 +970,14 @@ class ChatViewModel(
     private fun cancelPendingVoiceModeShutdown() {
         voiceModeShutdownJob?.cancel()
         voiceModeShutdownJob = null
+    }
+
+    private fun resumeDialogueVoiceInput() {
+        val state = uiState.value
+        if (!state.dialogueModeEnabled || !state.isVoiceMode || state.isProcessing) return
+
+        cancelPendingVoiceModeShutdown()
+        startVoiceInput()
     }
 
     private fun observeVoiceInput() {
