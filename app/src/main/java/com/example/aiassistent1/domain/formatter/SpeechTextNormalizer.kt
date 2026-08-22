@@ -9,8 +9,18 @@ object SpeechTextNormalizer {
     private val markdownLink = Regex("(!)?\\[([^]]+)]\\((https?://[^)\\s]+)\\)", RegexOption.IGNORE_CASE)
     private val url = Regex("(?i)\\b(?:https?://|www\\.)[^\\s<>()\\[\\]{}]+")
     private val atxHeading = Regex("(?m)^[\\t ]{0,3}#{1,6}[\\t ]+(.+?)(?:[\\t ]+#+)?[\\t ]*$")
-    private val starredHeading = Regex("(?m)^[\\t ]*(\\*{1,3})[\\t ]*(.+?)[\\t ]*\\1[\\t ]*$")
+    private val starredHeading = Regex(
+        "(?m)^[\\t ]*(?:\\d{1,3}[\\t ]*(?:[.)]|[-—–:])[\\t ]+)?" +
+            "(\\*{1,3})[\\t ]*(.+?)[\\t ]*\\1(?=[\\t ]|$)",
+    )
     private val setextHeading = Regex("(?m)^([^\\r\\n]+)\\r?\\n[\\t ]*(?:=+|-{3,})[\\t ]*$")
+    private val englishPhrase = Regex(
+        "(?<![A-Za-z0-9_])" +
+            "([('\\[\"«]?[A-Za-z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*" +
+            "(?:[\\t ]+[A-Za-z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*)*" +
+            "[)'\\]\"»]*[,;:.!?]?)" +
+            "(?![A-Za-z0-9_])",
+    )
     private val numberedListAfterLineBreak = Regex("\\r?\\n(?:[\\t ]*\\r?\\n)*[\\t ]*\\d{1,3}[\\t ]*(?:[.)]|[-—–:])[\\t ]+")
     private val numberedListAtStart = Regex("^[\\t ]*\\d{1,3}[\\t ]*(?:[.)]|[-—–:])[\\t ]+")
     private val isoDate = Regex("(?<!\\d)(\\d{4})-(\\d{2})-(\\d{2})(?!\\d)")
@@ -53,7 +63,8 @@ object SpeechTextNormalizer {
         }
         text = markdownLink.replace(text) { match ->
             val kind = if (match.groupValues[1] == "!") "изображение" else "ссылка"
-            protect("$kind: ${match.groupValues[2]}. адрес: ${speakUrl(match.groupValues[3])}")
+            val spokenTitle = markEnglishPhrases("${match.groupValues[2]}.")
+            protect("$kind: $spokenTitle адрес: ${speakUrl(match.groupValues[3])}")
         }
         text = url.replace(text) { match ->
             val raw = match.value
@@ -90,6 +101,7 @@ object SpeechTextNormalizer {
             speakNumber(match.groupValues[1], match.groupValues[2].ifEmpty { null }, match.groupValues[3] == "%")
         }
         text = text.replace(Regex("\\s*$SPEECH_SECTION_BOUNDARY\\s*"), SPEECH_SECTION_BOUNDARY)
+        text = markEnglishPhrases(text)
         text = text.replace(Regex("\\s+"), " ").trim()
         protected.indices.reversed().forEach { index ->
             text = text.replace("\uE000${marker(index)}\uE001", protected[index])
@@ -99,6 +111,10 @@ object SpeechTextNormalizer {
 
     private fun speechSection(value: String): String =
         "$SPEECH_SECTION_BOUNDARY${value.trim()}$SPEECH_SECTION_BOUNDARY"
+
+    private fun markEnglishPhrases(value: String): String = englishPhrase.replace(value) { match ->
+        "$SPEECH_ENGLISH_PHRASE_BOUNDARY${match.value}$SPEECH_ENGLISH_PHRASE_BOUNDARY"
+    }
 
     private fun speakDate(year: String, month: String, day: String): String = runCatching {
         val date = LocalDate.parse("$year-$month-$day", DateTimeFormatter.ISO_LOCAL_DATE)
@@ -211,7 +227,7 @@ object SpeechTextNormalizer {
         var value = index
         val result = StringBuilder()
         do {
-            result.append(('a'.code + value % 26).toChar())
+            result.append(('а'.code + value % 26).toChar())
             value = value / 26 - 1
         } while (value >= 0)
         return result.toString()

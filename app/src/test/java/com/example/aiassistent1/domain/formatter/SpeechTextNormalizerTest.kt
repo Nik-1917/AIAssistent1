@@ -35,8 +35,15 @@ class SpeechTextNormalizerTest {
     @Test
     fun `speaks markdown links and urls without losing their address`() {
         assertEquals(
-            "Документация: ссылка: сайт. адрес: эйч ти ти пи эс двоеточие двойной слэш example точка com слэш v два вопросительный знак a равно один и b равно два",
-            SpeechTextNormalizer.normalize("**Документация:** [сайт](https://example.com/v2?a=1&b=2)"),
+            listOf(
+                "Документация:",
+                "ссылка: сайт.",
+                "адрес: эйч ти ти пи эс двоеточие двойной слэш example точка com слэш v два " +
+                    "вопросительный знак a равно один и b равно два",
+            ),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("**Документация:** [сайт](https://example.com/v2?a=1&b=2)"),
+            ),
         )
     }
 
@@ -177,6 +184,37 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
+    fun `isolates a numbered starred heading from text on the same line`() {
+        assertEquals(
+            listOf(
+                "Параметры модели",
+                "(Hyperparameters):",
+                "В дополнение к вышеуказанным, параметры модели влияют на производительность.",
+            ),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize(
+                    "7. **Параметры модели (Hyperparameters):** В дополнение к вышеуказанным, " +
+                        "параметры модели влияют на производительность.",
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `isolates leading headings with one two or three stars before body text`() {
+        listOf(
+            "1. *Один* Описание." to "Один",
+            "2) **Два** Описание." to "Два",
+            "3 — ***Три*** Описание." to "Три",
+        ).forEach { (source, title) ->
+            assertEquals(
+                listOf(title, "Описание."),
+                SpeechTextChunker.split(SpeechTextNormalizer.normalize(source)),
+            )
+        }
+    }
+
+    @Test
     fun `isolates a setext markdown heading`() {
         assertEquals(
             listOf("Заголовок", "Описание."),
@@ -197,6 +235,58 @@ class SpeechTextNormalizerTest {
         assertEquals(
             listOf("Пункт списка код: # заголовок"),
             SpeechTextChunker.split(SpeechTextNormalizer.normalize("* Пункт списка\n`# заголовок`")),
+        )
+    }
+
+    @Test
+    fun `groups adjacent english words in ordinary text`() {
+        assertEquals(
+            listOf("Это", "simple English", "текст."),
+            SpeechTextChunker.split(SpeechTextNormalizer.normalize("Это simple English текст.")),
+        )
+    }
+
+    @Test
+    fun `separates english phrases at punctuation and russian words`() {
+        assertEquals(
+            listOf("Это", "machine learning,", "затем", "neural network", "пример."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Это machine learning, затем neural network пример."),
+            ),
+        )
+    }
+
+    @Test
+    fun `keeps punctuation attached to an isolated english word`() {
+        assertEquals(
+            listOf("Параметры", "(Hyperparameters):", "описание."),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Параметры (Hyperparameters): описание."),
+            ),
+        )
+    }
+
+    @Test
+    fun `isolates english words in markdown link title but not in url`() {
+        assertEquals(
+            listOf(
+                "ссылка:",
+                "Open docs.",
+                "адрес: эйч ти ти пи эс двоеточие двойной слэш example точка com слэш guide",
+            ),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("[Open docs](https://example.com/guide)"),
+            ),
+        )
+    }
+
+    @Test
+    fun `does not split english identifiers inside code`() {
+        assertEquals(
+            1,
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Код `getUserName()`"),
+            ).size,
         )
     }
 }

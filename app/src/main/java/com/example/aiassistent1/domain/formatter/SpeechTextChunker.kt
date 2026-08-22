@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.formatter
 
 internal const val SPEECH_SECTION_BOUNDARY = "\uE200"
+internal const val SPEECH_ENGLISH_PHRASE_BOUNDARY = "\uE201"
 
 /** Produces one TTS request per sentence and safely splits only oversized sentences. */
 object SpeechTextChunker {
@@ -11,7 +12,7 @@ object SpeechTextChunker {
         val normalized = text.replace(Regex("\\s+"), " ").trim()
         if (normalized.isEmpty()) return emptyList()
 
-        return normalized.split(SPEECH_SECTION_BOUNDARY)
+        return normalized.split(SPEECH_SECTION_BOUNDARY, SPEECH_ENGLISH_PHRASE_BOUNDARY)
             .map(String::trim)
             .filter(String::isNotEmpty)
             .flatMap { section ->
