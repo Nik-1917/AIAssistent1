@@ -48,9 +48,9 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
-    fun `speaks code separately and keeps its tokens`() {
+    fun `removes inline code from speech`() {
         assertEquals(
-            "Используй код: user Id равно get User открывающая скобка два закрывающая скобка",
+            "Используй",
             SpeechTextNormalizer.normalize("Используй `userId = getUser(2)`"),
         )
     }
@@ -124,9 +124,9 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
-    fun `keeps stars inside inline code as operators`() {
+    fun `does not pronounce operators inside inline code`() {
         assertEquals(
-            "Формула код: a звёздочка b",
+            "Формула",
             SpeechTextNormalizer.normalize("Формула `a * b`"),
         )
     }
@@ -148,9 +148,9 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
-    fun `keeps a number inside code`() {
+    fun `removes a number together with inline code`() {
         assertEquals(
-            "Значение код: version равно два",
+            "Значение",
             SpeechTextNormalizer.normalize("Значение `version = 2`"),
         )
     }
@@ -248,7 +248,7 @@ class SpeechTextNormalizerTest {
     @Test
     fun `does not treat list marker or code as a heading`() {
         assertEquals(
-            listOf("Пункт списка код: # заголовок"),
+            listOf("Пункт списка"),
             SpeechTextChunker.split(SpeechTextNormalizer.normalize("* Пункт списка\n`# заголовок`")),
         )
     }
@@ -298,11 +298,41 @@ class SpeechTextNormalizerTest {
     @Test
     fun `does not split english identifiers inside code`() {
         assertEquals(
-            1,
-            SpeechTextChunker.split(
-                SpeechTextNormalizer.normalize("Код `getUserName()`"),
-            ).size,
+            "",
+            SpeechTextNormalizer.normalize("`getUserName()`"),
         )
+    }
+
+    @Test
+    fun `removes fenced backtick and tilde code blocks`() {
+        assertEquals(
+            "До После",
+            SpeechTextNormalizer.normalize(
+                "До\n```kotlin\nval value = 10\n```\n~~~json\n{ \"key\": 1 }\n~~~\nПосле",
+            ),
+        )
+    }
+
+    @Test
+    fun `removes balanced and nested curly blocks`() {
+        assertEquals(
+            "До после",
+            SpeechTextNormalizer.normalize("До { внешний { вложенный } блок } после"),
+        )
+    }
+
+    @Test
+    fun `leaves unmatched curly brace text unchanged`() {
+        assertEquals(
+            "До { незакрытый блок после",
+            SpeechTextNormalizer.normalize("До { незакрытый блок после"),
+        )
+    }
+
+    @Test
+    fun `returns blank when message contains only excluded code`() {
+        assertEquals("", SpeechTextNormalizer.normalize("```kotlin\nval value = 10\n```"))
+        assertEquals("", SpeechTextNormalizer.normalize("{ \"key\": \"value\" }"))
     }
 
     @Test

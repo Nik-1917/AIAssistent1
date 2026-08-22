@@ -80,18 +80,20 @@ class SpeechPlaybackController(
         )
     }
 
-    fun speak(text: String) {
-        if (text.isBlank() || isClosed) return
+    fun speak(text: String): Boolean {
+        if (text.isBlank() || isClosed) return false
+        val normalizedText = SpeechTextNormalizer.normalize(text)
+        if (normalizedText.isBlank()) return false
         stopActivePlayback()
         if (audioManager.requestAudioFocus(audioFocusRequest) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             mutableState.value = SpeechPlaybackState.Error("Не удалось получить доступ к аудиовыводу")
-            return
+            return false
         }
 
         val activeSessionId = ++sessionId
         mutableState.value = SpeechPlaybackState.Generating
         playbackJob = scope.launch {
-            val result = speechPlayback.speak(SpeechTextNormalizer.normalize(text)) {
+            val result = speechPlayback.speak(normalizedText) {
                 if (activeSessionId == sessionId) {
                     mutableState.value = SpeechPlaybackState.Playing
                 }
@@ -109,6 +111,7 @@ class SpeechPlaybackController(
             }
             abandonAudioFocus()
         }
+        return true
     }
 
     fun stop(reason: SpeechStopReason) {

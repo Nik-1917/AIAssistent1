@@ -55,12 +55,9 @@ object SpeechTextNormalizer {
         }
 
         var text = source
-        text = Regex("(?s)```[^\\n`]*\\n?(.*?)```").replace(text) { match ->
-            protect("код: ${speakCode(match.groupValues[1])}")
-        }
-        text = Regex("`([^`]+)`").replace(text) { match ->
-            protect("код: ${speakCode(match.groupValues[1])}")
-        }
+        text = Regex("(?s)(```|~~~)[^\\r\\n]*\\r?\\n?.*?\\1").replace(text, " ")
+        text = Regex("`[^`\\r\\n]+`").replace(text, " ")
+        text = removeBalancedCurlyBlocks(text)
         text = markdownLink.replace(text) { match ->
             val kind = if (match.groupValues[1] == "!") "изображение" else "ссылка"
             val spokenTitle = markEnglishPhrases("${match.groupValues[2]}.")
@@ -157,6 +154,47 @@ object SpeechTextNormalizer {
             result.append(protect(speechSection(text.substring(openingIndex, endExclusive))))
             copiedUntil = endExclusive
             scan = endExclusive
+        }
+        result.append(text, copiedUntil, text.length)
+        return result.toString()
+    }
+
+    private fun removeBalancedCurlyBlocks(text: String): String {
+        val result = StringBuilder(text.length)
+        var copiedUntil = 0
+        var scan = 0
+        while (scan < text.length) {
+            if (text[scan] != '{') {
+                scan++
+                continue
+            }
+
+            val openingIndex = scan
+            var depth = 0
+            var closingIndex = -1
+            var current = openingIndex
+            while (current < text.length) {
+                when (text[current]) {
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) {
+                            closingIndex = current
+                            break
+                        }
+                    }
+                }
+                current++
+            }
+            if (closingIndex < 0) {
+                scan = openingIndex + 1
+                continue
+            }
+
+            result.append(text, copiedUntil, openingIndex)
+            if (result.isNotEmpty() && !result.last().isWhitespace()) result.append(' ')
+            copiedUntil = closingIndex + 1
+            scan = copiedUntil
         }
         result.append(text, copiedUntil, text.length)
         return result.toString()

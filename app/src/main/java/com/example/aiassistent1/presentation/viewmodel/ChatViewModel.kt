@@ -396,7 +396,13 @@ class ChatViewModel(
                     assistantMessage?.content
                         ?.takeIf(String::isNotBlank)
                         ?.let { content ->
-                            speechPlaybackController?.speak(content)
+                            val controller = speechPlaybackController
+                            if (controller != null && !controller.speak(content)) {
+                                viewModelScope.launch {
+                                    kotlinx.coroutines.yield()
+                                    resumeDialogueVoiceInput()
+                                }
+                            }
                         }
                 }
             } catch (error: CancellationException) {
@@ -648,7 +654,10 @@ class ChatViewModel(
         cancelPendingVoiceModeShutdown()
         isManualMessagePlayback = true
         stopVoiceInput()
-        controller.speak(text)
+        if (!controller.speak(text)) {
+            isManualMessagePlayback = false
+            resumeDialogueVoiceInput()
+        }
     }
 
     private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
