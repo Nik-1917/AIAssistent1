@@ -100,6 +100,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -134,6 +135,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -143,10 +145,14 @@ import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
 fun ChatScreen(
     viewModel: ChatViewModel,
     onOpenCalendar: () -> Unit,
@@ -164,6 +170,9 @@ fun ChatScreen(
     var showClearChatDialog by remember { mutableStateOf(false) }
 
     var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
+    var hasRestoredChatScrollPosition by remember { mutableStateOf(false) }
+    var isRestoringChatScrollPosition by remember { mutableStateOf(false) }
+    val latestMessages = rememberUpdatedState(uiState.messages)
 
     // --- Автоматическое скрытие футера при прокрутке ---
     var isFooterVisible by rememberSaveable { mutableStateOf(true) }
@@ -325,14 +334,62 @@ fun ChatScreen(
         }
     }
 
+    LaunchedEffect(
+        uiState.isHistoryLoaded,
+        uiState.isChatScrollPositionLoaded,
+        uiState.chatScrollPosition,
+        uiState.messages,
+        hasRestoredChatScrollPosition,
+    ) {
+        if (!uiState.isHistoryLoaded || !uiState.isChatScrollPositionLoaded ||
+            hasRestoredChatScrollPosition
+        ) {
+            return@LaunchedEffect
+        }
+
+        val savedPosition = uiState.chatScrollPosition
+        val savedIndex = savedPosition.anchorMessageId?.let { messageId ->
+            uiState.messages.indexOfFirst { message -> message.id == messageId }
+                .takeIf { it >= 0 }
+        }
+        if (savedIndex != null) {
+            isRestoringChatScrollPosition = true
+            try {
+                shouldAutoScroll = false
+                listState.scrollToItem(savedIndex, savedPosition.offset)
+            } finally {
+                shouldAutoScroll = false
+                isRestoringChatScrollPosition = false
+            }
+        }
+        hasRestoredChatScrollPosition = true
+    }
+
+    LaunchedEffect(listState, hasRestoredChatScrollPosition) {
+        if (!hasRestoredChatScrollPosition) return@LaunchedEffect
+
+        snapshotFlow {
+            latestMessages.value.getOrNull(listState.firstVisibleItemIndex)?.let { message ->
+                ChatScrollPosition(
+                    anchorMessageId = message.id,
+                    offset = listState.firstVisibleItemScrollOffset,
+                )
+            }
+        }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .debounce(CHAT_SCROLL_POSITION_SAVE_DEBOUNCE_MILLIS)
+            .collect(viewModel::saveChatScrollPosition)
+    }
+
     LaunchedEffect(lastMessage?.id) {
-        if (lastMessage != null) {
+        if (!isRestoringChatScrollPosition && lastMessage != null) {
             shouldAutoScroll = true
         }
     }
 
-    LaunchedEffect(lastMessage?.id) {
-        if (lastMessage != null && shouldAutoScroll) {
+    LaunchedEffect(lastMessage?.id, hasRestoredChatScrollPosition) {
+        if (hasRestoredChatScrollPosition && lastMessage != null && shouldAutoScroll) {
             listState.scrollToItem(uiState.messages.lastIndex, Int.MAX_VALUE)
         }
     }
@@ -476,6 +533,7 @@ fun ChatScreen(
                     state = uiState.speechPlaybackState,
                     isVoiceMode = uiState.isVoiceMode,
                     onStop = viewModel::stopSpeechPlayback,
+                    onDisableVoiceMode = { viewModel.setVoiceMode(false) },
                     isCollapsed = isSpeechCardCollapsed,
                     onCollapsedChange = { isSpeechCardCollapsed = it },
                     modifier = Modifier
@@ -1182,6 +1240,7 @@ private const val WORD_REVEAL_DURATION_MILLIS = 140
 private const val STREAM_POLL_INTERVAL_MILLIS = 32L
 private const val STREAM_SCROLL_DURATION_MILLIS = 180
 private const val THINKING_INDICATOR_DURATION_MILLIS = 160
+private const val CHAT_SCROLL_POSITION_SAVE_DEBOUNCE_MILLIS = 500L
 private const val SCREEN_ON_GRACE_PERIOD_MILLIS = 25_000L
 private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 

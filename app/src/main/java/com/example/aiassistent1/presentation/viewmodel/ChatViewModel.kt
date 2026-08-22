@@ -19,6 +19,7 @@ import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -139,6 +140,16 @@ class ChatViewModel(
         viewModelScope.launch {
             settingsRepository.speechRate.collect { rate ->
                 mutableUiState.update { it.copy(speechRate = rate) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.chatScrollPosition.collect { position ->
+                mutableUiState.update {
+                    it.copy(
+                        chatScrollPosition = position,
+                        isChatScrollPositionLoaded = true,
+                    )
+                }
             }
         }
     }
@@ -603,6 +614,7 @@ class ChatViewModel(
         viewModelScope.launch {
             activeGeneration?.join()
             withContext(Dispatchers.IO) { chatRepository.deleteAllMessages() }
+            settingsRepository.setChatScrollPosition(ChatScrollPosition())
             mutableUiState.update {
                 it.copy(
                     messages = emptyList(),
@@ -702,6 +714,12 @@ class ChatViewModel(
     fun setSpeechRate(rate: Float) {
         viewModelScope.launch {
             settingsRepository.setSpeechRate(rate)
+        }
+    }
+
+    fun saveChatScrollPosition(position: ChatScrollPosition) {
+        viewModelScope.launch {
+            settingsRepository.setChatScrollPosition(position)
         }
     }
 
@@ -1144,7 +1162,10 @@ class ChatViewModel(
                 mutableUiState.update { state ->
                     val persistedIds = persistedMessages.mapTo(mutableSetOf()) { it.id }
                     val pendingMessages = state.messages.filterNot { it.id in persistedIds }
-                    state.copy(messages = persistedMessages + pendingMessages)
+                    state.copy(
+                        messages = persistedMessages + pendingMessages,
+                        isHistoryLoaded = true,
+                    )
                 }
             }
         }

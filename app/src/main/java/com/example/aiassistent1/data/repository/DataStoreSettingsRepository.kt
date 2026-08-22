@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.SpeechRate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,8 @@ class DataStoreSettingsRepository(
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
     private val speechRateKey = floatPreferencesKey("speech_rate")
+    private val chatScrollAnchorMessageIdKey = stringPreferencesKey("chat_scroll_anchor_message_id")
+    private val chatScrollOffsetKey = intPreferencesKey("chat_scroll_offset")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -102,6 +105,14 @@ class DataStoreSettingsRepository(
             started = SharingStarted.Eagerly,
             initialValue = SpeechRate.DEFAULT,
         )
+
+    override val chatScrollPosition: kotlinx.coroutines.flow.Flow<ChatScrollPosition> = context.settingsStore.data
+        .map { preferences ->
+            ChatScrollPosition(
+                anchorMessageId = preferences[chatScrollAnchorMessageIdKey],
+                offset = (preferences[chatScrollOffsetKey] ?: 0).coerceAtLeast(0),
+            )
+        }
 
     override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = context.settingsStore.data
         .map { preferences ->
@@ -187,6 +198,15 @@ class DataStoreSettingsRepository(
     override suspend fun setSpeechRate(rate: Float) {
         context.settingsStore.edit { preferences ->
             preferences[speechRateKey] = SpeechRate.normalize(rate)
+        }
+    }
+
+    override suspend fun setChatScrollPosition(position: ChatScrollPosition) {
+        context.settingsStore.edit { preferences ->
+            position.anchorMessageId?.let { id ->
+                preferences[chatScrollAnchorMessageIdKey] = id
+            } ?: preferences.remove(chatScrollAnchorMessageIdKey)
+            preferences[chatScrollOffsetKey] = position.offset.coerceAtLeast(0)
         }
     }
 

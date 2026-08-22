@@ -49,6 +49,7 @@ fun SpeechPlaybackStatusCard(
     state: SpeechPlaybackState,
     isVoiceMode: Boolean,
     onStop: () -> Unit,
+    onDisableVoiceMode: () -> Unit,
     modifier: Modifier = Modifier,
     isCollapsed: Boolean = true,
     onCollapsedChange: (Boolean) -> Unit = {},
@@ -167,6 +168,14 @@ fun SpeechPlaybackStatusCard(
                             Icon(
                                 imageVector = Icons.Default.Stop,
                                 contentDescription = "Остановить озвучивание",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    } else if (isVoiceMode && state is SpeechPlaybackState.Idle) {
+                        IconButton(onClick = onDisableVoiceMode) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Выключить микрофон",
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }

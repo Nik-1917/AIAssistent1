@@ -1,6 +1,7 @@
 package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
@@ -8,6 +9,9 @@ import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
+    val isHistoryLoaded: Boolean = false,
+    val chatScrollPosition: ChatScrollPosition = ChatScrollPosition(),
+    val isChatScrollPositionLoaded: Boolean = false,
     val modelState: ModelState = ModelState.Unloaded,
     val isModelMissing: Boolean = false,
     val calendarEventDraft: CalendarEventDraftUiState? = null,
