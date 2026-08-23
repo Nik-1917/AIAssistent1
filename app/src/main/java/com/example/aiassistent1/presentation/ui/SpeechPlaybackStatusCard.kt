@@ -2,19 +2,12 @@ package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,10 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,9 +35,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,14 +51,8 @@ fun SpeechPlaybackStatusCard(
     onCollapsedChange: (Boolean) -> Unit = {},
     autoPlaybackEnabled: Boolean = false,
 ) {
-    val detailsVisibility = remember { MutableTransitionState(false) }
-    detailsVisibility.targetState = !isCollapsed
-    val useExpandedLayout = detailsVisibility.currentState || detailsVisibility.targetState
-    val cornerRadius by animateDpAsState(
-        targetValue = if (isCollapsed) 12.dp else 24.dp,
-        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
-        label = "speechPlaybackCornerRadius",
-    )
+    val useExpandedLayout = !isCollapsed
+    val cornerRadius = if (isCollapsed) 12.dp else 24.dp
     AnimatedVisibility(
         visible = state !is SpeechPlaybackState.Idle || autoPlaybackEnabled,
         modifier = modifier,
@@ -84,9 +66,9 @@ fun SpeechPlaybackStatusCard(
             SpeechPlaybackState.Idle -> MaterialTheme.colorScheme.surface
         }
         val title = when (state) {
-            SpeechPlaybackState.Generating -> "Готовлю голосовой ответ"
+            SpeechPlaybackState.Generating -> null
             SpeechPlaybackState.Playing -> null
-            is SpeechPlaybackState.Stopped -> "Озвучивание остановлено"
+            is SpeechPlaybackState.Stopped -> null
             is SpeechPlaybackState.Error -> "Голосовой вывод недоступен"
             SpeechPlaybackState.Idle -> null
         }
@@ -97,12 +79,10 @@ fun SpeechPlaybackStatusCard(
             is SpeechPlaybackState.Error -> state.message
             SpeechPlaybackState.Idle -> if (autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
         }
-        val cardTextColor = if (!useExpandedLayout) {
-            MaterialTheme.colorScheme.onSurface
-        } else if (isSystemInDarkTheme()) {
-            Color.Black
-        } else {
-            Color.White
+        val cardTextColor = when {
+            isSystemInDarkTheme() -> Color.White
+            !useExpandedLayout -> MaterialTheme.colorScheme.onSurface
+            else -> Color.White
         }
         val containerColor by animateColorAsState(
             targetValue = if (isCollapsed) {
@@ -132,13 +112,7 @@ fun SpeechPlaybackStatusCard(
                 contentColor = cardTextColor,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-            modifier = Modifier
-                .animateContentSize(
-                    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
-                )
-                .then(
-                    if (useExpandedLayout) Modifier.fillMaxWidth() else Modifier.size(66.dp)
-                )
+            modifier = if (useExpandedLayout) Modifier.fillMaxWidth() else Modifier.size(66.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -188,17 +162,7 @@ fun SpeechPlaybackStatusCard(
                     }
                 }
                 
-                AnimatedVisibility(
-                    visibleState = detailsVisibility,
-                    modifier = Modifier.weight(1f),
-                    enter = fadeIn(animationSpec = tween(180, delayMillis = 70)) +
-                        expandHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)),
-                    exit = fadeOut(animationSpec = tween(130)) +
-                        shrinkHorizontally(
-                            animationSpec = tween(220, easing = FastOutSlowInEasing),
-                            shrinkTowards = Alignment.End,
-                        ),
-                ) {
+                if (useExpandedLayout) {
                     Column {
                         title?.let {
                             Text(it, style = MaterialTheme.typography.labelLarge)
@@ -215,24 +179,13 @@ fun SpeechPlaybackStatusCard(
                         )
                     }
                 }
-                if (isActive) {
-                    AnimatedVisibility(
-                        visibleState = detailsVisibility,
-                        enter = fadeIn(animationSpec = tween(180, delayMillis = 70)) +
-                            expandHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)),
-                        exit = fadeOut(animationSpec = tween(130)) +
-                            shrinkHorizontally(
-                                animationSpec = tween(220, easing = FastOutSlowInEasing),
-                                shrinkTowards = Alignment.End,
-                            ),
-                    ) {
-                        IconButton(onClick = onStop) {
-                            Icon(
-                                imageVector = Icons.Default.Stop,
-                                contentDescription = "Остановить озвучивание",
-                                tint = cardTextColor,
-                            )
-                        }
+                if (isActive && useExpandedLayout) {
+                    IconButton(onClick = onStop) {
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = "Остановить озвучивание",
+                            tint = cardTextColor,
+                        )
                     }
                 }
             }

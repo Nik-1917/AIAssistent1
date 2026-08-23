@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -12,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -282,6 +284,7 @@ fun ChatScreen(
     val haptic = LocalHapticFeedback.current
     var isSpeechCardCollapsed by rememberSaveable { mutableStateOf(true) }
     var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
+    var collapsedSpeechCardX by rememberSaveable { mutableStateOf(0f) }
     var speechCardSize by remember { mutableStateOf(IntSize.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
     var hasRestoredFloatingControlPositions by remember { mutableStateOf(false) }
@@ -302,6 +305,7 @@ fun ChatScreen(
             x = savedPositions.speechCardXdp * density,
             y = savedPositions.speechCardYdp * density,
         )
+        collapsedSpeechCardX = speechCardOffset.x
         calendarButtonOffset = Offset(
             x = savedPositions.calendarButtonXdp * density,
             y = savedPositions.calendarButtonYdp * density,
@@ -490,11 +494,14 @@ fun ChatScreen(
             val maxSpeechY = (
                 containerHeightPx - edgeGapPx - speechCardHeightPx - speechCardBaseY
             ).coerceAtLeast(minSpeechY)
-            val effectiveSpeechX = if (isSpeechCardCollapsed) {
-                speechCardOffset.x.roundToInt().coerceIn(minCollapsedSpeechX, 0)
-            } else {
-                0
-            }
+            fun effectiveSpeechCardX(isCollapsed: Boolean): Int =
+                if (isCollapsed) {
+                    collapsedSpeechCardX.roundToInt().coerceIn(minCollapsedSpeechX, 0)
+                } else {
+                    0
+                }
+
+            val effectiveSpeechX = effectiveSpeechCardX(isSpeechCardCollapsed)
             val effectiveSpeechY = speechCardOffset.y.roundToInt().coerceIn(minSpeechY, maxSpeechY)
             val calendarButtonBaseY =
                 ((containerHeightPx - collapsedCardSizePx) / 2) -
@@ -635,7 +642,7 @@ fun ChatScreen(
             val persistFloatingControlPositions = { savedSpeechOffset: Offset, savedCalendarOffset: Offset ->
                 viewModel.saveFloatingControlPositions(
                     FloatingControlPositions(
-                        speechCardXdp = with(density) { savedSpeechOffset.x.toDp().value },
+                        speechCardXdp = with(density) { collapsedSpeechCardX.toDp().value },
                         speechCardYdp = with(density) { savedSpeechOffset.y.toDp().value },
                         calendarButtonXdp = with(density) { savedCalendarOffset.x.toDp().value },
                         calendarButtonYdp = with(density) { savedCalendarOffset.y.toDp().value },
@@ -649,6 +656,62 @@ fun ChatScreen(
                 speechCardOffset = savedSpeechOffset
                 calendarButtonOffset = savedCalendarOffset
                 persistFloatingControlPositions(savedSpeechOffset, savedCalendarOffset)
+            }
+
+            fun speechCardModifier(visualIsCollapsed: Boolean): Modifier {
+                val isCurrentPresentation = visualIsCollapsed == isSpeechCardCollapsed
+                return Modifier
+                    .align(Alignment.TopEnd)
+                    .offset {
+                        IntOffset(
+                            effectiveSpeechCardX(visualIsCollapsed),
+                            effectiveSpeechY + speechCardBaseY,
+                        )
+                    }
+                    .then(
+                        if (isCurrentPresentation) {
+                            Modifier.pointerInput(
+                                visualIsCollapsed,
+                                minCollapsedSpeechX,
+                                minSpeechY,
+                                maxSpeechY,
+                            ) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDragEnd = saveFloatingControlPositions,
+                                    onDragCancel = saveFloatingControlPositions,
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        val nextY = (speechCardOffset.y + dragAmount.y)
+                                            .coerceIn(minSpeechY.toFloat(), maxSpeechY.toFloat())
+                                        val proposedOffset = if (isSpeechCardCollapsed) {
+                                            Offset(
+                                                x = (speechCardOffset.x + dragAmount.x)
+                                                    .coerceIn(minCollapsedSpeechX.toFloat(), 0f),
+                                                y = nextY,
+                                            )
+                                        } else {
+                                            speechCardOffset.copy(y = nextY)
+                                        }
+                                        speechCardOffset = constrainSpeechCardOffset(proposedOffset)
+                                        if (isSpeechCardCollapsed) {
+                                            collapsedSpeechCardX = speechCardOffset.x
+                                        }
+                                    }
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(horizontal = FLOATING_CARD_GAP)
+                    .onSizeChanged {
+                        if (isCurrentPresentation) {
+                            speechCardSize = it
+                        }
+                    }
             }
 
             LaunchedEffect(
@@ -821,59 +884,31 @@ fun ChatScreen(
                 }
             }
 
-            SpeechPlaybackStatusCard(
-                state = uiState.speechPlaybackState,
-                autoPlaybackEnabled = uiState.autoPlaybackEnabled,
-                onStop = viewModel::stopSpeechPlayback,
-                isCollapsed = isSpeechCardCollapsed,
-                onCollapsedChange = { collapsed ->
-                    isSpeechCardCollapsed = collapsed
-                    if (!collapsed) {
-                        speechCardOffset = constrainSpeechCardOffset(
-                            speechCardOffset.copy(x = 0f),
-                        )
-                    }
+            AnimatedContent(
+                targetState = isSpeechCardCollapsed,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(durationMillis = 160, delayMillis = 120)) togetherWith
+                        fadeOut(animationSpec = tween(durationMillis = 120))
                 },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset {
-                        IntOffset(
-                            effectiveSpeechX,
-                            effectiveSpeechY + speechCardBaseY,
-                        )
-                    }
-                    .pointerInput(
-                        isSpeechCardCollapsed,
-                        minCollapsedSpeechX,
-                        minSpeechY,
-                        maxSpeechY,
-                    ) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
-                            onDragEnd = saveFloatingControlPositions,
-                            onDragCancel = saveFloatingControlPositions,
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                val nextY = (speechCardOffset.y + dragAmount.y)
-                                    .coerceIn(minSpeechY.toFloat(), maxSpeechY.toFloat())
-                                val proposedOffset = if (isSpeechCardCollapsed) {
-                                    Offset(
-                                        x = (speechCardOffset.x + dragAmount.x)
-                                            .coerceIn(minCollapsedSpeechX.toFloat(), 0f),
-                                        y = nextY,
-                                    )
-                                } else {
-                                    speechCardOffset.copy(y = nextY)
-                                }
-                                speechCardOffset = constrainSpeechCardOffset(proposedOffset)
-                            }
-                        )
-                    }
-                    .padding(horizontal = FLOATING_CARD_GAP)
-                    .onSizeChanged { speechCardSize = it },
-            )
+                modifier = Modifier.fillMaxSize(),
+                label = "speechPlaybackCardPresentation",
+            ) { visualIsCollapsed ->
+                SpeechPlaybackStatusCard(
+                    state = uiState.speechPlaybackState,
+                    autoPlaybackEnabled = uiState.autoPlaybackEnabled,
+                    onStop = viewModel::stopSpeechPlayback,
+                    isCollapsed = visualIsCollapsed,
+                    onCollapsedChange = { collapsed ->
+                        isSpeechCardCollapsed = collapsed
+                        if (!collapsed) {
+                            collapsedSpeechCardX = speechCardOffset.x
+                        } else {
+                            speechCardOffset = speechCardOffset.copy(x = collapsedSpeechCardX)
+                        }
+                    },
+                    modifier = speechCardModifier(visualIsCollapsed),
+                )
+            }
 
             Card(
                 onClick = onOpenCalendar,
