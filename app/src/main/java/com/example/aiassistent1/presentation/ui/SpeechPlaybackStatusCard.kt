@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,9 +49,7 @@ import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 @Composable
 fun SpeechPlaybackStatusCard(
     state: SpeechPlaybackState,
-    isVoiceMode: Boolean,
     onStop: () -> Unit,
-    onDisableVoiceMode: () -> Unit,
     modifier: Modifier = Modifier,
     isCollapsed: Boolean = true,
     onCollapsedChange: (Boolean) -> Unit = {},
@@ -63,7 +62,7 @@ fun SpeechPlaybackStatusCard(
         val isActive = state is SpeechPlaybackState.Generating || state is SpeechPlaybackState.Playing
         val palette = when (state) {
             SpeechPlaybackState.Generating -> MaterialTheme.colorScheme.primary
-            SpeechPlaybackState.Playing -> Color.Black
+            SpeechPlaybackState.Playing -> MaterialTheme.colorScheme.primary
             is SpeechPlaybackState.Stopped -> MaterialTheme.colorScheme.secondary
             is SpeechPlaybackState.Error -> MaterialTheme.colorScheme.error
             SpeechPlaybackState.Idle -> MaterialTheme.colorScheme.surface
@@ -81,6 +80,13 @@ fun SpeechPlaybackStatusCard(
             is SpeechPlaybackState.Stopped -> state.reason.label
             is SpeechPlaybackState.Error -> state.message
             SpeechPlaybackState.Idle -> if (autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
+        }
+        val cardTextColor = if (isCollapsed) {
+            MaterialTheme.colorScheme.onSurface
+        } else if (isSystemInDarkTheme()) {
+            Color.Black
+        } else {
+            Color.White
         }
         val infiniteTransition = rememberInfiniteTransition(label = "speechPlaybackPulse")
         val pulse by infiniteTransition.animateFloat(
@@ -102,7 +108,7 @@ fun SpeechPlaybackStatusCard(
                 } else {
                     Color.Black.copy(alpha = 0.65f)
                 },
-                contentColor = MaterialTheme.colorScheme.onSurface,
+                contentColor = cardTextColor,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             modifier = Modifier
@@ -133,18 +139,18 @@ fun SpeechPlaybackStatusCard(
                         SpeechPlaybackState.Generating -> CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             strokeWidth = 3.dp,
-                            color = palette,
+                            color = if (isSystemInDarkTheme()) palette else Color.White,
                         )
                         SpeechPlaybackState.Playing -> Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = cardTextColor,
                             modifier = Modifier.size(27.dp),
                         )
                         is SpeechPlaybackState.Stopped -> Icon(
                             imageVector = Icons.Default.Stop,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = cardTextColor,
                         )
                         is SpeechPlaybackState.Error -> Icon(
                             imageVector = Icons.Default.Close,
@@ -154,7 +160,7 @@ fun SpeechPlaybackStatusCard(
                         SpeechPlaybackState.Idle -> Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = cardTextColor,
                         )
                     }
                 }
@@ -168,7 +174,11 @@ fun SpeechPlaybackStatusCard(
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isCollapsed) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                cardTextColor
+                            },
                         )
                     }
                     if (isActive) {
@@ -176,15 +186,7 @@ fun SpeechPlaybackStatusCard(
                             Icon(
                                 imageVector = Icons.Default.Stop,
                                 contentDescription = "Остановить озвучивание",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    } else if (isVoiceMode && state is SpeechPlaybackState.Idle) {
-                        IconButton(onClick = onDisableVoiceMode) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Выключить микрофон",
-                                tint = MaterialTheme.colorScheme.onSurface,
+                                tint = cardTextColor,
                             )
                         }
                     }

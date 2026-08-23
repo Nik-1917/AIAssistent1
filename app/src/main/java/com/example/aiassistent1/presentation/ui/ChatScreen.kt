@@ -578,10 +578,8 @@ fun ChatScreen(
 
             SpeechPlaybackStatusCard(
                 state = uiState.speechPlaybackState,
-                isVoiceMode = uiState.isVoiceMode,
                 autoPlaybackEnabled = uiState.autoPlaybackEnabled,
                 onStop = viewModel::stopSpeechPlayback,
-                onDisableVoiceMode = { viewModel.setVoiceMode(false) },
                 isCollapsed = isSpeechCardCollapsed,
                 onCollapsedChange = { isSpeechCardCollapsed = it },
                 modifier = Modifier
