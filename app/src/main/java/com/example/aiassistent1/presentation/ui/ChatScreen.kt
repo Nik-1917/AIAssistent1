@@ -161,7 +161,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 private val CALENDAR_BUTTON_SIZE = 66.dp
 private val CALENDAR_BUTTON_VERTICAL_OFFSET = 167.dp
 private val FLOATING_CARD_GAP = 5.dp
-private const val AUTO_PLAYBACK_CARD_COLLAPSE_DELAY_MILLIS = 4_000L
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
@@ -286,7 +285,6 @@ fun ChatScreen(
     var speechCardSize by remember { mutableStateOf(IntSize.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
     var hasRestoredFloatingControlPositions by remember { mutableStateOf(false) }
-    val latestFloatingControlPositions by rememberUpdatedState(uiState.floatingControlPositions)
 
     LaunchedEffect(
         uiState.floatingControlPositions,
@@ -309,27 +307,6 @@ fun ChatScreen(
             y = savedPositions.calendarButtonYdp * density,
         )
         hasRestoredFloatingControlPositions = true
-    }
-
-    LaunchedEffect(
-        uiState.speechPlaybackState,
-        uiState.autoPlaybackEnabled,
-        isSpeechCardCollapsed,
-    ) {
-        if (
-            uiState.speechPlaybackState is SpeechPlaybackState.Idle &&
-            uiState.autoPlaybackEnabled &&
-            !isSpeechCardCollapsed
-        ) {
-            delay(AUTO_PLAYBACK_CARD_COLLAPSE_DELAY_MILLIS)
-            val savedPositions = latestFloatingControlPositions
-            val density = context.resources.displayMetrics.density
-            speechCardOffset = Offset(
-                x = savedPositions.speechCardXdp * density,
-                y = savedPositions.speechCardYdp * density,
-            )
-            isSpeechCardCollapsed = true
-        }
     }
 
     DisposableEffect(lifecycleOwner) {
