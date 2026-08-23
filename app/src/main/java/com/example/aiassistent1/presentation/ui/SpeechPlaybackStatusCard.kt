@@ -50,6 +50,7 @@ fun SpeechPlaybackStatusCard(
     isCollapsed: Boolean = true,
     onCollapsedChange: (Boolean) -> Unit = {},
     autoPlaybackEnabled: Boolean = false,
+    interactionEnabled: Boolean = true,
 ) {
     val useExpandedLayout = !isCollapsed
     val cornerRadius = if (isCollapsed) 12.dp else 24.dp
@@ -106,6 +107,7 @@ fun SpeechPlaybackStatusCard(
 
         Card(
             onClick = { onCollapsedChange(!isCollapsed) },
+            enabled = interactionEnabled,
             shape = RoundedCornerShape(cornerRadius),
             colors = CardDefaults.cardColors(
                 containerColor = containerColor,
