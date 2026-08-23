@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
@@ -56,20 +57,20 @@ fun SpeechPlaybackStatusCard(
     autoPlaybackEnabled: Boolean = false,
 ) {
     AnimatedVisibility(
-        visible = state !is SpeechPlaybackState.Idle || isVoiceMode,
+        visible = state !is SpeechPlaybackState.Idle || autoPlaybackEnabled,
         modifier = modifier,
     ) {
         val isActive = state is SpeechPlaybackState.Generating || state is SpeechPlaybackState.Playing
         val palette = when (state) {
             SpeechPlaybackState.Generating -> MaterialTheme.colorScheme.primary
-            SpeechPlaybackState.Playing -> MaterialTheme.colorScheme.tertiary
+            SpeechPlaybackState.Playing -> Color.Black
             is SpeechPlaybackState.Stopped -> MaterialTheme.colorScheme.secondary
             is SpeechPlaybackState.Error -> MaterialTheme.colorScheme.error
             SpeechPlaybackState.Idle -> MaterialTheme.colorScheme.surface
         }
         val title = when (state) {
             SpeechPlaybackState.Generating -> "Готовлю голосовой ответ"
-            SpeechPlaybackState.Playing -> "Ответ озвучивается"
+            SpeechPlaybackState.Playing -> null
             is SpeechPlaybackState.Stopped -> "Озвучивание остановлено"
             is SpeechPlaybackState.Error -> "Голосовой вывод недоступен"
             SpeechPlaybackState.Idle -> null
@@ -79,7 +80,7 @@ fun SpeechPlaybackStatusCard(
             SpeechPlaybackState.Playing -> "Нажмите стоп, чтобы прервать"
             is SpeechPlaybackState.Stopped -> state.reason.label
             is SpeechPlaybackState.Error -> state.message
-            SpeechPlaybackState.Idle -> if (isVoiceMode || autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
+            SpeechPlaybackState.Idle -> if (autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
         }
         val infiniteTransition = rememberInfiniteTransition(label = "speechPlaybackPulse")
         val pulse by infiniteTransition.animateFloat(
@@ -99,7 +100,7 @@ fun SpeechPlaybackStatusCard(
                 containerColor = if (isCollapsed) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                 } else {
-                    palette.copy(alpha = 0.65f)
+                    Color.Black.copy(alpha = 0.65f)
                 },
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),

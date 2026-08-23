@@ -154,6 +154,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private val CALENDAR_BUTTON_SIZE = 66.dp
 private val CALENDAR_BUTTON_VERTICAL_OFFSET = 167.dp
+private val FLOATING_CARD_GAP = 5.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
@@ -442,7 +443,7 @@ fun ChatScreen(
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
             val calendarButtonBottom =
-                (maxHeight / 2f) + (CALENDAR_BUTTON_SIZE / 2f) - CALENDAR_BUTTON_VERTICAL_OFFSET
+                (maxHeight / 2f) + (CALENDAR_BUTTON_SIZE / 2f) - CALENDAR_BUTTON_VERTICAL_OFFSET + FLOATING_CARD_GAP
 
             // Основной контейнер с навигационными отступами
             Box(
@@ -512,7 +513,6 @@ fun ChatScreen(
                                     isStreaming = !uiState.isStopping && uiState.isProcessing &&
                                         isLast && message.role == MessageRole.ASSISTANT,
                                     smoothResponseEnabled = uiState.smoothResponseEnabled,
-                                    isVoiceMode = uiState.isVoiceMode,
                                     onRetry = if (showRetry) viewModel::retry else null,
                                     onDelete = if (showDelete) {
                                         {
@@ -1032,7 +1032,6 @@ private fun MessageBubble(
     isStopping: Boolean = false,
     isStreaming: Boolean = false,
     smoothResponseEnabled: Boolean,
-    isVoiceMode: Boolean,
     onRetry: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     onCopy: (String) -> Unit,
@@ -1064,7 +1063,7 @@ private fun MessageBubble(
                         },
                         onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            if (isVoiceMode) onSpeak(message.content) else onCopy(message.content)
+                            onCopy(message.content)
                         }
                     )
                 }

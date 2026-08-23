@@ -398,18 +398,19 @@ class ChatViewModel(
                     }
                 }
 
-                if (mutableUiState.value.isVoiceMode || mutableUiState.value.autoPlaybackEnabled) {
+                val playbackStarted = if (mutableUiState.value.autoPlaybackEnabled) {
                     assistantMessage?.content
                         ?.takeIf(String::isNotBlank)
-                        ?.let { content ->
-                            val controller = speechPlaybackController
-                            if (controller != null && !controller.speak(content)) {
-                                viewModelScope.launch {
-                                    kotlinx.coroutines.yield()
-                                    resumeDialogueVoiceInput()
-                                }
-                            }
-                        }
+                        ?.let { content -> speechPlaybackController?.speak(content) }
+                        ?: false
+                } else {
+                    false
+                }
+                if (!playbackStarted) {
+                    viewModelScope.launch {
+                        kotlinx.coroutines.yield()
+                        resumeDialogueVoiceInput()
+                    }
                 }
             } catch (error: CancellationException) {
                 assistantMessage?.let { partialMessage ->
