@@ -72,6 +72,7 @@ object AppModule {
 
 	fun provideVoiceModelProvider(context: Context): VoiceModelProvider = BundledVoiceModelProvider(
 		context.applicationContext,
+		provideSettingsRepository(context),
 	)
 
 	fun provideSpeechRecognizer(context: Context): SpeechRecognizer = SherpaOnnxSpeechRecognizer(

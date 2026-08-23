@@ -83,6 +83,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -148,6 +150,7 @@ import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.SpeechVoice
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
@@ -1093,14 +1096,17 @@ fun ChatScreen(
             dialogueModeEnabled = uiState.dialogueModeEnabled,
             autoPlaybackEnabled = uiState.autoPlaybackEnabled,
             speechRate = uiState.speechRate,
+            speechVoice = uiState.speechVoice,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate ->
+            onPreviewVoice = viewModel::previewSpeechVoice,
+            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate, speechVoice ->
                 viewModel.updateModelParams(updatedParams)
                 viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
                 viewModel.setSystemPromptEnabled(systemPromptEnabled)
                 viewModel.setDialogueModeEnabled(dialogueModeEnabled)
                 viewModel.setAutoPlaybackEnabled(autoPlaybackEnabled)
                 viewModel.setSpeechRate(speechRate)
+                viewModel.setSpeechVoice(speechVoice)
                 showSettingsDialog = false
             }
         )
@@ -1908,8 +1914,10 @@ fun ModelSettingsDialog(
     dialogueModeEnabled: Boolean,
     autoPlaybackEnabled: Boolean,
     speechRate: Float,
+    speechVoice: SpeechVoice,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean, Boolean, Boolean, Float) -> Unit,
+    onPreviewVoice: (SpeechVoice) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean, Boolean, Boolean, Float, SpeechVoice) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -1921,6 +1929,7 @@ fun ModelSettingsDialog(
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
+    var selectedSpeechVoice by remember { mutableStateOf(speechVoice) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1946,6 +1955,29 @@ fun ModelSettingsDialog(
                     onValueChange = { temperature = it },
                     valueRange = 0f..2f
                 )
+
+                Text("Голос", style = MaterialTheme.typography.titleMedium)
+                SpeechVoice.entries.forEach { voice ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedSpeechVoice = voice }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selectedSpeechVoice == voice,
+                            onClick = { selectedSpeechVoice = voice },
+                        )
+                        Text(voice.title)
+                    }
+                }
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onPreviewVoice(selectedSpeechVoice) },
+                ) {
+                    Text("Прослушать голос")
+                }
 
                 SettingSlider(
                     label = "Context Size: ${contextSize.toInt()}",
@@ -2107,6 +2139,7 @@ fun ModelSettingsDialog(
                             dialogueMode,
                             autoPlayback,
                             selectedSpeechRate,
+                            selectedSpeechVoice,
                         )
                     }) {
                         Text("Сохранить")

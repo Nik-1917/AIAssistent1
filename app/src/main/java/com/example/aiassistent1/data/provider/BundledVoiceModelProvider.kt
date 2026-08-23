@@ -2,6 +2,8 @@ package com.example.aiassistent1.data.provider
 
 import android.content.Context
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.domain.model.SpeechVoice
 import com.example.aiassistent1.domain.model.VoiceModelAssets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -10,18 +12,21 @@ import java.io.FileOutputStream
 
 class BundledVoiceModelProvider(
     private val context: Context,
+    private val settingsRepository: SettingsRepository,
 ) : VoiceModelProvider {
     override suspend fun getAssets(): Result<VoiceModelAssets> = runCatching {
         withContext(Dispatchers.IO) {
             REQUIRED_FILES.forEach(::requireNonEmptyAsset)
+            val voice = settingsRepository.speechVoice.value
             VoiceModelAssets(
                 asrEncoder = ASR_ENCODER,
                 asrDecoder = ASR_DECODER,
                 asrJoiner = ASR_JOINER,
                 asrTokens = ASR_TOKENS,
-                ttsModel = TTS_MODEL,
-                ttsTokens = TTS_TOKENS,
+                ttsModel = voice.modelAssetPath,
+                ttsTokens = voice.tokensAssetPath,
                 ttsDataDirectory = copyTtsDataDirectory().absolutePath,
+                speechVoice = voice,
                 vadModel = VAD_MODEL,
             )
         }
@@ -71,8 +76,6 @@ class BundledVoiceModelProvider(
         const val ASR_JOINER = "$ASR_DIRECTORY/joiner.onnx"
         const val ASR_TOKENS = "$ASR_DIRECTORY/tokens.txt"
         const val TTS_DIRECTORY = "voice/tts"
-        const val TTS_MODEL = "$TTS_DIRECTORY/ru_RU-denis-medium.onnx"
-        const val TTS_TOKENS = "$TTS_DIRECTORY/tokens.txt"
         const val TTS_DATA_DIRECTORY = "$TTS_DIRECTORY/espeak-ng-data"
         const val VAD_MODEL = "voice/vad.onnx"
         const val COPY_COMPLETED_MARKER = ".copy-complete"
@@ -82,9 +85,20 @@ class BundledVoiceModelProvider(
             ASR_DECODER,
             ASR_JOINER,
             ASR_TOKENS,
-            TTS_MODEL,
-            TTS_TOKENS,
+            *SpeechVoice.entries.map { it.modelAssetPath }.toTypedArray(),
             VAD_MODEL,
         )
     }
 }
+
+private val SpeechVoice.modelAssetPath: String
+    get() = when (this) {
+        SpeechVoice.DENIS -> "voice/tts/ru_RU-denis-medium.onnx"
+        else -> "voice/tts/${storageId}/ru_RU-${storageId}-medium.onnx"
+    }
+
+private val SpeechVoice.tokensAssetPath: String
+    get() = when (this) {
+        SpeechVoice.DENIS -> "voice/tts/tokens.txt"
+        else -> "voice/tts/${storageId}/tokens.txt"
+    }

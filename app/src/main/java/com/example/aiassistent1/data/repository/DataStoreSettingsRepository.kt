@@ -14,6 +14,7 @@ import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.SpeechVoice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +40,7 @@ class DataStoreSettingsRepository(
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
     private val autoPlaybackEnabledKey = booleanPreferencesKey("auto_playback_enabled")
     private val speechRateKey = floatPreferencesKey("speech_rate")
+    private val speechVoiceKey = stringPreferencesKey("speech_voice")
     private val chatScrollAnchorMessageIdKey = stringPreferencesKey("chat_scroll_anchor_message_id")
     private val chatScrollOffsetKey = intPreferencesKey("chat_scroll_offset")
     private val speechCardXdpKey = floatPreferencesKey("speech_card_x_dp")
@@ -119,6 +121,10 @@ class DataStoreSettingsRepository(
             started = SharingStarted.Eagerly,
             initialValue = SpeechRate.DEFAULT,
         )
+
+    override val speechVoice: StateFlow<SpeechVoice> = context.settingsStore.data
+        .map { preferences -> SpeechVoice.fromStorageId(preferences[speechVoiceKey]) }
+        .stateIn(scope, SharingStarted.Eagerly, SpeechVoice.IRINA)
 
     override val chatScrollPosition: kotlinx.coroutines.flow.Flow<ChatScrollPosition> = context.settingsStore.data
         .map { preferences ->
@@ -237,6 +243,12 @@ class DataStoreSettingsRepository(
                 preferences[chatScrollAnchorMessageIdKey] = id
             } ?: preferences.remove(chatScrollAnchorMessageIdKey)
             preferences[chatScrollOffsetKey] = position.offset.coerceAtLeast(0)
+        }
+    }
+
+    override suspend fun setSpeechVoice(voice: SpeechVoice) {
+        context.settingsStore.edit { preferences ->
+            preferences[speechVoiceKey] = voice.storageId
         }
     }
 

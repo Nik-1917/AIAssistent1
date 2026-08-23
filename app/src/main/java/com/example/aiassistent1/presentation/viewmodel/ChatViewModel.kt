@@ -149,6 +149,11 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
+            settingsRepository.speechVoice.collect { voice ->
+                mutableUiState.update { it.copy(speechVoice = voice) }
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.chatScrollPosition.collect { position ->
                 mutableUiState.update {
                     it.copy(
@@ -759,6 +764,18 @@ class ChatViewModel(
         }
     }
 
+    fun previewSpeechVoice(voice: com.example.aiassistent1.domain.model.SpeechVoice) {
+        viewModelScope.launch {
+            settingsRepository.setSpeechVoice(voice)
+            speakMessage(SPEECH_VOICE_PREVIEW_TEXT)
+        }
+    }
+
+    fun setSpeechVoice(voice: com.example.aiassistent1.domain.model.SpeechVoice) {
+        stopSpeechPlayback()
+        viewModelScope.launch { settingsRepository.setSpeechVoice(voice) }
+    }
+
     fun saveFloatingControlPositions(positions: FloatingControlPositions) {
         viewModelScope.launch {
             settingsRepository.setFloatingControlPositions(positions)
@@ -1233,6 +1250,7 @@ class ChatViewModel(
 
     private companion object {
         const val MAX_MESSAGE_LENGTH = 3000
+        const val SPEECH_VOICE_PREVIEW_TEXT = "Здравствуйте! Это пример звучания выбранного голоса."
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
         const val VOICE_MODE_SHUTDOWN_DELAY_MILLIS = 1_000L
