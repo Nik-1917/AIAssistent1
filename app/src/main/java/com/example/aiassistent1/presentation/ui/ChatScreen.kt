@@ -106,12 +106,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
@@ -122,6 +124,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.SpanStyle
@@ -130,14 +133,17 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
+import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
@@ -155,6 +161,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 private val CALENDAR_BUTTON_SIZE = 66.dp
 private val CALENDAR_BUTTON_VERTICAL_OFFSET = 167.dp
 private val FLOATING_CARD_GAP = 5.dp
+private const val AUTO_PLAYBACK_CARD_COLLAPSE_DELAY_MILLIS = 4_000L
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
@@ -276,7 +283,54 @@ fun ChatScreen(
     val haptic = LocalHapticFeedback.current
     var isSpeechCardCollapsed by rememberSaveable { mutableStateOf(true) }
     var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
+    var speechCardSize by remember { mutableStateOf(IntSize.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
+    var hasRestoredFloatingControlPositions by remember { mutableStateOf(false) }
+    val latestFloatingControlPositions by rememberUpdatedState(uiState.floatingControlPositions)
+
+    LaunchedEffect(
+        uiState.floatingControlPositions,
+        uiState.isFloatingControlPositionsLoaded,
+        context.resources.displayMetrics.density,
+        hasRestoredFloatingControlPositions,
+    ) {
+        if (!uiState.isFloatingControlPositionsLoaded || hasRestoredFloatingControlPositions) {
+            return@LaunchedEffect
+        }
+
+        val savedPositions = uiState.floatingControlPositions
+        val density = context.resources.displayMetrics.density
+        speechCardOffset = Offset(
+            x = savedPositions.speechCardXdp * density,
+            y = savedPositions.speechCardYdp * density,
+        )
+        calendarButtonOffset = Offset(
+            x = savedPositions.calendarButtonXdp * density,
+            y = savedPositions.calendarButtonYdp * density,
+        )
+        hasRestoredFloatingControlPositions = true
+    }
+
+    LaunchedEffect(
+        uiState.speechPlaybackState,
+        uiState.autoPlaybackEnabled,
+        isSpeechCardCollapsed,
+    ) {
+        if (
+            uiState.speechPlaybackState is SpeechPlaybackState.Idle &&
+            uiState.autoPlaybackEnabled &&
+            !isSpeechCardCollapsed
+        ) {
+            delay(AUTO_PLAYBACK_CARD_COLLAPSE_DELAY_MILLIS)
+            val savedPositions = latestFloatingControlPositions
+            val density = context.resources.displayMetrics.density
+            speechCardOffset = Offset(
+                x = savedPositions.speechCardXdp * density,
+                y = savedPositions.speechCardYdp * density,
+            )
+            isSpeechCardCollapsed = true
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -442,8 +496,222 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
+            val density = LocalDensity.current
             val calendarButtonBottom =
                 (maxHeight / 2f) + (CALENDAR_BUTTON_SIZE / 2f) - CALENDAR_BUTTON_VERTICAL_OFFSET + FLOATING_CARD_GAP
+            val containerWidthPx = with(density) { maxWidth.roundToPx() }
+            val containerHeightPx = with(density) { maxHeight.roundToPx() }
+            val edgeGapPx = with(density) { FLOATING_CARD_GAP.roundToPx() }
+            val collapsedCardSizePx = with(density) { CALENDAR_BUTTON_SIZE.roundToPx() }
+            val speechCardWidthPx = speechCardSize.width.takeIf { it > 0 } ?: collapsedCardSizePx
+            val speechCardHeightPx = speechCardSize.height.takeIf { it > 0 } ?: collapsedCardSizePx
+            val speechCardBaseY = with(density) { calendarButtonBottom.roundToPx() }
+            val minCollapsedSpeechX = -(
+                (containerWidthPx - speechCardWidthPx - (edgeGapPx * 2)).coerceAtLeast(0)
+            )
+            val minSpeechY = edgeGapPx - speechCardBaseY
+            val maxSpeechY = (
+                containerHeightPx - edgeGapPx - speechCardHeightPx - speechCardBaseY
+            ).coerceAtLeast(minSpeechY)
+            val effectiveSpeechX = if (isSpeechCardCollapsed) {
+                speechCardOffset.x.roundToInt().coerceIn(minCollapsedSpeechX, 0)
+            } else {
+                0
+            }
+            val effectiveSpeechY = speechCardOffset.y.roundToInt().coerceIn(minSpeechY, maxSpeechY)
+            val calendarButtonBaseY =
+                ((containerHeightPx - collapsedCardSizePx) / 2) -
+                    with(density) { CALENDAR_BUTTON_VERTICAL_OFFSET.roundToPx() }
+            val minCalendarButtonX = -(
+                (containerWidthPx - collapsedCardSizePx - edgeGapPx).coerceAtLeast(edgeGapPx)
+            )
+            val maxCalendarButtonX = -edgeGapPx
+            val minCalendarButtonY = edgeGapPx - calendarButtonBaseY
+            val maxCalendarButtonY = (
+                containerHeightPx - edgeGapPx - collapsedCardSizePx - calendarButtonBaseY
+            ).coerceAtLeast(minCalendarButtonY)
+            val effectiveCalendarButtonX = calendarButtonOffset.x.roundToInt()
+                .coerceIn(minCalendarButtonX, maxCalendarButtonX)
+            val effectiveCalendarButtonY = calendarButtonOffset.y.roundToInt()
+                .coerceIn(minCalendarButtonY, maxCalendarButtonY)
+
+            fun normalizeSpeechCardOffset(offset: Offset): Offset = Offset(
+                x = if (isSpeechCardCollapsed) {
+                    offset.x.coerceIn(minCollapsedSpeechX.toFloat(), 0f)
+                } else {
+                    0f
+                },
+                y = offset.y.coerceIn(minSpeechY.toFloat(), maxSpeechY.toFloat()),
+            )
+
+            fun normalizeCalendarButtonOffset(offset: Offset): Offset = Offset(
+                x = offset.x.coerceIn(
+                    minCalendarButtonX.toFloat(),
+                    maxCalendarButtonX.toFloat(),
+                ),
+                y = offset.y.coerceIn(
+                    minCalendarButtonY.toFloat(),
+                    maxCalendarButtonY.toFloat(),
+                ),
+            )
+
+            fun speechCardBounds(offset: Offset): Rect {
+                val normalizedOffset = normalizeSpeechCardOffset(offset)
+                val left = containerWidthPx - edgeGapPx - speechCardWidthPx + normalizedOffset.x
+                val top = speechCardBaseY + normalizedOffset.y
+                return Rect(
+                    left = left,
+                    top = top,
+                    right = left + speechCardWidthPx,
+                    bottom = top + speechCardHeightPx,
+                )
+            }
+
+            fun calendarButtonBounds(offset: Offset): Rect {
+                val normalizedOffset = normalizeCalendarButtonOffset(offset)
+                val left = containerWidthPx - collapsedCardSizePx + normalizedOffset.x
+                val top = calendarButtonBaseY + normalizedOffset.y
+                return Rect(
+                    left = left,
+                    top = top,
+                    right = left + collapsedCardSizePx,
+                    bottom = top + collapsedCardSizePx,
+                )
+            }
+
+            fun violatesFloatingCardGap(first: Rect, second: Rect): Boolean =
+                first.left < second.right + edgeGapPx &&
+                    first.right > second.left - edgeGapPx &&
+                    first.top < second.bottom + edgeGapPx &&
+                    first.bottom > second.top - edgeGapPx
+
+            fun isSpeechCardOffsetAllowed(offset: Offset): Boolean =
+                !violatesFloatingCardGap(
+                    speechCardBounds(offset),
+                    calendarButtonBounds(calendarButtonOffset),
+                )
+
+            fun isCalendarButtonOffsetAllowed(offset: Offset): Boolean =
+                !violatesFloatingCardGap(
+                    calendarButtonBounds(offset),
+                    speechCardBounds(speechCardOffset),
+                )
+
+            fun constrainSpeechCardOffset(proposedOffset: Offset): Offset {
+                val normalizedCurrent = normalizeSpeechCardOffset(speechCardOffset)
+                val normalizedProposed = normalizeSpeechCardOffset(proposedOffset)
+                if (isSpeechCardOffsetAllowed(normalizedProposed)) return normalizedProposed
+
+                val horizontalCandidate = normalizeSpeechCardOffset(
+                    Offset(normalizedProposed.x, normalizedCurrent.y),
+                )
+                val verticalCandidate = normalizeSpeechCardOffset(
+                    Offset(normalizedCurrent.x, normalizedProposed.y),
+                )
+                val canMoveHorizontally = isSpeechCardOffsetAllowed(horizontalCandidate)
+                val canMoveVertically = isSpeechCardOffsetAllowed(verticalCandidate)
+                return when {
+                    canMoveHorizontally && canMoveVertically -> {
+                        if (abs(normalizedProposed.x - normalizedCurrent.x) >=
+                            abs(normalizedProposed.y - normalizedCurrent.y)
+                        ) {
+                            horizontalCandidate
+                        } else {
+                            verticalCandidate
+                        }
+                    }
+                    canMoveHorizontally -> horizontalCandidate
+                    canMoveVertically -> verticalCandidate
+                    else -> normalizedCurrent
+                }
+            }
+
+            fun constrainCalendarButtonOffset(proposedOffset: Offset): Offset {
+                val normalizedCurrent = normalizeCalendarButtonOffset(calendarButtonOffset)
+                val normalizedProposed = normalizeCalendarButtonOffset(proposedOffset)
+                if (isCalendarButtonOffsetAllowed(normalizedProposed)) return normalizedProposed
+
+                val horizontalCandidate = normalizeCalendarButtonOffset(
+                    Offset(normalizedProposed.x, normalizedCurrent.y),
+                )
+                val verticalCandidate = normalizeCalendarButtonOffset(
+                    Offset(normalizedCurrent.x, normalizedProposed.y),
+                )
+                val canMoveHorizontally = isCalendarButtonOffsetAllowed(horizontalCandidate)
+                val canMoveVertically = isCalendarButtonOffsetAllowed(verticalCandidate)
+                return when {
+                    canMoveHorizontally && canMoveVertically -> {
+                        if (abs(normalizedProposed.x - normalizedCurrent.x) >=
+                            abs(normalizedProposed.y - normalizedCurrent.y)
+                        ) {
+                            horizontalCandidate
+                        } else {
+                            verticalCandidate
+                        }
+                    }
+                    canMoveHorizontally -> horizontalCandidate
+                    canMoveVertically -> verticalCandidate
+                    else -> normalizedCurrent
+                }
+            }
+
+            val persistFloatingControlPositions = { savedSpeechOffset: Offset, savedCalendarOffset: Offset ->
+                viewModel.saveFloatingControlPositions(
+                    FloatingControlPositions(
+                        speechCardXdp = with(density) { savedSpeechOffset.x.toDp().value },
+                        speechCardYdp = with(density) { savedSpeechOffset.y.toDp().value },
+                        calendarButtonXdp = with(density) { savedCalendarOffset.x.toDp().value },
+                        calendarButtonYdp = with(density) { savedCalendarOffset.y.toDp().value },
+                    )
+                )
+            }
+
+            val saveFloatingControlPositions = {
+                val savedSpeechOffset = constrainSpeechCardOffset(speechCardOffset)
+                val savedCalendarOffset = constrainCalendarButtonOffset(calendarButtonOffset)
+                speechCardOffset = savedSpeechOffset
+                calendarButtonOffset = savedCalendarOffset
+                persistFloatingControlPositions(savedSpeechOffset, savedCalendarOffset)
+            }
+
+            LaunchedEffect(
+                hasRestoredFloatingControlPositions,
+                speechCardSize,
+                isSpeechCardCollapsed,
+                effectiveSpeechX,
+                effectiveSpeechY,
+                effectiveCalendarButtonX,
+                effectiveCalendarButtonY,
+            ) {
+                if (!hasRestoredFloatingControlPositions ||
+                    speechCardSize == IntSize.Zero ||
+                    isSpeechCardOffsetAllowed(speechCardOffset)
+                ) {
+                    return@LaunchedEffect
+                }
+
+                val currentSpeechOffset = normalizeSpeechCardOffset(speechCardOffset)
+                val calendarBounds = calendarButtonBounds(calendarButtonOffset)
+                val candidates = listOf(
+                    normalizeSpeechCardOffset(
+                        currentSpeechOffset.copy(
+                            y = calendarBounds.top - edgeGapPx - speechCardHeightPx - speechCardBaseY,
+                        ),
+                    ),
+                    normalizeSpeechCardOffset(
+                        currentSpeechOffset.copy(
+                            y = calendarBounds.bottom + edgeGapPx - speechCardBaseY,
+                        ),
+                    ),
+                ).filter(::isSpeechCardOffsetAllowed)
+
+                val resolvedSpeechOffset = candidates.minByOrNull { candidate ->
+                    abs(candidate.x - currentSpeechOffset.x) + abs(candidate.y - currentSpeechOffset.y)
+                } ?: return@LaunchedEffect
+
+                speechCardOffset = resolvedSpeechOffset
+                persistFloatingControlPositions(resolvedSpeechOffset, normalizeCalendarButtonOffset(calendarButtonOffset))
+            }
 
             // Основной контейнер с навигационными отступами
             Box(
@@ -581,27 +849,53 @@ fun ChatScreen(
                 autoPlaybackEnabled = uiState.autoPlaybackEnabled,
                 onStop = viewModel::stopSpeechPlayback,
                 isCollapsed = isSpeechCardCollapsed,
-                onCollapsedChange = { isSpeechCardCollapsed = it },
+                onCollapsedChange = { collapsed ->
+                    isSpeechCardCollapsed = collapsed
+                    if (!collapsed) {
+                        speechCardOffset = constrainSpeechCardOffset(
+                            speechCardOffset.copy(x = 0f),
+                        )
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset {
                         IntOffset(
-                            speechCardOffset.x.roundToInt(),
-                            speechCardOffset.y.roundToInt() + calendarButtonBottom.roundToPx(),
+                            effectiveSpeechX,
+                            effectiveSpeechY + speechCardBaseY,
                         )
                     }
-                    .pointerInput(Unit) {
+                    .pointerInput(
+                        isSpeechCardCollapsed,
+                        minCollapsedSpeechX,
+                        minSpeechY,
+                        maxSpeechY,
+                    ) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             },
+                            onDragEnd = saveFloatingControlPositions,
+                            onDragCancel = saveFloatingControlPositions,
                             onDrag = { change, dragAmount ->
                                 change.consume()
-                                speechCardOffset += dragAmount
+                                val nextY = (speechCardOffset.y + dragAmount.y)
+                                    .coerceIn(minSpeechY.toFloat(), maxSpeechY.toFloat())
+                                val proposedOffset = if (isSpeechCardCollapsed) {
+                                    Offset(
+                                        x = (speechCardOffset.x + dragAmount.x)
+                                            .coerceIn(minCollapsedSpeechX.toFloat(), 0f),
+                                        y = nextY,
+                                    )
+                                } else {
+                                    speechCardOffset.copy(y = nextY)
+                                }
+                                speechCardOffset = constrainSpeechCardOffset(proposedOffset)
                             }
                         )
                     }
-                    .padding(end = 4.dp),
+                    .padding(horizontal = FLOATING_CARD_GAP)
+                    .onSizeChanged { speechCardSize = it },
             )
 
             Card(
@@ -610,22 +904,38 @@ fun ChatScreen(
                     .align(Alignment.CenterEnd)
                     .offset {
                         IntOffset(
-                            calendarButtonOffset.x.roundToInt(),
-                            calendarButtonOffset.y.roundToInt() - CALENDAR_BUTTON_VERTICAL_OFFSET.roundToPx()
+                            effectiveCalendarButtonX,
+                            effectiveCalendarButtonY - CALENDAR_BUTTON_VERTICAL_OFFSET.roundToPx()
                         )
                     }
-                    .pointerInput(Unit) {
+                    .pointerInput(
+                        minCalendarButtonX,
+                        maxCalendarButtonX,
+                        minCalendarButtonY,
+                        maxCalendarButtonY,
+                    ) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             },
+                            onDragEnd = saveFloatingControlPositions,
+                            onDragCancel = saveFloatingControlPositions,
                             onDrag = { change, dragAmount ->
                                 change.consume()
-                                calendarButtonOffset += dragAmount
+                                val proposedOffset = Offset(
+                                    x = (calendarButtonOffset.x + dragAmount.x).coerceIn(
+                                        minCalendarButtonX.toFloat(),
+                                        maxCalendarButtonX.toFloat(),
+                                    ),
+                                    y = (calendarButtonOffset.y + dragAmount.y).coerceIn(
+                                        minCalendarButtonY.toFloat(),
+                                        maxCalendarButtonY.toFloat(),
+                                    ),
+                                )
+                                calendarButtonOffset = constrainCalendarButtonOffset(proposedOffset)
                             }
                         )
                     }
-                    .padding(end = 4.dp)
                     .size(CALENDAR_BUTTON_SIZE)
                     .semantics { contentDescription = "Открыть календарь" },
                 shape = RoundedCornerShape(12.dp),

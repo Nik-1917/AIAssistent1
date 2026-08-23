@@ -1,12 +1,20 @@
 package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -55,6 +63,14 @@ fun SpeechPlaybackStatusCard(
     onCollapsedChange: (Boolean) -> Unit = {},
     autoPlaybackEnabled: Boolean = false,
 ) {
+    val detailsVisibility = remember { MutableTransitionState(false) }
+    detailsVisibility.targetState = !isCollapsed
+    val useExpandedLayout = detailsVisibility.currentState || detailsVisibility.targetState
+    val cornerRadius by animateDpAsState(
+        targetValue = if (isCollapsed) 12.dp else 24.dp,
+        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        label = "speechPlaybackCornerRadius",
+    )
     AnimatedVisibility(
         visible = state !is SpeechPlaybackState.Idle || autoPlaybackEnabled,
         modifier = modifier,
@@ -81,13 +97,22 @@ fun SpeechPlaybackStatusCard(
             is SpeechPlaybackState.Error -> state.message
             SpeechPlaybackState.Idle -> if (autoPlaybackEnabled) "Ответ будет озвучен автоматически" else "Нажмите на сообщение для озвучки"
         }
-        val cardTextColor = if (isCollapsed) {
+        val cardTextColor = if (!useExpandedLayout) {
             MaterialTheme.colorScheme.onSurface
         } else if (isSystemInDarkTheme()) {
             Color.Black
         } else {
             Color.White
         }
+        val containerColor by animateColorAsState(
+            targetValue = if (isCollapsed) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            } else {
+                Color.Black.copy(alpha = 0.65f)
+            },
+            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+            label = "speechPlaybackContainerColor",
+        )
         val infiniteTransition = rememberInfiniteTransition(label = "speechPlaybackPulse")
         val pulse by infiniteTransition.animateFloat(
             initialValue = 0.74f,
@@ -101,28 +126,26 @@ fun SpeechPlaybackStatusCard(
 
         Card(
             onClick = { onCollapsedChange(!isCollapsed) },
-            shape = if (isCollapsed) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(cornerRadius),
             colors = CardDefaults.cardColors(
-                containerColor = if (isCollapsed) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                } else {
-                    Color.Black.copy(alpha = 0.65f)
-                },
+                containerColor = containerColor,
                 contentColor = cardTextColor,
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
             modifier = Modifier
-                .animateContentSize()
+                .animateContentSize(
+                    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+                )
                 .then(
-                    if (isCollapsed) Modifier.size(66.dp) else Modifier.fillMaxWidth()
+                    if (useExpandedLayout) Modifier.fillMaxWidth() else Modifier.size(66.dp)
                 )
         ) {
             Row(
                 modifier = Modifier
-                    .then(if (isCollapsed) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
-                    .padding(horizontal = if (isCollapsed) 0.dp else 14.dp, vertical = if (isCollapsed) 0.dp else 11.dp),
+                    .then(if (useExpandedLayout) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
+                    .padding(horizontal = if (useExpandedLayout) 14.dp else 0.dp, vertical = if (useExpandedLayout) 11.dp else 0.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (isCollapsed) Arrangement.Center else Arrangement.spacedBy(10.dp),
+                horizontalArrangement = if (useExpandedLayout) Arrangement.spacedBy(10.dp) else Arrangement.Center,
             ) {
                 Box(
                     modifier = Modifier
@@ -165,8 +188,18 @@ fun SpeechPlaybackStatusCard(
                     }
                 }
                 
-                if (!isCollapsed) {
-                    Column(modifier = Modifier.weight(1f)) {
+                AnimatedVisibility(
+                    visibleState = detailsVisibility,
+                    modifier = Modifier.weight(1f),
+                    enter = fadeIn(animationSpec = tween(180, delayMillis = 70)) +
+                        expandHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)),
+                    exit = fadeOut(animationSpec = tween(130)) +
+                        shrinkHorizontally(
+                            animationSpec = tween(220, easing = FastOutSlowInEasing),
+                            shrinkTowards = Alignment.End,
+                        ),
+                ) {
+                    Column {
                         title?.let {
                             Text(it, style = MaterialTheme.typography.labelLarge)
                             Spacer(modifier = Modifier.size(2.dp))
@@ -174,14 +207,25 @@ fun SpeechPlaybackStatusCard(
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isCollapsed) {
+                            color = if (!useExpandedLayout) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             } else {
                                 cardTextColor
                             },
                         )
                     }
-                    if (isActive) {
+                }
+                if (isActive) {
+                    AnimatedVisibility(
+                        visibleState = detailsVisibility,
+                        enter = fadeIn(animationSpec = tween(180, delayMillis = 70)) +
+                            expandHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)),
+                        exit = fadeOut(animationSpec = tween(130)) +
+                            shrinkHorizontally(
+                                animationSpec = tween(220, easing = FastOutSlowInEasing),
+                                shrinkTowards = Alignment.End,
+                            ),
+                    ) {
                         IconButton(onClick = onStop) {
                             Icon(
                                 imageVector = Icons.Default.Stop,

@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ChatScrollPosition
+import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,10 @@ class DataStoreSettingsRepository(
     private val speechRateKey = floatPreferencesKey("speech_rate")
     private val chatScrollAnchorMessageIdKey = stringPreferencesKey("chat_scroll_anchor_message_id")
     private val chatScrollOffsetKey = intPreferencesKey("chat_scroll_offset")
+    private val speechCardXdpKey = floatPreferencesKey("speech_card_x_dp")
+    private val speechCardYdpKey = floatPreferencesKey("speech_card_y_dp")
+    private val calendarButtonXdpKey = floatPreferencesKey("calendar_button_x_dp")
+    private val calendarButtonYdpKey = floatPreferencesKey("calendar_button_y_dp")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -120,6 +125,16 @@ class DataStoreSettingsRepository(
             ChatScrollPosition(
                 anchorMessageId = preferences[chatScrollAnchorMessageIdKey],
                 offset = (preferences[chatScrollOffsetKey] ?: 0).coerceAtLeast(0),
+            )
+        }
+
+    override val floatingControlPositions: kotlinx.coroutines.flow.Flow<FloatingControlPositions> = context.settingsStore.data
+        .map { preferences ->
+            FloatingControlPositions(
+                speechCardXdp = preferences[speechCardXdpKey] ?: 0f,
+                speechCardYdp = preferences[speechCardYdpKey] ?: 0f,
+                calendarButtonXdp = preferences[calendarButtonXdpKey] ?: 0f,
+                calendarButtonYdp = preferences[calendarButtonYdpKey] ?: 0f,
             )
         }
 
@@ -222,6 +237,15 @@ class DataStoreSettingsRepository(
                 preferences[chatScrollAnchorMessageIdKey] = id
             } ?: preferences.remove(chatScrollAnchorMessageIdKey)
             preferences[chatScrollOffsetKey] = position.offset.coerceAtLeast(0)
+        }
+    }
+
+    override suspend fun setFloatingControlPositions(positions: FloatingControlPositions) {
+        context.settingsStore.edit { preferences ->
+            preferences[speechCardXdpKey] = positions.speechCardXdp
+            preferences[speechCardYdpKey] = positions.speechCardYdp
+            preferences[calendarButtonXdpKey] = positions.calendarButtonXdp
+            preferences[calendarButtonYdpKey] = positions.calendarButtonYdp
         }
     }
 

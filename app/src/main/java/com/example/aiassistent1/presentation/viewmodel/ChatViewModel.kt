@@ -21,6 +21,7 @@ import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.parser.AssistantResponseParser
@@ -153,6 +154,16 @@ class ChatViewModel(
                     it.copy(
                         chatScrollPosition = position,
                         isChatScrollPositionLoaded = true,
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.floatingControlPositions.collect { positions ->
+                mutableUiState.update {
+                    it.copy(
+                        floatingControlPositions = positions,
+                        isFloatingControlPositionsLoaded = true,
                     )
                 }
             }
@@ -745,6 +756,12 @@ class ChatViewModel(
     fun saveChatScrollPosition(position: ChatScrollPosition) {
         viewModelScope.launch {
             settingsRepository.setChatScrollPosition(position)
+        }
+    }
+
+    fun saveFloatingControlPositions(positions: FloatingControlPositions) {
+        viewModelScope.launch {
+            settingsRepository.setFloatingControlPositions(positions)
         }
     }
 
