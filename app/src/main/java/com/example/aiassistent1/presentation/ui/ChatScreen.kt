@@ -2,7 +2,6 @@ package com.example.aiassistent1.presentation.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -100,11 +99,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,8 +141,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
 import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.sqrt
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
@@ -159,21 +154,14 @@ import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.launch
 
 private val CALENDAR_BUTTON_SIZE = 66.dp
 private val CALENDAR_BUTTON_VERTICAL_OFFSET = 167.dp
 private val FLOATING_CARD_GAP = 5.dp
-
-private enum class FloatingControl {
-    SPEECH,
-    CALENDAR,
-}
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
@@ -293,18 +281,14 @@ fun ChatScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val haptic = LocalHapticFeedback.current
-    val floatingPhysicsScope = rememberCoroutineScope()
     var isSpeechCardCollapsed by rememberSaveable { mutableStateOf(true) }
     var speechCardOffset by remember { mutableStateOf(Offset.Zero) }
     var collapsedSpeechCardX by rememberSaveable { mutableStateOf(0f) }
     var speechCardSize by remember { mutableStateOf(IntSize.Zero) }
     var calendarButtonOffset by remember { mutableStateOf(Offset.Zero) }
     var hasRestoredFloatingControlPositions by remember { mutableStateOf(false) }
-    var floatingReboundJob by remember { mutableStateOf<Job?>(null) }
-    var activeFloatingControl by remember { mutableStateOf<FloatingControl?>(null) }
-    var floatingCollisionCount by remember { mutableIntStateOf(0) }
-    var isFloatingControlColliding by remember { mutableStateOf(false) }
-    var lastFloatingDragTimestampMillis by remember { mutableStateOf(0L) }
+    var floatingControlCollisionCount by remember { mutableIntStateOf(0) }
+    var isFloatingControlTouching by remember { mutableStateOf(false) }
 
     LaunchedEffect(
         uiState.floatingControlPositions,
@@ -675,127 +659,40 @@ fun ChatScreen(
                 persistFloatingControlPositions(savedSpeechOffset, savedCalendarOffset)
             }
 
-            fun startFloatingRebound(source: FloatingControl, sourceVelocity: Offset) {
-                val sourceBounds = when (source) {
-                    FloatingControl.SPEECH -> speechCardBounds(speechCardOffset)
-                    FloatingControl.CALENDAR -> calendarButtonBounds(calendarButtonOffset)
-                }
-                val targetBounds = when (source) {
-                    FloatingControl.SPEECH -> calendarButtonBounds(calendarButtonOffset)
-                    FloatingControl.CALENDAR -> speechCardBounds(speechCardOffset)
-                }
-                val normalX = targetBounds.center.x - sourceBounds.center.x
-                val normalY = targetBounds.center.y - sourceBounds.center.y
-                val normalLength = sqrt((normalX * normalX) + (normalY * normalY))
-                if (normalLength < 0.01f) return
-
-                val unitNormalX = normalX / normalLength
-                val unitNormalY = normalY / normalLength
-                val approachSpeed = max(
-                    0f,
-                    (sourceVelocity.x * unitNormalX) + (sourceVelocity.y * unitNormalY),
+            fun pushCalendarButton(dragAmount: Offset) {
+                calendarButtonOffset = constrainCalendarButtonOffset(
+                    Offset(
+                        x = calendarButtonOffset.x + dragAmount.x,
+                        y = calendarButtonOffset.y + dragAmount.y,
+                    ),
                 )
-                if (approachSpeed == 0f) return
-
-                var reboundVelocity = Offset(
-                    x = unitNormalX * (approachSpeed * 4.2f).coerceIn(2_000f, 2_267f),
-                    y = unitNormalY * (approachSpeed * 4.2f).coerceIn(2_000f, 2_267f),
-                )
-                val target = when (source) {
-                    FloatingControl.SPEECH -> FloatingControl.CALENDAR
-                    FloatingControl.CALENDAR -> FloatingControl.SPEECH
-                }
-
-                floatingReboundJob?.cancel()
-                floatingReboundJob = floatingPhysicsScope.launch {
-                    var previousFrameNanos = 0L
-                    var isMoving = true
-                    while (isMoving &&
-                        max(abs(reboundVelocity.x), abs(reboundVelocity.y)) >= 18f
-                    ) {
-                        withFrameNanos { frameNanos ->
-                            if (previousFrameNanos == 0L) {
-                                previousFrameNanos = frameNanos
-                                return@withFrameNanos
-                            }
-
-                            val elapsedSeconds = ((frameNanos - previousFrameNanos) / 1_000_000_000f)
-                                .coerceIn(0f, 0.032f)
-                            previousFrameNanos = frameNanos
-                            val currentOffset = when (target) {
-                                FloatingControl.SPEECH -> speechCardOffset
-                                FloatingControl.CALENDAR -> calendarButtonOffset
-                            }
-                            val proposedOffset = Offset(
-                                x = currentOffset.x + (reboundVelocity.x * elapsedSeconds),
-                                y = currentOffset.y + (reboundVelocity.y * elapsedSeconds),
-                            )
-                            val boundedOffset = when (target) {
-                                FloatingControl.SPEECH -> normalizeSpeechCardOffset(proposedOffset)
-                                FloatingControl.CALENDAR -> normalizeCalendarButtonOffset(proposedOffset)
-                            }
-                            val hitHorizontalBoundary = abs(boundedOffset.x - proposedOffset.x) > 0.01f
-                            val hitVerticalBoundary = abs(boundedOffset.y - proposedOffset.y) > 0.01f
-                            val nextOffset = when (target) {
-                                FloatingControl.SPEECH -> constrainSpeechCardOffset(boundedOffset)
-                                FloatingControl.CALENDAR -> constrainCalendarButtonOffset(boundedOffset)
-                            }
-                            if (nextOffset == currentOffset) {
-                                isMoving = false
-                            } else {
-                                when (target) {
-                                    FloatingControl.SPEECH -> {
-                                        speechCardOffset = nextOffset
-                                        collapsedSpeechCardX = nextOffset.x
-                                    }
-                                    FloatingControl.CALENDAR -> calendarButtonOffset = nextOffset
-                                }
-                                val dragResistance = (1f - (0.12f * elapsedSeconds)).coerceAtLeast(0f)
-                                reboundVelocity = Offset(
-                                    x = (if (hitHorizontalBoundary) -reboundVelocity.x else reboundVelocity.x) *
-                                        dragResistance,
-                                    y = (if (hitVerticalBoundary) -reboundVelocity.y else reboundVelocity.y) *
-                                        dragResistance,
-                                )
-                            }
-                        }
-                    }
-                    saveFloatingControlPositions()
-                }
             }
 
-            fun beginFloatingDrag(control: FloatingControl) {
-                floatingReboundJob?.cancel()
-                activeFloatingControl = control
-                floatingCollisionCount = 0
-                isFloatingControlColliding = false
-                lastFloatingDragTimestampMillis = SystemClock.uptimeMillis()
+            fun pushSpeechCard(dragAmount: Offset) {
+                speechCardOffset = constrainSpeechCardOffset(
+                    Offset(
+                        x = speechCardOffset.x + dragAmount.x,
+                        y = speechCardOffset.y + dragAmount.y,
+                    ),
+                )
+                collapsedSpeechCardX = speechCardOffset.x
             }
 
-            fun trackFloatingCollision(
-                control: FloatingControl,
-                collides: Boolean,
-                dragAmount: Offset,
-            ) {
-                val timestampMillis = SystemClock.uptimeMillis()
-                val elapsedMillis = (timestampMillis - lastFloatingDragTimestampMillis).coerceAtLeast(1L)
-                lastFloatingDragTimestampMillis = timestampMillis
-                val dragVelocity = Offset(
-                    x = dragAmount.x * 1_000f / elapsedMillis,
-                    y = dragAmount.y * 1_000f / elapsedMillis,
-                )
-                if (activeFloatingControl != control) beginFloatingDrag(control)
+            fun beginFloatingControlDrag() {
+                floatingControlCollisionCount = 0
+                isFloatingControlTouching = false
+            }
+
+            fun shouldPushOnCollision(collides: Boolean): Boolean {
                 if (!collides) {
-                    isFloatingControlColliding = false
-                    return
+                    isFloatingControlTouching = false
+                    return false
                 }
-                if (!isFloatingControlColliding) {
-                    floatingCollisionCount += 1
-                    if (floatingCollisionCount >= 2) {
-                        startFloatingRebound(control, dragVelocity)
-                    }
+                if (!isFloatingControlTouching) {
+                    floatingControlCollisionCount += 1
                 }
-                isFloatingControlColliding = true
+                isFloatingControlTouching = true
+                return floatingControlCollisionCount >= 2
             }
 
             fun speechCardModifier(visualIsCollapsed: Boolean): Modifier {
@@ -820,7 +717,7 @@ fun ChatScreen(
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        beginFloatingDrag(FloatingControl.SPEECH)
+                                        beginFloatingControlDrag()
                                     },
                                     onDragEnd = saveFloatingControlPositions,
                                     onDragCancel = saveFloatingControlPositions,
@@ -837,14 +734,17 @@ fun ChatScreen(
                                         } else {
                                             speechCardOffset.copy(y = nextY)
                                         }
-                                        trackFloatingCollision(
-                                            control = FloatingControl.SPEECH,
-                                            collides = isSpeechCardCollapsed && violatesFloatingCardGap(
+                                        if (isSpeechCardCollapsed && shouldPushOnCollision(
+                                                violatesFloatingCardGap(
                                                 speechCardBounds(proposedOffset),
                                                 calendarButtonBounds(calendarButtonOffset),
                                             ),
-                                            dragAmount = dragAmount,
-                                        )
+                                            )
+                                        ) {
+                                            pushCalendarButton(dragAmount)
+                                        } else if (!isSpeechCardCollapsed) {
+                                            shouldPushOnCollision(collides = false)
+                                        }
                                         speechCardOffset = constrainSpeechCardOffset(proposedOffset)
                                         if (isSpeechCardCollapsed) {
                                             collapsedSpeechCardX = speechCardOffset.x
@@ -1095,7 +995,7 @@ fun ChatScreen(
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                beginFloatingDrag(FloatingControl.CALENDAR)
+                                beginFloatingControlDrag()
                             },
                             onDragEnd = saveFloatingControlPositions,
                             onDragCancel = saveFloatingControlPositions,
@@ -1111,14 +1011,17 @@ fun ChatScreen(
                                         maxCalendarButtonY.toFloat(),
                                     ),
                                 )
-                                trackFloatingCollision(
-                                    control = FloatingControl.CALENDAR,
-                                    collides = isSpeechCardCollapsed && violatesFloatingCardGap(
+                                if (isSpeechCardCollapsed && shouldPushOnCollision(
+                                        violatesFloatingCardGap(
                                         calendarButtonBounds(proposedOffset),
                                         speechCardBounds(speechCardOffset),
                                     ),
-                                    dragAmount = dragAmount,
-                                )
+                                    )
+                                ) {
+                                    pushSpeechCard(dragAmount)
+                                } else if (!isSpeechCardCollapsed) {
+                                    shouldPushOnCollision(collides = false)
+                                }
                                 calendarButtonOffset = constrainCalendarButtonOffset(proposedOffset)
                             }
                         )

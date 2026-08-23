@@ -134,33 +134,39 @@ fun SpeechPlaybackStatusCard(
                         .background(palette.copy(alpha = 0.2f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    when (state) {
-                        SpeechPlaybackState.Generating -> CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 3.dp,
-                            color = if (isSystemInDarkTheme()) palette else Color.White,
-                        )
-                        SpeechPlaybackState.Playing -> Icon(
-                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = null,
-                            tint = cardTextColor,
-                            modifier = Modifier.size(27.dp),
-                        )
-                        is SpeechPlaybackState.Stopped -> Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = null,
-                            tint = cardTextColor,
-                        )
-                        is SpeechPlaybackState.Error -> Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                        SpeechPlaybackState.Idle -> Icon(
-                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = null,
-                            tint = cardTextColor,
-                        )
+                    if (isCollapsed && isActive) {
+                        IconButton(onClick = onStop) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "Остановить озвучивание",
+                                tint = cardTextColor,
+                            )
+                        }
+                    } else {
+                        when (state) {
+                            SpeechPlaybackState.Generating -> CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 3.dp,
+                                color = if (isSystemInDarkTheme()) palette else Color.White,
+                            )
+                            SpeechPlaybackState.Playing -> Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = null,
+                                tint = cardTextColor,
+                                modifier = Modifier.size(27.dp),
+                            )
+                            is SpeechPlaybackState.Stopped,
+                            SpeechPlaybackState.Idle -> Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = null,
+                                tint = cardTextColor,
+                            )
+                            is SpeechPlaybackState.Error -> Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                     }
                 }
                 
