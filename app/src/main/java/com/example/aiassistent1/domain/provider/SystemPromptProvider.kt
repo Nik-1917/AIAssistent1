@@ -9,6 +9,6 @@ class SystemPromptProvider {
     fun getSystemPrompt(): String {
         val currentDateTime = SimpleDateFormat("yyyy-MM-dd (EEEE) HH:mm", Locale.getDefault()).format(Date())
         val timeZone = TimeZone.getDefault().id
-        return """Сегодня дата и время:$currentDateTime""".trimIndent()
+        return """Сегодня дата и время:$currentDateTime $timeZone ответ JSON""".trimIndent()
     }
 }

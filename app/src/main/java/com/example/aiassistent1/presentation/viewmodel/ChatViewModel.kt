@@ -1072,7 +1072,7 @@ class ChatViewModel(
                         appendVoiceDraftTranscript(event.transcript)
                     }
                     state.isVoiceMode && !state.isProcessing -> {
-                        sendMessageInternal(event.transcript, preserveVoiceMode = true)
+                        sendMessageInternal(event.transcript, preserveVoiceMode = state.dialogueModeEnabled)
                     }
                 }
             }
