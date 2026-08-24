@@ -21,4 +21,12 @@ interface CalendarEventRepository {
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
     ): Result<List<CalendarEvent>>
+
+    suspend fun findForUpdate(
+        query: String,
+        rangeStartEpochMillis: Long? = null,
+        rangeEndEpochMillis: Long? = null,
+    ): Result<List<CalendarEvent>>
+
+    suspend fun getLastCreated(): Result<CalendarEvent?>
 }

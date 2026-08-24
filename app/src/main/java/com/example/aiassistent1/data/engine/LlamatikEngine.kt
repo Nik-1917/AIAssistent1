@@ -132,11 +132,8 @@ class LlamatikEngine(
         mutableState.value = ModelState.Unloaded
     }
 
-    private fun buildPrompt(messages: List<ChatMessage>): String {
+    internal fun buildPrompt(messages: List<ChatMessage>): String {
         return buildString {
-            append("<|im_start|>system\n")
-            append("""""".trimIndent())
-            append("<|im_end|>\n")
             messages.forEach { message ->
                 val role = when (message.role) {
                     com.example.aiassistent1.domain.model.MessageRole.USER -> "user"

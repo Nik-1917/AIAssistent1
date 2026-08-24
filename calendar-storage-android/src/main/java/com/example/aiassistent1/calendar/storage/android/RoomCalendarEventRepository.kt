@@ -73,11 +73,38 @@ class RoomCalendarEventRepository(
         rangeEndEpochMillis: Long,
     ): Result<List<CalendarEvent>> = runCatching {
         validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
-        dao.search(
-            query = query.trim(),
+        val normalizedQuery = query.trim()
+        dao.findInRange(
             rangeStartEpochMillis = rangeStartEpochMillis,
             rangeEndEpochMillis = rangeEndEpochMillis,
         ).map(CalendarEventEntity::toDomain)
+            .filter { event ->
+                normalizedQuery.isEmpty() || event.title.contains(normalizedQuery, ignoreCase = true)
+            }
+    }
+
+    override suspend fun findForUpdate(
+        query: String,
+        rangeStartEpochMillis: Long?,
+        rangeEndEpochMillis: Long?,
+    ): Result<List<CalendarEvent>> = runCatching {
+        require(query.isNotBlank()) { "Event query must not be blank." }
+        require((rangeStartEpochMillis == null) == (rangeEndEpochMillis == null)) {
+            "Both target range boundaries must be supplied together."
+        }
+        if (rangeStartEpochMillis != null && rangeEndEpochMillis != null) {
+            validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
+        }
+        val normalizedQuery = query.trim()
+        dao.findForUpdateCandidates(
+            rangeStartEpochMillis = rangeStartEpochMillis,
+            rangeEndEpochMillis = rangeEndEpochMillis,
+        ).map(CalendarEventEntity::toDomain)
+            .filter { event -> event.title.contains(normalizedQuery, ignoreCase = true) }
+    }
+
+    override suspend fun getLastCreated(): Result<CalendarEvent?> = runCatching {
+        dao.getLastCreated()?.toDomain()
     }
 
     private fun validate(title: String, startsAtEpochMillis: Long, endsAtEpochMillis: Long) {

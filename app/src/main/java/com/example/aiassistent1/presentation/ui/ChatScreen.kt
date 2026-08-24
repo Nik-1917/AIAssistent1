@@ -153,6 +153,9 @@ import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.SpeechVoice
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
+import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateField
+import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateDraftUiState
+import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateTargetSelectionUiState
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
@@ -1122,6 +1125,25 @@ fun ChatScreen(
         )
     }
 
+    uiState.calendarUpdateTargetSelection?.let { selection ->
+        CalendarUpdateTargetSelectionDialog(
+            selection = selection,
+            onSelect = viewModel::selectCalendarUpdateTarget,
+            onDismiss = viewModel::cancelCalendarUpdateTargetSelection,
+        )
+    }
+
+    uiState.calendarUpdateDraft?.let { draft ->
+        CalendarUpdateDraftDialog(
+            draft = draft,
+            onValueChange = viewModel::updateCalendarUpdateDraftInput,
+            onSelectField = viewModel::selectCalendarUpdateField,
+            onSubmitField = viewModel::submitCalendarUpdateDraftField,
+            onConfirm = viewModel::confirmCalendarUpdateDraft,
+            onDismiss = viewModel::cancelCalendarUpdateDraft,
+        )
+    }
+
     if (showClearChatDialog) {
         var dontAskAgain by remember { mutableStateOf(false) }
         AlertDialog(
@@ -1279,6 +1301,114 @@ private fun CalendarEventDraftDialog(
         },
     )
 }
+
+@Composable
+private fun CalendarUpdateTargetSelectionDialog(
+    selection: CalendarUpdateTargetSelectionUiState,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Выберите событие для изменения") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Найдено несколько событий. Выберите нужное.")
+                Spacer(modifier = Modifier.height(8.dp))
+                selection.candidates.forEach { event ->
+                    TextButton(
+                        onClick = { onSelect(event.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "${formatCalendarDialogDateTime(event.startsAtEpochMillis)} · ${calendarDialogDurationMinutes(event.startsAtEpochMillis, event.endsAtEpochMillis)} мин",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        },
+    )
+}
+
+@Composable
+private fun CalendarUpdateDraftDialog(
+    draft: CalendarUpdateDraftUiState,
+    onValueChange: (String) -> Unit,
+    onSelectField: (CalendarUpdateField) -> Unit,
+    onSubmitField: () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (draft.isReadyForConfirmation) "Изменить событие?" else "Уточните изменение") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Было", style = MaterialTheme.typography.labelLarge)
+                Text("Название: ${draft.event.title}")
+                Text("Дата и время: ${formatCalendarDialogDateTime(draft.event.startsAtEpochMillis)}")
+                Text("Длительность: ${calendarDialogDurationMinutes(draft.event.startsAtEpochMillis, draft.event.endsAtEpochMillis)} мин")
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Будет", style = MaterialTheme.typography.labelLarge)
+                Text("Название: ${draft.previewTitle}")
+                Text("Дата и время: ${draft.previewStartsAt}")
+                Text("Длительность: ${draft.previewDurationMinutes} мин")
+
+                if (draft.isSelectingField) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Что изменить?", style = MaterialTheme.typography.labelLarge)
+                    CalendarUpdateField.entries.forEach { field ->
+                        TextButton(onClick = { onSelectField(field) }) {
+                            Text(field.label)
+                        }
+                    }
+                } else if (!draft.isReadyForConfirmation) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    val field = requireNotNull(draft.activeField)
+                    Text(field.label, style = MaterialTheme.typography.labelLarge)
+                    OutlinedTextField(
+                        value = draft.input,
+                        onValueChange = onValueChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = draft.error != null,
+                        supportingText = draft.error?.let { { Text(it) } },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (!draft.isSelectingField) {
+                TextButton(
+                    onClick = if (draft.isReadyForConfirmation) onConfirm else onSubmitField,
+                    enabled = draft.isReadyForConfirmation || draft.input.isNotBlank(),
+                ) {
+                    Text(if (draft.isReadyForConfirmation) "Изменить событие" else "Далее")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        },
+    )
+}
+
+private fun formatCalendarDialogDateTime(epochMillis: Long): String =
+    java.time.Instant.ofEpochMilli(epochMillis)
+        .atZone(java.time.ZoneId.systemDefault())
+        .toLocalDateTime()
+        .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+
+private fun calendarDialogDurationMinutes(startEpochMillis: Long, endEpochMillis: Long): Long =
+    (endEpochMillis - startEpochMillis) / 60_000L
 
 @Composable
 private fun ImportProgress(progress: Float) {

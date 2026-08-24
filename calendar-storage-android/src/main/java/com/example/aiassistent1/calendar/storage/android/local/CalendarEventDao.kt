@@ -39,13 +39,33 @@ interface CalendarEventDao {
         SELECT * FROM calendar_events
         WHERE startsAtEpochMillis < :rangeEndEpochMillis
           AND endsAtEpochMillis > :rangeStartEpochMillis
-          AND instr(lower(title), lower(:query)) > 0
         ORDER BY startsAtEpochMillis ASC, id ASC
         """,
     )
-    suspend fun search(
-        query: String,
+    suspend fun findInRange(
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
     ): List<CalendarEventEntity>
+
+    @Query(
+        """
+        SELECT * FROM calendar_events
+        WHERE (:rangeStartEpochMillis IS NULL OR startsAtEpochMillis < :rangeEndEpochMillis)
+          AND (:rangeEndEpochMillis IS NULL OR endsAtEpochMillis > :rangeStartEpochMillis)
+        ORDER BY startsAtEpochMillis ASC, id ASC
+        """,
+    )
+    suspend fun findForUpdateCandidates(
+        rangeStartEpochMillis: Long?,
+        rangeEndEpochMillis: Long?,
+    ): List<CalendarEventEntity>
+
+    @Query(
+        """
+        SELECT * FROM calendar_events
+        ORDER BY createdAtEpochMillis DESC, rowid DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastCreated(): CalendarEventEntity?
 }

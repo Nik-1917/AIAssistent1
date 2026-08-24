@@ -5,9 +5,16 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.aiassistent1.calendar.core.domain.CalendarEvent
 import com.example.aiassistent1.calendar.core.domain.CalendarEventDraft
+import com.example.aiassistent1.calendar.core.domain.CalendarEventChanges
+import com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand
+import com.example.aiassistent1.calendar.core.domain.CalendarUpdateTargetResolution
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.PrepareCalendarEventUpdateUseCase
+import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTargetUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
+import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
@@ -16,8 +23,10 @@ import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatter
 import com.example.aiassistent1.domain.context.ModelContextBuilder
+import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
+import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
@@ -55,6 +64,10 @@ class ChatViewModel(
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
     private val createCalendarEvent: CreateCalendarEventUseCase,
+    private val calendarUpdateCommandMapper: CalendarUpdateCommandMapper,
+    private val resolveCalendarUpdateTarget: ResolveCalendarUpdateTargetUseCase,
+    private val prepareCalendarEventUpdate: PrepareCalendarEventUpdateUseCase,
+    private val updateCalendarEvent: UpdateCalendarEventUseCase,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
@@ -724,8 +737,202 @@ class ChatViewModel(
                     }
                 }
             }
+            is CalendarUpdateParams -> handleCalendarUpdate(params)
             else -> {}
         }
+    }
+
+    private fun handleCalendarUpdate(params: CalendarUpdateParams) {
+        viewModelScope.launch {
+            val command = calendarUpdateCommandMapper.map(params).getOrElse { error ->
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+                return@launch
+            }
+
+            resolveCalendarUpdateTarget(command.target)
+                .onSuccess { resolution ->
+                    when (resolution) {
+                        is CalendarUpdateTargetResolution.Resolved -> startCalendarUpdateDraft(
+                            resolution.event,
+                            command,
+                        )
+                        is CalendarUpdateTargetResolution.Ambiguous -> mutableUiState.update {
+                            it.copy(
+                                calendarUpdateTargetSelection = CalendarUpdateTargetSelectionUiState(
+                                    candidates = resolution.candidates,
+                                    command = command,
+                                ),
+                            )
+                        }
+                        CalendarUpdateTargetResolution.NotFound -> mutableUiState.update {
+                            it.copy(error = "Событие для изменения не найдено.")
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    mutableUiState.update { it.copy(error = error.userMessage()) }
+                }
+        }
+    }
+
+    fun selectCalendarUpdateTarget(eventId: String) {
+        val selection = uiState.value.calendarUpdateTargetSelection ?: return
+        val event = selection.candidates.firstOrNull { it.id == eventId } ?: return
+        mutableUiState.update { it.copy(calendarUpdateTargetSelection = null) }
+        startCalendarUpdateDraft(event, selection.command)
+    }
+
+    fun cancelCalendarUpdateTargetSelection() {
+        mutableUiState.update { it.copy(calendarUpdateTargetSelection = null) }
+    }
+
+    private fun startCalendarUpdateDraft(event: CalendarEvent, command: CalendarUpdateCommand) {
+        val changes = command.changes
+        if (changes.isEmpty) {
+            mutableUiState.update {
+                it.copy(
+                    calendarEventDraft = null,
+                    calendarUpdateDraft = CalendarUpdateDraftUiState(
+                        event = event,
+                        changes = changes,
+                        previewTitle = event.title,
+                        previewStartsAt = formatCalendarEventStart(event.startsAtEpochMillis),
+                        previewDurationMinutes = eventDurationMinutes(
+                            event.startsAtEpochMillis,
+                            event.endsAtEpochMillis,
+                        ).toInt(),
+                        isSelectingField = true,
+                    ),
+                )
+            }
+            return
+        }
+
+        prepareCalendarEventUpdate(event, changes)
+            .onSuccess { update ->
+                mutableUiState.update {
+                    it.copy(
+                        calendarEventDraft = null,
+                        calendarUpdateDraft = CalendarUpdateDraftUiState(
+                            event = event,
+                            changes = changes,
+                            previewTitle = update.title,
+                            previewStartsAt = formatCalendarEventStart(update.startsAtEpochMillis),
+                            previewDurationMinutes = eventDurationMinutes(
+                                update.startsAtEpochMillis,
+                                update.endsAtEpochMillis,
+                            ).toInt(),
+                        ),
+                    )
+                }
+            }
+            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
+    }
+
+    fun updateCalendarUpdateDraftInput(value: String) {
+        mutableUiState.update { state ->
+            state.copy(calendarUpdateDraft = state.calendarUpdateDraft?.copy(input = value, error = null))
+        }
+    }
+
+    fun selectCalendarUpdateField(field: CalendarUpdateField) {
+        mutableUiState.update { state ->
+            state.copy(
+                calendarUpdateDraft = state.calendarUpdateDraft?.copy(
+                    isSelectingField = false,
+                    activeField = field,
+                    input = "",
+                    error = null,
+                ),
+            )
+        }
+    }
+
+    fun submitCalendarUpdateDraftField() {
+        val draft = uiState.value.calendarUpdateDraft ?: return
+        val field = draft.activeField ?: return
+        val changes = runCatching {
+            when (field) {
+                CalendarUpdateField.Title -> draft.changes.copy(
+                    title = draft.input.trim().also {
+                        require(it.isNotEmpty()) { "Введите новое название события." }
+                    },
+                )
+                CalendarUpdateField.StartsAt -> {
+                    val value = LocalDateTime.parse(
+                        draft.input.trim(),
+                        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+                    )
+                    draft.changes.copy(date = value.toLocalDate(), time = value.toLocalTime())
+                }
+                CalendarUpdateField.DurationMinutes -> draft.changes.copy(
+                    durationMinutes = draft.input.trim().toInt().also {
+                        require(it > 0) { "Длительность должна быть больше нуля." }
+                    },
+                )
+            }
+        }.getOrElse { error ->
+            mutableUiState.update {
+                it.copy(
+                    calendarUpdateDraft = draft.copy(
+                        error = when (field) {
+                            CalendarUpdateField.Title -> error.userMessage()
+                            CalendarUpdateField.StartsAt -> "Введите дату и время в формате ГГГГ-ММ-ДДTЧЧ:ММ."
+                            CalendarUpdateField.DurationMinutes -> error.userMessage()
+                        },
+                    ),
+                )
+            }
+            return
+        }
+        prepareCalendarEventUpdate(draft.event, changes)
+            .onSuccess { update ->
+                mutableUiState.update {
+                    it.copy(
+                        calendarUpdateDraft = draft.copy(
+                            changes = changes,
+                            previewTitle = update.title,
+                            previewStartsAt = formatCalendarEventStart(update.startsAtEpochMillis),
+                            previewDurationMinutes = eventDurationMinutes(
+                                update.startsAtEpochMillis,
+                                update.endsAtEpochMillis,
+                            ).toInt(),
+                            isSelectingField = false,
+                            activeField = null,
+                            input = "",
+                            error = null,
+                        ),
+                    )
+                }
+            }
+            .onFailure { error ->
+                mutableUiState.update { it.copy(calendarUpdateDraft = draft.copy(error = error.userMessage())) }
+            }
+    }
+
+    fun confirmCalendarUpdateDraft() {
+        val draft = uiState.value.calendarUpdateDraft ?: return
+        if (!draft.isReadyForConfirmation) return
+        prepareCalendarEventUpdate(draft.event, draft.changes)
+            .onSuccess { update ->
+                viewModelScope.launch {
+                    updateCalendarEvent(update)
+                        .onSuccess {
+                            mutableUiState.update {
+                                it.copy(
+                                    calendarUpdateDraft = null,
+                                    snackbarMessage = "Событие изменено",
+                                )
+                            }
+                        }
+                        .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
+                }
+            }
+            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
+    }
+
+    fun cancelCalendarUpdateDraft() {
+        mutableUiState.update { it.copy(calendarUpdateDraft = null) }
     }
 
     fun setSmoothResponseEnabled(enabled: Boolean) {

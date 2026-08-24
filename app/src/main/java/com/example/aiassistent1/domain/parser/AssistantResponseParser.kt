@@ -3,6 +3,9 @@ package com.example.aiassistent1.domain.parser
 import com.example.aiassistent1.domain.model.AssistantResponse
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
+import com.example.aiassistent1.domain.model.CalendarUpdateChangesParams
+import com.example.aiassistent1.domain.model.CalendarUpdateParams
+import com.example.aiassistent1.domain.model.CalendarUpdateTargetParams
 import org.json.JSONObject
 
 class AssistantResponseParser {
@@ -28,6 +31,25 @@ class AssistantResponseParser {
                         startsAt = paramsJson?.optionalNonBlankString("starts_at")
                             ?: paramsJson?.optionalNonBlankString("date"),
                         durationMin = paramsJson?.optionalPositiveInt("duration_min"),
+                    )
+                }
+                "calendar_update" -> {
+                    val targetJson = paramsJson?.optJSONObject("target")
+                    val changesJson = paramsJson?.optJSONObject("changes")
+                    CalendarUpdateParams(
+                        target = CalendarUpdateTargetParams(
+                            query = targetJson?.optionalNonBlankString("query"),
+                            rangeStart = targetJson?.optionalNonBlankString("range_start"),
+                            rangeEnd = targetJson?.optionalNonBlankString("range_end"),
+                            useLastCreated = targetJson?.optBoolean("use_last_created", false) == true,
+                            useLastReferenced = targetJson?.optBoolean("use_last_referenced", false) == true,
+                        ),
+                        changes = CalendarUpdateChangesParams(
+                            title = changesJson?.optionalNonBlankString("title"),
+                            date = changesJson?.optionalNonBlankString("date"),
+                            time = changesJson?.optionalNonBlankString("time"),
+                            durationMin = changesJson?.optionalPositiveInt("duration_min"),
+                        ),
                     )
                 }
                 else -> null

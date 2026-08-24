@@ -2,6 +2,7 @@ package com.example.aiassistent1.domain.parser
 
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
+import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,5 +53,30 @@ class AssistantResponseParserTest {
         assertEquals("chat", response?.intent)
         assertNull(response?.params)
         assertTrue(response?.reply?.isNotBlank() == true)
+    }
+
+    @Test
+    fun `parses an update command with target and partial changes`() {
+        val response = parser.parse(
+            """{"intent":"calendar_update","reply":"Событие изменено","params":{"target":{"query":"тренировка","range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"},"changes":{"date":"2026-08-28"}}}""",
+        )
+
+        val params = response?.params as CalendarUpdateParams
+        assertEquals("тренировка", params.target.query)
+        assertEquals("2026-08-25T00:00", params.target.rangeStart)
+        assertEquals("2026-08-28", params.changes.date)
+        assertNull(params.changes.time)
+    }
+
+    @Test
+    fun `parses last created target without invented fields`() {
+        val response = parser.parse(
+            """{"intent":"calendar_update","reply":"Время изменено","params":{"target":{"use_last_created":true},"changes":{"time":"10:00"}}}""",
+        )
+
+        val params = response?.params as CalendarUpdateParams
+        assertTrue(params.target.useLastCreated)
+        assertNull(params.target.query)
+        assertEquals("10:00", params.changes.time)
     }
 }

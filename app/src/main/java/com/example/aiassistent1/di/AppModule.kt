@@ -7,9 +7,12 @@ import com.example.aiassistent1.calendar.core.domain.CalendarEventRepository
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
+import com.example.aiassistent1.calendar.core.domain.PrepareCalendarEventUpdateUseCase
+import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTargetUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventRepository
+import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
 import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.engine.LlamatikEngine
 import com.example.aiassistent1.domain.context.ModelContextBuilder
@@ -132,6 +135,15 @@ object AppModule {
 
 	fun provideUpdateCalendarEventUseCase(context: Context): UpdateCalendarEventUseCase =
 		UpdateCalendarEventUseCase(provideCalendarEventRepository(context))
+
+	fun provideResolveCalendarUpdateTargetUseCase(context: Context): ResolveCalendarUpdateTargetUseCase =
+		ResolveCalendarUpdateTargetUseCase(provideCalendarEventRepository(context))
+
+	fun providePrepareCalendarEventUpdateUseCase(): PrepareCalendarEventUpdateUseCase =
+		PrepareCalendarEventUpdateUseCase()
+
+	fun provideCalendarUpdateCommandMapper(): CalendarUpdateCommandMapper =
+		CalendarUpdateCommandMapper()
 
 	fun provideDeleteCalendarEventUseCase(context: Context): DeleteCalendarEventUseCase =
 		DeleteCalendarEventUseCase(provideCalendarEventRepository(context))

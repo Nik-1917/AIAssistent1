@@ -95,6 +95,33 @@ class RoomCalendarEventRepositoryInstrumentedTest {
     }
 
     @Test
+    fun `finds a Russian title regardless of letter case`() = runTest {
+        val event = repository.create(
+            CalendarEventDraft("Тренировка", 10_000L, 70_000L),
+        ).getOrThrow()
+
+        val searched = repository.search("ТРЕНИРОВКА", 0L, 100_000L).getOrThrow()
+
+        assertEquals(listOf(event), searched)
+    }
+
+    @Test
+    fun `returns the most recently inserted event when creation times are equal`() = runTest {
+        repository.create(
+            CalendarEventDraft("Первое", 10_000L, 70_000L),
+        ).getOrThrow()
+        val second = RoomCalendarEventRepository(
+            dao = database.calendarEventDao(),
+            nowEpochMillis = { 1_000L },
+            newId = { "event-2" },
+        ).create(
+            CalendarEventDraft("Второе", 80_000L, 140_000L),
+        ).getOrThrow()
+
+        assertEquals(second, repository.getLastCreated().getOrThrow())
+    }
+
+    @Test
     fun `rejects invalid event data`() = runTest {
         val blankTitle = repository.create(CalendarEventDraft(" ", 10L, 20L))
         val invertedRange = repository.create(CalendarEventDraft("Meeting", 20L, 20L))

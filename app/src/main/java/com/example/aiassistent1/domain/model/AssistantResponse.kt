@@ -19,3 +19,24 @@ data class CalendarAddParams(
     val startsAt: String?,
     val durationMin: Int?,
 ) : AssistantParams
+
+/** JSON transport model only. Map it to calendar-core's CalendarUpdateCommand before execution. */
+data class CalendarUpdateParams(
+    val target: CalendarUpdateTargetParams = CalendarUpdateTargetParams(),
+    val changes: CalendarUpdateChangesParams = CalendarUpdateChangesParams(),
+) : AssistantParams
+
+data class CalendarUpdateTargetParams(
+    val query: String? = null,
+    val rangeStart: String? = null,
+    val rangeEnd: String? = null,
+    val useLastCreated: Boolean = false,
+    val useLastReferenced: Boolean = false,
+)
+
+data class CalendarUpdateChangesParams(
+    val title: String? = null,
+    val date: String? = null,
+    val time: String? = null,
+    val durationMin: Int? = null,
+)

@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "purpose": "Calendar-assistant QLoRA pilot source lock. This file does not authorize a cloud run.",
+  "source": {
+    "repository": "RefalMachine/ruadapt_qwen2.5_3B_ext_u48_instruct_v4",
+    "url": "https://huggingface.co/RefalMachine/ruadapt_qwen2.5_3B_ext_u48_instruct_v4",
+    "revision": "4b2122a50af59fcd878839bd77f63c104cfe5ab7",
+    "revision_ref": "refs/heads/main",
+    "retrieved_on": "2026-08-25",
+    "expected_files": [
+      "config.json",
+      "generation_config.json",
+      "model-00001-of-00002.safetensors",
+      "model-00002-of-00002.safetensors",
+      "model.safetensors.index.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "special_tokens_map.json"
+    ]
+  },
+  "architecture": {
+    "model_type": "qwen2",
+    "architecture": "Qwen2ForCausalLM",
+    "parameter_count": "3B",
+    "source_dtype": "bfloat16",
+    "hidden_size": 2048,
+    "num_hidden_layers": 36,
+    "vocab_size": 147097,
+    "max_position_embeddings": 32768,
+    "tokenizer_class": "Qwen2Tokenizer"
+  },
+  "chat_format": {
+    "template_owner": "tokenizer_config.json at the locked revision",
+    "required_special_tokens": [
+      "<|im_start|>",
+      "<|im_end|>"
+    ],
+    "training_rule": "Render messages through the checkpoint tokenizer's chat_template; do not create a hand-written alternative template."
+  },
+  "android_deployment": {
+    "current_inference_artifact": "ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf",
+    "accepted_import_format": "GGUF",
+    "adapter_loading_supported_by_current_app": false,
+    "required_release_artifact": "Merged, converted, and device-tested GGUF checkpoint."
+  },
+  "license": {
+    "status": "UNVERIFIED",
+    "evidence": "At retrieval, the model-card metadata and listed repository root files did not declare a license or contain a LICENSE file. The listed parent base model had no model card.",
+    "run_gate": "Do not launch a paid or production cloud training job until the rights holder or an authoritative licence chain is recorded."
+  },
+  "integrity": {
+    "required_before_training": "Download the locked revision, calculate SHA-256 for every expected file, and record the values in the run manifest."
+  }
+}

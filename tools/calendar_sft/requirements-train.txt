@@ -1,0 +1,9 @@
+# Versions recorded by the upstream adapter card for the locked Qwen2 checkpoint.
+# Install a CUDA-compatible torch build separately inside the chosen GPU image.
+transformers==4.45.2
+datasets==2.18.0
+tokenizers==0.20.1
+peft>=0.9.0,<0.15.0
+accelerate>=0.26.0,<1.0.0
+bitsandbytes>=0.43.0,<0.45.0
+safetensors>=0.4.0,<0.6.0

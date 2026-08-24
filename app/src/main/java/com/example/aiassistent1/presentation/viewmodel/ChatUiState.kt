@@ -19,6 +19,8 @@ data class ChatUiState(
     val modelState: ModelState = ModelState.Unloaded,
     val isModelMissing: Boolean = false,
     val calendarEventDraft: CalendarEventDraftUiState? = null,
+    val calendarUpdateDraft: CalendarUpdateDraftUiState? = null,
+    val calendarUpdateTargetSelection: CalendarUpdateTargetSelectionUiState? = null,
     val isProcessing: Boolean = false,
     val isVoiceMode: Boolean = false,
     val voiceDraft: VoiceDraftState = VoiceDraftState(),
