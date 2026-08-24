@@ -1,0 +1,67 @@
+{
+  "format_version": 1,
+  "purpose": "Clean-room calendar-assistant QLoRA pilot source lock. This file permits neither a model download nor a cloud run by itself.",
+  "source": {
+    "repository": "Qwen/Qwen3-4B-Instruct-2507",
+    "url": "https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507",
+    "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "revision_ref": "refs/heads/main",
+    "retrieved_on": "2026-08-25",
+    "expected_files": [
+      "LICENSE",
+      "config.json",
+      "generation_config.json",
+      "merges.txt",
+      "model-00001-of-00003.safetensors",
+      "model-00002-of-00003.safetensors",
+      "model-00003-of-00003.safetensors",
+      "model.safetensors.index.json",
+      "tokenizer.json",
+      "tokenizer_config.json",
+      "vocab.json"
+    ]
+  },
+  "architecture": {
+    "model_type": "qwen3",
+    "architecture": "Qwen3ForCausalLM",
+    "parameter_count": "4B",
+    "source_dtype": "bfloat16",
+    "hidden_size": 2560,
+    "num_hidden_layers": 36,
+    "vocab_size": 151936,
+    "max_position_embeddings": 262144
+  },
+  "chat_format": {
+    "template_owner": "tokenizer_config.json at the locked revision",
+    "required_special_tokens": [
+      "<|im_start|>",
+      "<|im_end|>"
+    ],
+    "training_rule": "Render messages through the checkpoint tokenizer's chat_template; do not create a hand-written alternative template."
+  },
+  "android_deployment": {
+    "accepted_import_format": "GGUF",
+    "adapter_loading_supported_by_current_app": false,
+    "qwen3_gguf_compatibility": "UNVALIDATED",
+    "required_release_artifact": "Merged, converted, SHA-256-recorded, and device-tested GGUF checkpoint."
+  },
+  "license": {
+    "status": "VERIFIED",
+    "name": "Apache-2.0",
+    "evidence_url": "https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507/blob/cdbee75f17c01a7cc42f958dc650907174af0554/LICENSE",
+    "evidence": "The official Qwen model card declares apache-2.0 and the locked repository includes an Apache-2.0 LICENSE file.",
+    "scope": "This status covers the locked base checkpoint only. It does not verify rights to any SFT, validation, holdout, synthetic-teacher, or user-derived data.",
+    "release_obligations": "Include the Apache-2.0 licence and required notices with any redistributed derivative; preserve applicable upstream notices and identify modified files."
+  },
+  "clean_room": {
+    "prohibited_inputs": [
+      "RefalMachine weights, GGUF files, adapters, tokenizer files, training data, source code, or generated responses",
+      "any source with unknown, non-commercial, no-derivatives, or unrecorded training rights",
+      "Room databases, user calendar events, chats, contact data, APK signing material, API keys, or production telemetry"
+    ],
+    "allowed_training_inputs": "Only records whose provenance and rights to train and distribute a derivative model are recorded in a separate dataset register."
+  },
+  "integrity": {
+    "required_before_training": "Download the locked revision only after explicit approval, calculate SHA-256 for every expected file, record the values in the run manifest, and retain the source LICENSE."
+  }
+}

@@ -44,9 +44,9 @@
     "required_release_artifact": "Merged, converted, and device-tested GGUF checkpoint."
   },
   "license": {
-    "status": "UNVERIFIED",
-    "evidence": "At retrieval, the model-card metadata and listed repository root files did not declare a license or contain a LICENSE file. The listed parent base model had no model card.",
-    "run_gate": "Do not launch a paid or production cloud training job until the rights holder or an authoritative licence chain is recorded."
+    "status": "NOT_CLEARED",
+    "evidence": "Public source review on 2026-08-25 found no licence declaration or LICENSE file for these RefalMachine weights; the listed parent base model had no model card, the adapter declares an unknown dataset, and the listed training datasets do not establish a complete rights chain. The model card identifies an adapted Qwen2.5-3B lineage, while the official Qwen2.5-3B-Instruct licence is research-only unless Alibaba Cloud grants a separate commercial licence.",
+    "run_gate": "Do not download for a production run, train, merge, convert, redistribute, or ship a derivative of this source. Preserve this file only as an audit record until an authoritative complete licence chain is recorded."
   },
   "integrity": {
     "required_before_training": "Download the locked revision, calculate SHA-256 for every expected file, and record the values in the run manifest."

@@ -4,16 +4,24 @@ These scripts prepare and score a QLoRA pilot for the application's local
 calendar assistant. They do not create a Google Cloud project, bucket, service
 account, GPU VM, or training job.
 
-## Fixed model source
+## Source locks
 
-`model_manifest.json` pins the supplied Hugging Face repository to commit
-`4b2122a50af59fcd878839bd77f63c104cfe5ab7`. It expects the original BF16
-Safetensors snapshot and its tokenizer, not the Android `Q4_K_M.gguf` file.
-The current app imports GGUF only, so an adapter cannot be deployed directly.
+`model_manifest.json` is an archived audit lock for the supplied
+RefalMachine model. Its status is `NOT_CLEARED`; it must not be used for
+training, merging, conversion, redistribution or a production release.
 
-The source licence is deliberately marked `UNVERIFIED`. Both `train_qlora.py`
-and `merge_adapter.py` block real work while that status remains. A dry run is
-allowed because it does not modify model weights.
+`clean_room_qwen3_source_lock.json` pins the independent candidate base
+`Qwen/Qwen3-4B-Instruct-2507` to an official Apache-2.0 source revision. It
+expects the original BF16 Safetensors snapshot and its tokenizer, not an
+Android GGUF file. The current app imports GGUF only, so an adapter cannot be
+deployed directly. Qwen3 GGUF compatibility with the current Android runtime is
+not yet validated.
+
+The source lock verifies only the base-checkpoint licence. Every SFT data
+source must separately be recorded and approved from
+`dataset_provenance.template.json`; user data, the blocked RefalMachine source
+and its outputs are prohibited inputs. See
+[`docs/CALENDAR_ASSISTANT_CLEAN_ROOM.md`](../../docs/CALENDAR_ASSISTANT_CLEAN_ROOM.md).
 
 ## Local, no-cost preparation
 
@@ -46,12 +54,14 @@ Every row is normalised to the exact Android temporal system prompt:
 
 ## Staged model dry run
 
-After the model source is lawfully staged locally in a directory containing the
-locked Safetensors snapshot and a CUDA-compatible Python environment is ready:
+After the clean-room source is explicitly approved and lawfully staged locally
+in a directory containing the locked Safetensors snapshot and a CUDA-compatible
+Python environment is ready:
 
 ```powershell
 python tools/calendar_sft/train_qlora.py `
-  --model-dir D:\models\ruadapt_qwen2.5_3B_ext_u48_instruct_v4 `
+  --model-manifest tools\calendar_sft\clean_room_qwen3_source_lock.json `
+  --model-dir D:\models\Qwen3-4B-Instruct-2507 `
   --train-file build\calendar_sft_dataset\train.jsonl `
   --validation-file build\calendar_sft_dataset\validation.jsonl `
   --output-dir build\calendar_sft_run `
@@ -63,7 +73,8 @@ rejects silent truncation. It does not load model weights or require a GPU.
 
 ## Real training and release
 
-Only after the licence gate is changed to `VERIFIED` with authoritative evidence:
+Only after both the source lock and a complete data-provenance register are
+approved:
 
 1. Run `train_qlora.py` on one CUDA GPU and retain its `run_manifest.json`.
 2. Score generated outputs with `evaluate_predictions.py`; semantic scoring
@@ -92,6 +103,6 @@ The prediction file must have one object per holdout case:
 The later cloud target is a Vertex AI CustomJob that runs this package inside a
 reproducible GPU container. Before creating it, explicitly choose a Google Cloud
 project, region, GPU type, budget limit, container image and private storage
-location. Upload only this fictional training corpus and the legally verified
-model snapshot—never Room databases, real calendar exports, API keys or an APK
-with credentials.
+location. Upload only a provenance-approved training corpus and the locked model
+snapshot—never Room databases, real calendar exports, API keys or an APK with
+credentials.

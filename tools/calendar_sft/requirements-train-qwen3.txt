@@ -1,0 +1,8 @@
+# Pinned for the clean-room Qwen3 source lock. Install a CUDA-compatible torch
+# build separately inside the approved GPU image.
+transformers==4.51.0
+datasets==2.18.0
+peft>=0.9.0,<0.15.0
+accelerate>=0.26.0,<1.0.0
+bitsandbytes>=0.43.0,<0.45.0
+safetensors>=0.4.0,<0.6.0

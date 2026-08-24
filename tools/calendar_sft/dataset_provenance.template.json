@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "purpose": "Template for the clean-room calendar SFT dataset register. Copy outside the source tree for each candidate dataset and do not mark it VERIFIED by default.",
+  "status": "PENDING_RIGHTS_REVIEW",
+  "dataset_id": "replace-with-versioned-dataset-id",
+  "records": [
+    {
+      "source_type": "internal_authored | separately_licensed | approved_synthetic",
+      "source_reference": "repository-relative path or immutable external URL",
+      "rights_evidence": "licence text, contract, or internal authorship record",
+      "permits_model_training": false,
+      "permits_derivative_weight_distribution": false,
+      "contains_personal_data": false
+    }
+  ],
+  "required_release_gate": "Every record must permit model training and derivative-weight distribution, contain no unapproved personal data, and have review status VERIFIED before a real training run."
+}

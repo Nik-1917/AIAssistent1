@@ -20,7 +20,7 @@ from dataset_contract import DatasetContractError, file_sha256, load_jsonl
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MODEL_MANIFEST_PATH = ROOT / "tools" / "calendar_sft" / "model_manifest.json"
+DEFAULT_MODEL_MANIFEST_PATH = ROOT / "tools" / "calendar_sft" / "model_manifest.json"
 LORA_TARGET_MODULES = (
     "q_proj",
     "k_proj",
@@ -47,6 +47,12 @@ class PilotConfig:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--model-manifest",
+        type=Path,
+        default=DEFAULT_MODEL_MANIFEST_PATH,
+        help="source-lock JSON; defaults to the archived RefalMachine audit lock",
+    )
     parser.add_argument("--model-dir", required=True, type=Path, help="locked BF16 Safetensors snapshot")
     parser.add_argument("--train-file", required=True, type=Path)
     parser.add_argument("--validation-file", required=True, type=Path)
@@ -68,8 +74,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_manifest() -> dict[str, Any]:
-    return json.loads(MODEL_MANIFEST_PATH.read_text(encoding="utf-8"))
+def load_manifest(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def require_pilot_values(args: argparse.Namespace) -> PilotConfig:
@@ -141,15 +147,18 @@ def write_run_manifest(
     tokenizer: Any,
     config: Any,
     result: dict[str, Any],
+    manifest_path: Path,
+    manifest: dict[str, Any],
 ) -> None:
     file_hashes = {
         path.name: file_sha256(path)
         for path in model_dir.iterdir()
-        if path.is_file() and path.name in json.loads(MODEL_MANIFEST_PATH.read_text(encoding="utf-8"))["source"]["expected_files"]
+        if path.is_file() and path.name in manifest["source"]["expected_files"]
     }
     run_manifest = {
         "format_version": 1,
-        "source_lock_sha256": file_sha256(MODEL_MANIFEST_PATH),
+        "source_lock_path": str(manifest_path),
+        "source_lock_sha256": file_sha256(manifest_path),
         "source_files_sha256": dict(sorted(file_hashes.items())),
         "training_data_sha256": file_sha256(train_file),
         "validation_data_sha256": file_sha256(validation_file),
@@ -177,16 +186,18 @@ def main() -> int:
     args = parse_args()
     try:
         pilot = require_pilot_values(args)
-        manifest = load_manifest()
+        manifest_path = args.model_manifest.resolve()
+        manifest = load_manifest(manifest_path)
         verify_snapshot(args.model_dir, manifest)
         train_rows = load_jsonl(args.train_file)
         validation_rows = load_jsonl(args.validation_file)
     except (DatasetContractError, OSError, json.JSONDecodeError) as error:
         print(f"Preflight failed: {error}", file=sys.stderr)
         return 2
-    if manifest["license"]["status"] != "VERIFIED" and not args.dry_run:
+    source_license_status = manifest["license"]["status"]
+    if source_license_status == "NOT_CLEARED" or (source_license_status != "VERIFIED" and not args.dry_run):
         print(
-            "Preflight failed: source license is UNVERIFIED. Record an authoritative licence chain and update the source lock before a real run.",
+            f"Preflight failed: source licence status is {source_license_status!r}; it must be VERIFIED before this run.",
             file=sys.stderr,
         )
         return 2
@@ -206,10 +217,16 @@ def main() -> int:
     tokenizer = AutoTokenizer.from_pretrained(args.model_dir, local_files_only=True, trust_remote_code=False)
     config = AutoConfig.from_pretrained(args.model_dir, local_files_only=True, trust_remote_code=False)
     if config.model_type != manifest["architecture"]["model_type"]:
-        print(f"Preflight failed: model_type is {config.model_type!r}, expected qwen2", file=sys.stderr)
+        print(
+            f"Preflight failed: model_type is {config.model_type!r}, expected {manifest['architecture']['model_type']!r}",
+            file=sys.stderr,
+        )
         return 2
     if config.vocab_size != manifest["architecture"]["vocab_size"]:
-        print(f"Preflight failed: vocab_size is {config.vocab_size}, expected 147097", file=sys.stderr)
+        print(
+            f"Preflight failed: vocab_size is {config.vocab_size}, expected {manifest['architecture']['vocab_size']}",
+            file=sys.stderr,
+        )
         return 2
     if not tokenizer.chat_template:
         print("Preflight failed: tokenizer has no chat_template", file=sys.stderr)
@@ -333,6 +350,8 @@ def main() -> int:
             "evaluation_metrics": evaluation_result,
             "adapter_directory": "adapter",
         },
+        manifest_path,
+        manifest,
     )
     print(json.dumps(evaluation_result, ensure_ascii=False, sort_keys=True))
     return 0
