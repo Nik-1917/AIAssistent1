@@ -202,7 +202,7 @@ def search_period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tupl
     """Return the local search interval for a relative calendar expression."""
 
     phrase, start_date, end_date = period(anchor, kind, explicit_offset)
-    start = anchor if kind == "today" else datetime.combine(start_date, time.min)
+    start = anchor if kind in {"today", "this_week"} else datetime.combine(start_date, time.min)
     end = datetime.combine(end_date, time.min)
     return phrase, start, end
 
@@ -681,13 +681,13 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             )
             category = "reinforcement_search_full_query_day"
         elif variant == 5:
-            start, end = week_bounds(today, 0)
+            _, start, end = search_period(anchor, "this_week")
             query = "собрание родительского комитета"
             user = "На этой неделе покажи собрание родительского комитета."
             assistant = response(
                 "calendar_search",
                 "Проверяю собрание родительского комитета на этой неделе.",
-                {"query": query, "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
+                {"query": query, "range_start": local_stamp(start), "range_end": local_stamp(end)},
             )
             category = "reinforcement_search_week_full_query"
         elif variant == 6:

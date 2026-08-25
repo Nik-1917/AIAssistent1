@@ -24,6 +24,14 @@ class SearchPeriodTests(unittest.TestCase):
         self.assertEqual(datetime(2026, 8, 24, 14, 30), start)
         self.assertEqual(datetime(2026, 8, 25, 0, 0), end)
 
+    def test_this_week_ends_at_the_next_monday(self) -> None:
+        anchor = datetime(2026, 8, 26, 14, 30)
+        phrase, start, end = search_period(anchor, "this_week")
+
+        self.assertEqual("на этой неделе", phrase)
+        self.assertEqual(datetime(2026, 8, 26, 14, 30), start)
+        self.assertEqual(datetime(2026, 8, 31, 0, 0), end)
+
     def test_future_relative_days_use_midnight_boundaries(self) -> None:
         expected = {
             "tomorrow": ("завтра", datetime(2026, 8, 25, 0, 0), datetime(2026, 8, 26, 0, 0)),

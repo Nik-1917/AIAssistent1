@@ -163,7 +163,7 @@ interprets returned local timestamps in its system zone.
 | `послезавтра`, `через два дня` | second next date `00:00` to third next date `00:00` |
 | `послепослезавтра`, `через три дня` | third next date `00:00` to fourth next date `00:00` |
 | `через четыре дня` | fourth next date `00:00` to fifth next date `00:00` |
-| `на этой неделе` | Monday `00:00` to next Monday `00:00` |
+| `на этой неделе` | for `calendar_search`: supplied current local time to next Monday `00:00`; for an update source or delete target: current Monday `00:00` to next Monday `00:00` |
 | `в предыдущем месяце`, `месяц назад`, `в том месяце` | first day of the previous calendar month `00:00` to first day of the current month `00:00` |
 | `в следующем месяце` | first day of the next calendar month `00:00` to first day of the following month `00:00` |
 | `через месяц` | the same local day one calendar month later |
