@@ -3,6 +3,19 @@
   "purpose": "Template for the clean-room calendar SFT dataset register. Copy outside the source tree for each candidate dataset and do not mark it VERIFIED by default.",
   "status": "PENDING_RIGHTS_REVIEW",
   "dataset_id": "replace-with-versioned-dataset-id",
+  "review": {
+    "reviewed_by": "role-or-organisation-after-review",
+    "reviewed_on": "YYYY-MM-DD",
+    "decision_evidence": "immutable path or URL to the signed rights decision"
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "replace-with-exact-train-jsonl-sha256"
+    },
+    "validation": {
+      "sha256": "replace-with-exact-validation-jsonl-sha256"
+    }
+  },
   "records": [
     {
       "source_type": "internal_authored | separately_licensed | approved_synthetic",

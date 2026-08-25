@@ -1,0 +1,4 @@
+# Python 3.13, Windows x86-64, NVIDIA GeForce GTX 1080 Ti (Pascal, CC 6.1).
+# Install torch==2.7.1+cu118 from https://download.pytorch.org/whl/cu118 first;
+# the driver supplies GPU support, so a system CUDA Toolkit is not required.
+-r requirements-train-qwen3.txt

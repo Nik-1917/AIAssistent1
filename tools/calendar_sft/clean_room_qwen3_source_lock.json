@@ -62,6 +62,29 @@
     "allowed_training_inputs": "Only records whose provenance and rights to train and distribute a derivative model are recorded in a separate dataset register."
   },
   "integrity": {
-    "required_before_training": "Download the locked revision only after explicit approval, calculate SHA-256 for every expected file, record the values in the run manifest, and retain the source LICENSE."
+    "required_before_training": "Download the locked revision only after explicit approval, calculate SHA-256 for every expected file, record the values in the run manifest, and retain the source LICENSE.",
+    "upstream_metadata": {
+      "url": "https://huggingface.co/api/models/Qwen/Qwen3-4B-Instruct-2507/tree/cdbee75f17c01a7cc42f958dc650907174af0554?recursive=true&expand=true",
+      "retrieved_on": "2026-08-25",
+      "file_sizes_bytes": {
+        "LICENSE": 11343,
+        "config.json": 727,
+        "generation_config.json": 238,
+        "merges.txt": 1671839,
+        "model-00001-of-00003.safetensors": 3957900840,
+        "model-00002-of-00003.safetensors": 3987450520,
+        "model-00003-of-00003.safetensors": 99630640,
+        "model.safetensors.index.json": 32819,
+        "tokenizer.json": 11422654,
+        "tokenizer_config.json": 9377,
+        "vocab.json": 2776833
+      },
+      "lfs_sha256": {
+        "model-00001-of-00003.safetensors": "75311d91bb08cf0b882913da464a1e722a31fb44db35208663487efb7a3d8ed6",
+        "model-00002-of-00003.safetensors": "0b48adbb1f60e901153d91907ba11ce63bd4b8b584482e730f48808d055dfba1",
+        "model-00003-of-00003.safetensors": "7dd39ccca5e4de123c74c14af44c9bf2eb75df33b4614382af0134528e060d5d",
+        "tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+      }
+    }
   }
 }

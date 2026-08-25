@@ -32,6 +32,11 @@ weight distribution. A dataset register based on
 [`dataset_provenance.template.json`](../tools/calendar_sft/dataset_provenance.template.json)
 must be completed and reviewed before a real training run.
 
+The current pilot register is
+[`calendar_sft_data_provenance_v1.json`](calendar_sft_data_provenance_v1.json).
+It is bound to the staged training artifacts by SHA-256; changing either JSONL
+file requires a new review and register version.
+
 ## Product target
 
 The model's scope is the local calendar protocol already implemented by the
@@ -70,12 +75,21 @@ not proof of Qwen3 quality.
 ## Execution gates
 
 1. Approve the final data register and retain its rights evidence.
+   The register must be `VERIFIED`, bind SHA-256 values of both staged SFT
+   artifacts, identify a reviewer decision, and state for every source that it
+   permits model training and distribution of derivative weights without
+   personal data.
 2. Explicitly approve downloading the locked base snapshot; calculate SHA-256
-   for every file named in the source lock.
+   for every file named in the source lock. The verifier must match the
+   official LFS SHA-256 values for the three Safetensors shards and
+   `tokenizer.json`, and the recorded byte size for every locked file.
 3. Update the training environment to
    [`requirements-train-qwen3.txt`](../tools/calendar_sft/requirements-train-qwen3.txt)
    in an approved CUDA image.
-4. Run a local dry run using the source lock and the checkpoint tokenizer.
+4. Run a local dry run using the source lock and the checkpoint tokenizer. It
+   verifies configuration, tokenizer rendering, every dataset row and QLoRA
+   target-module configuration, but deliberately does not load weights or start
+   training.
 5. Approve one bounded QLoRA pilot only after the dry run and source/data
    integrity checks pass.
 6. Compare base and adapter on the frozen holdout, then approve merging.

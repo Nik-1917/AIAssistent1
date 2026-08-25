@@ -1,0 +1,6 @@
+# CPU-only dry-run dependencies. A virtual environment with --system-site-packages
+# can reuse the existing CPU torch build; no GPU runtime or bitsandbytes is needed.
+transformers==4.51.0
+peft>=0.9.0,<0.15.0
+accelerate>=0.26.0,<1.0.0
+safetensors>=0.4.0,<0.6.0

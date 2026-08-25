@@ -1,8 +1,10 @@
 # Pinned for the clean-room Qwen3 source lock. Install a CUDA-compatible torch
-# build separately inside the approved GPU image.
+# build separately inside the approved GPU image. The local GTX 1080 Ti path
+# uses the PyTorch CUDA 11.8 wheel and bitsandbytes 0.48.2 because its Windows
+# CUDA 11.8-12.6 binary includes the Pascal sm60 target.
 transformers==4.51.0
 datasets==2.18.0
-peft>=0.9.0,<0.15.0
-accelerate>=0.26.0,<1.0.0
-bitsandbytes>=0.43.0,<0.45.0
-safetensors>=0.4.0,<0.6.0
+peft==0.14.0
+accelerate==0.34.2
+bitsandbytes==0.48.2
+safetensors==0.5.3

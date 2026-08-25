@@ -16,7 +16,9 @@ import random
 import sys
 from typing import Any
 
-from dataset_contract import DatasetContractError, file_sha256, load_jsonl
+from dataset_contract import DatasetContractError, load_jsonl
+from dataset_provenance import verify_dataset_provenance
+from verify_source_snapshot import verify_staged_source
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +58,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-dir", required=True, type=Path, help="locked BF16 Safetensors snapshot")
     parser.add_argument("--train-file", required=True, type=Path)
     parser.add_argument("--validation-file", required=True, type=Path)
+    parser.add_argument(
+        "--dataset-provenance",
+        type=Path,
+        help="VERIFIED register binding rights approval to the exact train and validation JSONL files; required for training",
+    )
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--max-seq-length", type=int, default=768)
     parser.add_argument("--epochs", type=float, default=3.0)
@@ -66,10 +73,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lora-rank", type=int, default=16)
     parser.add_argument("--lora-alpha", type=int, default=32)
     parser.add_argument("--lora-dropout", type=float, default=0.05)
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--dry-run",
         action="store_true",
         help="validate the source snapshot and tokenize all rows without loading model weights",
+    )
+    mode.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="load the 4-bit model and run one no-gradient forward pass without changing weights",
     )
     return parser.parse_args()
 
@@ -99,14 +112,6 @@ def require_pilot_values(args: argparse.Namespace) -> PilotConfig:
     if values.lora_rank <= 0 or values.lora_alpha <= 0 or not 0 <= values.lora_dropout < 1:
         raise DatasetContractError("invalid LoRA parameters")
     return values
-
-
-def verify_snapshot(model_dir: Path, manifest: dict[str, Any]) -> None:
-    if model_dir.suffix.lower() == ".gguf" or not model_dir.is_dir():
-        raise DatasetContractError("--model-dir must be an extracted full Safetensors snapshot, never a GGUF file")
-    missing = [name for name in manifest["source"]["expected_files"] if not (model_dir / name).is_file()]
-    if missing:
-        raise DatasetContractError(f"model snapshot is missing required files: {', '.join(missing)}")
 
 
 def tokenize_messages(tokenizer: Any, messages: list[dict[str, str]], max_seq_length: int) -> dict[str, list[int]]:
@@ -140,28 +145,21 @@ def load_tokenized_rows(tokenizer: Any, path: Path, max_seq_length: int) -> list
 
 def write_run_manifest(
     output_dir: Path,
-    model_dir: Path,
-    train_file: Path,
-    validation_file: Path,
     pilot: PilotConfig,
     tokenizer: Any,
     config: Any,
     result: dict[str, Any],
     manifest_path: Path,
-    manifest: dict[str, Any],
+    source_integrity: dict[str, Any],
+    dataset_provenance: dict[str, Any],
 ) -> None:
-    file_hashes = {
-        path.name: file_sha256(path)
-        for path in model_dir.iterdir()
-        if path.is_file() and path.name in manifest["source"]["expected_files"]
-    }
     run_manifest = {
         "format_version": 1,
         "source_lock_path": str(manifest_path),
-        "source_lock_sha256": file_sha256(manifest_path),
-        "source_files_sha256": dict(sorted(file_hashes.items())),
-        "training_data_sha256": file_sha256(train_file),
-        "validation_data_sha256": file_sha256(validation_file),
+        "source_integrity": source_integrity,
+        "dataset_provenance": dataset_provenance,
+        "training_data_sha256": dataset_provenance["train_sha256"],
+        "validation_data_sha256": dataset_provenance["validation_sha256"],
         "pilot": asdict(pilot),
         "tokenizer": {
             "class": tokenizer.__class__.__name__,
@@ -188,7 +186,6 @@ def main() -> int:
         pilot = require_pilot_values(args)
         manifest_path = args.model_manifest.resolve()
         manifest = load_manifest(manifest_path)
-        verify_snapshot(args.model_dir, manifest)
         train_rows = load_jsonl(args.train_file)
         validation_rows = load_jsonl(args.validation_file)
     except (DatasetContractError, OSError, json.JSONDecodeError) as error:
@@ -201,17 +198,32 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+    try:
+        source_integrity = verify_staged_source(args.model_dir, manifest)
+        source_integrity["source_lock_path"] = str(manifest_path)
+        source_integrity["source_lock_sha256"] = sha256(manifest_path.read_bytes()).hexdigest()
+        if args.dry_run:
+            dataset_provenance: dict[str, Any] | None = None
+        elif args.dataset_provenance is None:
+            raise DatasetContractError("--dataset-provenance is required before real training")
+        else:
+            dataset_provenance = verify_dataset_provenance(
+                args.dataset_provenance,
+                args.train_file,
+                args.validation_file,
+            )
+    except (DatasetContractError, KeyError, OSError) as error:
+        print(f"Preflight failed: {error}", file=sys.stderr)
+        return 2
     if args.output_dir.exists():
         print(f"Preflight failed: output directory already exists: {args.output_dir}", file=sys.stderr)
         return 2
 
     try:
-        import torch
-        from datasets import Dataset
-        from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Trainer, TrainingArguments
+        from peft import LoraConfig
+        from transformers import AutoConfig, AutoTokenizer
     except ImportError as error:
-        print(f"Training dependencies are unavailable: {error}", file=sys.stderr)
+        print(f"Dry-run dependencies are unavailable: {error}", file=sys.stderr)
         return 2
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_dir, local_files_only=True, trust_remote_code=False)
@@ -232,6 +244,14 @@ def main() -> int:
         print("Preflight failed: tokenizer has no chat_template", file=sys.stderr)
         return 2
     tokenizer.pad_token = tokenizer.eos_token
+    qlora_config = LoraConfig(
+        r=pilot.lora_rank,
+        lora_alpha=pilot.lora_alpha,
+        lora_dropout=pilot.lora_dropout,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=list(LORA_TARGET_MODULES),
+    )
 
     try:
         train_inputs = [tokenize_messages(tokenizer, row["messages"], pilot.max_seq_length) for row in train_rows]
@@ -249,12 +269,21 @@ def main() -> int:
                     "max_tokens": max(token_lengths),
                     "min_tokens": min(token_lengths),
                     "chat_template_sha256": sha256(tokenizer.chat_template.encode("utf-8")).hexdigest(),
+                    "qlora_target_modules": list(qlora_config.target_modules),
                 },
                 ensure_ascii=False,
                 sort_keys=True,
             ),
         )
         return 0
+    try:
+        import torch
+        from datasets import Dataset
+        from peft import get_peft_model, prepare_model_for_kbit_training
+        from transformers import AutoModelForCausalLM, BitsAndBytesConfig, Trainer, TrainingArguments
+    except ImportError as error:
+        print(f"Training dependencies are unavailable: {error}", file=sys.stderr)
+        return 2
     if not torch.cuda.is_available():
         print("Preflight failed: QLoRA pilot requires a CUDA GPU.", file=sys.stderr)
         return 2
@@ -275,7 +304,11 @@ def main() -> int:
 
     random.seed(pilot.seed)
     torch.manual_seed(pilot.seed)
-    compute_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+    # `torch.cuda.is_bf16_supported()` may report emulated BF16 on older GPUs.
+    # QLoRA should use native BF16 only on Ampere-or-newer hardware; Pascal
+    # (including the local GTX 1080 Ti, CC 6.1) must use native FP16 instead.
+    compute_capability = torch.cuda.get_device_capability()
+    compute_dtype = torch.bfloat16 if compute_capability[0] >= 8 else torch.float16
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -293,15 +326,32 @@ def main() -> int:
     model = prepare_model_for_kbit_training(model)
     model = get_peft_model(
         model,
-        LoraConfig(
-            r=pilot.lora_rank,
-            lora_alpha=pilot.lora_alpha,
-            lora_dropout=pilot.lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules=list(LORA_TARGET_MODULES),
-        ),
+        qlora_config,
     )
+    if args.smoke_test:
+        smoke_input = train_inputs[0]
+        device = next(model.parameters()).device
+        input_ids = torch.tensor([smoke_input["input_ids"]], device=device, dtype=torch.long)
+        attention_mask = torch.tensor([smoke_input["attention_mask"]], device=device, dtype=torch.long)
+        model.eval()
+        with torch.no_grad():
+            output = model(input_ids=input_ids, attention_mask=attention_mask, use_cache=False)
+        print(
+            json.dumps(
+                {
+                    "mode": "smoke_test",
+                    "compute_dtype": str(compute_dtype).removeprefix("torch."),
+                    "compute_capability": list(compute_capability),
+                    "device": str(device),
+                    "logits_shape": list(output.logits.shape),
+                    "cuda_memory_allocated_mib": round(torch.cuda.memory_allocated() / (1024**2), 1),
+                    "cuda_max_memory_allocated_mib": round(torch.cuda.max_memory_allocated() / (1024**2), 1),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+        )
+        return 0
     train_dataset = Dataset.from_list(train_inputs)
     validation_dataset = Dataset.from_list(validation_inputs)
     training_args = TrainingArguments(
@@ -312,7 +362,7 @@ def main() -> int:
         gradient_accumulation_steps=pilot.gradient_accumulation_steps,
         learning_rate=pilot.learning_rate,
         logging_steps=10,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=50,
         save_strategy="steps",
         save_steps=50,
@@ -339,9 +389,6 @@ def main() -> int:
     tokenizer.save_pretrained(adapter_dir)
     write_run_manifest(
         args.output_dir,
-        args.model_dir,
-        args.train_file,
-        args.validation_file,
         pilot,
         tokenizer,
         config,
@@ -351,7 +398,8 @@ def main() -> int:
             "adapter_directory": "adapter",
         },
         manifest_path,
-        manifest,
+        source_integrity,
+        dataset_provenance,
     )
     print(json.dumps(evaluation_result, ensure_ascii=False, sort_keys=True))
     return 0
