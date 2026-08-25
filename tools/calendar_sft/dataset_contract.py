@@ -165,16 +165,30 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
 
 
 def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
-    allowed = {"title", "starts_at", "duration_min"}
+    allowed = {"title", "starts_at", "date", "time", "duration_min"}
     if not set(params).issubset(allowed):
         _fail(f"{location}.params", "contains an unsupported calendar_add field")
+    has_starts_at = "starts_at" in params
+    has_date = "date" in params
+    has_time = "time" in params
+    if has_starts_at and (has_date or has_time):
+        _fail(f"{location}.params", "starts_at must not be combined with date or time")
     if "title" in params:
         _require_string(params["title"], f"{location}.params.title", non_empty=True)
-    if "starts_at" in params:
+    if has_starts_at:
         _parse_datetime(params["starts_at"], f"{location}.params.starts_at")
+    if has_date:
+        _parse_date(params["date"], f"{location}.params.date")
+    if has_time:
+        _parse_time(params["time"], f"{location}.params.time")
     if "duration_min" in params:
         _require_positive_int(params["duration_min"], f"{location}.params.duration_min")
-    if set(params) == allowed:
+    is_complete = (
+        "title" in params
+        and "duration_min" in params
+        and (has_starts_at or (has_date and has_time))
+    )
+    if is_complete:
         if not reply.startswith("Событие создано:"):
             _fail(f"{location}.reply", "a complete calendar_add reply must begin with 'Событие создано:'")
     else:

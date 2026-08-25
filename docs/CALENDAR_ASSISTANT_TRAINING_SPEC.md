@@ -34,6 +34,12 @@ allowed.
 {"intent":"calendar_add","reply":"...","params":{"title":"...","starts_at":"YYYY-MM-DDTHH:MM","duration_min":60}}
 ```
 
+For a partial creation command, known date and time may be separate:
+
+```json
+{"intent":"calendar_add","reply":"...","params":{"title":"...","date":"YYYY-MM-DD","duration_min":60}}
+```
+
 ```json
 {"intent":"calendar_search","reply":"...","params":{"query":"...","range_start":"YYYY-MM-DDTHH:MM","range_end":"YYYY-MM-DDTHH:MM"}}
 ```
@@ -57,8 +63,12 @@ calendar field. Omit the unknown field instead.
 
 ### calendar_add
 
-- Allowed parameters are only `title`, `starts_at`, and `duration_min`.
-- `starts_at` is a local timestamp in `YYYY-MM-DDTHH:MM`.
+- Allowed parameters are only `title`, `starts_at`, `date`, `time`, and `duration_min`.
+- `starts_at` is a complete local timestamp in `YYYY-MM-DDTHH:MM`.
+- `date` is a known date in `YYYY-MM-DD`; `time` is a known time in `HH:MM`.
+  Use them separately when the other part is unknown, so the draft dialog keeps
+  the information already supplied by the user.
+- Do not combine `starts_at` with `date` or `time` in one command.
 - `duration_min` is a positive integer number of minutes.
 - Omit any unknown event field. Android asks for it in the draft dialog.
 - For a complete command, use `Событие создано: <название> <дата> <время>.` in

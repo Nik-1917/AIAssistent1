@@ -58,7 +58,9 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -1041,7 +1043,9 @@ class ChatViewModel(
     private fun com.example.aiassistent1.domain.model.AssistantResponse.calendarReplyOrNull(): String? {
         val params = params as? CalendarAddParams ?: return null
         val title = params.title ?: return null
-        val startsAt = params.startsAt ?: return null
+        val startsAt = params.startsAt ?: params.date?.let { date ->
+            params.time?.let { time -> "$date" + "T" + "$time" }
+        } ?: return null
         val duration = params.durationMin ?: return null
         return runCatching {
             CalendarReplyTimeFormatter.formatCreationReply(title, startsAt, duration)
@@ -1049,9 +1053,16 @@ class ChatViewModel(
     }
 
     private fun startCalendarEventDraft(params: CalendarAddParams) {
+        val completeStartsAt = params.startsAt?.takeIf { isCalendarDateTime(it) }
+        val parsedStartsAt = completeStartsAt?.let {
+            LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        }
         val draft = CalendarEventDraftUiState(
             title = params.title,
-            startsAt = params.startsAt?.takeIf { isCalendarDateTime(it) },
+            date = parsedStartsAt?.toLocalDate()?.toString()
+                ?: params.date?.takeIf { isCalendarDate(it) },
+            time = parsedStartsAt?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                ?: params.time?.takeIf { isCalendarTime(it) },
             durationMinutes = params.durationMin,
         )
         mutableUiState.update { it.copy(calendarEventDraft = draft.withNextField()) }
@@ -1121,7 +1132,8 @@ class ChatViewModel(
             val current = state.calendarEventDraft ?: return@update state
             val changed = when (field) {
                 CalendarEventField.Title -> current.copy(title = value)
-                CalendarEventField.StartsAt -> current.copy(startsAt = value)
+                CalendarEventField.Date -> current.copy(date = value)
+                CalendarEventField.Time -> current.copy(time = value)
                 CalendarEventField.DurationMinutes -> current.copy(durationMinutes = value.toInt())
             }
             state.copy(calendarEventDraft = changed.withNextField())
@@ -1184,8 +1196,10 @@ class ChatViewModel(
     private fun validateCalendarField(field: CalendarEventField, rawValue: String): Result<String> = runCatching {
         when (field) {
             CalendarEventField.Title -> rawValue.trim().also { require(it.isNotEmpty()) { "Название события не может быть пустым." } }
-            CalendarEventField.StartsAt -> LocalDateTime.parse(rawValue.trim(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            CalendarEventField.Date -> LocalDate.parse(rawValue.trim(), DateTimeFormatter.ISO_LOCAL_DATE)
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+            CalendarEventField.Time -> LocalTime.parse(rawValue.trim(), DateTimeFormatter.ofPattern("HH:mm"))
+                .format(DateTimeFormatter.ofPattern("HH:mm"))
             CalendarEventField.DurationMinutes -> rawValue.trim().toInt().also {
                 require(it > 0) { "Длительность должна быть больше нуля." }
             }.toString()
@@ -1202,6 +1216,12 @@ class ChatViewModel(
 
     private fun isCalendarDateTime(value: String): Boolean =
         runCatching { LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }.isSuccess
+
+    private fun isCalendarDate(value: String): Boolean =
+        runCatching { LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE) }.isSuccess
+
+    private fun isCalendarTime(value: String): Boolean =
+        runCatching { LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm")) }.isSuccess
 
     private fun executeCalendarAdd(title: String, date: String, duration: Int) {
         viewModelScope.launch {

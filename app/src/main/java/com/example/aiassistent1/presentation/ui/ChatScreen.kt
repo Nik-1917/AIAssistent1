@@ -1248,7 +1248,8 @@ private fun CalendarEventDraftDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text("Сохранённые поля", style = MaterialTheme.typography.labelLarge)
                 draft.title?.let { Text("Название: $it") }
-                draft.startsAt?.let { Text("Дата и время: $it") }
+                draft.date?.let { Text("Дата: $it") }
+                draft.time?.let { Text("Время: $it") }
                 draft.durationMinutes?.let { Text("Длительность: $it мин") }
 
                 if (!draft.isComplete) {

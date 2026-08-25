@@ -37,6 +37,32 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `keeps a supplied event date when its time is absent`() {
+        val response = parser.parse(
+            """{"intent":"calendar_add","reply":"Уточните время","params":{"title":"Проверка отчёта","date":"2030-12-07","duration_min":120}}""",
+        )
+
+        val params = response?.params as CalendarAddParams
+        assertEquals("Проверка отчёта", params.title)
+        assertNull(params.startsAt)
+        assertEquals("2030-12-07", params.date)
+        assertNull(params.time)
+        assertEquals(120, params.durationMin)
+    }
+
+    @Test
+    fun `keeps a supplied event time when its date is absent`() {
+        val response = parser.parse(
+            """{"intent":"calendar_add","reply":"Уточните дату","params":{"title":"Проверка отчёта","time":"15:00","duration_min":120}}""",
+        )
+
+        val params = response?.params as CalendarAddParams
+        assertNull(params.startsAt)
+        assertNull(params.date)
+        assertEquals("15:00", params.time)
+    }
+
+    @Test
     fun `parses an explicit calendar search range`() {
         val response = parser.parse(
             """{"intent":"calendar_search","reply":"Проверяю","params":{"query":"","range_start":"2026-08-21T00:00","range_end":"2026-08-22T00:00"}}""",

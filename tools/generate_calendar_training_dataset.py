@@ -258,11 +258,11 @@ def make_partial_additions(anchor: datetime, titles: tuple[str, ...], total: int
         duration = DURATIONS[index % len(DURATIONS)]
         variant = index % 4
         if variant == 0:
-            user, params, reply = f"Запиши событие {title} {date_words(event_date)} {time_words(event_time)}.", {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))}, f"Уточню длительность для события {title}."
+            user, params, reply = f"Запиши событие {title} {date_words(event_date)} {time_words(event_time)}.", {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))}, f"Уточните длительность для события {title}."
         elif variant == 1:
-            user, params, reply = f"Добавь {date_words(event_date)} событие {title} на {duration_words(duration)}.", {"title": title, "duration_min": duration}, f"Уточню точное время для события {title}."
+            user, params, reply = f"Добавь {date_words(event_date)} событие {title} на {duration_words(duration)}.", {"title": title, "date": event_date.isoformat(), "duration_min": duration}, f"Уточните точное время для события {title}."
         elif variant == 2:
-            user, params, reply = f"Поставь {date_words(event_date)} {time_words(event_time)} на {duration_words(duration)}.", {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": duration}, "Уточню название события."
+            user, params, reply = f"Поставь {date_words(event_date)} {time_words(event_time)} на {duration_words(duration)}.", {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": duration}, "Уточните название события."
         else:
             title_only_templates = (
                 "Нужно не забыть: {title}.",
@@ -272,7 +272,7 @@ def make_partial_additions(anchor: datetime, titles: tuple[str, ...], total: int
                 "Надо внести в календарь {title}.",
             )
             template = title_only_templates[(index // (len(titles) * 4)) % len(title_only_templates)]
-            user, params, reply = template.format(title=title), {"title": title}, f"Уточню дату, время и длительность для события {title}."
+            user, params, reply = template.format(title=title), {"title": title}, f"Уточните дату, время и длительность для события {title}."
         result.append(record("calendar_add_partial", system_message(anchor), user, response("calendar_add", reply, params)))
     return result
 
@@ -438,7 +438,7 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
             user = f"Измени событие {title}."
             target = {"query": query}
             changes = {}
-            reply = f"Уточню, что изменить у события {title}."
+            reply = f"Уточните, что изменить у события {title}."
             category = "calendar_update_missing_change"
 
         result.append(
@@ -646,17 +646,18 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             user = "Поставь послепослезавтра в десять часов пятнадцать минут утра на сорок пять минут."
             assistant = response(
                 "calendar_add",
-                "Уточню название события.",
+                "Уточните название события.",
                 {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 45},
             )
             category = "reinforcement_add_missing_title"
         elif variant == 2:
+            event_date = today + timedelta(days=1)
             title = "Обход склада"
             user = "Добавь обход склада завтра на час."
             assistant = response(
                 "calendar_add",
-                "Уточню точное время для события Обход склада.",
-                {"title": title, "duration_min": 60},
+                "Уточните точное время для события Обход склада.",
+                {"title": title, "date": event_date.isoformat(), "duration_min": 60},
             )
             category = "reinforcement_add_missing_time"
         elif variant == 3:
@@ -666,7 +667,7 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             user = "Через месяц поставь оплату аренды склада в четыре часа дня."
             assistant = response(
                 "calendar_add",
-                "Уточню длительность для события Оплата аренды склада.",
+                "Уточните длительность для события Оплата аренды склада.",
                 {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))},
             )
             category = "reinforcement_add_missing_duration"
@@ -701,7 +702,9 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             )
             category = "reinforcement_search_previous_month_full_query"
         elif variant == 7:
-            start, end = month_bounds(today, 2)
+            event_date = add_months(today, 2)
+            start = datetime.combine(event_date, time.min)
+            end = start + timedelta(days=1)
             query = "медицинская комиссия водителя"
             user = "Через два месяца посмотри медицинскую комиссию водителя."
             assistant = response(
@@ -751,7 +754,7 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             user = "Исправь выдачу пропуска на завод."
             assistant = response(
                 "calendar_update",
-                "Уточню, что изменить у события Выдача пропуска на завод.",
+                "Уточните, что изменить у события Выдача пропуска на завод.",
                 {"target": {"query": query}, "changes": {}},
             )
             category = "reinforcement_update_missing_change"
@@ -795,13 +798,15 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             )
             category = "reinforcement_delete_last_in_range"
         else:
-            user = "Как лучше подготовиться к рабочей неделе?"
+            title = "Проверка отчёта"
+            event_time = time(18, 30)
+            user = "Добавь проверку отчёта в шесть часов тридцать минут вечера на час."
             assistant = response(
-                "chat",
-                "Могу помочь составить план или выполнить команду с локальным календарём приложения.",
-                {},
+                "calendar_add",
+                "Уточните дату для события Проверка отчёта.",
+                {"title": title, "time": event_time.strftime("%H:%M"), "duration_min": 60},
             )
-            category = "reinforcement_ordinary_chat"
+            category = "reinforcement_add_missing_date"
         rows.append(record(category, system_message(anchor), user, assistant))
     return rows
 
@@ -905,7 +910,7 @@ def validate(rows: list[dict]) -> None:
             assert set(parsed["params"]) == {"query", "range_start", "range_end"}
             assert parsed["params"]["range_start"] < parsed["params"]["range_end"]
         if parsed["intent"] == "calendar_add":
-            assert set(parsed["params"]).issubset({"title", "starts_at", "duration_min"})
+            assert set(parsed["params"]).issubset({"title", "starts_at", "date", "time", "duration_min"})
             if "duration_min" in parsed["params"]: assert parsed["params"]["duration_min"] > 0
         if parsed["intent"] == "calendar_update":
             assert set(parsed["params"]) == {"target", "changes"}

@@ -30,9 +30,10 @@ class AssistantResponseParser {
                 "calendar_add" -> {
                     CalendarAddParams(
                         title = paramsJson?.optionalNonBlankString("title"),
-                        startsAt = paramsJson?.optionalNonBlankString("starts_at")
-                            ?: paramsJson?.optionalNonBlankString("date"),
+                        startsAt = paramsJson?.optionalNonBlankString("starts_at"),
                         durationMin = paramsJson?.optionalPositiveInt("duration_min"),
+                        date = paramsJson?.optionalNonBlankString("date"),
+                        time = paramsJson?.optionalNonBlankString("time"),
                     )
                 }
                 "calendar_update" -> {

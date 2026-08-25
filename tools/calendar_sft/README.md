@@ -30,7 +30,7 @@ decision, and SHA-256 values matching the precise train/validation JSONL files.
 `train_qlora.py` requires this register for every non-dry-run invocation.
 
 The reviewed register for the current clean-room pilot is
-[`docs/calendar_sft_data_provenance_v2.json`](../../docs/calendar_sft_data_provenance_v2.json).
+[`docs/calendar_sft_data_provenance_v3.json`](../../docs/calendar_sft_data_provenance_v3.json).
 
 Before any dry run, use `verify_source_snapshot.py` to calculate and persist
 SHA-256 for every locked source file. It verifies the source revision contract,
@@ -78,8 +78,8 @@ Python environment is ready:
 python tools/calendar_sft/train_qlora.py `
   --model-manifest tools\calendar_sft\clean_room_qwen3_source_lock.json `
   --model-dir D:\models\Qwen3-4B-Instruct-2507 `
-  --train-file build\calendar_sft_dataset_v2\train.jsonl `
-  --validation-file build\calendar_sft_dataset_v2\validation.jsonl `
+  --train-file build\calendar_sft_dataset_v3\train.jsonl `
+  --validation-file build\calendar_sft_dataset_v3\validation.jsonl `
   --output-dir build\calendar_sft_run `
   --dry-run
 ```
@@ -110,9 +110,9 @@ Perform a real 4-bit load and one no-gradient forward pass before training:
 build\calendar_sft_local_gpu_venv\Scripts\python.exe tools\calendar_sft\train_qlora.py `
   --model-manifest tools\calendar_sft\clean_room_qwen3_source_lock.json `
   --model-dir build\calendar_sft_models\Qwen3-4B-Instruct-2507\cdbee75f17c01a7cc42f958dc650907174af0554 `
-  --train-file build\calendar_sft_dataset_v2\train.jsonl `
-  --validation-file build\calendar_sft_dataset_v2\validation.jsonl `
-  --dataset-provenance docs\calendar_sft_data_provenance_v2.json `
+  --train-file build\calendar_sft_dataset_v3\train.jsonl `
+  --validation-file build\calendar_sft_dataset_v3\validation.jsonl `
+  --dataset-provenance docs\calendar_sft_data_provenance_v3.json `
   --output-dir build\calendar_sft_local_pilot `
   --max-seq-length 256 --smoke-test
 ```
@@ -130,12 +130,12 @@ approved:
 
 ```powershell
 python tools/calendar_sft/verify_dataset_provenance.py `
-  --register docs\calendar_sft_data_provenance_v2.json `
-  --train-file build\calendar_sft_dataset_v2\train.jsonl `
-  --validation-file build\calendar_sft_dataset_v2\validation.jsonl
+  --register docs\calendar_sft_data_provenance_v3.json `
+  --train-file build\calendar_sft_dataset_v3\train.jsonl `
+  --validation-file build\calendar_sft_dataset_v3\validation.jsonl
 ```
 
-2. Run `train_qlora.py --dataset-provenance docs\calendar_sft_data_provenance_v2.json`
+2. Run `train_qlora.py --dataset-provenance docs\calendar_sft_data_provenance_v3.json`
    on one CUDA GPU and retain its `run_manifest.json`. The training preflight
    re-hashes the full source snapshot and repeats the provenance check.
 3. Score generated outputs with `evaluate_predictions.py`; semantic scoring

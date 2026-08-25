@@ -18,6 +18,10 @@ data class CalendarAddParams(
     val title: String?,
     val startsAt: String?,
     val durationMin: Int?,
+    /** A known event date when the user has not specified its time yet. */
+    val date: String? = null,
+    /** A known event time when the user has not specified its date yet. */
+    val time: String? = null,
 ) : AssistantParams
 
 /** JSON transport model only. Map it to calendar-core's CalendarUpdateCommand before execution. */
