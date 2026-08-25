@@ -43,12 +43,28 @@ class SearchPeriodTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.assertEqual(value, search_period(self.anchor, kind))
 
-    def test_relative_months_search_the_complete_target_month(self) -> None:
+    def test_one_month_searches_the_target_calendar_day(self) -> None:
         anchor = datetime(2030, 8, 28, 14, 30)
 
         self.assertEqual(
-            ("через месяц", datetime(2030, 9, 1, 0, 0), datetime(2030, 10, 1, 0, 0)),
+            ("через месяц", datetime(2030, 9, 28, 0, 0), datetime(2030, 9, 29, 0, 0)),
             search_period(anchor, "in_one_month"),
+        )
+
+    def test_one_month_clamps_shorter_target_month(self) -> None:
+        anchor = datetime(2031, 1, 31, 14, 30)
+
+        self.assertEqual(
+            ("через месяц", datetime(2031, 2, 28, 0, 0), datetime(2031, 3, 1, 0, 0)),
+            search_period(anchor, "in_one_month"),
+        )
+
+    def test_next_month_and_two_months_remain_complete_months(self) -> None:
+        anchor = datetime(2030, 8, 28, 14, 30)
+
+        self.assertEqual(
+            ("в следующем месяце", datetime(2030, 9, 1, 0, 0), datetime(2030, 10, 1, 0, 0)),
+            search_period(anchor, "next_month"),
         )
         self.assertEqual(
             ("через два месяца", datetime(2030, 10, 1, 0, 0), datetime(2030, 11, 1, 0, 0)),

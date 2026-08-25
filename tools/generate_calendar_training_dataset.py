@@ -190,8 +190,8 @@ def period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tuple[str, 
         start, end = month_bounds(today, 1)
         return "в следующем месяце", start, end
     if kind == "in_one_month":
-        start, end = month_bounds(today, 1)
-        return "через месяц", start, end
+        start = add_months(today, 1)
+        return "через месяц", start, start + timedelta(days=1)
     if kind == "in_two_months":
         start, end = month_bounds(today, 2)
         return "через два месяца", start, end
