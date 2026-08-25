@@ -28,7 +28,10 @@ LEGACY_SYSTEM_RE = re.compile(
     r"Часовой пояс:\s*(?P<zone>[A-Za-z_+\-/]+)\.$",
 )
 YEAR_RE = re.compile(r"\b\d{4}\b")
-CLOCK_RE = re.compile(r"\b(?:\d|[01]\d|2[0-3]):[0-5]\d\b")
+CLOCK_RE = re.compile(
+    r"\b(?:\d|[01]\d|2[0-3]):[0-5]\d\b"
+    r"|\b(?:\d|[01]\d|2[0-3])\s+(?:(?:[0-5]\d)\b|утра\b|дня\b|вечера\b|ночи\b)",
+)
 ACTION_REPLY_PREFIXES = (
     "Событие создано:",
     "Событие изменено:",
@@ -300,6 +303,11 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
             content = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
         elif role != "user":
             _fail(f"{location}.messages[{index}].role", "middle roles must be user")
+        elif CLOCK_RE.search(content):
+            _fail(
+                f"{location}.messages[{index}].content",
+                "must spell clock times in words",
+            )
         normalized_messages.append({"role": role, "content": content})
     normalized: dict[str, Any] = {"category": category, "messages": normalized_messages}
     if "case_id" in record:

@@ -13,7 +13,7 @@ from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
-from calendar_sft.dataset_contract import parse_and_validate_assistant_response
+from calendar_sft.dataset_contract import CLOCK_RE, parse_and_validate_assistant_response
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -198,6 +198,15 @@ def period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tuple[str, 
     return date_words(start), start, start + timedelta(days=1)
 
 
+def search_period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tuple[str, datetime, datetime]:
+    """Return the local search interval for a relative calendar expression."""
+
+    phrase, start_date, end_date = period(anchor, kind, explicit_offset)
+    start = anchor if kind == "today" else datetime.combine(start_date, time.min)
+    end = datetime.combine(end_date, time.min)
+    return phrase, start, end
+
+
 def make_additions(anchor: datetime, titles: tuple[str, ...], rng: random.Random, total: int, start_index: int = 0) -> list[dict]:
     result = []
     relative_forms = (
@@ -231,10 +240,10 @@ def make_additions(anchor: datetime, titles: tuple[str, ...], rng: random.Random
             date_phrase = date_words(event_date)
         user_templates = (
             "Добавь {date} {time} событие {title} на {duration}.",
-            "Запиши событие {title} {date} в {numeric} на {duration}.",
+            "Запиши событие {title} {date} {time} на {duration}.",
             "Поставь {date} {time} {title} на {duration}.",
         )
-        user = user_templates[index % len(user_templates)].format(date=date_phrase, time=time_words(event_time), numeric=event_time.strftime("%H:%M"), title=title, duration=duration_words(duration))
+        user = user_templates[index % len(user_templates)].format(date=date_phrase, time=time_words(event_time), title=title, duration=duration_words(duration))
         reply = f"Событие создано: {title} {reply_phrase or reply_date_phrase(event_date, anchor.date())} {time_words(event_time)}."
         result.append(record("calendar_add_complete", system_message(anchor), user, response("calendar_add", reply, {"title": title, "starts_at": local_stamp(start), "duration_min": duration})))
     return result
@@ -253,7 +262,7 @@ def make_partial_additions(anchor: datetime, titles: tuple[str, ...], total: int
         elif variant == 1:
             user, params, reply = f"Добавь {date_words(event_date)} событие {title} на {duration_words(duration)}.", {"title": title, "duration_min": duration}, f"Уточню точное время для события {title}."
         elif variant == 2:
-            user, params, reply = f"Поставь {date_words(event_date)} в {event_time:%H:%M} на {duration_words(duration)}.", {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": duration}, "Уточню название события."
+            user, params, reply = f"Поставь {date_words(event_date)} {time_words(event_time)} на {duration_words(duration)}.", {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": duration}, "Уточню название события."
         else:
             title_only_templates = (
                 "Нужно не забыть: {title}.",
@@ -277,7 +286,7 @@ def make_searches(anchor: datetime, titles: tuple[str, ...], total: int, start_i
     )
     for index in range(start_index, start_index + total):
         kind = kinds[index % len(kinds)]
-        phrase, start, end = period(anchor, kind, explicit_offset=(index % 20) + 1)
+        phrase, start, end = search_period(anchor, kind, explicit_offset=(index % 20) + 1)
         title = titles[index % len(titles)]
         query = "" if index % 3 == 0 else title
         if query:
@@ -296,7 +305,9 @@ def make_searches(anchor: datetime, titles: tuple[str, ...], total: int, start_i
             )
             user = user_templates[(index // len(kinds)) % len(user_templates)].format(period=phrase)
             reply = f"Проверяю все события {phrase}."
-        params = {"query": query, "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"}
+        if kind == "third_day":
+            assert reply.endswith("послепослезавтра.")
+        params = {"query": query, "range_start": local_stamp(start), "range_end": local_stamp(end)}
         result.append(record("calendar_search", system_message(anchor), user, response("calendar_search", reply, params)))
     return result
 
@@ -877,6 +888,7 @@ def validate(rows: list[dict]) -> None:
         assert messages[0]["role"] == "system"
         assert all(message["role"] == "user" for message in messages[1:-1])
         assert messages[-1]["role"] == "assistant"
+        assert all(CLOCK_RE.search(message["content"]) is None for message in messages[1:-1])
         signature = json.dumps(messages[1:], ensure_ascii=False, sort_keys=True)
         if row["category"] in {"ordinary_chat", "ambiguous_search"}:
             if signature in non_calendar_chat_signatures:

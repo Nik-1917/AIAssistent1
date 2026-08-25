@@ -158,7 +158,7 @@ interprets returned local timestamps in its system zone.
 
 | Russian expression | Search/source range |
 | --- | --- |
-| `сегодня` | current date `00:00` to next date `00:00` |
+| `сегодня` | for `calendar_search`: supplied current local time to next date `00:00`; for an update source or delete target: current date `00:00` to next date `00:00` |
 | `завтра` | next date `00:00` to the following date `00:00` |
 | `послезавтра`, `через два дня` | second next date `00:00` to third next date `00:00` |
 | `послепослезавтра`, `через три дня` | third next date `00:00` to fourth next date `00:00` |
@@ -175,6 +175,17 @@ that date exact. A vague month without a day is a search/source period, not a
 license to invent a destination day. The seed data resolves only exact event
 times. Day-parts such as “утром” and “после обеда” leave the time unknown and
 ask for a precise value.
+
+### Spoken form for 12:00
+
+Treat the spoken user expression `двенадцать ноль ноль` as the exact local time
+`12:00`. Encode that time as `12:00` only in the technical JSON parameter. In
+`reply`, use a word form such as `двенадцать ноль ноль` or `двенадцать часов
+дня`, never digits.
+
+In all supervised conversational text, both user messages and `reply` write
+event times in words. The `HH:MM` notation is reserved for the system temporal
+context and technical JSON parameters.
 
 ## Reply style
 
