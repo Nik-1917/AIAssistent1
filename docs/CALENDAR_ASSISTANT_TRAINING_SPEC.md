@@ -91,9 +91,14 @@ implicit-date rule for `calendar_add` below.
 - `query` is a short title keyword/name, or `""` for all events.
 - Both boundaries are required local timestamps in `YYYY-MM-DDTHH:MM`.
 - `range_start` is inclusive; `range_end` is exclusive.
-- «Через месяц» means the full next calendar month; «через два месяца» means
-  the full calendar month two months after the current one. For example, from
-  28 August the latter range is `[1 October 00:00; 1 November 00:00)`.
+- «Через месяц» means the same local calendar day one calendar month later;
+  for a search, use that whole target day. «Через два месяца» keeps its
+  existing full-month meaning: search the complete calendar month two months
+  after the current month. Use «в следующем месяце» when the user means the
+  full next calendar month. For example, from 28 August «через месяц» searches
+  `[28 September 00:00; 29 September 00:00)`, «через два месяца» searches
+  `[1 October 00:00; 1 November 00:00)`, and «в следующем месяце» searches
+  `[1 September 00:00; 1 October 00:00)`.
 - If a period cannot be determined exactly, use `chat` and ask for the period.
 - Do not invent search results: Android owns the actual local query result.
 - A search reply must not begin with an event-action prefix.
@@ -177,6 +182,37 @@ Every request supplies the current local date-time and IANA time-zone ID.
 Resolve relative expressions in that supplied zone. The application then
 interprets returned local timestamps in its system zone.
 
+### Month vocabulary and offsets
+
+Use the ordinary calendar month numbering:
+
+| Month | Number |
+| --- | ---: |
+| январь | 1 |
+| февраль | 2 |
+| март | 3 |
+| апрель | 4 |
+| май | 5 |
+| июнь | 6 |
+| июль | 7 |
+| август | 8 |
+| сентябрь | 9 |
+| октябрь | 10 |
+| ноябрь | 11 |
+| декабрь | 12 |
+
+- A quarter (`квартал`) is exactly 3 calendar months, not 4 months.
+- Four months (`четыре месяца`) is an offset of `+4` calendar months.
+- Half a year (`полгода`) is exactly 6 calendar months; «через полгода» and
+  «через шесть месяцев» both mean an offset of `+6` calendar months.
+- A numeric month offset identifies a calendar month by adding `N` to the
+  current month number, with normal year rollover. The search range then
+  follows the specific expression rule above; do not replace a full-month
+  rule with a single-day rule. When a same-day offset is explicitly required,
+  preserve the day of month when it exists; if the target month has fewer
+  days, use its last day. For example, 31 January plus one month is 28
+  February in a non-leap year and 29 February in a leap year.
+
 For `calendar_add`, an omitted date is also resolved in that supplied zone:
 an exact time strictly later than the supplied current time means today; an
 equal or earlier time means tomorrow. If no exact time is known, use today in
@@ -194,7 +230,10 @@ date.
 | `в предыдущем месяце`, `месяц назад`, `в том месяце` | first day of the previous calendar month `00:00` to first day of the current month `00:00` |
 | `в следующем месяце` | first day of the next calendar month `00:00` to first day of the following month `00:00` |
 | `через месяц` | the same local day one calendar month later |
-| `через два месяца` | the same local day two calendar months later |
+| `через два месяца` | the complete calendar month two months after the current month |
+| `через квартал` | the same local day three calendar months later |
+| `через четыре месяца` | the same local day four calendar months later |
+| `через полгода`, `через шесть месяцев` | the same local day six calendar months later |
 | explicit date | that date `00:00` to next date `00:00` |
 
 For a date update, emit the exact destination date only when the wording makes
@@ -227,9 +266,10 @@ context and technical JSON parameters.
   from today through the third following day. Understand and vary `через два
   дня`, `через три дня`, and `через четыре дня`.
 - Understand and use `в предыдущем месяце`, `месяц назад`, `в том месяце`, `в
-  следующем месяце`, `через месяц`, and `через два месяца` according to the
-  time rules above. `в том месяце` always means the previous calendar month;
-  never infer it from an earlier user message.
+  следующем месяце`, `через месяц`, `через два месяца`, `через квартал`,
+  `через четыре месяца`, `через полгода`, and `через шесть месяцев` according
+  to the time rules above. `в том месяце` always means the previous calendar
+  month; never infer it from an earlier user message.
 
 ## Runtime system prompt
 
