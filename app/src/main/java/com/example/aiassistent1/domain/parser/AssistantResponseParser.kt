@@ -2,6 +2,8 @@ package com.example.aiassistent1.domain.parser
 
 import com.example.aiassistent1.domain.model.AssistantResponse
 import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarDeleteParams
+import com.example.aiassistent1.domain.model.CalendarDeleteTargetParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.CalendarUpdateChangesParams
 import com.example.aiassistent1.domain.model.CalendarUpdateParams
@@ -49,6 +51,17 @@ class AssistantResponseParser {
                             date = changesJson?.optionalNonBlankString("date"),
                             time = changesJson?.optionalNonBlankString("time"),
                             durationMin = changesJson?.optionalPositiveInt("duration_min"),
+                        ),
+                    )
+                }
+                "calendar_delete" -> {
+                    val targetJson = paramsJson?.optJSONObject("target")
+                    CalendarDeleteParams(
+                        target = CalendarDeleteTargetParams(
+                            query = targetJson?.optionalNonBlankString("query"),
+                            rangeStart = targetJson?.optionalNonBlankString("range_start"),
+                            rangeEnd = targetJson?.optionalNonBlankString("range_end"),
+                            useLastCreated = targetJson?.optBoolean("use_last_created", false) == true,
                         ),
                     )
                 }

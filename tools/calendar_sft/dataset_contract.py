@@ -15,7 +15,7 @@ import re
 from typing import Any, Iterable
 
 
-INTENTS = frozenset({"chat", "calendar_add", "calendar_search", "calendar_update"})
+INTENTS = frozenset({"chat", "calendar_add", "calendar_search", "calendar_update", "calendar_delete"})
 TOP_LEVEL_KEYS = frozenset({"intent", "reply", "params"})
 RUNTIME_SYSTEM_RE = re.compile(
     r"^Сегодня дата и время:(?P<date>\d{4}-\d{2}-\d{2}) "
@@ -140,6 +140,8 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
         _validate_add(params, reply, location)
     elif intent == "calendar_search":
         _validate_search(params, location)
+    elif intent == "calendar_delete":
+        _validate_delete(params, reply, location)
     else:
         _validate_update(params, reply, location)
     return response
@@ -211,6 +213,36 @@ def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
         _require_positive_int(changes["duration_min"], f"{location}.params.changes.duration_min")
     if changes and not reply.startswith("Событие изменено:"):
         _fail(f"{location}.reply", "an executable calendar_update reply must begin with 'Событие изменено:'")
+
+
+def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:
+    if set(params) != {"target"} or not isinstance(params["target"], dict):
+        _fail(f"{location}.params", "calendar_delete needs exactly one target object")
+    target = params["target"]
+    allowed = {"query", "range_start", "range_end", "use_last_created"}
+    if not set(target).issubset(allowed):
+        _fail(f"{location}.params.target", "contains an unsupported calendar_delete field")
+    has_query = "query" in target
+    has_last_created = "use_last_created" in target
+    if has_query:
+        _require_string(target["query"], f"{location}.params.target.query", non_empty=True)
+    if has_last_created and target["use_last_created"] is not True:
+        _fail(f"{location}.params.target.use_last_created", "must be true when present")
+    if has_query == has_last_created:
+        _fail(f"{location}.params.target", "must identify either query or use_last_created")
+    has_range_start = "range_start" in target
+    has_range_end = "range_end" in target
+    if has_range_start != has_range_end:
+        _fail(f"{location}.params.target", "range_start and range_end must be paired")
+    if has_range_start:
+        if not has_query:
+            _fail(f"{location}.params.target", "a delete range requires a query")
+        start = _parse_datetime(target["range_start"], f"{location}.params.target.range_start")
+        end = _parse_datetime(target["range_end"], f"{location}.params.target.range_end")
+        if start >= end:
+            _fail(f"{location}.params.target", "range_start must be before range_end")
+    if not reply.startswith("Событие удалено:"):
+        _fail(f"{location}.reply", "a calendar_delete reply must begin with 'Событие удалено:'")
 
 
 def normalize_record(record: Any, location: str) -> dict[str, Any]:

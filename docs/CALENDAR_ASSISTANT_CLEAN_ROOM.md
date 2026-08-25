@@ -43,7 +43,7 @@ The model's scope is the local calendar protocol already implemented by the
 application:
 
 ```json
-{"intent":"chat | calendar_search | calendar_add | calendar_update","reply":"","params":{}}
+{"intent":"chat | calendar_search | calendar_add | calendar_update | calendar_delete","reply":"","params":{}}
 ```
 
 Training messages use the application system prompt exactly as rendered at
@@ -54,7 +54,8 @@ runtime:
 ```
 
 The dataset must cover creation, search, partial fields, relative dates,
-multi-turn corrections, updates to the last event and named-event updates. It
+multi-turn corrections, updates to the last event, named-event updates, and
+immediate deletion of one resolved local event. It
 must include colloquial Russian forms and occupation contexts without recording
 real users' personal data.
 
@@ -64,7 +65,7 @@ No model may be described as better before an identical, frozen holdout is run
 against the base and adapted checkpoints with the same decoding settings. The
 adapted checkpoint must not reduce strict JSON validity or intent accuracy and
 must improve the exact-parameter score on the calendar holdout. Report each
-intent separately, including `calendar_update`; do not substitute subjective
+intent separately, including `calendar_update` and `calendar_delete`; do not substitute subjective
 chat quality for these measures.
 
 The independent holdout remains excluded from SFT and run selection. Reply text

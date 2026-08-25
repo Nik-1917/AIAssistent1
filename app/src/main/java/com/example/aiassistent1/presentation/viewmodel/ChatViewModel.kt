@@ -11,6 +11,7 @@ import com.example.aiassistent1.calendar.core.domain.CalendarEventChanges
 import com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand
 import com.example.aiassistent1.calendar.core.domain.CalendarUpdateTargetResolution
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.PrepareCalendarEventUpdateUseCase
 import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTargetUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
@@ -23,8 +24,10 @@ import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatter
 import com.example.aiassistent1.domain.context.ModelContextBuilder
+import com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapper
 import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
 import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarDeleteParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import com.example.aiassistent1.domain.model.ChatMessage
@@ -68,6 +71,8 @@ class ChatViewModel(
     private val resolveCalendarUpdateTarget: ResolveCalendarUpdateTargetUseCase,
     private val prepareCalendarEventUpdate: PrepareCalendarEventUpdateUseCase,
     private val updateCalendarEvent: UpdateCalendarEventUseCase,
+    private val deleteCalendarEvent: DeleteCalendarEventUseCase,
+    private val calendarDeleteCommandMapper: CalendarDeleteCommandMapper,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
@@ -737,8 +742,52 @@ class ChatViewModel(
                     }
                 }
             }
+            is CalendarDeleteParams -> handleCalendarDelete(params, messageId)
             is CalendarUpdateParams -> handleCalendarUpdate(params)
             else -> {}
+        }
+    }
+
+    private fun handleCalendarDelete(params: CalendarDeleteParams, messageId: String) {
+        viewModelScope.launch {
+            val commandResult = calendarDeleteCommandMapper.map(params)
+            if (commandResult.isFailure) {
+                replaceAssistantReply(messageId, "Уточните, какое событие удалить.")
+                return@launch
+            }
+
+            val resolutionResult = resolveCalendarUpdateTarget(commandResult.getOrThrow().target)
+            if (resolutionResult.isFailure) {
+                replaceAssistantReply(messageId, "Не удалось найти событие для удаления.")
+                mutableUiState.update { state ->
+                    state.copy(error = resolutionResult.exceptionOrNull()?.userMessage())
+                }
+                return@launch
+            }
+
+            when (val resolution = resolutionResult.getOrThrow()) {
+                is CalendarUpdateTargetResolution.Resolved -> {
+                    val deleteResult = deleteCalendarEvent(resolution.event.id)
+                    if (deleteResult.isSuccess) {
+                        replaceAssistantReply(messageId, "Событие удалено: ${resolution.event.title}.")
+                        mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
+                    } else {
+                        replaceAssistantReply(messageId, "Не удалось удалить событие.")
+                        mutableUiState.update { state ->
+                            state.copy(error = deleteResult.exceptionOrNull()?.userMessage())
+                        }
+                    }
+                }
+                is CalendarUpdateTargetResolution.Ambiguous -> {
+                    replaceAssistantReply(
+                        messageId,
+                        "Найдено несколько событий для удаления. Уточните название или период.",
+                    )
+                }
+                CalendarUpdateTargetResolution.NotFound -> {
+                    replaceAssistantReply(messageId, "Событие для удаления не найдено.")
+                }
+            }
         }
     }
 
@@ -1451,6 +1500,19 @@ class ChatViewModel(
                 if (current.id == message.id) message else current
             })
         }
+    }
+
+    private suspend fun replaceAssistantReply(messageId: String, reply: String) {
+        val updatedMessage = mutableUiState.value.messages
+            .firstOrNull { it.id == messageId }
+            ?.copy(content = reply)
+            ?: ChatMessage(
+                id = messageId,
+                role = MessageRole.ASSISTANT,
+                content = reply,
+            )
+        updateMessage(updatedMessage)
+        withContext(Dispatchers.IO) { chatRepository.saveMessage(updatedMessage) }
     }
 
     private fun Throwable.userMessage(): String = message ?: "Не удалось сгенерировать ответ"

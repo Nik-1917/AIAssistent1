@@ -40,3 +40,15 @@ data class CalendarUpdateChangesParams(
     val time: String? = null,
     val durationMin: Int? = null,
 )
+
+/** JSON transport model for an immediate local-calendar deletion. */
+data class CalendarDeleteParams(
+    val target: CalendarDeleteTargetParams = CalendarDeleteTargetParams(),
+) : AssistantParams
+
+data class CalendarDeleteTargetParams(
+    val query: String? = null,
+    val rangeStart: String? = null,
+    val rangeEnd: String? = null,
+    val useLastCreated: Boolean = false,
+)

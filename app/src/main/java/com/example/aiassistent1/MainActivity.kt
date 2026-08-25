@@ -28,6 +28,8 @@ class MainActivity : ComponentActivity() {
                     resolveCalendarUpdateTarget = AppModule.provideResolveCalendarUpdateTargetUseCase(applicationContext),
                     prepareCalendarEventUpdate = AppModule.providePrepareCalendarEventUpdateUseCase(),
                     updateCalendarEvent = AppModule.provideUpdateCalendarEventUseCase(applicationContext),
+                    deleteCalendarEvent = AppModule.provideDeleteCalendarEventUseCase(applicationContext),
+                    calendarDeleteCommandMapper = AppModule.provideCalendarDeleteCommandMapper(),
                     llmEngine = llmEngine,
                     voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
                     voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),

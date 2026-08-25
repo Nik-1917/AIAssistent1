@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.parser
 
 import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarDeleteParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import org.junit.Assert.assertEquals
@@ -78,5 +79,29 @@ class AssistantResponseParserTest {
         assertTrue(params.target.useLastCreated)
         assertNull(params.target.query)
         assertEquals("10:00", params.changes.time)
+    }
+
+    @Test
+    fun `parses immediate calendar delete target`() {
+        val response = parser.parse(
+            """{"intent":"calendar_delete","reply":"Событие удалено","params":{"target":{"query":"стоматолог","range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"}}}""",
+        )
+
+        val params = response?.params as CalendarDeleteParams
+        assertEquals("стоматолог", params.target.query)
+        assertEquals("2026-08-25T00:00", params.target.rangeStart)
+        assertEquals("2026-08-26T00:00", params.target.rangeEnd)
+        assertTrue(!params.target.useLastCreated)
+    }
+
+    @Test
+    fun `parses delete of the last created event`() {
+        val response = parser.parse(
+            """{"intent":"calendar_delete","reply":"Событие удалено","params":{"target":{"use_last_created":true}}}""",
+        )
+
+        val params = response?.params as CalendarDeleteParams
+        assertTrue(params.target.useLastCreated)
+        assertNull(params.target.query)
     }
 }

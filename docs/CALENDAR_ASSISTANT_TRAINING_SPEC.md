@@ -4,7 +4,8 @@
 
 This contract covers only the application's local Room calendar. The model has
 no database access. Android validates its JSON, resolves the target against the
-local calendar, and writes to Room only after the user confirms the draft.
+local calendar, and writes to Room only after the user confirms an add or
+update draft. A uniquely resolved delete command is executed immediately.
 
 | Intent | App action |
 | --- | --- |
@@ -12,13 +13,11 @@ local calendar, and writes to Room only after the user confirms the draft.
 | `calendar_add` | Opens an event draft and requests unknown event fields. |
 | `calendar_search` | Searches local event titles in an explicit period. |
 | `calendar_update` | Resolves an existing local event and opens a change preview. |
+| `calendar_delete` | Resolves exactly one local event and deletes it immediately. |
 
-`calendar_delete`, remote calendars, reminders, and `use_last_referenced` are
-not executable model operations in this release. A deletion request must use
-`chat` and reply: `Удаление событий через ассистента недоступно: нет доступа к
-конфиденциальным данным.` Do not emit
-`use_last_referenced` in training data until the application has persistent
-last-referenced-event state.
+Remote calendars, reminders, and `use_last_referenced` are not executable
+model operations in this release. Do not emit `use_last_referenced` in training
+data until the application has persistent last-referenced-event state.
 
 ## Exact response schema
 
@@ -41,6 +40,10 @@ allowed.
 
 ```json
 {"intent":"calendar_update","reply":"...","params":{"target":{"query":"..."},"changes":{"date":"YYYY-MM-DD"}}}
+```
+
+```json
+{"intent":"calendar_delete","reply":"...","params":{"target":{"query":"..."}}}
 ```
 
 Never send `null`, an empty string, `0`, or an invented default for an unknown
@@ -121,6 +124,21 @@ not found. The model must not fabricate an event ID or claim a database result.
 For an executable update command, use a concise reply beginning with
 `Событие изменено:`. It describes the prepared update command; the UI still
 shows its preview and controls the actual Room update.
+
+### calendar_delete
+
+`params` contains exactly one `target` object. It uses the same selector rules
+as an update target, but must identify exactly one of:
+
+- `query`: a non-empty event title word or name, optionally constrained by the
+  paired `range_start` and `range_end` local timestamps;
+- `use_last_created`: `true` for the last event added to the local calendar.
+
+The model must not send both selectors or an empty target. Android deletes the
+event immediately when this target resolves to exactly one local event. If it
+matches none or several events, Android does not delete anything and replaces
+the model reply with the actual result. An executable delete reply begins with
+`Событие удалено:`.
 
 ## Time rules
 

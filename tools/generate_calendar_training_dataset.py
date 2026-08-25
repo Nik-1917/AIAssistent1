@@ -96,6 +96,11 @@ def month_bounds(value: date, offset: int) -> tuple[date, date]:
     return start, add_months(start, 1)
 
 
+def week_bounds(value: date, offset: int) -> tuple[date, date]:
+    start = value - timedelta(days=value.weekday()) + timedelta(days=offset * 7)
+    return start, start + timedelta(days=7)
+
+
 def system_message(anchor: datetime) -> str:
     # This must stay byte-for-byte compatible with SystemPromptProvider in the
     # Android application. The model is deliberately trained without a large
@@ -452,23 +457,6 @@ def make_chat(anchor: datetime, total: int, start_index: int = 0) -> list[dict]:
         ("Нужно ли указывать длительность?", "Для создания события нужна положительная длительность в минутах."),
         ("Что будет, если время неизвестно?", "Я попрошу уточнить точное время события."),
     )
-    deletions = (
-        "Удали завтрашнюю встречу с врачом.",
-        "Убери из календаря оплату ЖКХ.",
-        "Отмени запись в МФЦ на пятницу.",
-        "Удаляй созвон с командой.",
-        "Сотри напоминание забрать заказ из ПВЗ.",
-        "Удали поездку на дачу в субботу.",
-        "Отмени семейный ужин.",
-        "Убери тренировку из расписания.",
-        "Удалите запись в поликлинику.",
-        "Отмени встречу с бухгалтером.",
-        "Удали запись на техосмотр автомобиля.",
-        "Убери из планов родительское собрание.",
-        "Отмени визит к нотариусу.",
-        "Удалите напоминание оплатить мобильную связь.",
-        "Убери встречу с классным руководителем.",
-    )
     ambiguous = (
         "Найди встречу с Анной.",
         "Покажи мои тренировки.",
@@ -488,17 +476,88 @@ def make_chat(anchor: datetime, total: int, start_index: int = 0) -> list[dict]:
     )
     rows = []
     for index in range(start_index, start_index + total):
-        item_index, kind = divmod(index, 3)
+        item_index, kind = divmod(index, 2)
         if kind == 0:
             user, reply = ordinary[item_index % len(ordinary)]
             category = "ordinary_chat"
-        elif kind == 1:
-            user = deletions[item_index % len(deletions)]
-            reply, category = "Удаление событий через ассистента недоступно: нет доступа к конфиденциальным данным.", "unsupported_delete"
         else:
             user = ambiguous[item_index % len(ambiguous)]
             reply, category = "За какой период выполнить поиск?", "ambiguous_search"
         rows.append(record(category, system_message(anchor), user, response("chat", reply, {})))
+    return rows
+
+
+def make_deletions(anchor: datetime, total: int, start_index: int = 0) -> list[dict]:
+    scenarios = (
+        ("встречу с врачом", "Встреча с врачом"),
+        ("оплату ЖКХ", "Оплата ЖКХ"),
+        ("запись в МФЦ", "Запись в МФЦ"),
+        ("созвон с командой", "Созвон с командой"),
+        ("напоминание забрать заказ из ПВЗ", "Напоминание забрать заказ из ПВЗ"),
+        ("поездку на дачу", "Поездка на дачу"),
+        ("семейный ужин", "Семейный ужин"),
+        ("тренировку", "Тренировка"),
+        ("запись клиентки на маникюр", "Запись клиентки на маникюр"),
+        ("стрижку клиента", "Стрижка клиента"),
+        ("приём пациента", "Приём пациента"),
+        ("приём граждан", "Приём граждан"),
+        ("смену на стройке", "Смена на стройке"),
+        ("выезд в поле", "Выезд в поле"),
+        ("тренировку в бассейне", "Тренировка в бассейне"),
+        ("техосмотр такси", "Техосмотр такси"),
+        ("уборку подъезда", "Уборка подъезда"),
+        ("рейс в Тольятти", "Рейс в Тольятти"),
+        ("урок алгебры", "Урок алгебры"),
+        ("консультацию по курсовой", "Консультация по курсовой"),
+        ("визит к подопечной", "Визит к подопечной"),
+        ("смену у станка", "Смена у станка"),
+    )
+    verbs = ("Удали", "Отмени", "Убери из календаря", "Сотри из планов", "Удалите")
+    rows = []
+    for index in range(start_index, start_index + total):
+        if index % 11 == 10:
+            rows.append(
+                record(
+                    "calendar_delete_last_created",
+                    system_message(anchor),
+                    "Удали последнее добавленное событие.",
+                    response(
+                        "calendar_delete",
+                        "Событие удалено: последнее добавленное событие.",
+                        {"target": {"use_last_created": True}},
+                    ),
+                ),
+            )
+            continue
+        scenario_index = (index // 8) % len(scenarios)
+        spoken_title, title = scenarios[scenario_index]
+        period_kind = index % 8
+        if period_kind < 4:
+            days_from_now = period_kind + 1
+            phrase = ("завтра", "послезавтра", "через три дня", "через четыре дня")[period_kind]
+            start = anchor.date() + timedelta(days=days_from_now)
+            end = start + timedelta(days=1)
+        elif period_kind == 4:
+            phrase = "на этой неделе"
+            start, end = week_bounds(anchor.date(), 0)
+        elif period_kind == 5:
+            phrase = "на следующей неделе"
+            start, end = week_bounds(anchor.date(), 1)
+        elif period_kind == 6:
+            phrase = "в следующем месяце"
+            start, end = month_bounds(anchor.date(), 1)
+        else:
+            phrase = "в том месяце"
+            start, end = month_bounds(anchor.date(), -1)
+        target = {
+            "query": title,
+            "range_start": f"{start:%Y-%m-%d}T00:00",
+            "range_end": f"{end:%Y-%m-%d}T00:00",
+        }
+        verb = verbs[index % len(verbs)]
+        user = f"{verb} {spoken_title} {phrase}."
+        reply = f"Событие удалено: {title} {phrase}."
+        rows.append(record("calendar_delete", system_message(anchor), user, response("calendar_delete", reply, {"target": target})))
     return rows
 
 
@@ -550,25 +609,29 @@ def build(anchor: datetime, titles: tuple[str, ...], target: int, seed: int, seq
         lambda context_anchor, size, index: make_searches(context_anchor, titles, size, index),
     )
     updates = in_date_varied_batches(
-        int(target * 0.32),
+        int(target * 0.27),
         lambda context_anchor, size, index: make_updates(context_anchor, size, index),
+    )
+    deletions = in_date_varied_batches(
+        int(target * 0.05),
+        lambda context_anchor, size, index: make_deletions(context_anchor, size, index),
     )
     previous_month_phrase_count = int(target * 0.03)
     chat = in_date_varied_batches(
-        target - len(additions) - len(partial) - len(searches) - len(updates) - previous_month_phrase_count,
+        target - len(additions) - len(partial) - len(searches) - len(updates) - len(deletions) - previous_month_phrase_count,
         lambda context_anchor, size, index: make_chat(context_anchor, size, index),
     )
     previous_month_phrases = in_date_varied_batches(
         previous_month_phrase_count,
         lambda context_anchor, size, index: make_previous_month_phrase_searches(context_anchor, titles, size, index),
     )
-    result = additions + partial + searches + updates + chat + previous_month_phrases
+    result = additions + partial + searches + updates + deletions + chat + previous_month_phrases
     rng.shuffle(result)
     return result
 
 
 def validate(rows: list[dict]) -> None:
-    allowed = {"chat", "calendar_add", "calendar_search", "calendar_update"}
+    allowed = {"chat", "calendar_add", "calendar_search", "calendar_update", "calendar_delete"}
     non_calendar_chat_signatures = set()
     for row in rows:
         messages = row["messages"]
@@ -577,7 +640,7 @@ def validate(rows: list[dict]) -> None:
         assert all(message["role"] == "user" for message in messages[1:-1])
         assert messages[-1]["role"] == "assistant"
         signature = json.dumps(messages[1:], ensure_ascii=False, sort_keys=True)
-        if row["category"] in {"ordinary_chat", "unsupported_delete", "ambiguous_search"}:
+        if row["category"] in {"ordinary_chat", "ambiguous_search"}:
             if signature in non_calendar_chat_signatures:
                 raise AssertionError(f"Duplicate chat example in {row['category']}: {messages[1]['content']}")
             non_calendar_chat_signatures.add(signature)
@@ -603,6 +666,14 @@ def validate(rows: list[dict]) -> None:
             assert "range_start" not in target or "query" in target
             assert not ("query" in target and target.get("use_last_created") is True)
             assert "duration_min" not in changes or changes["duration_min"] > 0
+        if parsed["intent"] == "calendar_delete":
+            assert set(parsed["params"]) == {"target"}
+            target = parsed["params"]["target"]
+            assert set(target).issubset({"query", "range_start", "range_end", "use_last_created"})
+            assert ("range_start" in target) == ("range_end" in target)
+            assert "range_start" not in target or "query" in target
+            assert ("query" in target) != (target.get("use_last_created") is True)
+            assert parsed["reply"].startswith("Событие удалено:")
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:

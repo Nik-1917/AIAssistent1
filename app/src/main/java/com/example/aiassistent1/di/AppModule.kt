@@ -12,6 +12,7 @@ import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTarget
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventRepository
+import com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapper
 import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
 import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.engine.LlamatikEngine
@@ -144,6 +145,9 @@ object AppModule {
 
 	fun provideCalendarUpdateCommandMapper(): CalendarUpdateCommandMapper =
 		CalendarUpdateCommandMapper()
+
+	fun provideCalendarDeleteCommandMapper(): CalendarDeleteCommandMapper =
+		CalendarDeleteCommandMapper()
 
 	fun provideDeleteCalendarEventUseCase(context: Context): DeleteCalendarEventUseCase =
 		DeleteCalendarEventUseCase(provideCalendarEventRepository(context))
