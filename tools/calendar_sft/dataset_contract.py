@@ -196,6 +196,11 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
     if is_complete:
         if not reply.startswith("Событие создано:"):
             _fail(f"{location}.reply", "a complete calendar_add reply must begin with 'Событие создано:'")
+        if ", в " not in reply:
+            _fail(
+                f"{location}.reply",
+                "a complete calendar_add reply must put a comma before the spoken time",
+            )
     else:
         _reject_action_reply_prefix(reply, location, "a partial calendar_add")
 

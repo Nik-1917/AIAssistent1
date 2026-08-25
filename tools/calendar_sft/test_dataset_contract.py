@@ -26,18 +26,24 @@ def response(reply: str) -> str:
 class ReplyContractTest(unittest.TestCase):
     def test_complete_calendar_reply_accepts_words_for_time(self) -> None:
         parsed = parse_and_validate_assistant_response(
-            response("Событие создано: Встреча завтра в девять часов тридцать минут утра."),
+            response("Событие создано: Встреча завтра, в девять часов тридцать минут утра."),
         )
 
         self.assertEqual("calendar_add", parsed["intent"])
 
     def test_reply_rejects_single_digit_clock(self) -> None:
         with self.assertRaisesRegex(DatasetContractError, "spell event times"):
-            parse_and_validate_assistant_response(response("Событие создано: Встреча завтра в 7:05."))
+            parse_and_validate_assistant_response(response("Событие создано: Встреча завтра, в 7:05."))
 
     def test_reply_rejects_numeric_year(self) -> None:
         with self.assertRaisesRegex(DatasetContractError, "must not contain a year"):
             parse_and_validate_assistant_response(response("Событие создано: Встреча четвёртого февраля 2027 года."))
+
+    def test_complete_calendar_reply_requires_a_comma_before_time(self) -> None:
+        with self.assertRaisesRegex(DatasetContractError, "must put a comma"):
+            parse_and_validate_assistant_response(
+                response("Событие создано: Встреча завтра в девять часов тридцать минут утра."),
+            )
 
     def test_user_request_rejects_numeric_clock(self) -> None:
         record = {
@@ -45,7 +51,7 @@ class ReplyContractTest(unittest.TestCase):
             "messages": [
                 {"role": "system", "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"},
                 {"role": "user", "content": "Запиши встречу завтра в 12:00 на час."},
-                {"role": "assistant", "content": response("Событие создано: Встреча завтра в двенадцать ноль ноль.")},
+                {"role": "assistant", "content": response("Событие создано: Встреча завтра, в двенадцать ноль ноль.")},
             ],
         }
 
@@ -58,7 +64,7 @@ class ReplyContractTest(unittest.TestCase):
             "messages": [
                 {"role": "system", "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"},
                 {"role": "user", "content": "Запиши встречу завтра в 11 20 на час."},
-                {"role": "assistant", "content": response("Событие создано: Встреча завтра в одиннадцать часов двадцать минут утра.")},
+                {"role": "assistant", "content": response("Событие создано: Встреча завтра, в одиннадцать часов двадцать минут утра.")},
             ],
         }
 

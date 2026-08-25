@@ -79,7 +79,7 @@ implicit-date rule for `calendar_add` below.
 - An explicitly named valid date always has priority over this implicit-date
   rule. Never ask for a date merely because the user omitted it.
 - Omit other unknown event fields. Android asks for them in the draft dialog.
-- For a complete command, use `Событие создано: <название> <дата> <время>.` in
+- For a complete command, use `Событие создано: <название> <дата>, <время>.` in
   `reply`. The text describes the prepared command; the UI controls confirmation
   and the actual local save.
 - A partial command must ask for the missing field and must not begin with an
