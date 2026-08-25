@@ -22,6 +22,22 @@ class CalendarUpdateCommandTest {
     }
 
     @Test
+    fun `resolves the last event in a supplied calendar period`() = runTest {
+        val lastToday = event(id = "last-today", startsAt = LocalDate.of(2026, 8, 24).atTime(18, 0).toEpochMillis())
+        val resolver = ResolveCalendarUpdateTargetUseCase(FakeRepository(lastInRange = lastToday))
+
+        val result = resolver(
+            CalendarUpdateTarget(
+                mode = CalendarTargetMode.LAST_IN_RANGE,
+                rangeStartEpochMillis = LocalDate.of(2026, 8, 24).atStartOfDay().toEpochMillis(),
+                rangeEndEpochMillis = LocalDate.of(2026, 8, 25).atStartOfDay().toEpochMillis(),
+            ),
+        ).getOrThrow()
+
+        assertEquals(CalendarUpdateTargetResolution.Resolved(lastToday), result)
+    }
+
+    @Test
     fun `returns candidates instead of picking an ambiguous title match`() = runTest {
         val first = event(id = "first", title = "Тренировка")
         val second = event(id = "second", title = "Тренировка вечером")
@@ -59,6 +75,7 @@ class CalendarUpdateCommandTest {
     private class FakeRepository(
         private val matches: List<CalendarEvent> = emptyList(),
         private val lastCreated: CalendarEvent? = null,
+        private val lastInRange: CalendarEvent? = null,
     ) : CalendarEventRepository {
         override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> = error("Not used")
         override suspend fun getById(id: String): Result<CalendarEvent?> = error("Not used")
@@ -68,6 +85,7 @@ class CalendarUpdateCommandTest {
         override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<List<CalendarEvent>> = error("Not used")
         override suspend fun findForUpdate(query: String, rangeStartEpochMillis: Long?, rangeEndEpochMillis: Long?): Result<List<CalendarEvent>> = Result.success(matches)
         override suspend fun getLastCreated(): Result<CalendarEvent?> = Result.success(lastCreated)
+        override suspend fun getLastInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<CalendarEvent?> = Result.success(lastInRange)
     }
 
     private fun event(

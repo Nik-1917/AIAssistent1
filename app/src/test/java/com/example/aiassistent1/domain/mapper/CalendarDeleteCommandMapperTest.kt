@@ -41,6 +41,23 @@ class CalendarDeleteCommandMapperTest {
     }
 
     @Test
+    fun `maps the last event of a supplied period`() {
+        val command = mapper.map(
+            CalendarDeleteParams(
+                target = CalendarDeleteTargetParams(
+                    useLastInRange = true,
+                    rangeStart = "2026-08-25T00:00",
+                    rangeEnd = "2026-08-26T00:00",
+                ),
+            ),
+        ).getOrThrow()
+
+        assertEquals(CalendarTargetMode.LAST_IN_RANGE, command.target.mode)
+        assertEquals(1_787_616_000_000L, command.target.rangeStartEpochMillis)
+        assertEquals(1_787_702_400_000L, command.target.rangeEndEpochMillis)
+    }
+
+    @Test
     fun `rejects missing or conflicting delete targets`() {
         val missingTarget = mapper.map(CalendarDeleteParams())
         val conflictingTarget = mapper.map(
@@ -51,8 +68,14 @@ class CalendarDeleteCommandMapperTest {
                 ),
             ),
         )
+        val periodLessLastInRange = mapper.map(
+            CalendarDeleteParams(
+                target = CalendarDeleteTargetParams(useLastInRange = true),
+            ),
+        )
 
         assertTrue(missingTarget.isFailure)
         assertTrue(conflictingTarget.isFailure)
+        assertTrue(periodLessLastInRange.isFailure)
     }
 }

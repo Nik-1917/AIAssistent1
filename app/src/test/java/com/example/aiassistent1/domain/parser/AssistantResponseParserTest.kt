@@ -104,4 +104,16 @@ class AssistantResponseParserTest {
         assertTrue(params.target.useLastCreated)
         assertNull(params.target.query)
     }
+
+    @Test
+    fun `parses delete of the last event in a period`() {
+        val response = parser.parse(
+            """{"intent":"calendar_delete","reply":"Событие удалено","params":{"target":{"use_last_in_range":true,"range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"}}}""",
+        )
+
+        val params = response?.params as CalendarDeleteParams
+        assertTrue(params.target.useLastInRange)
+        assertEquals("2026-08-25T00:00", params.target.rangeStart)
+        assertEquals("2026-08-26T00:00", params.target.rangeEnd)
+    }
 }

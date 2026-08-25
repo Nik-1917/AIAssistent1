@@ -10,6 +10,8 @@ import java.time.ZoneId
 enum class CalendarTargetMode {
     BY_QUERY,
     LAST_CREATED,
+    /** The final event, ordered by start time then id, within a supplied period. */
+    LAST_IN_RANGE,
     /** Reserved for a later multi-turn event-reference feature. */
     LAST_REFERENCED,
 }
@@ -29,12 +31,22 @@ data class CalendarUpdateTarget(
             CalendarTargetMode.LAST_REFERENCED -> {
                 require(query == null) { "A last-event target must not contain a query." }
             }
+            CalendarTargetMode.LAST_IN_RANGE -> {
+                require(query == null) { "A period-last target must not contain a query." }
+            }
         }
         require((rangeStartEpochMillis == null) == (rangeEndEpochMillis == null)) {
             "Both range boundaries must be supplied together."
         }
-        require(mode == CalendarTargetMode.BY_QUERY || rangeStartEpochMillis == null) {
-            "A target range can only be used with a query target."
+        require(
+            mode == CalendarTargetMode.BY_QUERY ||
+                mode == CalendarTargetMode.LAST_IN_RANGE ||
+                rangeStartEpochMillis == null,
+        ) {
+            "A target range can only be used with a query or period-last target."
+        }
+        require(mode != CalendarTargetMode.LAST_IN_RANGE || rangeStartEpochMillis != null) {
+            "A period-last target requires a target range."
         }
         if (rangeStartEpochMillis != null && rangeEndEpochMillis != null) {
             require(rangeStartEpochMillis < rangeEndEpochMillis) {
@@ -84,6 +96,12 @@ class ResolveCalendarUpdateTargetUseCase(
                 rangeEndEpochMillis = target.rangeEndEpochMillis,
             ).getOrThrow()
             CalendarTargetMode.LAST_CREATED -> listOfNotNull(repository.getLastCreated().getOrThrow())
+            CalendarTargetMode.LAST_IN_RANGE -> listOfNotNull(
+                repository.getLastInRange(
+                    rangeStartEpochMillis = requireNotNull(target.rangeStartEpochMillis),
+                    rangeEndEpochMillis = requireNotNull(target.rangeEndEpochMillis),
+                ).getOrThrow(),
+            )
             CalendarTargetMode.LAST_REFERENCED -> error("Последнее упомянутое событие пока недоступно.")
         }
 

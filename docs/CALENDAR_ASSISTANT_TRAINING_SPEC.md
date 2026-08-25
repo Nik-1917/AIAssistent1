@@ -127,18 +127,23 @@ shows its preview and controls the actual Room update.
 
 ### calendar_delete
 
-`params` contains exactly one `target` object. It uses the same selector rules
-as an update target, but must identify exactly one of:
+`params` contains exactly one `target` object and must identify exactly one of:
 
 - `query`: a non-empty event title word or name, optionally constrained by the
   paired `range_start` and `range_end` local timestamps;
 - `use_last_created`: `true` for the last event added to the local calendar.
+- `use_last_in_range`: `true` only with paired `range_start` and `range_end`.
+  It means the last event in the calendar list for that period, ordered by its
+  start time and then event ID. For example, “Удали последнее на сегодня” uses
+  today’s 00:00-to-next-day-00:00 period; it does not mean the last event added
+  to the database today.
 
-The model must not send both selectors or an empty target. Android deletes the
-event immediately when this target resolves to exactly one local event. If it
-matches none or several events, Android does not delete anything and replaces
-the model reply with the actual result. An executable delete reply begins with
-`Событие удалено:`.
+The model must send exactly one of `query`, `use_last_created`, or
+`use_last_in_range`; it must not send an empty target. Android deletes the event
+immediately when this target resolves to exactly one local event. If it matches
+none or several events, Android does not delete anything and replaces the model
+reply with the actual result. An executable delete reply begins with `Событие
+удалено:`.
 
 ## Time rules
 

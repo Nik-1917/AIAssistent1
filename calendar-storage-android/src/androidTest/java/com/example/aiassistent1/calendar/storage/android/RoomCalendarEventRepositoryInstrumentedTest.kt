@@ -122,6 +122,30 @@ class RoomCalendarEventRepositoryInstrumentedTest {
     }
 
     @Test
+    fun `returns the final event in the requested calendar period`() = runTest {
+        repository.create(
+            CalendarEventDraft("Утреннее", 10_000L, 70_000L),
+        ).getOrThrow()
+        val lastToday = RoomCalendarEventRepository(
+            dao = database.calendarEventDao(),
+            nowEpochMillis = { 2_000L },
+            newId = { "event-2" },
+        ).create(
+            CalendarEventDraft("Вечернее", 80_000L, 140_000L),
+        ).getOrThrow()
+        RoomCalendarEventRepository(
+            dao = database.calendarEventDao(),
+            nowEpochMillis = { 3_000L },
+            newId = { "event-3" },
+        ).create(
+            CalendarEventDraft("Завтрашнее", 200_000L, 260_000L),
+        ).getOrThrow()
+
+        assertEquals(lastToday, repository.getLastInRange(0L, 150_000L).getOrThrow())
+        assertEquals(null, repository.getLastInRange(150_000L, 200_000L).getOrThrow())
+    }
+
+    @Test
     fun `rejects invalid event data`() = runTest {
         val blankTitle = repository.create(CalendarEventDraft(" ", 10L, 20L))
         val invertedRange = repository.create(CalendarEventDraft("Meeting", 20L, 20L))

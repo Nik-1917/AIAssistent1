@@ -29,4 +29,10 @@ interface CalendarEventRepository {
     ): Result<List<CalendarEvent>>
 
     suspend fun getLastCreated(): Result<CalendarEvent?>
+
+    /** Returns the final event in the calendar list for the requested period. */
+    suspend fun getLastInRange(
+        rangeStartEpochMillis: Long,
+        rangeEndEpochMillis: Long,
+    ): Result<CalendarEvent?>
 }

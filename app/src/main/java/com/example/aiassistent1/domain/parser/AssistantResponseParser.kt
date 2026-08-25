@@ -62,6 +62,7 @@ class AssistantResponseParser {
                             rangeStart = targetJson?.optionalNonBlankString("range_start"),
                             rangeEnd = targetJson?.optionalNonBlankString("range_end"),
                             useLastCreated = targetJson?.optBoolean("use_last_created", false) == true,
+                            useLastInRange = targetJson?.optBoolean("use_last_in_range", false) == true,
                         ),
                     )
                 }

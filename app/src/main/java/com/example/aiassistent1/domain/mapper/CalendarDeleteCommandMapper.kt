@@ -17,17 +17,22 @@ class CalendarDeleteCommandMapper(
         val query = targetParams.query?.trim()?.takeIf(String::isNotEmpty)
         val hasRangeStart = targetParams.rangeStart != null
         val hasRangeEnd = targetParams.rangeEnd != null
+        val selectorCount = listOf(
+            query != null,
+            targetParams.useLastCreated,
+            targetParams.useLastInRange,
+        ).count { it }
         require(hasRangeStart == hasRangeEnd) {
             "Укажите обе границы периода удаляемого события."
         }
-        require(!hasRangeStart || query != null) {
-            "Период удаления можно указать только вместе с названием события."
+        require(!hasRangeStart || query != null || targetParams.useLastInRange) {
+            "Период удаления можно указать только вместе с названием события или выбором последнего события периода."
         }
-        require(query != null || targetParams.useLastCreated) {
+        require(selectorCount == 1) {
             "Укажите, какое событие удалить."
         }
-        require(!(query != null && targetParams.useLastCreated)) {
-            "Для удаления укажите название события или последнее добавленное событие."
+        require(!targetParams.useLastInRange || hasRangeStart) {
+            "Для удаления последнего события периода укажите этот период."
         }
 
         val rangeStart = targetParams.rangeStart?.let {
@@ -44,7 +49,11 @@ class CalendarDeleteCommandMapper(
 
         CalendarDeleteCommand(
             target = CalendarUpdateTarget(
-                mode = if (query != null) CalendarTargetMode.BY_QUERY else CalendarTargetMode.LAST_CREATED,
+                mode = when {
+                    query != null -> CalendarTargetMode.BY_QUERY
+                    targetParams.useLastCreated -> CalendarTargetMode.LAST_CREATED
+                    else -> CalendarTargetMode.LAST_IN_RANGE
+                },
                 query = query,
                 rangeStartEpochMillis = rangeStart,
                 rangeEndEpochMillis = rangeEnd,

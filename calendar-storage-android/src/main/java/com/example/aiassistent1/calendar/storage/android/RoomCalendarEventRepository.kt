@@ -107,6 +107,14 @@ class RoomCalendarEventRepository(
         dao.getLastCreated()?.toDomain()
     }
 
+    override suspend fun getLastInRange(
+        rangeStartEpochMillis: Long,
+        rangeEndEpochMillis: Long,
+    ): Result<CalendarEvent?> = runCatching {
+        validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
+        dao.getLastInRange(rangeStartEpochMillis, rangeEndEpochMillis)?.toDomain()
+    }
+
     private fun validate(title: String, startsAtEpochMillis: Long, endsAtEpochMillis: Long) {
         require(title.isNotBlank()) { "Event title must not be blank." }
         validateRange(startsAtEpochMillis, endsAtEpochMillis)

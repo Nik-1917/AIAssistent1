@@ -32,10 +32,11 @@ weight distribution. A dataset register based on
 [`dataset_provenance.template.json`](../tools/calendar_sft/dataset_provenance.template.json)
 must be completed and reviewed before a real training run.
 
-The current pilot register is
-[`calendar_sft_data_provenance_v1.json`](calendar_sft_data_provenance_v1.json).
-It is bound to the staged training artifacts by SHA-256; changing either JSONL
-file requires a new review and register version.
+The current v2 register is
+[`calendar_sft_data_provenance_v2.json`](calendar_sft_data_provenance_v2.json).
+The historical v1 register remains immutable. Each register is bound to staged
+training artifacts by SHA-256; changing either JSONL file requires a new review
+and register version.
 
 ## Product target
 

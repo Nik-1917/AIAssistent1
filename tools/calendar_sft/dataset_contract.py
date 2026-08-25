@@ -28,7 +28,7 @@ LEGACY_SYSTEM_RE = re.compile(
     r"Часовой пояс:\s*(?P<zone>[A-Za-z_+\-/]+)\.$",
 )
 YEAR_RE = re.compile(r"\b\d{4}\b")
-CLOCK_RE = re.compile(r"\b(?:[01]\d|2[0-3]):[0-5]\d\b")
+CLOCK_RE = re.compile(r"\b(?:\d|[01]\d|2[0-3]):[0-5]\d\b")
 
 
 class DatasetContractError(ValueError):
@@ -219,28 +219,33 @@ def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:
     if set(params) != {"target"} or not isinstance(params["target"], dict):
         _fail(f"{location}.params", "calendar_delete needs exactly one target object")
     target = params["target"]
-    allowed = {"query", "range_start", "range_end", "use_last_created"}
+    allowed = {"query", "range_start", "range_end", "use_last_created", "use_last_in_range"}
     if not set(target).issubset(allowed):
         _fail(f"{location}.params.target", "contains an unsupported calendar_delete field")
     has_query = "query" in target
     has_last_created = "use_last_created" in target
+    has_last_in_range = "use_last_in_range" in target
     if has_query:
         _require_string(target["query"], f"{location}.params.target.query", non_empty=True)
     if has_last_created and target["use_last_created"] is not True:
         _fail(f"{location}.params.target.use_last_created", "must be true when present")
-    if has_query == has_last_created:
-        _fail(f"{location}.params.target", "must identify either query or use_last_created")
+    if has_last_in_range and target["use_last_in_range"] is not True:
+        _fail(f"{location}.params.target.use_last_in_range", "must be true when present")
+    if sum((has_query, has_last_created, has_last_in_range)) != 1:
+        _fail(f"{location}.params.target", "must identify query, use_last_created, or use_last_in_range")
     has_range_start = "range_start" in target
     has_range_end = "range_end" in target
     if has_range_start != has_range_end:
         _fail(f"{location}.params.target", "range_start and range_end must be paired")
     if has_range_start:
-        if not has_query:
-            _fail(f"{location}.params.target", "a delete range requires a query")
+        if not has_query and not has_last_in_range:
+            _fail(f"{location}.params.target", "a delete range requires query or use_last_in_range")
         start = _parse_datetime(target["range_start"], f"{location}.params.target.range_start")
         end = _parse_datetime(target["range_end"], f"{location}.params.target.range_end")
         if start >= end:
             _fail(f"{location}.params.target", "range_start must be before range_end")
+    elif has_last_in_range:
+        _fail(f"{location}.params.target", "use_last_in_range requires a target range")
     if not reply.startswith("Событие удалено:"):
         _fail(f"{location}.reply", "a calendar_delete reply must begin with 'Событие удалено:'")
 

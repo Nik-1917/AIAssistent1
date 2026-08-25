@@ -51,4 +51,5 @@ data class CalendarDeleteTargetParams(
     val rangeStart: String? = null,
     val rangeEnd: String? = null,
     val useLastCreated: Boolean = false,
+    val useLastInRange: Boolean = false,
 )

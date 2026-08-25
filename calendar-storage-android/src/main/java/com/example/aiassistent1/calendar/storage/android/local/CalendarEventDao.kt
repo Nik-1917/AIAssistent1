@@ -68,4 +68,18 @@ interface CalendarEventDao {
         """,
     )
     suspend fun getLastCreated(): CalendarEventEntity?
+
+    @Query(
+        """
+        SELECT * FROM calendar_events
+        WHERE startsAtEpochMillis < :rangeEndEpochMillis
+          AND endsAtEpochMillis > :rangeStartEpochMillis
+        ORDER BY startsAtEpochMillis DESC, id DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLastInRange(
+        rangeStartEpochMillis: Long,
+        rangeEndEpochMillis: Long,
+    ): CalendarEventEntity?
 }

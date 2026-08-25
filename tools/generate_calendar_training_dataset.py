@@ -515,12 +515,61 @@ def make_deletions(anchor: datetime, total: int, start_index: int = 0) -> list[d
     verbs = ("Удали", "Отмени", "Убери из календаря", "Сотри из планов", "Удалите")
     rows = []
     for index in range(start_index, start_index + total):
+        if index % 11 == 9:
+            period_kind = (index // 11) % 6
+            if period_kind == 0:
+                phrase = "на сегодня"
+                start = anchor.date()
+                end = start + timedelta(days=1)
+            elif period_kind == 1:
+                phrase = "на завтра"
+                start = anchor.date() + timedelta(days=1)
+                end = start + timedelta(days=1)
+            elif period_kind == 2:
+                phrase = "на послезавтра"
+                start = anchor.date() + timedelta(days=2)
+                end = start + timedelta(days=1)
+            elif period_kind == 3:
+                phrase = "на этой неделе"
+                start, end = week_bounds(anchor.date(), 0)
+            elif period_kind == 4:
+                phrase = "на следующей неделе"
+                start, end = week_bounds(anchor.date(), 1)
+            else:
+                phrase = "в следующем месяце"
+                start, end = month_bounds(anchor.date(), 1)
+            rows.append(
+                record(
+                    "calendar_delete_last_in_range",
+                    system_message(anchor),
+                    f"Удали последнее {phrase}.",
+                    response(
+                        "calendar_delete",
+                        f"Событие удалено: последнее событие {phrase}.",
+                        {
+                            "target": {
+                                "use_last_in_range": True,
+                                "range_start": f"{start:%Y-%m-%d}T00:00",
+                                "range_end": f"{end:%Y-%m-%d}T00:00",
+                            },
+                        },
+                    ),
+                ),
+            )
+            continue
         if index % 11 == 10:
+            user = (
+                "Удали последнее добавленное событие.",
+                "Убери последнее событие.",
+                "Отмени последнее из календаря.",
+                "Сотри последнее добавленное дело.",
+                "Удалите последнее событие из планов.",
+            )[index % 5]
             rows.append(
                 record(
                     "calendar_delete_last_created",
                     system_message(anchor),
-                    "Удали последнее добавленное событие.",
+                    user,
                     response(
                         "calendar_delete",
                         "Событие удалено: последнее добавленное событие.",
@@ -561,6 +610,144 @@ def make_deletions(anchor: datetime, total: int, start_index: int = 0) -> list[d
     return rows
 
 
+def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0) -> list[dict]:
+    """Add paraphrases for known holdout failure classes without copying holdout text."""
+    rows = []
+    for index in range(start_index, start_index + total):
+        today = anchor.date()
+        variant = index % 12
+        if variant == 0:
+            event_date = today + timedelta(days=2)
+            event_time = time(7, 5)
+            title = "Проверка тормозов автобуса"
+            user = f"Добавь {date_words(event_date)} в {clock_words(event_time)} {title.lower()} на час двадцать."
+            assistant = response(
+                "calendar_add",
+                f"Событие создано: {title} {reply_date_phrase(event_date, today)} {time_words(event_time)}.",
+                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 80},
+            )
+            category = "reinforcement_add_complete_asr"
+        elif variant == 1:
+            event_date = add_months(today, 1)
+            event_time = time(16, 0)
+            title = "Оплата аренды склада"
+            user = f"Через месяц поставь {title.lower()} в {clock_words(event_time)} на двадцать минут."
+            assistant = response(
+                "calendar_add",
+                f"Событие создано: {title} через месяц {time_words(event_time)}.",
+                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 20},
+            )
+            category = "reinforcement_add_month"
+        elif variant == 2:
+            event_date = today + timedelta(days=4)
+            user = "Через четыре дня найди дежурство на объекте."
+            assistant = response(
+                "calendar_search",
+                "Проверяю дежурство на объекте через четыре дня.",
+                {"query": "дежурство", "range_start": f"{event_date:%Y-%m-%d}T00:00", "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00"},
+            )
+            category = "reinforcement_search_query_day"
+        elif variant == 3:
+            start, end = week_bounds(today, 0)
+            user = "Покажи приёмы граждан на этой неделе."
+            assistant = response(
+                "calendar_search",
+                "Проверяю приёмы граждан на этой неделе.",
+                {"query": "приём", "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
+            )
+            category = "reinforcement_search_week_query"
+        elif variant == 4:
+            start, end = month_bounds(today, 1)
+            user = "Найди обучение по охране труда в следующем месяце."
+            assistant = response(
+                "calendar_search",
+                "Проверяю обучение по охране труда в следующем месяце.",
+                {"query": "обучение", "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
+            )
+            category = "reinforcement_search_month_query"
+        elif variant == 5:
+            user = "У медосмотра водителя время сделай на пять часов дня."
+            assistant = response(
+                "calendar_update",
+                "Событие изменено: время медосмотра водителя — в пять часов дня.",
+                {"target": {"query": "медосмотр"}, "changes": {"time": "17:00"}},
+            )
+            category = "reinforcement_update_time_query"
+        elif variant == 6:
+            user = "Смену на линии сделай длительностью двенадцать часов."
+            assistant = response(
+                "calendar_update",
+                "Событие изменено: длительность смены на линии — двенадцать часов.",
+                {"target": {"query": "смена на линии"}, "changes": {"duration_min": 720}},
+            )
+            category = "reinforcement_update_duration_query"
+        elif variant == 7:
+            source_date = today + timedelta(days=1)
+            destination_date = today + timedelta(days=3)
+            user = "Проверку отчёта, которая стоит завтра, перенеси через три дня."
+            assistant = response(
+                "calendar_update",
+                "Событие изменено: проверка отчёта перенесена через три дня.",
+                {
+                    "target": {
+                        "query": "проверка отчёта",
+                        "range_start": f"{source_date:%Y-%m-%d}T00:00",
+                        "range_end": f"{source_date + timedelta(days=1):%Y-%m-%d}T00:00",
+                    },
+                    "changes": {"date": f"{destination_date:%Y-%m-%d}"},
+                },
+            )
+            category = "reinforcement_update_source_range"
+        elif variant == 8:
+            user = "Измени визит в МФЦ."
+            assistant = response(
+                "calendar_update",
+                "Уточню, что изменить у визита в МФЦ.",
+                {"target": {"query": "визит в МФЦ"}, "changes": {}},
+            )
+            category = "reinforcement_update_missing_change"
+        elif variant == 9:
+            event_date = today + timedelta(days=1)
+            user = "Удали из планов рейс до Тольятти на завтра."
+            assistant = response(
+                "calendar_delete",
+                "Событие удалено: Рейс до Тольятти на завтра.",
+                {
+                    "target": {
+                        "query": "Рейс до Тольятти",
+                        "range_start": f"{event_date:%Y-%m-%d}T00:00",
+                        "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00",
+                    },
+                },
+            )
+            category = "reinforcement_delete_query"
+        elif variant == 10:
+            event_date = today + timedelta(days=1)
+            user = "Убери последнее событие на завтра."
+            assistant = response(
+                "calendar_delete",
+                "Событие удалено: последнее событие на завтра.",
+                {
+                    "target": {
+                        "use_last_in_range": True,
+                        "range_start": f"{event_date:%Y-%m-%d}T00:00",
+                        "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00",
+                    },
+                },
+            )
+            category = "reinforcement_delete_last_in_range"
+        else:
+            user = "Чем ты можешь помочь с моими планами?"
+            assistant = response(
+                "chat",
+                "Могу добавить событие, найти его, изменить или удалить из локального календаря приложения.",
+                {},
+            )
+            category = "reinforcement_ordinary_chat"
+        rows.append(record(category, system_message(anchor), user, assistant))
+    return rows
+
+
 def make_previous_month_phrase_searches(anchor: datetime, titles: tuple[str, ...], total: int, start_index: int = 0) -> list[dict]:
     rows = []
     for index in range(start_index, start_index + total):
@@ -597,35 +784,39 @@ def build(anchor: datetime, titles: tuple[str, ...], target: int, seed: int, seq
         return rows
 
     additions = in_date_varied_batches(
-        int(target * 0.27),
+        int(target * 0.24),
         lambda context_anchor, size, index: make_additions(context_anchor, titles, rng, size, index),
     )
     partial = in_date_varied_batches(
-        int(target * 0.16),
+        int(target * 0.14),
         lambda context_anchor, size, index: make_partial_additions(context_anchor, titles, size, index),
     )
     searches = in_date_varied_batches(
-        int(target * 0.20),
+        int(target * 0.17),
         lambda context_anchor, size, index: make_searches(context_anchor, titles, size, index),
     )
     updates = in_date_varied_batches(
-        int(target * 0.27),
+        int(target * 0.25),
         lambda context_anchor, size, index: make_updates(context_anchor, size, index),
     )
     deletions = in_date_varied_batches(
         int(target * 0.05),
         lambda context_anchor, size, index: make_deletions(context_anchor, size, index),
     )
+    reinforcement = in_date_varied_batches(
+        int(target * 0.10),
+        lambda context_anchor, size, index: make_error_reinforcement(context_anchor, size, index),
+    )
     previous_month_phrase_count = int(target * 0.03)
     chat = in_date_varied_batches(
-        target - len(additions) - len(partial) - len(searches) - len(updates) - len(deletions) - previous_month_phrase_count,
+        target - len(additions) - len(partial) - len(searches) - len(updates) - len(deletions) - len(reinforcement) - previous_month_phrase_count,
         lambda context_anchor, size, index: make_chat(context_anchor, size, index),
     )
     previous_month_phrases = in_date_varied_batches(
         previous_month_phrase_count,
         lambda context_anchor, size, index: make_previous_month_phrase_searches(context_anchor, titles, size, index),
     )
-    result = additions + partial + searches + updates + deletions + chat + previous_month_phrases
+    result = additions + partial + searches + updates + deletions + reinforcement + chat + previous_month_phrases
     rng.shuffle(result)
     return result
 
@@ -669,10 +860,11 @@ def validate(rows: list[dict]) -> None:
         if parsed["intent"] == "calendar_delete":
             assert set(parsed["params"]) == {"target"}
             target = parsed["params"]["target"]
-            assert set(target).issubset({"query", "range_start", "range_end", "use_last_created"})
+            assert set(target).issubset({"query", "range_start", "range_end", "use_last_created", "use_last_in_range"})
             assert ("range_start" in target) == ("range_end" in target)
-            assert "range_start" not in target or "query" in target
-            assert ("query" in target) != (target.get("use_last_created") is True)
+            assert "range_start" not in target or "query" in target or target.get("use_last_in_range") is True
+            assert sum(("query" in target, target.get("use_last_created") is True, target.get("use_last_in_range") is True)) == 1
+            assert "use_last_in_range" not in target or ("range_start" in target and "range_end" in target)
             assert parsed["reply"].startswith("Событие удалено:")
 
 
