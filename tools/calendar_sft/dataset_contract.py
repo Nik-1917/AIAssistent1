@@ -173,6 +173,11 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
     has_time = "time" in params
     if has_starts_at and (has_date or has_time):
         _fail(f"{location}.params", "starts_at must not be combined with date or time")
+    if not has_starts_at and not has_date:
+        _fail(
+            f"{location}.params",
+            "calendar_add must resolve an omitted date to date or starts_at",
+        )
     if "title" in params:
         _require_string(params["title"], f"{location}.params.title", non_empty=True)
     if has_starts_at:

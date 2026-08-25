@@ -51,9 +51,9 @@ class AssistantResponseParserTest {
     }
 
     @Test
-    fun `keeps a supplied event time when its date is absent`() {
+    fun `keeps a supplied event time for the missing-date fallback`() {
         val response = parser.parse(
-            """{"intent":"calendar_add","reply":"Уточните дату","params":{"title":"Проверка отчёта","time":"15:00","duration_min":120}}""",
+            """{"intent":"calendar_add","reply":"Уточните подробности.","params":{"title":"Проверка отчёта","time":"15:00","duration_min":120}}""",
         )
 
         val params = response?.params as CalendarAddParams

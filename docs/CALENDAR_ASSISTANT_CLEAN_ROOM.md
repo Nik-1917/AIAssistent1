@@ -32,9 +32,9 @@ weight distribution. A dataset register based on
 [`dataset_provenance.template.json`](../tools/calendar_sft/dataset_provenance.template.json)
 must be completed and reviewed before a real training run.
 
-The current v3 register is
-[`calendar_sft_data_provenance_v3.json`](calendar_sft_data_provenance_v3.json).
-The historical v1 and v2 registers remain immutable. Each register is bound to staged
+The current v4 register is
+[`calendar_sft_data_provenance_v4.json`](calendar_sft_data_provenance_v4.json).
+The historical v1, v2 and v3 registers remain immutable. Each register is bound to staged
 training artifacts by SHA-256; changing either JSONL file requires a new review
 and register version.
 
@@ -53,6 +53,11 @@ runtime:
 ```text
 Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON
 ```
+
+For `calendar_add`, a date omitted by the user is not a missing field. Resolve
+it from that supplied local time: an exact later time is today, while an equal
+or earlier time is tomorrow. Without an exact time, retain today as `date` and
+ask only for the remaining fields. An explicitly named date always wins.
 
 The dataset must cover creation, search, partial fields, relative dates,
 multi-turn corrections, updates to the last event, named-event updates, and

@@ -53,7 +53,8 @@ For a partial creation command, known date and time may be separate:
 ```
 
 Never send `null`, an empty string, `0`, or an invented default for an unknown
-calendar field. Omit the unknown field instead.
+calendar field. Omit the unknown field instead, except for the required
+implicit-date rule for `calendar_add` below.
 
 ### chat
 
@@ -70,7 +71,14 @@ calendar field. Omit the unknown field instead.
   the information already supplied by the user.
 - Do not combine `starts_at` with `date` or `time` in one command.
 - `duration_min` is a positive integer number of minutes.
-- Omit any unknown event field. Android asks for it in the draft dialog.
+- If the user does not name a date, resolve it from the supplied current local
+  date-time. With an exact time later than the current local time, use today;
+  with a time equal to or earlier than the current minute, use tomorrow. Put
+  the resolved value in `starts_at` when the time is known, otherwise put
+  today in `date` and ask only for the unknown fields.
+- An explicitly named valid date always has priority over this implicit-date
+  rule. Never ask for a date merely because the user omitted it.
+- Omit other unknown event fields. Android asks for them in the draft dialog.
 - For a complete command, use `Событие создано: <название> <дата> <время>.` in
   `reply`. The text describes the prepared command; the UI controls confirmation
   and the actual local save.
@@ -83,6 +91,9 @@ calendar field. Omit the unknown field instead.
 - `query` is a short title keyword/name, or `""` for all events.
 - Both boundaries are required local timestamps in `YYYY-MM-DDTHH:MM`.
 - `range_start` is inclusive; `range_end` is exclusive.
+- «Через месяц» means the full next calendar month; «через два месяца» means
+  the full calendar month two months after the current one. For example, from
+  28 August the latter range is `[1 October 00:00; 1 November 00:00)`.
 - If a period cannot be determined exactly, use `chat` and ask for the period.
 - Do not invent search results: Android owns the actual local query result.
 - A search reply must not begin with an event-action prefix.
@@ -165,6 +176,12 @@ reply with the actual result. An executable delete reply begins with `Событ
 Every request supplies the current local date-time and IANA time-zone ID.
 Resolve relative expressions in that supplied zone. The application then
 interprets returned local timestamps in its system zone.
+
+For `calendar_add`, an omitted date is also resolved in that supplied zone:
+an exact time strictly later than the supplied current time means today; an
+equal or earlier time means tomorrow. If no exact time is known, use today in
+`date` and ask for the time. This rule never overrides an explicitly named
+date.
 
 | Russian expression | Search/source range |
 | --- | --- |

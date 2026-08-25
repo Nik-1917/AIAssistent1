@@ -20,7 +20,7 @@ data class CalendarAddParams(
     val durationMin: Int?,
     /** A known event date when the user has not specified its time yet. */
     val date: String? = null,
-    /** A known event time when the user has not specified its date yet. */
+    /** A known event time; Android resolves an omitted date from local current time. */
     val time: String? = null,
 ) : AssistantParams
 

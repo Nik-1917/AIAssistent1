@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 import json
 from pathlib import Path
 import sys
@@ -11,7 +11,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generate_calendar_training_dataset import make_searches, search_period  # noqa: E402
+from generate_calendar_training_dataset import implicit_calendar_add_start, make_searches, search_period  # noqa: E402
 
 
 class SearchPeriodTests(unittest.TestCase):
@@ -43,6 +43,18 @@ class SearchPeriodTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.assertEqual(value, search_period(self.anchor, kind))
 
+    def test_relative_months_search_the_complete_target_month(self) -> None:
+        anchor = datetime(2030, 8, 28, 14, 30)
+
+        self.assertEqual(
+            ("через месяц", datetime(2030, 9, 1, 0, 0), datetime(2030, 10, 1, 0, 0)),
+            search_period(anchor, "in_one_month"),
+        )
+        self.assertEqual(
+            ("через два месяца", datetime(2030, 10, 1, 0, 0), datetime(2030, 11, 1, 0, 0)),
+            search_period(anchor, "in_two_months"),
+        )
+
     def test_posleposlezavtra_has_a_search_reply(self) -> None:
         row = make_searches(self.anchor, ("Проба",), total=1, start_index=3)[0]
         response = json.loads(row["messages"][-1]["content"])
@@ -50,6 +62,20 @@ class SearchPeriodTests(unittest.TestCase):
         self.assertEqual("Проверяю все события послепослезавтра.", response["reply"])
         self.assertEqual("2026-08-27T00:00", response["params"]["range_start"])
         self.assertEqual("2026-08-28T00:00", response["params"]["range_end"])
+
+    def test_implicit_add_date_uses_today_only_for_a_later_time(self) -> None:
+        self.assertEqual(
+            datetime(2026, 8, 24, 18, 30),
+            implicit_calendar_add_start(self.anchor, time(18, 30)),
+        )
+        self.assertEqual(
+            datetime(2026, 8, 25, 9, 0),
+            implicit_calendar_add_start(self.anchor, time(9, 0)),
+        )
+        self.assertEqual(
+            datetime(2026, 8, 25, 14, 30),
+            implicit_calendar_add_start(self.anchor, time(14, 30)),
+        )
 
 
 if __name__ == "__main__":

@@ -409,6 +409,9 @@ class ChatViewModel(
                 if (finalMessage != null) {
                     if (finalMessage.content.isNotBlank()) {
                         val parsed = assistantResponseParser.parse(finalMessage.content)
+                            ?.resolveImplicitCalendarAddDate(
+                                LocalDateTime.now(ZoneId.systemDefault()),
+                            )
                         val messageToSave = if (parsed != null) {
                             finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
                         } else {
@@ -1037,6 +1040,45 @@ class ChatViewModel(
     fun saveFloatingControlPositions(positions: FloatingControlPositions) {
         viewModelScope.launch {
             settingsRepository.setFloatingControlPositions(positions)
+        }
+    }
+
+    private fun com.example.aiassistent1.domain.model.AssistantResponse.resolveImplicitCalendarAddDate(
+        now: LocalDateTime,
+    ): com.example.aiassistent1.domain.model.AssistantResponse {
+        val calendarParams = params as? CalendarAddParams ?: return this
+        if (!calendarParams.startsAt.isNullOrBlank() || !calendarParams.date.isNullOrBlank()) return this
+
+        val knownTime = calendarParams.time
+            ?.takeIf { isCalendarTime(it) }
+            ?.let { LocalTime.parse(it, DateTimeFormatter.ofPattern("HH:mm")) }
+        val resolvedDate = resolveImplicitCalendarAddDate(now, knownTime)
+        val resolvedParams = if (knownTime != null) {
+            calendarParams.copy(
+                startsAt = "$resolvedDate" + "T" + knownTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                date = null,
+                time = null,
+            )
+        } else {
+            calendarParams.copy(date = resolvedDate.toString())
+        }
+        return copy(
+            params = resolvedParams,
+            reply = resolvedParams.defaultDatePartialReplyOrNull() ?: reply,
+        )
+    }
+
+    private fun CalendarAddParams.defaultDatePartialReplyOrNull(): String? {
+        val title = title?.trim().takeUnless { it.isNullOrEmpty() }
+            ?: return "Уточните название события."
+        val hasStart = startsAt?.let { isCalendarDateTime(it) } == true ||
+            (date?.let { isCalendarDate(it) } == true && time?.let { isCalendarTime(it) } == true)
+        val hasDuration = durationMin?.let { it > 0 } == true
+        return when {
+            hasStart && hasDuration -> null
+            hasStart -> "Уточните длительность для события $title."
+            hasDuration -> "Уточните точное время для события $title."
+            else -> "Уточните время и длительность для события $title."
         }
     }
 

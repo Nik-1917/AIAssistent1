@@ -83,23 +83,37 @@ class ReplyContractTest(unittest.TestCase):
 
         self.assertEqual("2030-12-07", parsed["params"]["date"])
 
-    def test_partial_add_keeps_a_known_time_without_a_date(self) -> None:
-        parsed = parse_and_validate_assistant_response(
-            json.dumps(
-                {
-                    "intent": "calendar_add",
-                    "reply": "Уточните дату для события Проверка отчёта.",
-                    "params": {
-                        "title": "Проверка отчёта",
-                        "time": "18:30",
-                        "duration_min": 120,
+    def test_add_rejects_a_known_time_without_a_resolved_date(self) -> None:
+        with self.assertRaisesRegex(DatasetContractError, "must resolve an omitted date"):
+            parse_and_validate_assistant_response(
+                json.dumps(
+                    {
+                        "intent": "calendar_add",
+                        "reply": "Уточните подробности для события Проверка отчёта.",
+                        "params": {
+                            "title": "Проверка отчёта",
+                            "time": "18:30",
+                            "duration_min": 120,
+                        },
                     },
-                },
-                ensure_ascii=False,
-            ),
-        )
+                    ensure_ascii=False,
+                ),
+            )
 
-        self.assertEqual("18:30", parsed["params"]["time"])
+    def test_add_rejects_an_unresolved_date_when_time_is_absent(self) -> None:
+        with self.assertRaisesRegex(DatasetContractError, "must resolve an omitted date"):
+            parse_and_validate_assistant_response(
+                json.dumps(
+                    {
+                        "intent": "calendar_add",
+                        "reply": "Уточните время и длительность для события Проверка отчёта.",
+                        "params": {
+                            "title": "Проверка отчёта",
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+            )
 
     def test_add_rejects_mixing_full_and_partial_start_fields(self) -> None:
         with self.assertRaisesRegex(DatasetContractError, "must not be combined"):

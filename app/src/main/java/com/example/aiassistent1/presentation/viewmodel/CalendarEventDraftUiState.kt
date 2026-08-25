@@ -1,5 +1,9 @@
 package com.example.aiassistent1.presentation.viewmodel
 
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+
 enum class CalendarEventField(val label: String) {
     Title("Название события"),
     Date("Дата (ГГГГ-ММ-ДД)"),
@@ -50,4 +54,19 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
         else -> null
     }
     return copy(activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)
+}
+
+/**
+ * Resolves an omitted calendar-add date from the local time supplied to the
+ * assistant. An exact time later today stays today; the current minute and
+ * any earlier time belong to tomorrow. Without an exact time, retain today
+ * and let the draft ask only for the time.
+ */
+internal fun resolveImplicitCalendarAddDate(
+    now: LocalDateTime,
+    knownTime: LocalTime?,
+): LocalDate = when {
+    knownTime == null -> now.toLocalDate()
+    knownTime > now.toLocalTime() -> now.toLocalDate()
+    else -> now.toLocalDate().plusDays(1)
 }
