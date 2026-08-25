@@ -29,6 +29,11 @@ LEGACY_SYSTEM_RE = re.compile(
 )
 YEAR_RE = re.compile(r"\b\d{4}\b")
 CLOCK_RE = re.compile(r"\b(?:\d|[01]\d|2[0-3]):[0-5]\d\b")
+ACTION_REPLY_PREFIXES = (
+    "Событие создано:",
+    "Событие изменено:",
+    "Событие удалено:",
+)
 
 
 class DatasetContractError(ValueError):
@@ -51,6 +56,14 @@ def _require_positive_int(value: Any, location: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         _fail(location, "expected a positive integer")
     return value
+
+
+def _reject_action_reply_prefix(reply: str, location: str, context: str) -> None:
+    if reply.startswith(ACTION_REPLY_PREFIXES):
+        _fail(
+            f"{location}.reply",
+            f"{context} reply must not begin with an event-action prefix",
+        )
 
 
 def _parse_datetime(value: Any, location: str) -> str:
@@ -136,10 +149,11 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
     if intent == "chat":
         if params:
             _fail(f"{location}.params", "chat params must be exactly {}")
+        _reject_action_reply_prefix(reply, location, "a chat")
     elif intent == "calendar_add":
         _validate_add(params, reply, location)
     elif intent == "calendar_search":
-        _validate_search(params, location)
+        _validate_search(params, reply, location)
     elif intent == "calendar_delete":
         _validate_delete(params, reply, location)
     else:
@@ -157,11 +171,14 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
         _parse_datetime(params["starts_at"], f"{location}.params.starts_at")
     if "duration_min" in params:
         _require_positive_int(params["duration_min"], f"{location}.params.duration_min")
-    if set(params) == allowed and not reply.startswith("Событие создано:"):
-        _fail(f"{location}.reply", "a complete calendar_add reply must begin with 'Событие создано:'")
+    if set(params) == allowed:
+        if not reply.startswith("Событие создано:"):
+            _fail(f"{location}.reply", "a complete calendar_add reply must begin with 'Событие создано:'")
+    else:
+        _reject_action_reply_prefix(reply, location, "a partial calendar_add")
 
 
-def _validate_search(params: dict[str, Any], location: str) -> None:
+def _validate_search(params: dict[str, Any], reply: str, location: str) -> None:
     if set(params) != {"query", "range_start", "range_end"}:
         _fail(f"{location}.params", "calendar_search needs exactly query, range_start, range_end")
     _require_string(params["query"], f"{location}.params.query")
@@ -169,6 +186,7 @@ def _validate_search(params: dict[str, Any], location: str) -> None:
     end = _parse_datetime(params["range_end"], f"{location}.params.range_end")
     if start >= end:
         _fail(f"{location}.params", "range_start must be before range_end")
+    _reject_action_reply_prefix(reply, location, "a calendar_search")
 
 
 def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
@@ -211,8 +229,11 @@ def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
         _parse_time(changes["time"], f"{location}.params.changes.time")
     if "duration_min" in changes:
         _require_positive_int(changes["duration_min"], f"{location}.params.changes.duration_min")
-    if changes and not reply.startswith("Событие изменено:"):
-        _fail(f"{location}.reply", "an executable calendar_update reply must begin with 'Событие изменено:'")
+    if changes:
+        if not reply.startswith("Событие изменено:"):
+            _fail(f"{location}.reply", "an executable calendar_update reply must begin with 'Событие изменено:'")
+    else:
+        _reject_action_reply_prefix(reply, location, "a calendar_update without changes")
 
 
 def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:

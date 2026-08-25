@@ -64,6 +64,8 @@ calendar field. Omit the unknown field instead.
 - For a complete command, use `Событие создано: <название> <дата> <время>.` in
   `reply`. The text describes the prepared command; the UI controls confirmation
   and the actual local save.
+- A partial command must ask for the missing field and must not begin with an
+  event-action prefix.
 
 ### calendar_search
 
@@ -73,6 +75,7 @@ calendar field. Omit the unknown field instead.
 - `range_start` is inclusive; `range_end` is exclusive.
 - If a period cannot be determined exactly, use `chat` and ask for the period.
 - Do not invent search results: Android owns the actual local query result.
+- A search reply must not begin with an event-action prefix.
 
 ### calendar_update
 
@@ -124,6 +127,8 @@ not found. The model must not fabricate an event ID or claim a database result.
 For an executable update command, use a concise reply beginning with
 `Событие изменено:`. It describes the prepared update command; the UI still
 shows its preview and controls the actual Room update.
+When `changes` is `{}`, ask what to change and do not begin the reply with an
+event-action prefix.
 
 ### calendar_delete
 
@@ -177,6 +182,9 @@ ask for a precise value.
 - Never mention a year in `reply`.
 - Write known event times in words in `reply`; retain ISO digits only in JSON
   params.
+- `Событие создано:`, `Событие изменено:`, and `Событие удалено:` are reserved
+  only for executable add, update, and delete commands respectively. Chat,
+  search, and incomplete commands must not use them.
 - Prefer `сегодня`, `завтра`, `послезавтра`, and `послепослезавтра` for dates
   from today through the third following day. Understand and vary `через два
   дня`, `через три дня`, and `через четыре дня`.

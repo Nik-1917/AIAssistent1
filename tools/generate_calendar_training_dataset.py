@@ -13,6 +13,8 @@ from calendar import monthrange
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
+from calendar_sft.dataset_contract import parse_and_validate_assistant_response
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "docs" / "calendar_assistant_candidates"
@@ -45,7 +47,7 @@ HOURS = {
     20: "восемь часов вечера", 21: "девять часов вечера", 22: "десять часов вечера",
     23: "одиннадцать часов вечера",
 }
-MINUTES = {0: "", 5: " пять минут", 15: " пятнадцать минут", 20: " двадцать минут", 30: " тридцать минут", 45: " сорок пять минут"}
+MINUTES = {0: "", 5: " пять минут", 15: " пятнадцать минут", 20: " двадцать минут", 30: " тридцать минут", 40: " сорок минут", 45: " сорок пять минут"}
 TIMES = (time(8, 0), time(9, 30), time(10, 15), time(11, 20), time(12, 0), time(14, 0), time(15, 45), time(18, 30), time(19, 0))
 DURATIONS = (15, 30, 45, 60, 90, 120)
 
@@ -228,9 +230,9 @@ def make_additions(anchor: datetime, titles: tuple[str, ...], rng: random.Random
         else:
             date_phrase = date_words(event_date)
         user_templates = (
-            "Добавь {date} {time} событие «{title}» на {duration}.",
-            "Запиши событие «{title}» {date} в {numeric} на {duration}.",
-            "Поставь {date} {time} «{title}» на {duration}.",
+            "Добавь {date} {time} событие {title} на {duration}.",
+            "Запиши событие {title} {date} в {numeric} на {duration}.",
+            "Поставь {date} {time} {title} на {duration}.",
         )
         user = user_templates[index % len(user_templates)].format(date=date_phrase, time=time_words(event_time), numeric=event_time.strftime("%H:%M"), title=title, duration=duration_words(duration))
         reply = f"Событие создано: {title} {reply_phrase or reply_date_phrase(event_date, anchor.date())} {time_words(event_time)}."
@@ -247,21 +249,21 @@ def make_partial_additions(anchor: datetime, titles: tuple[str, ...], total: int
         duration = DURATIONS[index % len(DURATIONS)]
         variant = index % 4
         if variant == 0:
-            user, params, reply = f"Запиши событие «{title}» {date_words(event_date)} {time_words(event_time)}.", {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))}, f"Уточню длительность для события «{title}»."
+            user, params, reply = f"Запиши событие {title} {date_words(event_date)} {time_words(event_time)}.", {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))}, f"Уточню длительность для события {title}."
         elif variant == 1:
-            user, params, reply = f"Добавь {date_words(event_date)} событие «{title}» на {duration_words(duration)}.", {"title": title, "duration_min": duration}, f"Уточню точное время для события «{title}»."
+            user, params, reply = f"Добавь {date_words(event_date)} событие {title} на {duration_words(duration)}.", {"title": title, "duration_min": duration}, f"Уточню точное время для события {title}."
         elif variant == 2:
             user, params, reply = f"Поставь {date_words(event_date)} в {event_time:%H:%M} на {duration_words(duration)}.", {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": duration}, "Уточню название события."
         else:
             title_only_templates = (
-                "Нужно не забыть: «{title}».",
-                "Добавь в календарь событие «{title}».",
-                "Хочу запланировать «{title}».",
-                "Запиши мне событие «{title}».",
-                "Надо внести в календарь «{title}».",
+                "Нужно не забыть: {title}.",
+                "Добавь в календарь событие {title}.",
+                "Хочу запланировать {title}.",
+                "Запиши мне событие {title}.",
+                "Надо внести в календарь {title}.",
             )
             template = title_only_templates[(index // (len(titles) * 4)) % len(title_only_templates)]
-            user, params, reply = template.format(title=title), {"title": title}, f"Уточню дату, время и длительность для события «{title}»."
+            user, params, reply = template.format(title=title), {"title": title}, f"Уточню дату, время и длительность для события {title}."
         result.append(record("calendar_add_partial", system_message(anchor), user, response("calendar_add", reply, params)))
     return result
 
@@ -280,12 +282,12 @@ def make_searches(anchor: datetime, titles: tuple[str, ...], total: int, start_i
         query = "" if index % 3 == 0 else title
         if query:
             user_templates = (
-                "Найди событие «{title}» {period}.",
-                "Проверь, есть ли «{title}» {period}.",
-                "Покажи «{title}» {period}.",
+                "Найди событие {title} {period}.",
+                "Проверь, есть ли {title} {period}.",
+                "Покажи {title} {period}.",
             )
             user = user_templates[(index // len(kinds)) % len(user_templates)].format(period=phrase, title=title)
-            reply = f"Проверяю событие «{title}» {phrase}."
+            reply = f"Проверяю событие {title} {phrase}."
         else:
             user_templates = (
                 "Что у меня {period}?",
@@ -340,9 +342,9 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
         "Перепиши в календаре {title_lower} {destination}.",
     )
     time_templates = (
-        "У события «{title}» время исправь на {time}.",
-        "Поставь для события «{title}» время на {time}.",
-        "Передвинь событие «{title}» по времени на {time}.",
+        "У события {title} время исправь на {time}.",
+        "Поставь для события {title} время на {time}.",
+        "Передвинь событие {title} по времени на {time}.",
     )
     for index in range(start_index, start_index + total):
         occupation, title, query, renamed_title = UPDATE_SCENARIOS[index % len(UPDATE_SCENARIOS)]
@@ -362,9 +364,9 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
             if source_start <= destination_date < source_end:
                 destination_phrase, destination_date = "через четыре дня", anchor.date() + timedelta(days=4)
             source_move_templates = (
-                "Перенеси событие «{title}», запланированное {source}, {destination}.",
-                "Сдвинь событие «{title}», которое стоит {source}, {destination}.",
-                "Перепиши в календаре событие «{title}», запланированное {source}, {destination}.",
+                "Перенеси событие {title}, запланированное {source}, {destination}.",
+                "Сдвинь событие {title}, которое стоит {source}, {destination}.",
+                "Перепиши в календаре событие {title}, запланированное {source}, {destination}.",
             )
             user = source_move_templates[index % len(source_move_templates)].format(
                 title=title,
@@ -377,16 +379,16 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
                 "range_end": f"{source_end:%Y-%m-%d}T00:00",
             }
             changes = {"date": f"{destination_date:%Y-%m-%d}"}
-            reply = f"Событие изменено: «{title}» перенесено {move_request_phrase(destination_phrase)}."
+            reply = f"Событие изменено: {title} перенесено {move_request_phrase(destination_phrase)}."
             category = "calendar_update_move_from_source_period"
         elif variant == 1:
             user = move_templates[index % len(move_templates)].format(
-                title_lower=f"событие «{title}»",
+                title_lower=f"событие {title}",
                 destination=move_request_phrase(destination_phrase),
             )
             target = {"query": query}
             changes = {"date": f"{destination_date:%Y-%m-%d}"}
-            reply = f"Событие изменено: «{title}» перенесено {move_request_phrase(destination_phrase)}."
+            reply = f"Событие изменено: {title} перенесено {move_request_phrase(destination_phrase)}."
             category = "calendar_update_move_by_query"
         elif variant == 2:
             user = time_templates[index % len(time_templates)].format(
@@ -395,19 +397,19 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
             )
             target = {"query": query}
             changes = {"time": new_time.strftime("%H:%M")}
-            reply = f"Событие изменено: новое время для «{title}» — {time_words(new_time)}."
+            reply = f"Событие изменено: новое время для {title} — {time_words(new_time)}."
             category = "calendar_update_time_by_query"
         elif variant == 3:
-            user = f"Измени длительность события «{title}» на {duration_words(new_duration)}."
+            user = f"Измени длительность события {title} на {duration_words(new_duration)}."
             target = {"query": query}
             changes = {"duration_min": new_duration}
-            reply = f"Событие изменено: длительность «{title}» — {duration_words(new_duration)}."
+            reply = f"Событие изменено: длительность {title} — {duration_words(new_duration)}."
             category = "calendar_update_duration_by_query"
         elif variant == 4:
-            user = f"Переименуй «{title}» в «{renamed_title}»."
+            user = f"Переименуй {title} в {renamed_title}."
             target = {"query": query}
             changes = {"title": renamed_title}
-            reply = f"Событие изменено: новое название — «{renamed_title}»."
+            reply = f"Событие изменено: новое название — {renamed_title}."
             category = "calendar_update_title_by_query"
         elif variant == 5:
             user = f"У последнего добавленного события время исправь на {clock_words(new_time)}."
@@ -422,10 +424,10 @@ def make_updates(anchor: datetime, total: int, start_index: int = 0) -> list[dic
             reply = f"Событие изменено: время последнего добавленного события — {time_words(new_time)}."
             category = "calendar_update_implicit_last_created"
         else:
-            user = f"Измени событие «{title}»."
+            user = f"Измени событие {title}."
             target = {"query": query}
             changes = {}
-            reply = f"Уточню, что изменить у события «{title}»."
+            reply = f"Уточню, что изменить у события {title}."
             category = "calendar_update_missing_change"
 
         result.append(
@@ -611,86 +613,121 @@ def make_deletions(anchor: datetime, total: int, start_index: int = 0) -> list[d
 
 
 def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0) -> list[dict]:
-    """Add paraphrases for known holdout failure classes without copying holdout text."""
+    """Add distinct paraphrases for known errors without copying holdout prompts."""
     rows = []
     for index in range(start_index, start_index + total):
         today = anchor.date()
-        variant = index % 12
+        variant = index % 16
         if variant == 0:
             event_date = today + timedelta(days=2)
-            event_time = time(7, 5)
-            title = "Проверка тормозов автобуса"
-            user = f"Добавь {date_words(event_date)} в {clock_words(event_time)} {title.lower()} на час двадцать."
+            event_time = time(6, 40)
+            title = "Отправка документов в администрацию"
+            user = f"Запиши на послезавтра в шесть сорок утра {title.lower()} на час."
             assistant = response(
                 "calendar_add",
                 f"Событие создано: {title} {reply_date_phrase(event_date, today)} {time_words(event_time)}.",
-                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 80},
+                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 60},
             )
             category = "reinforcement_add_complete_asr"
         elif variant == 1:
+            event_date = today + timedelta(days=3)
+            event_time = time(10, 15)
+            user = "Поставь послепослезавтра в десять часов пятнадцать минут утра на сорок пять минут."
+            assistant = response(
+                "calendar_add",
+                "Уточню название события.",
+                {"starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 45},
+            )
+            category = "reinforcement_add_missing_title"
+        elif variant == 2:
+            title = "Обход склада"
+            user = "Добавь обход склада завтра на час."
+            assistant = response(
+                "calendar_add",
+                "Уточню точное время для события Обход склада.",
+                {"title": title, "duration_min": 60},
+            )
+            category = "reinforcement_add_missing_time"
+        elif variant == 3:
             event_date = add_months(today, 1)
             event_time = time(16, 0)
             title = "Оплата аренды склада"
-            user = f"Через месяц поставь {title.lower()} в {clock_words(event_time)} на двадцать минут."
+            user = "Через месяц поставь оплату аренды склада в четыре часа дня."
             assistant = response(
                 "calendar_add",
-                f"Событие создано: {title} через месяц {time_words(event_time)}.",
-                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time)), "duration_min": 20},
+                "Уточню длительность для события Оплата аренды склада.",
+                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))},
             )
-            category = "reinforcement_add_month"
-        elif variant == 2:
-            event_date = today + timedelta(days=4)
-            user = "Через четыре дня найди дежурство на объекте."
-            assistant = response(
-                "calendar_search",
-                "Проверяю дежурство на объекте через четыре дня.",
-                {"query": "дежурство", "range_start": f"{event_date:%Y-%m-%d}T00:00", "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00"},
-            )
-            category = "reinforcement_search_query_day"
-        elif variant == 3:
-            start, end = week_bounds(today, 0)
-            user = "Покажи приёмы граждан на этой неделе."
-            assistant = response(
-                "calendar_search",
-                "Проверяю приёмы граждан на этой неделе.",
-                {"query": "приём", "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
-            )
-            category = "reinforcement_search_week_query"
+            category = "reinforcement_add_missing_duration"
         elif variant == 4:
-            start, end = month_bounds(today, 1)
-            user = "Найди обучение по охране труда в следующем месяце."
+            event_date = today + timedelta(days=3)
+            query = "выдача спецодежды"
+            user = "Через три дня найди выдачу спецодежды."
             assistant = response(
                 "calendar_search",
-                "Проверяю обучение по охране труда в следующем месяце.",
-                {"query": "обучение", "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
+                "Проверяю выдачу спецодежды послепослезавтра.",
+                {"query": query, "range_start": f"{event_date:%Y-%m-%d}T00:00", "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00"},
             )
-            category = "reinforcement_search_month_query"
+            category = "reinforcement_search_full_query_day"
         elif variant == 5:
-            user = "У медосмотра водителя время сделай на пять часов дня."
+            start, end = week_bounds(today, 0)
+            query = "собрание родительского комитета"
+            user = "На этой неделе покажи собрание родительского комитета."
             assistant = response(
-                "calendar_update",
-                "Событие изменено: время медосмотра водителя — в пять часов дня.",
-                {"target": {"query": "медосмотр"}, "changes": {"time": "17:00"}},
+                "calendar_search",
+                "Проверяю собрание родительского комитета на этой неделе.",
+                {"query": query, "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
             )
-            category = "reinforcement_update_time_query"
+            category = "reinforcement_search_week_full_query"
         elif variant == 6:
-            user = "Смену на линии сделай длительностью двенадцать часов."
+            start, end = month_bounds(today, -1)
+            query = "план технического обслуживания"
+            user = "Найди план технического обслуживания в том месяце."
             assistant = response(
-                "calendar_update",
-                "Событие изменено: длительность смены на линии — двенадцать часов.",
-                {"target": {"query": "смена на линии"}, "changes": {"duration_min": 720}},
+                "calendar_search",
+                "Проверяю план технического обслуживания в том месяце.",
+                {"query": query, "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
             )
-            category = "reinforcement_update_duration_query"
+            category = "reinforcement_search_previous_month_full_query"
         elif variant == 7:
-            source_date = today + timedelta(days=1)
-            destination_date = today + timedelta(days=3)
-            user = "Проверку отчёта, которая стоит завтра, перенеси через три дня."
+            start, end = month_bounds(today, 2)
+            query = "медицинская комиссия водителя"
+            user = "Через два месяца посмотри медицинскую комиссию водителя."
+            assistant = response(
+                "calendar_search",
+                "Проверяю медицинскую комиссию водителя через два месяца.",
+                {"query": query, "range_start": f"{start:%Y-%m-%d}T00:00", "range_end": f"{end:%Y-%m-%d}T00:00"},
+            )
+            category = "reinforcement_search_two_months_full_query"
+        elif variant == 8:
+            query = "техосмотр грузовой машины"
+            user = "У техосмотра грузовой машины время исправь на десять часов утра."
             assistant = response(
                 "calendar_update",
-                "Событие изменено: проверка отчёта перенесена через три дня.",
+                "Событие изменено: время техосмотра грузовой машины — в десять часов утра.",
+                {"target": {"query": query}, "changes": {"time": "10:00"}},
+            )
+            category = "reinforcement_update_time_full_query"
+        elif variant == 9:
+            query = "смена по разгрузке"
+            user = "Смену по разгрузке сократи до шести часов."
+            assistant = response(
+                "calendar_update",
+                "Событие изменено: длительность смены по разгрузке — шесть часов.",
+                {"target": {"query": query}, "changes": {"duration_min": 360}},
+            )
+            category = "reinforcement_update_duration_not_add"
+        elif variant == 10:
+            source_date = today + timedelta(days=2)
+            destination_date = today + timedelta(days=4)
+            query = "проверка пожарного щита"
+            user = "Проверку пожарного щита послезавтра перенеси через четыре дня."
+            assistant = response(
+                "calendar_update",
+                "Событие изменено: проверка пожарного щита перенесена через четыре дня.",
                 {
                     "target": {
-                        "query": "проверка отчёта",
+                        "query": query,
                         "range_start": f"{source_date:%Y-%m-%d}T00:00",
                         "range_end": f"{source_date + timedelta(days=1):%Y-%m-%d}T00:00",
                     },
@@ -698,35 +735,45 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
                 },
             )
             category = "reinforcement_update_source_range"
-        elif variant == 8:
-            user = "Измени визит в МФЦ."
+        elif variant == 11:
+            query = "выдача пропуска на завод"
+            user = "Исправь выдачу пропуска на завод."
             assistant = response(
                 "calendar_update",
-                "Уточню, что изменить у визита в МФЦ.",
-                {"target": {"query": "визит в МФЦ"}, "changes": {}},
+                "Уточню, что изменить у события Выдача пропуска на завод.",
+                {"target": {"query": query}, "changes": {}},
             )
             category = "reinforcement_update_missing_change"
-        elif variant == 9:
+        elif variant == 12:
             event_date = today + timedelta(days=1)
-            user = "Удали из планов рейс до Тольятти на завтра."
+            query = "приём документов в МФЦ"
+            user = "Удали приём документов в МФЦ на завтра."
             assistant = response(
                 "calendar_delete",
-                "Событие удалено: Рейс до Тольятти на завтра.",
+                "Событие удалено: приём документов в МФЦ на завтра.",
                 {
                     "target": {
-                        "query": "Рейс до Тольятти",
+                        "query": query,
                         "range_start": f"{event_date:%Y-%m-%d}T00:00",
                         "range_end": f"{event_date + timedelta(days=1):%Y-%m-%d}T00:00",
                     },
                 },
             )
-            category = "reinforcement_delete_query"
-        elif variant == 10:
-            event_date = today + timedelta(days=1)
-            user = "Убери последнее событие на завтра."
+            category = "reinforcement_delete_full_query"
+        elif variant == 13:
+            user = "Сотри последнее добавленное событие."
             assistant = response(
                 "calendar_delete",
-                "Событие удалено: последнее событие на завтра.",
+                "Событие удалено: последнее добавленное событие.",
+                {"target": {"use_last_created": True}},
+            )
+            category = "reinforcement_delete_last_created"
+        elif variant == 14:
+            event_date = today + timedelta(days=2)
+            user = "Удали последнее на послезавтра."
+            assistant = response(
+                "calendar_delete",
+                "Событие удалено: последнее событие послезавтра.",
                 {
                     "target": {
                         "use_last_in_range": True,
@@ -737,10 +784,10 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
             )
             category = "reinforcement_delete_last_in_range"
         else:
-            user = "Чем ты можешь помочь с моими планами?"
+            user = "Как лучше подготовиться к рабочей неделе?"
             assistant = response(
                 "chat",
-                "Могу добавить событие, найти его, изменить или удалить из локального календаря приложения.",
+                "Могу помочь составить план или выполнить команду с локальным календарём приложения.",
                 {},
             )
             category = "reinforcement_ordinary_chat"
@@ -784,7 +831,7 @@ def build(anchor: datetime, titles: tuple[str, ...], target: int, seed: int, seq
         return rows
 
     additions = in_date_varied_batches(
-        int(target * 0.24),
+        int(target * 0.21),
         lambda context_anchor, size, index: make_additions(context_anchor, titles, rng, size, index),
     )
     partial = in_date_varied_batches(
@@ -792,11 +839,11 @@ def build(anchor: datetime, titles: tuple[str, ...], target: int, seed: int, seq
         lambda context_anchor, size, index: make_partial_additions(context_anchor, titles, size, index),
     )
     searches = in_date_varied_batches(
-        int(target * 0.17),
+        int(target * 0.16),
         lambda context_anchor, size, index: make_searches(context_anchor, titles, size, index),
     )
     updates = in_date_varied_batches(
-        int(target * 0.25),
+        int(target * 0.23),
         lambda context_anchor, size, index: make_updates(context_anchor, size, index),
     )
     deletions = in_date_varied_batches(
@@ -804,7 +851,7 @@ def build(anchor: datetime, titles: tuple[str, ...], target: int, seed: int, seq
         lambda context_anchor, size, index: make_deletions(context_anchor, size, index),
     )
     reinforcement = in_date_varied_batches(
-        int(target * 0.10),
+        int(target * 0.16),
         lambda context_anchor, size, index: make_error_reinforcement(context_anchor, size, index),
     )
     previous_month_phrase_count = int(target * 0.03)
@@ -835,7 +882,10 @@ def validate(rows: list[dict]) -> None:
             if signature in non_calendar_chat_signatures:
                 raise AssertionError(f"Duplicate chat example in {row['category']}: {messages[1]['content']}")
             non_calendar_chat_signatures.add(signature)
-        parsed = json.loads(messages[-1]["content"])
+        parsed = parse_and_validate_assistant_response(
+            messages[-1]["content"],
+            f"generated[{row['category']}].assistant",
+        )
         assert set(parsed) == {"intent", "reply", "params"}
         assert parsed["intent"] in allowed and parsed["reply"]
         if parsed["intent"] == "chat": assert parsed["params"] == {}
