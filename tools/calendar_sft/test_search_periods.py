@@ -1,9 +1,8 @@
-"""Regression tests for temporal ranges in generated calendar searches."""
+"""Regression tests for calendar temporal ranges."""
 
 from __future__ import annotations
 
-from datetime import datetime, time
-import json
+from datetime import datetime
 from pathlib import Path
 import sys
 import unittest
@@ -11,7 +10,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generate_calendar_training_dataset import implicit_calendar_add_start, make_searches, search_period  # noqa: E402
+from generate_calendar_training_dataset import implicit_calendar_add_start, search_period  # noqa: E402
 
 
 class SearchPeriodTests(unittest.TestCase):
@@ -43,6 +42,26 @@ class SearchPeriodTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.assertEqual(value, search_period(self.anchor, kind))
 
+    def test_implicit_add_time_later_than_now_uses_today(self) -> None:
+        self.assertEqual(
+            datetime(2026, 8, 24, 18, 0),
+            implicit_calendar_add_start(self.anchor, datetime(2026, 8, 24, 18, 0).time()),
+        )
+
+    def test_implicit_add_time_equal_to_now_uses_tomorrow(self) -> None:
+        self.assertEqual(
+            datetime(2026, 8, 25, 14, 30),
+            implicit_calendar_add_start(self.anchor, datetime(2026, 8, 24, 14, 30).time()),
+        )
+
+    def test_implicit_add_time_earlier_than_now_rolls_over_the_year(self) -> None:
+        anchor = datetime(2026, 12, 31, 23, 30)
+
+        self.assertEqual(
+            datetime(2027, 1, 1, 23, 20),
+            implicit_calendar_add_start(anchor, datetime(2026, 12, 31, 23, 20).time()),
+        )
+
     def test_one_month_searches_the_target_calendar_day(self) -> None:
         anchor = datetime(2030, 8, 28, 14, 30)
 
@@ -71,28 +90,23 @@ class SearchPeriodTests(unittest.TestCase):
             search_period(anchor, "in_two_months"),
         )
 
-    def test_posleposlezavtra_has_a_search_reply(self) -> None:
-        row = make_searches(self.anchor, ("Проба",), total=1, start_index=3)[0]
-        response = json.loads(row["messages"][-1]["content"])
-
-        self.assertEqual("Проверяю все события послепослезавтра.", response["reply"])
-        self.assertEqual("2026-08-27T00:00", response["params"]["range_start"])
-        self.assertEqual("2026-08-28T00:00", response["params"]["range_end"])
-
-    def test_implicit_add_date_uses_today_only_for_a_later_time(self) -> None:
+    def test_sum_periods_cover_past_week_month_and_year(self) -> None:
         self.assertEqual(
-            datetime(2026, 8, 24, 18, 30),
-            implicit_calendar_add_start(self.anchor, time(18, 30)),
+            ("вчера", datetime(2026, 8, 23, 0, 0), datetime(2026, 8, 24, 0, 0)),
+            search_period(self.anchor, "yesterday"),
         )
         self.assertEqual(
-            datetime(2026, 8, 25, 9, 0),
-            implicit_calendar_add_start(self.anchor, time(9, 0)),
+            ("на прошлой неделе", datetime(2026, 8, 17, 0, 0), datetime(2026, 8, 24, 0, 0)),
+            search_period(self.anchor, "previous_week"),
         )
         self.assertEqual(
-            datetime(2026, 8, 25, 14, 30),
-            implicit_calendar_add_start(self.anchor, time(14, 30)),
+            ("в этом месяце", datetime(2026, 8, 1, 0, 0), datetime(2026, 9, 1, 0, 0)),
+            search_period(self.anchor, "current_month"),
         )
-
+        self.assertEqual(
+            ("в этом году", datetime(2026, 1, 1, 0, 0), datetime(2027, 1, 1, 0, 0)),
+            search_period(self.anchor, "current_year"),
+        )
 
 if __name__ == "__main__":
     unittest.main()

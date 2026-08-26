@@ -29,10 +29,12 @@ DEFAULT_OUTPUT_DIR = ROOT / "build" / "calendar_sft_dataset"
 DEFAULT_TRAIN = (
     DOCS / "calendar_assistant_train_seed.jsonl",
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_train_candidates.jsonl",
+    DOCS / "calendar_assistant_manual_train_v5.jsonl",
 )
 DEFAULT_VALIDATION = (
     DOCS / "calendar_assistant_eval_seed.jsonl",
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_eval_candidates.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v5.jsonl",
 )
 DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout.jsonl",)
 MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "model_manifest.json"

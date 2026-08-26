@@ -32,19 +32,22 @@ weight distribution. A dataset register based on
 [`dataset_provenance.template.json`](../tools/calendar_sft/dataset_provenance.template.json)
 must be completed and reviewed before a real training run.
 
-The current v4 register is
+The last verified register is the archived v4 register
 [`calendar_sft_data_provenance_v4.json`](calendar_sft_data_provenance_v4.json).
-The historical v1, v2 and v3 registers remain immutable. Each register is bound to staged
-training artifacts by SHA-256; changing either JSONL file requires a new review
-and register version.
+It does not approve the current v5 source set. The historical v1, v2 and v3
+registers also remain immutable. Each register is bound to staged training
+artifacts by SHA-256; changing either JSONL file requires a new review and
+register version. A real v5 training run therefore requires a new `VERIFIED`
+register after manual review and staging.
 
 ## Product target
 
-The model's scope is the local calendar protocol already implemented by the
-application:
+The model's scope is the target local calendar protocol. The Android mechanisms
+that will consume the extended contract are specified separately and are not
+implemented by this documentation revision:
 
 ```json
-{"intent":"chat | calendar_search | calendar_add | calendar_update | calendar_delete","reply":"","params":{}}
+{"intent":"chat | calendar_search | calendar_add | calendar_update | calendar_delete | calendar_sum","reply":"","params":{}}
 ```
 
 Training messages use the application system prompt exactly as rendered at
@@ -54,14 +57,26 @@ runtime:
 Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON
 ```
 
-For `calendar_add`, a date omitted by the user is not a missing field. Resolve
-it from that supplied local time: an exact later time is today, while an equal
-or earlier time is tomorrow. Without an exact time, retain today as `date` and
-ask only for the remaining fields. An explicitly named date always wins.
+For every calendar intent, the model emits fields known from the user's request
+and resolvable relative expressions. The only model-owned default is the
+mandatory `calendar_add` date. An explicit date wins; without one, a strictly
+later exact time means today, an earlier or equal exact time means tomorrow,
+and no exact time means today's `date`. The model omits every other unknown
+field, never writes `null`, and never asks the user a question. User-enabled
+defaults, including a possible 60-minute duration, belong only to Android.
+
+`value` is a signed whole number of abstract units without currency or decimal
+notation. `calendar_sum` carries an optional title filter and an exact local
+half-open period when those values are known; the model never calculates or
+prints the aggregate result. The complete field and period rules are defined in
+[`CALENDAR_ASSISTANT_TRAINING_SPEC.md`](CALENDAR_ASSISTANT_TRAINING_SPEC.md), and
+the future client behavior is defined in
+[`CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md`](CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md).
 
 The dataset must cover creation, search, partial fields, relative dates,
-multi-turn corrections, updates to the last event, named-event updates, and
-immediate deletion of one resolved local event. It
+integer values, value removal, aggregate requests, multi-turn corrections,
+updates to the last event, named-event updates, and immediate deletion of one
+resolved local event. It
 must include colloquial Russian forms and occupation contexts without recording
 real users' personal data.
 
@@ -71,8 +86,8 @@ No model may be described as better before an identical, frozen holdout is run
 against the base and adapted checkpoints with the same decoding settings. The
 adapted checkpoint must not reduce strict JSON validity or intent accuracy and
 must improve the exact-parameter score on the calendar holdout. Report each
-intent separately, including `calendar_update` and `calendar_delete`; do not substitute subjective
-chat quality for these measures.
+intent separately, including `calendar_update`, `calendar_delete`, and
+`calendar_sum`; do not substitute subjective chat quality for these measures.
 
 The independent holdout remains excluded from SFT and run selection. Reply text
 is schema-checked for concise Russian wording; `intent` and `params` are scored

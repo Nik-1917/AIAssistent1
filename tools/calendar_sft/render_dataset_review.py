@@ -96,14 +96,14 @@ def render_record(split: str, ordinal: int, item: dict[str, Any]) -> str:
     row = item["row"]
     messages = row["messages"]
     result = [
-        f"### {split}-{ordinal:04d} — {row['category']}",
+        f"### {split}-{ordinal:04d} {row['category']}",
         "",
         f"Источник: `{item['source']}`, строка {item['line']}.",
         "",
         fenced("SYSTEM", messages[0]["content"], "text"),
     ]
     for index, message in enumerate(messages[1:-1], start=1):
-        title = "USER" if index == 1 else f"USER — контекст {index}"
+        title = "USER" if index == 1 else f"USER контекст {index}"
         result.append(fenced(title, message["content"], "text"))
     response = json.loads(messages[-1]["content"])
     result.append(fenced("ОЖИДАЕМЫЙ JSON", json.dumps(response, ensure_ascii=False, indent=2), "json"))
@@ -152,7 +152,7 @@ def write_index(
         rows = reviewed[split]
         counts = Counter(item["row"]["category"] for item in rows)
         lines.extend((
-            f"### {split} — {len(rows)} записей",
+            f"### {split} {len(rows)} записей",
             "",
             "Страницы: " + ", ".join(f"[{Path(page).name}]({page})" for page in pages[split]) + ".",
             "",

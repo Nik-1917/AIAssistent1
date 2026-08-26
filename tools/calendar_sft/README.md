@@ -29,8 +29,11 @@ rights for training and derivative-weight distribution, a recorded reviewer
 decision, and SHA-256 values matching the precise train/validation JSONL files.
 `train_qlora.py` requires this register for every non-dry-run invocation.
 
-The reviewed register for the current clean-room pilot is
+The archived reviewed register is
 [`docs/calendar_sft_data_provenance_v4.json`](../../docs/calendar_sft_data_provenance_v4.json).
+It matches only the earlier v4 artifact hashes. It does not approve the current
+v5 sources or any newly prepared artifacts; v5 needs a separate reviewed
+register with exact new train/validation hashes before training.
 
 Before any dry run, use `verify_source_snapshot.py` to calculate and persist
 SHA-256 for every locked source file. It verifies the source revision contract,
@@ -41,12 +44,19 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-From the repository root, regenerate the candidate rows after changing the
-generator and validate all data without writing anything:
+The v5 additions are manually authored in
+`docs/calendar_assistant_manual_train_v5.jsonl` and
+`docs/calendar_assistant_manual_eval_v5.jsonl`. The retained candidate files
+were manually cleared of old clarification rows. The generator is updated to
+the same contract but must not be run for this revision.
+
+From the repository root, validate all current sources without writing
+artifacts:
 
 ```powershell
-python tools/generate_calendar_training_dataset.py
-python tools/calendar_sft/prepare_dataset.py --check-only
+python -B tools/calendar_sft/test_dataset_contract.py
+python -B tools/calendar_sft/test_search_periods.py
+python -B tools/calendar_sft/prepare_dataset.py --check-only
 ```
 
 Create the ignored artifacts only after reviewing the source rows:
@@ -68,7 +78,21 @@ Every row is normalised to the exact Android temporal system prompt:
 Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON
 ```
 
+The v5 contract adds partial-field extraction without clarification questions,
+integer `value`, explicit `clear_value: true`, and the separate `calendar_sum`
+intent. Every `calendar_add` also carries a model-resolved date: a missing date
+uses today for a later exact time, tomorrow for an earlier or equal exact time,
+and today when no exact time is known. Other defaults and actual Room query
+results remain Android-owned and are not part of SFT responses.
+
+Supervised user text, replies, and string parameters exclude Unicode U+2014,
+U+00AB, and U+00BB. Validation rejects any row that contains them.
+
 ## Staged model dry run
+
+The literal dataset paths in this section are an archived v4 command example.
+Do not run it for the current v5 sources. First create separately reviewed v5
+artifacts; their paths must replace both v4 paths below.
 
 After the clean-room source is explicitly approved and lawfully staged locally
 in a directory containing the locked Safetensors snapshot and a CUDA-compatible
@@ -90,6 +114,9 @@ constructs the QLoRA configuration and rejects silent truncation. It does not
 load model weights, start epochs or require a GPU.
 
 ## Local GTX 1080 Ti pilot
+
+The smoke-test command below is also an archived v4 example. Its v4 provenance
+register does not authorize a smoke test or training run with current v5 data.
 
 The local path is free: it uses the installed NVIDIA driver, not Google Cloud.
 The GTX 1080 Ti is Pascal and the training script selects native FP16 for its
@@ -125,6 +152,10 @@ with batch size 1 and gradient accumulation 16.
 
 Only after both the source lock and a complete data-provenance register are
 approved:
+
+For v5, the sequence below is procedural reference only. Do not use any literal
+v4 register or dataset path; substitute them only after the new v5 artifacts
+have been manually reviewed, hashed, and bound to a `VERIFIED` register.
 
 1. Verify the provenance register against the staged artifacts:
 
@@ -165,5 +196,5 @@ The later cloud target is a Vertex AI CustomJob that runs this package inside a
 reproducible GPU container. Before creating it, explicitly choose a Google Cloud
 project, region, GPU type, budget limit, container image and private storage
 location. Upload only a provenance-approved training corpus and the locked model
-snapshot—never Room databases, real calendar exports, API keys or an APK with
+snapshot never Room databases, real calendar exports, API keys or an APK with
 credentials.

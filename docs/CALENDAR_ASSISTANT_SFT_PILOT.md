@@ -35,6 +35,10 @@ The preparer combines only these fictional, checked-in sources:
 | Validation | eval seed + 300 generated candidates | choose/check a run |
 | Holdout | 43 independent authored cases | final comparison only |
 
+This table records the archived v4 pilot input only. It is not a count or an
+approval of the current manually revised v5 sources; v5 requires its own staged
+artifacts, review, and provenance register.
+
 It rejects duplicate system-and-user prompts within a split and rejects any
 overlap across splits. It normalises legacy candidate system messages to the
 exact compact string emitted by Android:

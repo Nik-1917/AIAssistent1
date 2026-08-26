@@ -15,7 +15,9 @@ import re
 from typing import Any, Iterable
 
 
-INTENTS = frozenset({"chat", "calendar_add", "calendar_search", "calendar_update", "calendar_delete"})
+INTENTS = frozenset(
+    {"chat", "calendar_add", "calendar_search", "calendar_update", "calendar_delete", "calendar_sum"},
+)
 TOP_LEVEL_KEYS = frozenset({"intent", "reply", "params"})
 RUNTIME_SYSTEM_RE = re.compile(
     r"^Сегодня дата и время:(?P<date>\d{4}-\d{2}-\d{2}) "
@@ -37,6 +39,32 @@ ACTION_REPLY_PREFIXES = (
     "Событие изменено:",
     "Событие удалено:",
 )
+FORBIDDEN_GENERIC_REPLIES = frozenset(
+    {
+        "Данные события распознаны.",
+        "Недостаточно данных для выполнения операции.",
+    },
+)
+CLARIFICATION_REPLY_RE = re.compile(
+    r"\?"
+    r"|\b(?:уточните|уточни|укажите|укажи)\b"
+    r"|\b(?:скажите|скажи)\b"
+    r"(?=[^.!?\r\n]*(?:\b(?:что|когда|где|сколько)\b|\bкак\w*\b|"
+    r"\b(?:назван\w*|врем\w*|длительн\w*|дат\w*|период\w*)\b))",
+    re.IGNORECASE,
+)
+CALENDAR_FIELD_REQUEST_RE = re.compile(
+    r"\b(?:назовите|назови|сообщите|сообщи|введите|введи|выберите|выбери|"
+    r"добавьте|добавь|задайте|задай)\b"
+    r"|\b(?:нужно|необходимо|требуется)\s+"
+    r"(?:назвать|указать|сообщить|ввести|выбрать|добавить|задать)\b",
+    re.IGNORECASE,
+)
+SUM_RESULT_REPLY_RE = re.compile(
+    r"\d|\b(?:итог|итого|составля\w*|равн\w*)\b",
+    re.IGNORECASE,
+)
+FORBIDDEN_TEXT_PUNCTUATION_RE = re.compile(r"[\u2014\u00ab\u00bb]")
 
 
 class DatasetContractError(ValueError):
@@ -58,6 +86,12 @@ def _require_string(value: Any, location: str, *, non_empty: bool = False) -> st
 def _require_positive_int(value: Any, location: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         _fail(location, "expected a positive integer")
+    return value
+
+
+def _require_int(value: Any, location: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        _fail(location, "expected an integer")
     return value
 
 
@@ -124,6 +158,16 @@ def _contains_null(value: Any) -> bool:
     return False
 
 
+def _contains_forbidden_text_punctuation(value: Any) -> bool:
+    if isinstance(value, str):
+        return FORBIDDEN_TEXT_PUNCTUATION_RE.search(value) is not None
+    if isinstance(value, dict):
+        return any(_contains_forbidden_text_punctuation(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_forbidden_text_punctuation(item) for item in value)
+    return False
+
+
 def parse_and_validate_assistant_response(content: str, location: str = "assistant.content") -> dict[str, Any]:
     """Parse and validate one strict response object, returning its JSON value."""
 
@@ -136,11 +180,19 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
         _fail(location, "must contain exactly intent, reply, and params")
     if _contains_null(response):
         _fail(location, "must not contain null")
+    if _contains_forbidden_text_punctuation(response):
+        _fail(location, "must not contain forbidden text punctuation")
 
     intent = response["intent"]
     if intent not in INTENTS:
         _fail(f"{location}.intent", f"unsupported intent {intent!r}")
     reply = _require_string(response["reply"], f"{location}.reply", non_empty=True)
+    if reply in FORBIDDEN_GENERIC_REPLIES:
+        _fail(f"{location}.reply", "uses an excluded generic fallback reply")
+    if CLARIFICATION_REPLY_RE.search(reply):
+        _fail(f"{location}.reply", "must not ask the user for clarification")
+    if intent != "chat" and CALENDAR_FIELD_REQUEST_RE.search(reply):
+        _fail(f"{location}.reply", "must not request a missing calendar field")
     if YEAR_RE.search(reply):
         _fail(f"{location}.reply", "must not contain a year")
     if CLOCK_RE.search(reply):
@@ -159,13 +211,15 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
         _validate_search(params, reply, location)
     elif intent == "calendar_delete":
         _validate_delete(params, reply, location)
+    elif intent == "calendar_sum":
+        _validate_sum(params, reply, location)
     else:
         _validate_update(params, reply, location)
     return response
 
 
 def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
-    allowed = {"title", "starts_at", "date", "time", "duration_min"}
+    allowed = {"title", "starts_at", "date", "time", "duration_min", "value"}
     if not set(params).issubset(allowed):
         _fail(f"{location}.params", "contains an unsupported calendar_add field")
     has_starts_at = "starts_at" in params
@@ -176,7 +230,7 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
     if not has_starts_at and not has_date:
         _fail(
             f"{location}.params",
-            "calendar_add must resolve an omitted date to date or starts_at",
+            "calendar_add must contain an explicit or inferred date",
         )
     if "title" in params:
         _require_string(params["title"], f"{location}.params.title", non_empty=True)
@@ -188,6 +242,8 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
         _parse_time(params["time"], f"{location}.params.time")
     if "duration_min" in params:
         _require_positive_int(params["duration_min"], f"{location}.params.duration_min")
+    if "value" in params:
+        _require_int(params["value"], f"{location}.params.value")
     is_complete = (
         "title" in params
         and "duration_min" in params
@@ -206,13 +262,12 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
 
 
 def _validate_search(params: dict[str, Any], reply: str, location: str) -> None:
-    if set(params) != {"query", "range_start", "range_end"}:
-        _fail(f"{location}.params", "calendar_search needs exactly query, range_start, range_end")
-    _require_string(params["query"], f"{location}.params.query")
-    start = _parse_datetime(params["range_start"], f"{location}.params.range_start")
-    end = _parse_datetime(params["range_end"], f"{location}.params.range_end")
-    if start >= end:
-        _fail(f"{location}.params", "range_start must be before range_end")
+    allowed = {"query", "range_start", "range_end"}
+    if not set(params).issubset(allowed):
+        _fail(f"{location}.params", "contains an unsupported calendar_search field")
+    if "query" in params:
+        _require_string(params["query"], f"{location}.params.query")
+    _validate_optional_range(params, f"{location}.params")
     _reject_action_reply_prefix(reply, location, "a calendar_search")
 
 
@@ -224,7 +279,7 @@ def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
     if not isinstance(target, dict) or not isinstance(changes, dict):
         _fail(f"{location}.params", "target and changes must be objects")
     target_allowed = {"query", "range_start", "range_end", "use_last_created"}
-    change_allowed = {"title", "date", "time", "duration_min"}
+    change_allowed = {"title", "date", "time", "duration_min", "value", "clear_value"}
     if not set(target).issubset(target_allowed):
         _fail(f"{location}.params.target", "contains an unsupported target field")
     if not set(changes).issubset(change_allowed):
@@ -235,8 +290,8 @@ def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
         _require_string(target["query"], f"{location}.params.target.query", non_empty=True)
     if has_last_created and target["use_last_created"] is not True:
         _fail(f"{location}.params.target.use_last_created", "must be true when present")
-    if has_query == has_last_created:
-        _fail(f"{location}.params.target", "must identify either query or use_last_created")
+    if has_query and has_last_created:
+        _fail(f"{location}.params.target", "must not combine query and use_last_created")
     has_range_start = "range_start" in target
     has_range_end = "range_end" in target
     if has_range_start != has_range_end:
@@ -256,11 +311,17 @@ def _validate_update(params: dict[str, Any], reply: str, location: str) -> None:
         _parse_time(changes["time"], f"{location}.params.changes.time")
     if "duration_min" in changes:
         _require_positive_int(changes["duration_min"], f"{location}.params.changes.duration_min")
-    if changes:
+    if "value" in changes:
+        _require_int(changes["value"], f"{location}.params.changes.value")
+    if "clear_value" in changes and changes["clear_value"] is not True:
+        _fail(f"{location}.params.changes.clear_value", "must be true when present")
+    if "value" in changes and "clear_value" in changes:
+        _fail(f"{location}.params.changes", "must not combine value and clear_value")
+    if changes and (has_query or has_last_created):
         if not reply.startswith("Событие изменено:"):
             _fail(f"{location}.reply", "an executable calendar_update reply must begin with 'Событие изменено:'")
     else:
-        _reject_action_reply_prefix(reply, location, "a calendar_update without changes")
+        _reject_action_reply_prefix(reply, location, "an incomplete calendar_update")
 
 
 def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:
@@ -279,8 +340,9 @@ def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:
         _fail(f"{location}.params.target.use_last_created", "must be true when present")
     if has_last_in_range and target["use_last_in_range"] is not True:
         _fail(f"{location}.params.target.use_last_in_range", "must be true when present")
-    if sum((has_query, has_last_created, has_last_in_range)) != 1:
-        _fail(f"{location}.params.target", "must identify query, use_last_created, or use_last_in_range")
+    target_count = sum((has_query, has_last_created, has_last_in_range))
+    if target_count > 1:
+        _fail(f"{location}.params.target", "must not combine delete target modes")
     has_range_start = "range_start" in target
     has_range_end = "range_end" in target
     if has_range_start != has_range_end:
@@ -294,8 +356,35 @@ def _validate_delete(params: dict[str, Any], reply: str, location: str) -> None:
             _fail(f"{location}.params.target", "range_start must be before range_end")
     elif has_last_in_range:
         _fail(f"{location}.params.target", "use_last_in_range requires a target range")
-    if not reply.startswith("Событие удалено:"):
-        _fail(f"{location}.reply", "a calendar_delete reply must begin with 'Событие удалено:'")
+    if target_count == 1:
+        if not reply.startswith("Событие удалено:"):
+            _fail(f"{location}.reply", "a calendar_delete reply must begin with 'Событие удалено:'")
+    else:
+        _reject_action_reply_prefix(reply, location, "an incomplete calendar_delete")
+
+
+def _validate_optional_range(params: dict[str, Any], location: str) -> None:
+    has_range_start = "range_start" in params
+    has_range_end = "range_end" in params
+    if has_range_start != has_range_end:
+        _fail(location, "range_start and range_end must be paired")
+    if has_range_start:
+        start = _parse_datetime(params["range_start"], f"{location}.range_start")
+        end = _parse_datetime(params["range_end"], f"{location}.range_end")
+        if start >= end:
+            _fail(location, "range_start must be before range_end")
+
+
+def _validate_sum(params: dict[str, Any], reply: str, location: str) -> None:
+    allowed = {"query", "range_start", "range_end"}
+    if not set(params).issubset(allowed):
+        _fail(f"{location}.params", "contains an unsupported calendar_sum field")
+    if "query" in params:
+        _require_string(params["query"], f"{location}.params.query", non_empty=True)
+    _validate_optional_range(params, f"{location}.params")
+    if SUM_RESULT_REPLY_RE.search(reply):
+        _fail(f"{location}.reply", "must not state a calculated sum result")
+    _reject_action_reply_prefix(reply, location, "a calendar_sum")
 
 
 def normalize_record(record: Any, location: str) -> dict[str, Any]:
@@ -327,6 +416,11 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
             content = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
         elif role != "user":
             _fail(f"{location}.messages[{index}].role", "middle roles must be user")
+        elif FORBIDDEN_TEXT_PUNCTUATION_RE.search(content):
+            _fail(
+                f"{location}.messages[{index}].content",
+                "must not contain forbidden text punctuation",
+            )
         elif CLOCK_RE.search(content):
             _fail(
                 f"{location}.messages[{index}].content",
