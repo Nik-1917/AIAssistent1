@@ -1,0 +1,69 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 local-calendar SFT v5 dataset.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-calendar-sft-v5-20260827",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-08-27",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-08-27: the current v5 train and validation JSONL files belong to AIAssistent1, contain no personal data, and may be used for model training and distribution of derivative weights. No dataset generator was run for this v5 staging."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "567c8a9dba1468b29e22b72c6c2409d37ac158ef2ed07a163bedc3293ca2cc76"
+    },
+    "validation": {
+      "sha256": "2ea4b7f087905b743975d21891a98cccd07e6d117f09abc0e75974f39a05bc42"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_train_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_train_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised for v5",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_eval_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_eval_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised for v5",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

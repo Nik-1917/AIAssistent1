@@ -37,7 +37,7 @@ DEFAULT_VALIDATION = (
     DOCS / "calendar_assistant_manual_eval_v5.jsonl",
 )
 DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout.jsonl",)
-MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "model_manifest.json"
+MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "clean_room_qwen3_source_lock.json"
 
 
 def parse_args() -> argparse.Namespace:

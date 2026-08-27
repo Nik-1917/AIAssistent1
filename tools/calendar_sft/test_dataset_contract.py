@@ -6,6 +6,7 @@ import json
 import unittest
 
 from dataset_contract import DatasetContractError, normalize_record, parse_and_validate_assistant_response
+from prepare_dataset import MODEL_MANIFEST
 
 
 def response(reply: str) -> str:
@@ -24,6 +25,13 @@ def response(reply: str) -> str:
 
 
 class ReplyContractTest(unittest.TestCase):
+    def test_preparer_uses_the_verified_qwen3_source_lock(self) -> None:
+        manifest = json.loads(MODEL_MANIFEST.read_text(encoding="utf-8"))
+
+        self.assertEqual("clean_room_qwen3_source_lock.json", MODEL_MANIFEST.name)
+        self.assertEqual("Qwen/Qwen3-4B-Instruct-2507", manifest["source"]["repository"])
+        self.assertEqual("VERIFIED", manifest["license"]["status"])
+
     def test_complete_calendar_reply_accepts_words_for_time(self) -> None:
         parsed = parse_and_validate_assistant_response(
             response("Событие создано: Встреча завтра, в девять часов тридцать минут утра."),
