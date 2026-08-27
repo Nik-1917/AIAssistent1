@@ -456,6 +456,14 @@ def message_signature(row: dict[str, Any]) -> str:
     return json.dumps(signature, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def normalized_user_prompt(row: dict[str, Any]) -> str:
+    """Normalize user wording independently of the changing temporal system context."""
+
+    messages = row["messages"]
+    text = " ".join(message["content"] for message in messages[1:-1]).casefold()
+    return " ".join("".join(character if character.isalnum() else " " for character in text).split())
+
+
 def file_sha256(path: Path) -> str:
     digest = sha256()
     with path.open("rb") as source:

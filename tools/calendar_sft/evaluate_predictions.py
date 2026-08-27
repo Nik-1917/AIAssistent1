@@ -4,7 +4,8 @@ Predictions are JSONL objects with exactly two keys:
     {"case_id":"H001","output":"{...strict assistant JSON...}"}
 
 The scorer intentionally does not compare the wording of `reply`; it validates
-reply-format rules and compares the executable intent and params exactly.
+reply-format rules, reports exact executable params, and separately treats only
+event-title letter case as semantically equivalent.
 """
 
 from __future__ import annotations
@@ -58,6 +59,23 @@ def percent(numerator: int, denominator: int) -> float:
     return round(100.0 * numerator / denominator, 2) if denominator else 0.0
 
 
+def normalize_title_case(value: Any) -> Any:
+    """Return params with only fields named `title` case-folded."""
+
+    if isinstance(value, dict):
+        return {
+            key: item.casefold() if key == "title" and isinstance(item, str) else normalize_title_case(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [normalize_title_case(item) for item in value]
+    return value
+
+
+def params_semantically_equal(actual: dict[str, Any], expected: dict[str, Any]) -> bool:
+    return normalize_title_case(actual) == normalize_title_case(expected)
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -98,20 +116,22 @@ def main() -> int:
         )
         intent_match = actual["intent"] == expected["intent"]
         params_match = actual["params"] == expected["params"]
+        semantic_params_match = params_semantically_equal(actual["params"], expected["params"])
         if intent_match:
             intent_match_count += 1
             totals["intent_match"] += 1
         if params_match:
             params_match_count += 1
             totals["params_match"] += 1
-        if intent_match and params_match:
+        if intent_match and semantic_params_match:
             semantic_pass_count += 1
             totals["semantic_pass"] += 1
-        else:
+        if not intent_match or not params_match:
             errors.append(
                 {
                     "case_id": case_id,
                     "error": "intent or params differ from expected",
+                    "semantic_pass": str(intent_match and semantic_params_match).lower(),
                     "expected_intent": expected["intent"],
                     "actual_intent": actual["intent"],
                     "expected_params": json.dumps(expected["params"], ensure_ascii=False, sort_keys=True),

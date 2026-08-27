@@ -11,6 +11,7 @@ import argparse
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 import json
+import math
 from pathlib import Path
 import random
 import sys
@@ -22,7 +23,7 @@ from verify_source_snapshot import verify_staged_source
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MODEL_MANIFEST_PATH = ROOT / "tools" / "calendar_sft" / "model_manifest.json"
+DEFAULT_MODEL_MANIFEST_PATH = ROOT / "tools" / "calendar_sft" / "clean_room_qwen3_source_lock.json"
 LORA_TARGET_MODULES = (
     "q_proj",
     "k_proj",
@@ -53,7 +54,7 @@ def parse_args() -> argparse.Namespace:
         "--model-manifest",
         type=Path,
         default=DEFAULT_MODEL_MANIFEST_PATH,
-        help="source-lock JSON; defaults to the archived RefalMachine audit lock",
+        help="source-lock JSON; defaults to the verified clean-room Qwen3 lock",
     )
     parser.add_argument("--model-dir", required=True, type=Path, help="locked BF16 Safetensors snapshot")
     parser.add_argument("--train-file", required=True, type=Path)
@@ -112,6 +113,22 @@ def require_pilot_values(args: argparse.Namespace) -> PilotConfig:
     if values.lora_rank <= 0 or values.lora_alpha <= 0 or not 0 <= values.lora_dropout < 1:
         raise DatasetContractError("invalid LoRA parameters")
     return values
+
+
+def optimizer_steps_for_epochs(
+    train_rows: int,
+    per_device_batch_size: int,
+    gradient_accumulation_steps: int,
+    epochs: float,
+) -> int:
+    """Return optimizer steps without dropping an epoch's final partial accumulation."""
+    if train_rows <= 0:
+        raise DatasetContractError("training data must contain at least one row")
+    if per_device_batch_size <= 0 or gradient_accumulation_steps <= 0 or epochs <= 0:
+        raise DatasetContractError("batch size, gradient accumulation, and epochs must be positive")
+    batches_per_epoch = math.ceil(train_rows / per_device_batch_size)
+    updates_per_epoch = math.ceil(batches_per_epoch / gradient_accumulation_steps)
+    return math.ceil(updates_per_epoch * epochs)
 
 
 def tokenize_messages(tokenizer: Any, messages: list[dict[str, str]], max_seq_length: int) -> dict[str, list[int]]:
@@ -260,6 +277,12 @@ def main() -> int:
         print(f"Tokenization failed: {error}", file=sys.stderr)
         return 2
     token_lengths = [len(item["input_ids"]) for item in train_inputs + validation_inputs]
+    expected_optimizer_steps = optimizer_steps_for_epochs(
+        len(train_inputs),
+        pilot.per_device_batch_size,
+        pilot.gradient_accumulation_steps,
+        pilot.epochs,
+    )
     if args.dry_run:
         print(
             json.dumps(
@@ -268,6 +291,7 @@ def main() -> int:
                     "validation_rows": len(validation_inputs),
                     "max_tokens": max(token_lengths),
                     "min_tokens": min(token_lengths),
+                    "optimizer_steps": expected_optimizer_steps,
                     "chat_template_sha256": sha256(tokenizer.chat_template.encode("utf-8")).hexdigest(),
                     "qlora_target_modules": list(qlora_config.target_modules),
                 },
@@ -357,6 +381,7 @@ def main() -> int:
     training_args = TrainingArguments(
         output_dir=str(args.output_dir),
         num_train_epochs=pilot.epochs,
+        max_steps=expected_optimizer_steps,
         per_device_train_batch_size=pilot.per_device_batch_size,
         per_device_eval_batch_size=pilot.per_device_batch_size,
         gradient_accumulation_steps=pilot.gradient_accumulation_steps,
@@ -383,6 +408,13 @@ def main() -> int:
         tokenizer=tokenizer,
     )
     training_result = trainer.train()
+    if trainer.state.global_step != expected_optimizer_steps:
+        print(
+            "Training failed: completed "
+            f"{trainer.state.global_step} optimizer steps, expected {expected_optimizer_steps}.",
+            file=sys.stderr,
+        )
+        return 2
     evaluation_result = trainer.evaluate()
     adapter_dir = args.output_dir / "adapter"
     model.save_pretrained(adapter_dir, safe_serialization=True)
@@ -395,6 +427,8 @@ def main() -> int:
         {
             "train_metrics": training_result.metrics,
             "evaluation_metrics": evaluation_result,
+            "planned_optimizer_steps": expected_optimizer_steps,
+            "completed_optimizer_steps": trainer.state.global_step,
             "adapter_directory": "adapter",
         },
         manifest_path,

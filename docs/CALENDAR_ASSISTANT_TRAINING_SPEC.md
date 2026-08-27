@@ -87,6 +87,8 @@ events; it is not a placeholder for an unknown query.
 - `duration_min` is a positive integer number of minutes.
 - `value` is an integer number of abstract event-value units. It has no
   currency and no fractional form. Omit it when the user did not supply it.
+  If the user supplies a fractional value, do not round or truncate it and do
+  not emit `value`, because the schema cannot represent that value exactly.
 - An explicitly named absolute or relative date always wins. Resolve relative
   wording against the supplied local date-time; never replace an explicit date
   because its event time is in the past.
@@ -111,6 +113,10 @@ events; it is not a placeholder for an unknown query.
 
 - Allowed parameters are only `query`, `range_start`, and `range_end`.
 - `query` is a short title keyword/name, or `""` for all events.
+- Build `query` from the user's named event wording. Remove command words,
+  temporal wording, and generic calendar nouns. Keep the shortest useful
+  event-title phrase and do not invent a synonym. A named event class is never
+  converted to the all-events wildcard.
 - Both boundaries are paired local timestamps in `YYYY-MM-DDTHH:MM` when the
   user supplied a resolvable period. If the period is unknown, omit both and
   let Android apply an enabled default period or keep the command incomplete.
@@ -153,6 +159,10 @@ events; it is not a placeholder for an unknown query.
 - `use_last_created`: `true` only when the user did not name a particular event.
   It means the last event added to the local calendar, not the last chat message
   or last modified event.
+
+When the user names an event, extract a short useful title phrase with the same
+rules as `calendar_search.query`. A named target always takes priority over
+`use_last_created`.
 
 `changes` contains only the replacement fields that the user actually gave:
 
@@ -325,6 +335,17 @@ context and technical JSON parameters.
 - Never mention a year in `reply`.
 - Write known event times in words in `reply`; retain ISO digits only in JSON
   params.
+
+### Exact time without a daypart
+
+A spoken hour from one through eleven without a named daypart is interpreted
+literally as a morning clock hour. For example, `в шесть сорок` is `06:40`.
+Twelve without a daypart is `12:00`. Explicit wording such as `дня`, `вечера`,
+or `ночи` overrides this literal rule.
+
+An exact clock expression and a relative offset are different operations. For
+example, `в три часа` is an exact clock time while `через три часа` is an offset
+from the supplied current local time. Never treat them as synonyms.
 - `Событие создано:`, `Событие изменено:`, and `Событие удалено:` are reserved
   only for executable add, update, and delete commands respectively. Chat,
   search, sum, and incomplete commands must not use them.
@@ -366,6 +387,13 @@ system message before this one.
   `calendar_assistant_manual_eval_v5.jsonl` contain the manually authored v5
   additions for omitted fields, implicit add dates, integer `value`,
   `clear_value`, and `calendar_sum`.
+- `calendar_assistant_manual_train_v6.jsonl` and
+  `calendar_assistant_manual_eval_v6.jsonl` contain the manually authored v6
+  contrastive additions defined in `CALENDAR_ASSISTANT_V6_MANUAL_AUDIT.md`.
+  They reinforce exact versus relative time, omitted-field discipline,
+  durations, integer values, aggregate periods, target extraction, and
+  command-versus-how-to intent choice. These files are written and reviewed
+  line by line. The dataset generator is not used to create them.
 - The checked-in files under `docs/calendar_assistant_candidates/` retain only
   the previously valid candidate rows. Old rows whose assistant reply requested
   clarification were deleted as complete JSONL records.

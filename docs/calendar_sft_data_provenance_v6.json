@@ -1,0 +1,85 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 local-calendar SFT v6 dataset.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-calendar-sft-v6-20260827",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-08-27",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-08-27 covers project train and validation data, model training, and derivative-weight distribution. The v6 additions were manually authored in the same project task from fictional calendar scenarios. No dataset generator was run for v6 staging."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "09fa78dc6a4d715584caaa72b143380c2e2c799e0c1eb64f3a3a825bfc0d884e"
+    },
+    "validation": {
+      "sha256": "57bb3b42d86385ab0ef9798ad0c16f2e8fa1870826b9abdbfc2576a1d39d402c"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_train_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_train_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised before v6",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v6.jsonl",
+      "rights_evidence": "Manually authored from fictional calendar scenarios in the approved AIAssistent1 project task.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_eval_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_eval_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised before v6",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in this register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v6.jsonl",
+      "rights_evidence": "Manually authored from fictional calendar scenarios in the approved AIAssistent1 project task.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

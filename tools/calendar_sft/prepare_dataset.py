@@ -20,6 +20,7 @@ from dataset_contract import (
     file_sha256,
     load_jsonl,
     message_signature,
+    normalized_user_prompt,
 )
 
 
@@ -30,11 +31,13 @@ DEFAULT_TRAIN = (
     DOCS / "calendar_assistant_train_seed.jsonl",
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_train_candidates.jsonl",
     DOCS / "calendar_assistant_manual_train_v5.jsonl",
+    DOCS / "calendar_assistant_manual_train_v6.jsonl",
 )
 DEFAULT_VALIDATION = (
     DOCS / "calendar_assistant_eval_seed.jsonl",
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_eval_candidates.jsonl",
     DOCS / "calendar_assistant_manual_eval_v5.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v6.jsonl",
 )
 DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout.jsonl",)
 MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "clean_room_qwen3_source_lock.json"
@@ -107,6 +110,18 @@ def assert_holdout_ids(rows: list[dict[str, Any]]) -> None:
         raise DatasetContractError("holdout: case_id values must be unique")
 
 
+def exclude_holdout_prompt_overlaps(
+    rows: list[dict[str, Any]],
+    holdout_prompts: set[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    kept: list[dict[str, Any]] = []
+    excluded: list[dict[str, Any]] = []
+    for row in rows:
+        destination = excluded if normalized_user_prompt(row) in holdout_prompts else kept
+        destination.append(row)
+    return kept, excluded
+
+
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     content = "".join(
         json.dumps(row, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n"
@@ -121,6 +136,9 @@ def main() -> int:
         train, train_sources = load_split(DEFAULT_TRAIN, "train")
         validation, validation_sources = load_split(DEFAULT_VALIDATION, "validation")
         holdout, holdout_sources = load_split(DEFAULT_HOLDOUT, "holdout")
+        holdout_prompts = {normalized_user_prompt(row) for row in holdout}
+        train, excluded_train = exclude_holdout_prompt_overlaps(train, holdout_prompts)
+        validation, excluded_validation = exclude_holdout_prompt_overlaps(validation, holdout_prompts)
         train_signatures = assert_no_duplicates(train, "train")
         validation_signatures = assert_no_duplicates(validation, "validation")
         holdout_signatures = assert_no_duplicates(holdout, "holdout")
@@ -136,6 +154,10 @@ def main() -> int:
         "train": len(train),
         "validation": len(validation),
         "holdout": len(holdout),
+        "excluded_holdout_prompt_overlaps": {
+            "train": len(excluded_train),
+            "validation": len(excluded_validation),
+        },
     }
     if args.check_only:
         print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
@@ -159,6 +181,11 @@ def main() -> int:
         "format_version": 1,
         "runtime_system_prompt": "Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON",
         "model_manifest_sha256": file_sha256(MODEL_MANIFEST),
+        "holdout_prompt_exclusion": {
+            "normalization": "casefold_alphanumeric_words",
+            "train_rows": len(excluded_train),
+            "validation_rows": len(excluded_validation),
+        },
         "splits": {
             "train": {
                 "rows": len(train),
