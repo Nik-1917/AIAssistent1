@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from calendar import isleap
 from collections import Counter
 from datetime import datetime, timedelta
 import json
@@ -31,12 +32,14 @@ EXPECTED_TRAIN_CATEGORIES = {
     "manual_v7_clock_implicit_date": 12,
     "manual_v7_duration_day_units": 8,
     "manual_v7_offset_day_units": 8,
+    "manual_v7_calendar_leap_boundary": 16,
 }
 
 EXPECTED_VALIDATION_CATEGORIES = {
     "manual_v7_eval_clock_24h": 24,
     "manual_v7_eval_clock_semantics": 8,
     "manual_v7_eval_day_units": 8,
+    "manual_v7_eval_calendar_leap_boundary": 8,
 }
 
 PRE_V7_SOURCE_HASHES = {
@@ -162,6 +165,22 @@ def event_start(row: dict[str, object]) -> datetime:
     return datetime.fromisoformat(assistant_payload(row)["params"]["starts_at"])
 
 
+def temporal_fields(row: dict[str, object]) -> tuple[str, ...]:
+    payload = assistant_payload(row)
+    intent = payload["intent"]
+    params = payload["params"]
+    if intent == "calendar_add":
+        return (params["starts_at"] if "starts_at" in params else params["date"],)
+    if intent in {"calendar_search", "calendar_sum"}:
+        return (params["range_start"], params["range_end"])
+    if intent == "calendar_update":
+        return (params["changes"]["date"],)
+    if intent == "calendar_delete":
+        target = params["target"]
+        return (target["range_start"], target["range_end"])
+    raise AssertionError(f"Unexpected leap-boundary intent: {intent!r}")
+
+
 class ManualV7DatasetTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -173,8 +192,8 @@ class ManualV7DatasetTest(unittest.TestCase):
         return [row for row in source if row["category"] == category]
 
     def test_exact_manual_row_counts_and_category_quotas(self) -> None:
-        self.assertEqual(108, len(self.train))
-        self.assertEqual(40, len(self.validation))
+        self.assertEqual(124, len(self.train))
+        self.assertEqual(48, len(self.validation))
         self.assertEqual(EXPECTED_TRAIN_CATEGORIES, dict(Counter(row["category"] for row in self.train)))
         self.assertEqual(
             EXPECTED_VALIDATION_CATEGORIES,
@@ -325,6 +344,69 @@ class ManualV7DatasetTest(unittest.TestCase):
         for row, hours in zip(validation_rows, (24, 48, 24, 48)):
             with self.subTest(user=user_text(row)):
                 self.assertEqual(timedelta(hours=hours), event_start(row) - system_now(row))
+
+    def test_gregorian_leap_boundaries_are_exact_and_balanced(self) -> None:
+        train_rows = self.rows(self.train, "manual_v7_calendar_leap_boundary")
+        validation_rows = self.rows(
+            self.validation,
+            "manual_v7_eval_calendar_leap_boundary",
+        )
+        expected_train = (
+            ("calendar_add", ("2024-02-29T07:30",)),
+            ("calendar_add", ("2023-03-01T07:30",)),
+            ("calendar_add", ("2032-02-29T18:00",)),
+            ("calendar_add", ("2031-03-01T18:00",)),
+            ("calendar_add", ("2020-03-01",)),
+            ("calendar_add", ("2019-03-02",)),
+            ("calendar_add", ("2000-02-29T09:00",)),
+            ("calendar_add", ("2100-03-01T09:00",)),
+            ("calendar_search", ("2048-02-29T00:00", "2048-03-01T00:00")),
+            ("calendar_search", ("2047-03-01T00:00", "2047-03-02T00:00")),
+            ("calendar_sum", ("2024-03-01T00:00", "2024-03-02T00:00")),
+            ("calendar_sum", ("2023-03-01T00:00", "2023-03-02T00:00")),
+            ("calendar_update", ("2052-02-29",)),
+            ("calendar_update", ("2051-03-01",)),
+            ("calendar_delete", ("2060-02-29T00:00", "2060-03-01T00:00")),
+            ("calendar_delete", ("2059-03-01T00:00", "2059-03-02T00:00")),
+        )
+        expected_validation = (
+            ("calendar_add", ("2036-02-29T14:00",)),
+            ("calendar_add", ("2035-03-01T14:00",)),
+            ("calendar_add", ("2035-03-01T08:00",)),
+            ("calendar_add", ("2036-03-01T08:00",)),
+            ("calendar_search", ("2040-02-29T00:00", "2040-03-01T00:00")),
+            ("calendar_sum", ("2039-03-01T00:00", "2039-03-02T00:00")),
+            ("calendar_update", ("2044-02-29",)),
+            ("calendar_delete", ("2043-03-01T00:00", "2043-03-02T00:00")),
+        )
+
+        self.assertEqual(
+            expected_train,
+            tuple((assistant_payload(row)["intent"], temporal_fields(row)) for row in train_rows),
+        )
+        self.assertEqual(
+            expected_validation,
+            tuple(
+                (assistant_payload(row)["intent"], temporal_fields(row))
+                for row in validation_rows
+            ),
+        )
+        self.assertEqual(8, sum(isleap(system_now(row).year) for row in train_rows))
+        self.assertEqual(
+            4,
+            sum(isleap(system_now(row).year) for row in validation_rows),
+        )
+        for row in train_rows + validation_rows:
+            reply = assistant_payload(row)["reply"].casefold()
+            user = user_text(row)
+            with self.subTest(user=user):
+                if "послезавтра" in user:
+                    self.assertIn("послезавтра", reply)
+                elif "через два дня" in user:
+                    self.assertIn("через два дня", reply)
+                else:
+                    self.assertIn("завтра", user)
+                    self.assertIn("завтра", reply)
 
     def test_24_00_is_never_used_as_a_clock_value(self) -> None:
         for row in self.train + self.validation:

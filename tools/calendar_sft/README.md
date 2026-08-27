@@ -45,13 +45,15 @@ plus byte sizes for every required file; verification fails on any mismatch.
 ## Local, no-cost preparation
 
 The reviewed source history is retained in the manually authored v5 and v6
-JSONL files. The v7 clock additions are manually authored in
-`docs/calendar_assistant_manual_train_v7.jsonl` and
+JSONL files. The v7 clock and Gregorian calendar additions are manually
+authored in `docs/calendar_assistant_manual_train_v7.jsonl` and
 `docs/calendar_assistant_manual_eval_v7.jsonl`. They teach the fixed `00`
 through `23` clock vocabulary, daypart equivalents, explicit-date priority,
 implicit today-or-tomorrow selection, whole-hour durations, and 24-hour or
-48-hour day offsets. The retained candidate files are unchanged. The generator
-source is synchronized with the same rules but must not be run for v7.
+48-hour day offsets. They also contain balanced leap and non-leap boundary
+examples for add, search, sum, update, and delete operations. The retained
+candidate and holdout files are unchanged. The generator source is synchronized
+with the same rules but must not be run for v7.
 
 From the repository root, validate all current sources without writing
 artifacts:

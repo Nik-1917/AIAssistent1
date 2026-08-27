@@ -242,6 +242,27 @@ Every request supplies the current local date-time and IANA time-zone ID.
 Resolve relative expressions in that supplied zone. The application then
 interprets returned local timestamps in its system zone.
 
+### Gregorian calendar and leap-year boundaries
+
+Resolve every relative date with the Gregorian calendar. A year divisible by
+4 is a leap year, except that a year divisible by 100 is not a leap year unless
+it is also divisible by 400. February has 29 days in a leap year and 28 days in
+all other years. Therefore, 2000 is a leap year and 2100 is not a leap year.
+
+Calendar words advance local calendar dates, not an assumed fixed-length
+February. For example:
+
+- from 28 February 2024, `завтра` is 29 February 2024;
+- from 28 February 2024, `послезавтра` is 1 March 2024;
+- from 29 February 2024, `завтра` is 1 March 2024;
+- from 28 February 2023, `завтра` is 1 March 2023.
+
+Apply these boundaries consistently to `date`, `starts_at`, update destination
+dates, and search, sum, update-source, or delete-target ranges. A one-day range
+that selects 29 February 2024 starts at `2024-02-29T00:00` and ends at
+`2024-03-01T00:00`. The relative wording in `reply` must describe the same
+calendar date as the technical fields in `params`.
+
 ### Month vocabulary and offsets
 
 Use the ordinary calendar month numbering:
@@ -484,6 +505,12 @@ system message before this one.
   durations, integer values, aggregate periods, target extraction, and
   command-versus-how-to intent choice. These files are written and reviewed
   line by line. The dataset generator is not used to create them.
+- `calendar_assistant_manual_train_v7.jsonl` and
+  `calendar_assistant_manual_eval_v7.jsonl` contain manually authored clock,
+  day-unit, and Gregorian leap-year boundary additions. Leap-year examples are
+  paired with non-leap contrasts and cover add timestamps, add dates, search
+  and sum ranges, update destinations, and delete target ranges. Existing
+  holdout rows are not copied into these files.
 - The checked-in files under `docs/calendar_assistant_candidates/` retain only
   the previously valid candidate rows. Old rows whose assistant reply requested
   clarification were deleted as complete JSONL records.

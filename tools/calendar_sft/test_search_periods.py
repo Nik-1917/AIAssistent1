@@ -50,6 +50,39 @@ class SearchPeriodTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.assertEqual(value, search_period(self.anchor, kind))
 
+    def test_future_relative_days_obey_gregorian_leap_boundaries(self) -> None:
+        cases = (
+            (
+                datetime(2024, 2, 28, 14, 30),
+                "tomorrow",
+                ("завтра", datetime(2024, 2, 29, 0, 0), datetime(2024, 3, 1, 0, 0)),
+            ),
+            (
+                datetime(2023, 2, 28, 14, 30),
+                "tomorrow",
+                ("завтра", datetime(2023, 3, 1, 0, 0), datetime(2023, 3, 2, 0, 0)),
+            ),
+            (
+                datetime(2032, 2, 27, 14, 30),
+                "after_tomorrow",
+                ("послезавтра", datetime(2032, 2, 29, 0, 0), datetime(2032, 3, 1, 0, 0)),
+            ),
+            (
+                datetime(2000, 2, 28, 14, 30),
+                "tomorrow",
+                ("завтра", datetime(2000, 2, 29, 0, 0), datetime(2000, 3, 1, 0, 0)),
+            ),
+            (
+                datetime(2100, 2, 28, 14, 30),
+                "tomorrow",
+                ("завтра", datetime(2100, 3, 1, 0, 0), datetime(2100, 3, 2, 0, 0)),
+            ),
+        )
+
+        for anchor, kind, expected in cases:
+            with self.subTest(anchor=anchor, kind=kind):
+                self.assertEqual(expected, search_period(anchor, kind))
+
     def test_implicit_add_time_later_than_now_uses_today(self) -> None:
         self.assertEqual(
             datetime(2026, 8, 24, 18, 0),
@@ -69,6 +102,19 @@ class SearchPeriodTests(unittest.TestCase):
             datetime(2027, 1, 1, 23, 20),
             implicit_calendar_add_start(anchor, datetime(2026, 12, 31, 23, 20).time()),
         )
+
+    def test_implicit_add_tomorrow_obeys_gregorian_leap_boundaries(self) -> None:
+        event_time = time(8, 0)
+        expected = {
+            datetime(2024, 2, 28, 12, 0): datetime(2024, 2, 29, 8, 0),
+            datetime(2023, 2, 28, 12, 0): datetime(2023, 3, 1, 8, 0),
+            datetime(2000, 2, 28, 12, 0): datetime(2000, 2, 29, 8, 0),
+            datetime(2100, 2, 28, 12, 0): datetime(2100, 3, 1, 8, 0),
+        }
+
+        for anchor, start in expected.items():
+            with self.subTest(anchor=anchor):
+                self.assertEqual(start, implicit_calendar_add_start(anchor, event_time))
 
     def test_clock_vocabulary_contains_exactly_00_through_23(self) -> None:
         self.assertEqual(set(range(24)), set(CLOCK_HOURS_24))
