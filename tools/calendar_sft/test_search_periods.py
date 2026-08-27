@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
 import sys
 import unittest
@@ -10,7 +10,15 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generate_calendar_training_dataset import implicit_calendar_add_start, search_period  # noqa: E402
+from generate_calendar_training_dataset import (  # noqa: E402
+    CLOCK_HOURS_24,
+    DAY_UNIT_HOURS,
+    hour_duration_minutes,
+    implicit_calendar_add_start,
+    relative_hour_start,
+    search_period,
+    time_words_24,
+)
 
 
 class SearchPeriodTests(unittest.TestCase):
@@ -61,6 +69,53 @@ class SearchPeriodTests(unittest.TestCase):
             datetime(2027, 1, 1, 23, 20),
             implicit_calendar_add_start(anchor, datetime(2026, 12, 31, 23, 20).time()),
         )
+
+    def test_clock_vocabulary_contains_exactly_00_through_23(self) -> None:
+        self.assertEqual(set(range(24)), set(CLOCK_HOURS_24))
+        self.assertEqual("ноль часов", CLOCK_HOURS_24[0])
+        self.assertEqual("шесть часов", CLOCK_HOURS_24[6])
+        self.assertEqual("восемнадцать часов", CLOCK_HOURS_24[18])
+        self.assertEqual("двадцать три часа", CLOCK_HOURS_24[23])
+
+    def test_clock_words_are_resolved_before_the_date_boundary(self) -> None:
+        morning = time(6, 40)
+        evening = time(18, 40)
+
+        self.assertEqual("в шесть часов сорок минут", time_words_24(morning))
+        self.assertEqual("в восемнадцать часов сорок минут", time_words_24(evening))
+        self.assertEqual(
+            datetime(2026, 8, 25, 6, 40),
+            implicit_calendar_add_start(self.anchor, morning),
+        )
+        self.assertEqual(
+            datetime(2026, 8, 24, 18, 40),
+            implicit_calendar_add_start(self.anchor, evening),
+        )
+
+    def test_day_units_have_fixed_hour_and_minute_equivalents(self) -> None:
+        self.assertEqual(24, DAY_UNIT_HOURS["сутки"])
+        self.assertEqual(24, DAY_UNIT_HOURS["одни сутки"])
+        self.assertEqual(48, DAY_UNIT_HOURS["двое суток"])
+        self.assertEqual(1440, hour_duration_minutes(24))
+        self.assertEqual(2880, hour_duration_minutes(48))
+
+    def test_relative_hour_offsets_cross_date_month_and_year_boundaries(self) -> None:
+        self.assertEqual(
+            datetime(2028, 3, 1, 22, 15),
+            relative_hour_start(datetime(2028, 2, 29, 22, 15), 24),
+        )
+        self.assertEqual(
+            datetime(2029, 1, 1, 20, 40),
+            relative_hour_start(datetime(2028, 12, 30, 20, 40), 48),
+        )
+
+    def test_hour_duration_and_offset_reject_non_positive_values(self) -> None:
+        for value in (0, -1, True):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    hour_duration_minutes(value)
+                with self.assertRaises(ValueError):
+                    relative_hour_start(self.anchor, value)
 
     def test_one_month_searches_the_target_calendar_day(self) -> None:
         anchor = datetime(2030, 8, 28, 14, 30)

@@ -47,8 +47,25 @@ HOURS = {
     20: "восемь часов вечера", 21: "девять часов вечера", 22: "десять часов вечера",
     23: "одиннадцать часов вечера",
 }
+CLOCK_HOURS_24 = {
+    0: "ноль часов", 1: "один час", 2: "два часа", 3: "три часа",
+    4: "четыре часа", 5: "пять часов", 6: "шесть часов", 7: "семь часов",
+    8: "восемь часов", 9: "девять часов", 10: "десять часов", 11: "одиннадцать часов",
+    12: "двенадцать часов", 13: "тринадцать часов", 14: "четырнадцать часов",
+    15: "пятнадцать часов", 16: "шестнадцать часов", 17: "семнадцать часов",
+    18: "восемнадцать часов", 19: "девятнадцать часов", 20: "двадцать часов",
+    21: "двадцать один час", 22: "двадцать два часа", 23: "двадцать три часа",
+}
+DAY_UNIT_HOURS = {
+    "сутки": 24,
+    "одни сутки": 24,
+    "двое суток": 48,
+    "двадцать четыре часа": 24,
+    "сорок восемь часов": 48,
+}
 MINUTES = {0: "", 5: " пять минут", 15: " пятнадцать минут", 20: " двадцать минут", 30: " тридцать минут", 40: " сорок минут", 45: " сорок пять минут"}
-TIMES = (time(8, 0), time(9, 30), time(10, 15), time(11, 20), time(12, 0), time(14, 0), time(15, 45), time(18, 30), time(19, 0))
+CLOCK_MINUTES = (0, 5, 15, 20, 30, 40, 45)
+TIMES = tuple(time(hour, CLOCK_MINUTES[hour % len(CLOCK_MINUTES)]) for hour in range(24))
 DURATIONS = (15, 30, 45, 60, 90, 120)
 VALUES = (-20, 0, 5, 12, 25, 50, 100, 250)
 
@@ -93,6 +110,22 @@ def implicit_calendar_add_start(anchor: datetime, event_time: time) -> datetime:
     current_time = anchor.time().replace(second=0, microsecond=0)
     event_date = anchor.date() if event_time > current_time else anchor.date() + timedelta(days=1)
     return datetime.combine(event_date, event_time)
+
+
+def hour_duration_minutes(hours: int) -> int:
+    """Convert a positive whole-hour duration to the integer minute field."""
+
+    if isinstance(hours, bool) or not isinstance(hours, int) or hours <= 0:
+        raise ValueError("hours must be a positive integer")
+    return hours * 60
+
+
+def relative_hour_start(anchor: datetime, hours: int) -> datetime:
+    """Resolve an elapsed whole-hour offset from the supplied local timestamp."""
+
+    if isinstance(hours, bool) or not isinstance(hours, int) or hours <= 0:
+        raise ValueError("hours must be a positive integer")
+    return anchor + timedelta(hours=hours)
 
 
 def add_months(value: date, months: int) -> date:
@@ -143,6 +176,12 @@ def time_words(value: time) -> str:
     period = hour.rsplit(" ", 1)[-1]
     hour_without_period = hour[: -(len(period) + 1)]
     return f"в {hour_without_period}{minute} {period}"
+
+
+def time_words_24(value: time) -> str:
+    """Spell one exact 00-through-23 clock value without a daypart alias."""
+
+    return f"в {CLOCK_HOURS_24[value.hour]}{MINUTES[value.minute]}"
 
 
 def clock_words(value: time) -> str:
@@ -843,7 +882,7 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
     rows = []
     for index in range(start_index, start_index + total):
         today = anchor.date()
-        variant = index % 16
+        variant = index % 20
         if variant == 0:
             event_date = today + timedelta(days=2)
             event_time = time(6, 40)
@@ -1010,8 +1049,8 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
                 },
             )
             category = "reinforcement_delete_last_in_range"
-        else:
-            default_case = (index // 16) % 3
+        elif variant == 15:
+            default_case = (index // 20) % 3
             if default_case == 0:
                 title = "Проверка отчёта"
                 event_time = time(18, 30)
@@ -1040,6 +1079,62 @@ def make_error_reinforcement(anchor: datetime, total: int, start_index: int = 0)
                     "duration_min": 60 if default_case != 2 else 45,
                 },
             )
+        elif variant == 16:
+            event_date = today + timedelta(days=2)
+            event_time = time(index % 24, 0)
+            title = "Проверка часового эталона"
+            user = f"Добавь послезавтра {time_words_24(event_time)} проверку часового эталона."
+            assistant = response(
+                "calendar_add",
+                f"Проверка часового эталона назначена послезавтра {time_words_24(event_time)}.",
+                {"title": title, "starts_at": local_stamp(datetime.combine(event_date, event_time))},
+            )
+            category = "reinforcement_add_clock_24h"
+        elif variant == 17:
+            day_phrase, duration_hours = (
+                ("сутки", 24) if (index // 20) % 2 == 0 else ("двое суток", 48)
+            )
+            event_date = today + timedelta(days=1)
+            event_time = time(10, 0)
+            title = "Контроль резервного питания"
+            user = f"Добавь завтра в десять часов утра контроль резервного питания на {day_phrase}."
+            assistant = response(
+                "calendar_add",
+                "Событие создано: Контроль резервного питания завтра, в десять часов утра.",
+                {
+                    "title": title,
+                    "starts_at": local_stamp(datetime.combine(event_date, event_time)),
+                    "duration_min": hour_duration_minutes(duration_hours),
+                },
+            )
+            category = "reinforcement_add_day_duration"
+        elif variant == 18:
+            offset_phrase, offset_hours = (
+                ("сутки", 24) if (index // 20) % 2 == 0 else ("двое суток", 48)
+            )
+            title = "Проверка временного смещения"
+            start = relative_hour_start(anchor, offset_hours)
+            user = f"Добавь через {offset_phrase} проверку временного смещения."
+            assistant = response(
+                "calendar_add",
+                f"Проверка временного смещения запланирована через {offset_phrase}.",
+                {"title": title, "starts_at": local_stamp(start)},
+            )
+            category = "reinforcement_add_day_offset"
+        else:
+            event_time = time(6, 40) if (index // 20) % 2 == 0 else time(18, 40)
+            title = "Проверка независимого часа"
+            start = implicit_calendar_add_start(anchor, event_time)
+            user = f"Добавь проверку независимого часа {time_words_24(event_time)}."
+            assistant = response(
+                "calendar_add",
+                (
+                    f"Проверка независимого часа назначена {reply_date_phrase(start.date(), today)} "
+                    f"{time_words_24(event_time)}."
+                ),
+                {"title": title, "starts_at": local_stamp(start)},
+            )
+            category = "reinforcement_add_clock_before_date"
         rows.append(record(category, system_message(anchor), user, assistant))
     return rows
 

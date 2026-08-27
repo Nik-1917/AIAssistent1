@@ -280,6 +280,15 @@ today, while an earlier or equal time means tomorrow. Without an exact event
 time, use today in `date` and omit `time`. This implicit rule applies only to
 `calendar_add`; it does not create search, update, delete, or sum periods.
 
+The model must resolve the clock value before it applies this date rule. The
+comparison with the supplied current time selects only the event date. It must
+never change a resolved morning hour into an evening hour merely to make the
+event later than the current time. For example, with a supplied current time of
+`14:30`, `в шесть сорок` is first resolved as `06:40` and therefore receives
+tomorrow's date, while `в восемнадцать сорок` is `18:40` and receives today's
+date. An explicitly named date bypasses this comparison: `послезавтра в шесть
+сорок` is always the second next date at `06:40`.
+
 | Russian expression | Search/source range |
 | --- | --- |
 | `сегодня` | for `calendar_search` and `calendar_sum`: supplied current local time to next date `00:00`; for an update source or delete target: current date `00:00` to next date `00:00` |
@@ -336,16 +345,97 @@ context and technical JSON parameters.
 - Write known event times in words in `reply`; retain ISO digits only in JSON
   params.
 
-### Exact time without a daypart
+### Exact clock vocabulary
 
-A spoken hour from one through eleven without a named daypart is interpreted
-literally as a morning clock hour. For example, `в шесть сорок` is `06:40`.
-Twelve without a daypart is `12:00`. Explicit wording such as `дня`, `вечера`,
-or `ночи` overrides this literal rule.
+One local day contains exactly 24 clock-hour values numbered from `00` through
+`23`. The hour words below are exact clock pronunciations when they occur in a
+clock construction such as `в один час` or `в восемнадцать часов`:
+
+| Hour | Exact Russian pronunciation |
+| ---: | --- |
+| `00` | `ноль часов` |
+| `01` | `один час` |
+| `02` | `два часа` |
+| `03` | `три часа` |
+| `04` | `четыре часа` |
+| `05` | `пять часов` |
+| `06` | `шесть часов` |
+| `07` | `семь часов` |
+| `08` | `восемь часов` |
+| `09` | `девять часов` |
+| `10` | `десять часов` |
+| `11` | `одиннадцать часов` |
+| `12` | `двенадцать часов` |
+| `13` | `тринадцать часов` |
+| `14` | `четырнадцать часов` |
+| `15` | `пятнадцать часов` |
+| `16` | `шестнадцать часов` |
+| `17` | `семнадцать часов` |
+| `18` | `восемнадцать часов` |
+| `19` | `девятнадцать часов` |
+| `20` | `двадцать часов` |
+| `21` | `двадцать один час` |
+| `22` | `двадцать два часа` |
+| `23` | `двадцать три часа` |
+
+In an exact clock expression, an hour from one through eleven without a named
+daypart is interpreted literally as the corresponding morning clock hour. For
+example, `в шесть`, `в шесть часов`, and `в шесть сорок` resolve to `06:00`,
+`06:00`, and `06:40`. Twelve without a daypart is `12:00`. A number from
+thirteen through twenty-three directly identifies its 24-hour value, so
+`в восемнадцать часов` is `18:00` and `в двадцать три часа` is `23:00`.
+
+Explicit daypart wording provides an equivalent clock pronunciation. `в
+полночь` and `в двенадцать часов ночи` are `00:00`; `в шесть часов утра` is
+`06:00`; `в двенадцать часов дня` and `в полдень` are `12:00`; `в час дня` is
+`13:00`; `в пять часов дня` and `в пять часов вечера` are both `17:00`; `в
+шесть часов вечера` is `18:00`; and `в одиннадцать часов вечера` is `23:00`.
+An isolated broad daypart such as `утром`, `вечером`, or `ночью` still does not
+supply an exact time.
+
+Resolve a `calendar_add` command in this order:
+
+1. Parse the exact clock words into one fixed `HH:MM` value.
+2. Apply an explicit daypart when one accompanies the numeric hour.
+3. Apply an explicitly named absolute or relative date when present.
+4. Only when the date is absent, compare the fixed `HH:MM` with the supplied
+   current `HH:MM`: strictly later means today; earlier or equal means tomorrow.
+
+The fourth step changes only the date. It never changes `06:00` into `18:00` or
+the reverse. An explicit `сегодня` also keeps today's date even when the named
+clock time is earlier than or equal to the supplied current time.
+
+### Hours, days, durations, and offsets
+
+The preposition and command structure determine whether an hour phrase is a
+clock value, a duration, or an offset:
+
+- `в один час` is the exact clock time `01:00`;
+- `на один час` is `duration_min: 60`;
+- `через один час` is the supplied current local date-time plus 60 minutes;
+- `в восемнадцать часов` is the exact clock time `18:00`;
+- `на восемнадцать часов` is `duration_min: 1080`;
+- `через восемнадцать часов` is the supplied current local date-time plus 18
+  hours, including any required date rollover.
+
+One day (`сутки`, `одни сутки`, `двадцать четыре часа`) is 24 hours. Two days
+(`двое суток`, `сорок восемь часов`) are 48 hours. Use these exact equivalents:
+
+- `на сутки` and `на двадцать четыре часа` mean `duration_min: 1440`;
+- `на двое суток` and `на сорок восемь часов` mean `duration_min: 2880`;
+- `через сутки` and `через двадцать четыре часа` mean the supplied current
+  local date-time plus 24 hours;
+- `через двое суток` and `через сорок восемь часов` mean the supplied current
+  local date-time plus 48 hours.
+
+The calendar words `завтра` and `послезавтра` identify the next and second next
+local calendar dates. They are not duration fields. The exact clock vocabulary
+does not contain `24:00`; midnight at the end of a named date is encoded as
+`00:00` on the following date. Never emit `24:00` in a technical JSON field.
 
 An exact clock expression and a relative offset are different operations. For
-example, `в три часа` is an exact clock time while `через три часа` is an offset
-from the supplied current local time. Never treat them as synonyms.
+example, `в три часа` is `03:00`, while `через три часа` is an offset from the
+supplied current local time. Never treat them as synonyms.
 - `Событие создано:`, `Событие изменено:`, and `Событие удалено:` are reserved
   only for executable add, update, and delete commands respectively. Chat,
   search, sum, and incomplete commands must not use them.

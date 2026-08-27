@@ -44,11 +44,14 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-The v5 additions are manually authored in
-`docs/calendar_assistant_manual_train_v5.jsonl` and
-`docs/calendar_assistant_manual_eval_v5.jsonl`. The retained candidate files
-were manually cleared of old clarification rows. The generator is updated to
-the same contract but must not be run for this revision.
+The reviewed source history is retained in the manually authored v5 and v6
+JSONL files. The v7 clock additions are manually authored in
+`docs/calendar_assistant_manual_train_v7.jsonl` and
+`docs/calendar_assistant_manual_eval_v7.jsonl`. They teach the fixed `00`
+through `23` clock vocabulary, daypart equivalents, explicit-date priority,
+implicit today-or-tomorrow selection, whole-hour durations, and 24-hour or
+48-hour day offsets. The retained candidate files are unchanged. The generator
+source is synchronized with the same rules but must not be run for v7.
 
 From the repository root, validate all current sources without writing
 artifacts:
@@ -56,6 +59,8 @@ artifacts:
 ```powershell
 python -B tools/calendar_sft/test_dataset_contract.py
 python -B tools/calendar_sft/test_search_periods.py
+python -B tools/calendar_sft/test_manual_v6_dataset.py
+python -B tools/calendar_sft/test_manual_v7_dataset.py
 python -B tools/calendar_sft/prepare_dataset.py --check-only
 ```
 

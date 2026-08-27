@@ -32,12 +32,14 @@ DEFAULT_TRAIN = (
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_train_candidates.jsonl",
     DOCS / "calendar_assistant_manual_train_v5.jsonl",
     DOCS / "calendar_assistant_manual_train_v6.jsonl",
+    DOCS / "calendar_assistant_manual_train_v7.jsonl",
 )
 DEFAULT_VALIDATION = (
     DOCS / "calendar_assistant_eval_seed.jsonl",
     DOCS / "calendar_assistant_candidates" / "calendar_assistant_eval_candidates.jsonl",
     DOCS / "calendar_assistant_manual_eval_v5.jsonl",
     DOCS / "calendar_assistant_manual_eval_v6.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v7.jsonl",
 )
 DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout.jsonl",)
 MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "clean_room_qwen3_source_lock.json"
