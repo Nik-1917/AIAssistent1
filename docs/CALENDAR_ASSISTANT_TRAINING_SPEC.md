@@ -112,9 +112,11 @@ events; it is not a placeholder for an unknown query.
 - Do not supply a default duration. When the user did not name a duration,
   omit `duration_min`; Android may apply its user-enabled default.
 - Omit every other unknown event field. The model never asks for it.
-- For a complete command, use `Событие создано: <название> <дата>, <время>.` in
-  `reply`. The text describes the prepared command; the UI controls confirmation
-  and the actual local save.
+- For a complete command, the canonical training form is
+  `Событие создано: <название> <дата>, <время>.` The prefix
+  `Событие создано:` is optional: a valid `reply` may begin directly with the
+  event description. The text describes the prepared command; the UI controls
+  confirmation and the actual local save.
 - A partial command uses an individually authored declarative `reply` that
   mentions only known data. It never asks a question. There is no shared
   fallback phrase for partial commands.
@@ -131,6 +133,9 @@ events; it is not a placeholder for an unknown query.
   `визиты к подопечным`, not `визит`. Natural grammatical normalization is
   valid when it preserves the complete search meaning. A named event class is
   never converted to the all-events wildcard.
+- The period and event filter are independent. Every supported period must be
+  represented by both named-event searches and explicit all-events searches.
+  The phrase `через четыре дня` never clears an event name supplied by the user.
 - Both boundaries are paired local timestamps in `YYYY-MM-DDTHH:MM` when the
   user supplied a resolvable period. If the period is unknown, omit both and
   let Android apply an enabled default period or keep the command incomplete.
@@ -257,6 +262,31 @@ Every request supplies the current local date-time and IANA time-zone ID.
 Resolve relative expressions in that supplied zone. The application then
 interprets returned local timestamps in its system zone.
 
+### Calendar units and elapsed units
+
+Use the following exact unit relationships:
+
+- 60 minutes are 1 hour;
+- 24 hours are 1 day (`сутки`) and 1,440 minutes;
+- 48 hours are 2 days (`двое суток`) and 2,880 minutes;
+- 7 consecutive local calendar dates are 1 week;
+- 12 named calendar months are 1 calendar year;
+- 3 calendar months are 1 quarter;
+- 6 calendar months are half a year (`полгода`).
+
+A clock reading, a duration, an elapsed offset, and a calendar offset are four
+different meanings. The prepositions and command structure select the meaning:
+`в один час` is the clock value `01:00`, `на один час` is a 60-minute duration,
+and `через один час` is an elapsed offset of 60 minutes from the supplied local
+date-time. `Через день` and `через сутки` advance by 24 elapsed hours. A named
+calendar month or year is not replaced with a fixed number of days.
+
+An ordinary calendar year contains 365 dates and a leap calendar year contains
+366 dates. `Через год` adds one calendar year and preserves the month and day
+when possible. If the target year has no 29 February, clamp 29 February to 28
+February. This calendar operation is distinct from `через 365 дней`, which
+adds exactly 365 elapsed local dates.
+
 ### Gregorian calendar and leap-year boundaries
 
 Resolve every relative date with the Gregorian calendar. A year divisible by
@@ -278,24 +308,46 @@ that selects 29 February 2024 starts at `2024-02-29T00:00` and ends at
 `2024-03-01T00:00`. The relative wording in `reply` must describe the same
 calendar date as the technical fields in `params`.
 
+### Weekday vocabulary and week boundaries
+
+The calendar week starts on Monday and ends immediately before the next Monday.
+Its named days have this fixed order:
+
+| Position | Nominative | After `в` |
+| ---: | --- | --- |
+| 1 | понедельник | в понедельник |
+| 2 | вторник | во вторник |
+| 3 | среда | в среду |
+| 4 | четверг | в четверг |
+| 5 | пятница | в пятницу |
+| 6 | суббота | в субботу |
+| 7 | воскресенье | в воскресенье |
+
+A complete week range is inclusive at Monday `00:00` and exclusive at the next
+Monday `00:00`. `На следующей неделе в понедельник` through `на следующей
+неделе в воскресенье` select the corresponding one-day ranges inside the next
+Monday-to-Monday week. Do not move a weekday to another week merely to make a
+clock value later than the supplied current time. The implicit today-or-tomorrow
+clock comparison applies only when an add command omits every date expression.
+
 ### Month vocabulary and offsets
 
-Use the ordinary calendar month numbering:
+Use the ordinary calendar month numbering, grammatical forms, and lengths:
 
-| Month | Number |
-| --- | ---: |
-| январь | 1 |
-| февраль | 2 |
-| март | 3 |
-| апрель | 4 |
-| май | 5 |
-| июнь | 6 |
-| июль | 7 |
-| август | 8 |
-| сентябрь | 9 |
-| октябрь | 10 |
-| ноябрь | 11 |
-| декабрь | 12 |
+| Number | Nominative | Genitive in a date | After `в` | Dates in the month |
+| ---: | --- | --- | --- | ---: |
+| 1 | январь | января | январе | 31 |
+| 2 | февраль | февраля | феврале | 28, or 29 in a leap year |
+| 3 | март | марта | марте | 31 |
+| 4 | апрель | апреля | апреле | 30 |
+| 5 | май | мая | мае | 31 |
+| 6 | июнь | июня | июне | 30 |
+| 7 | июль | июля | июле | 31 |
+| 8 | август | августа | августе | 31 |
+| 9 | сентябрь | сентября | сентябре | 30 |
+| 10 | октябрь | октября | октябре | 31 |
+| 11 | ноябрь | ноября | ноябре | 30 |
+| 12 | декабрь | декабря | декабре | 31 |
 
 - A quarter (`квартал`) is exactly 3 calendar months, not 4 months.
 - Four months (`четыре месяца`) is an offset of `+4` calendar months.
@@ -308,6 +360,51 @@ Use the ordinary calendar month numbering:
   preserve the day of month when it exists; if the target month has fewer
   days, use its last day. For example, 31 January plus one month is 28
   February in a non-leap year and 29 February in a leap year.
+
+A calendar month has the length assigned to its name and year. Never teach or
+infer a universal 30-day or 31-day month. In particular, February never has 30
+dates. `Через месяц` is a calendar operation under the established same-day
+rule, while `через 30 дней` and `через 31 день` are fixed day offsets and can
+land on different dates.
+
+### Quarters and half-years
+
+Calendar quarters and half-years use these exact inclusive-start,
+exclusive-end ranges for the requested year:
+
+| Period | Included months | Range |
+| --- | --- | --- |
+| first quarter | January, February, March | 1 January `00:00` to 1 April `00:00` |
+| second quarter | April, May, June | 1 April `00:00` to 1 July `00:00` |
+| third quarter | July, August, September | 1 July `00:00` to 1 October `00:00` |
+| fourth quarter | October, November, December | 1 October `00:00` to 1 January of the next year `00:00` |
+| first half-year | January through June | 1 January `00:00` to 1 July `00:00` |
+| second half-year | July through December | 1 July `00:00` to 1 January of the next year `00:00` |
+
+Do not confuse a complete named quarter with the offset `через квартал`.
+The named period selects three complete months. Under the existing offset rule,
+`через квартал` selects the same local day three calendar months later. Apply
+the same distinction to a named half-year and `через полгода`.
+
+### Seasons
+
+Use meteorological calendar seasons, not astronomical equinox or solstice
+dates. Each season is a complete inclusive-start, exclusive-end range:
+
+| Season | Included months | Range |
+| --- | --- | --- |
+| весна | March, April, May | 1 March `00:00` to 1 June `00:00` |
+| лето | June, July, August | 1 June `00:00` to 1 September `00:00` |
+| осень | September, October, November | 1 September `00:00` to 1 December `00:00` |
+| зима | December, January, February | 1 December `00:00` to 1 March `00:00` |
+
+Understand the forms `весна`, `весной`, `этой весной`, `следующей весной`;
+`лето`, `летом`, `этим летом`, `следующим летом`; `осень`, `осенью`, `этой
+осенью`, `следующей осенью`; and `зима`, `зимой`, `этой зимой`, `следующей
+зимой`. Winter is one continuous range crossing the year boundary. A current
+season expression selects the occurrence containing the supplied current date.
+A next-season expression selects the first occurrence of that named season
+whose start is strictly later than the supplied current date.
 
 For `calendar_add`, an explicitly named absolute or relative date has priority.
 When the date is omitted, resolve it in the supplied local zone with minute
@@ -345,6 +442,14 @@ date. An explicitly named date bypasses this comparison: `послезавтра
 | `через квартал` | the same local day three calendar months later |
 | `через четыре месяца` | the same local day four calendar months later |
 | `через полгода`, `через шесть месяцев` | the same local day six calendar months later |
+| `в первом квартале` | first day of January `00:00` to first day of April `00:00` in the requested year |
+| `во втором квартале` | first day of April `00:00` to first day of July `00:00` in the requested year |
+| `в третьем квартале` | first day of July `00:00` to first day of October `00:00` in the requested year |
+| `в четвёртом квартале` | first day of October `00:00` to first day of January in the following year `00:00` |
+| `в первом полугодии` | first day of January `00:00` to first day of July `00:00` in the requested year |
+| `во втором полугодии` | first day of July `00:00` to first day of January in the following year `00:00` |
+| current or next named season | the three complete meteorological months defined above |
+| `через год` | the same local month and day one calendar year later, clamped only for 29 February |
 | `в этом году` | first day of the current year `00:00` to first day of the next year `00:00` |
 | `в прошлом году` | first day of the previous year `00:00` to first day of the current year `00:00` |
 | `в следующем году` | first day of the next year `00:00` to first day of the following year `00:00` |
@@ -472,9 +577,10 @@ does not contain `24:00`; midnight at the end of a named date is encoded as
 An exact clock expression and a relative offset are different operations. For
 example, `в три часа` is `03:00`, while `через три часа` is an offset from the
 supplied current local time. Never treat them as synonyms.
-- `Событие создано:`, `Событие изменено:`, and `Событие удалено:` are reserved
-  only for executable add, update, and delete commands respectively. Chat,
-  search, sum, and incomplete commands must not use them.
+- The action prefixes are optional where the intent contract allows omission.
+  When used, `Событие создано:`, `Событие изменено:`, and `Событие удалено:`
+  are reserved only for executable add, update, and delete commands
+  respectively. Chat, search, sum, and incomplete commands must not use them.
 - Prefer `сегодня`, `завтра`, `послезавтра`, and `послепослезавтра` for dates
   from today through the third following day. Understand and vary `через два
   дня`, `через три дня`, and `через четыре дня`.
@@ -529,8 +635,19 @@ system message before this one.
 - `calendar_assistant_manual_train_v8.jsonl` and
   `calendar_assistant_manual_eval_v8.jsonl` are the manually authored
   correction layer for complete semantic `title` and `query` values. They do
-  not copy H003, H017, or any other holdout prompt. Historical v7 sources stay
-  byte-for-byte unchanged so the trained v7 adapter remains reproducible.
+  not copy H003, H017, H018, or any other holdout prompt. The layer also
+  contrasts named-event searches with explicit all-events searches for the
+  same `через четыре дня` period. Historical v7 sources stay byte-for-byte
+  unchanged so the trained v7 adapter remains reproducible.
+- `calendar_assistant_manual_train_v9.jsonl` and
+  `calendar_assistant_manual_eval_v9.jsonl` are the manually authored calendar
+  ontology layer. The train split contains 84 rows and the validation split
+  contains 28 rows. Together they cover exact unit relationships, all seven
+  weekdays, all twelve month names and lengths, calendar-month versus fixed-day
+  contrasts, four quarters, two half-years, four meteorological seasons,
+  ordinary and leap calendar years, and calendar-year versus 365-day offsets.
+  They include factual `chat` examples and executable calendar commands. No v9
+  row is copied from holdout, and the generator is not used to create them.
 - `calendar_assistant_holdout_semantic_acceptance.json` records only explicitly
   reviewed semantic alternatives. It is bound to the exact holdout SHA-256;
   the scorer rejects it if the holdout changes. Exact params remain a separate
@@ -542,8 +659,8 @@ system message before this one.
   for provenance, while the manual v8 layer supplies the current full-query
   supervision.
 - `tools/generate_calendar_training_dataset.py` is updated as a deterministic
-  reference implementation of the current contract. It was not run for the v7
-  or v8 additions. Do not regenerate the checked-in candidates; a later
+  reference implementation of the current contract. It was not run for the v7,
+  v8, or v9 additions. Do not regenerate the checked-in candidates; a later
   regeneration is a separate, explicitly reviewed dataset change.
 - Template expansion alone is not a production-quality dataset. Review every
   retained candidate and every manual row for naturalness and semantic

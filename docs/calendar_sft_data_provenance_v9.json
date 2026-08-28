@@ -1,0 +1,133 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 local-calendar SFT v9 dataset.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-calendar-sft-v9-20260829",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-08-29",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-08-29 confirms that the V8 and V9 train and validation files belong to the project, contain no personal data, and are permitted for model training and derivative-weight distribution. Earlier project sources retain the verified authorization recorded by the V7 register. The V8 and V9 additions were manually authored from fictional calendar scenarios. The dataset generator was not run for these additions; prepare_dataset.py only transformed checked-in approved sources into the exact staged V9 artifacts."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "03534a3ffbe8b2b56828a00e4ef1c56dd7cf525f78d245bfc9e30cb269f5be07"
+    },
+    "validation": {
+      "sha256": "8da2cd1e03e464944a8bc0ba37487d040bc3f9772bb393becf53ecfaefd3c091"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_train_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_train_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised before v7",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v6.jsonl",
+      "rights_evidence": "Manually authored from fictional calendar scenarios in the approved AIAssistent1 project task and recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v7.jsonl",
+      "rights_evidence": "Manually authored from fictional clock, day-unit, and Gregorian calendar scenarios and recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v8.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-08-29 covers the manually authored fictional V8 training examples, model training, and derivative-weight distribution.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v9.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-08-29 covers the manually authored fictional V9 training examples, model training, and derivative-weight distribution.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_eval_seed.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_candidates/calendar_assistant_eval_candidates.jsonl; historically created by workspace:tools/generate_calendar_training_dataset.py and manually revised before v7",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v5.jsonl",
+      "rights_evidence": "AIAssistent1 project rights-holder authorization recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v6.jsonl",
+      "rights_evidence": "Manually authored from fictional calendar scenarios in the approved AIAssistent1 project task and recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v7.jsonl",
+      "rights_evidence": "Manually authored from fictional clock, day-unit, and Gregorian calendar scenarios and recorded in the verified V7 register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v8.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-08-29 covers the manually authored fictional V8 validation examples, model training, and derivative-weight distribution.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v9.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-08-29 covers the manually authored fictional V9 validation examples, model training, and derivative-weight distribution.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

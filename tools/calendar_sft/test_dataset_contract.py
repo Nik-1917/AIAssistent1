@@ -39,6 +39,42 @@ class ReplyContractTest(unittest.TestCase):
 
         self.assertEqual("calendar_add", parsed["intent"])
 
+    def test_complete_add_accepts_h050_reply_without_action_prefix(self) -> None:
+        parsed = parse_and_validate_assistant_response(
+            json.dumps(
+                {
+                    "intent": "calendar_add",
+                    "reply": "Поезд до Сызрани послезавтра, в шесть часов сорок минут утра.",
+                    "params": {
+                        "title": "Поезд до Сызрани",
+                        "starts_at": "2027-02-05T06:40",
+                        "duration_min": 55,
+                        "value": 30,
+                    },
+                },
+                ensure_ascii=False,
+            ),
+        )
+
+        self.assertEqual("calendar_add", parsed["intent"])
+        self.assertEqual(30, parsed["params"]["value"])
+
+    def test_partial_add_still_rejects_the_created_action_prefix(self) -> None:
+        with self.assertRaisesRegex(DatasetContractError, "must not begin"):
+            parse_and_validate_assistant_response(
+                json.dumps(
+                    {
+                        "intent": "calendar_add",
+                        "reply": "Событие создано: Проверка отчёта относится к сегодняшней дате.",
+                        "params": {
+                            "title": "Проверка отчёта",
+                            "date": "2027-02-03",
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+
     def test_reply_rejects_single_digit_clock(self) -> None:
         with self.assertRaisesRegex(DatasetContractError, "spell event times"):
             parse_and_validate_assistant_response(response("Событие создано: Встреча завтра, в 7:05."))

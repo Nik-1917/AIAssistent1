@@ -25,6 +25,8 @@ SEMANTIC_ACCEPTANCE = DOCS / "calendar_assistant_holdout_semantic_acceptance.jso
 EXPECTED_TRAIN_CATEGORIES = {
     "manual_v8_title_semantic_full": 6,
     "manual_v8_search_full_query": 6,
+    "manual_v8_search_four_days_named": 6,
+    "manual_v8_search_four_days_all": 1,
     "manual_v8_sum_full_query": 4,
     "manual_v8_update_full_query": 5,
     "manual_v8_delete_full_query": 4,
@@ -33,6 +35,8 @@ EXPECTED_TRAIN_CATEGORIES = {
 EXPECTED_VALIDATION_CATEGORIES = {
     "manual_v8_eval_title_semantic_full": 2,
     "manual_v8_eval_search_full_query": 2,
+    "manual_v8_eval_search_four_days_named": 3,
+    "manual_v8_eval_search_four_days_all": 1,
     "manual_v8_eval_sum_full_query": 2,
     "manual_v8_eval_update_full_query": 2,
     "manual_v8_eval_delete_full_query": 2,
@@ -66,8 +70,8 @@ class ManualV8DatasetTest(unittest.TestCase):
         cls.holdout = load_jsonl(HOLDOUT)
 
     def test_exact_manual_row_counts_and_category_quotas(self) -> None:
-        self.assertEqual(25, len(self.train))
-        self.assertEqual(10, len(self.validation))
+        self.assertEqual(32, len(self.train))
+        self.assertEqual(14, len(self.validation))
         self.assertEqual(
             EXPECTED_TRAIN_CATEGORIES,
             dict(Counter(row["category"] for row in self.train)),
@@ -111,9 +115,56 @@ class ManualV8DatasetTest(unittest.TestCase):
             payload = assistant_payload(row)
             event_text = semantic_event_text(payload).casefold()
             with self.subTest(category=row["category"], event_text=event_text):
-                self.assertGreaterEqual(len(event_text.split()), 3)
+                if not event_text:
+                    self.assertIn("search_four_days_all", row["category"])
+                    continue
+                if "search_four_days_named" not in row["category"]:
+                    self.assertGreaterEqual(len(event_text.split()), 3)
                 for token in forbidden_metadata:
                     self.assertNotIn(token, event_text)
+
+    def test_four_day_searches_contrast_named_queries_with_all_events(self) -> None:
+        expected_named_queries = (
+            {
+                "тренировки",
+                "консультации",
+                "выезды аварийной бригады",
+                "проверки пожарных кранов",
+                "доставки оборудования",
+                "занятия по технике безопасности",
+            },
+            {
+                "осмотры",
+                "встречи проектной группы",
+                "платежи по аренде склада",
+            },
+        )
+
+        for rows, expected in zip(
+            (self.train, self.validation),
+            expected_named_queries,
+            strict=True,
+        ):
+            four_day_rows = [row for row in rows if "search_four_days" in row["category"]]
+            named_queries = {
+                assistant_payload(row)["params"]["query"]
+                for row in four_day_rows
+                if row["category"].endswith("_named")
+            }
+            all_event_queries = [
+                assistant_payload(row)["params"]["query"]
+                for row in four_day_rows
+                if row["category"].endswith("_all")
+            ]
+
+            self.assertEqual(expected, named_queries)
+            self.assertEqual([""], all_event_queries)
+            self.assertTrue(
+                all(
+                    "через четыре дня" in row["messages"][1]["content"].casefold()
+                    for row in four_day_rows
+                )
+            )
 
     def test_title_rows_include_natural_semantic_reformulations(self) -> None:
         titles = {
@@ -166,6 +217,13 @@ class ManualV8DatasetTest(unittest.TestCase):
                 ("2029-04-18T00:00", "2029-04-19T00:00"),
                 ("2029-09-01T00:00", "2029-10-01T00:00"),
                 ("2026-12-27T00:00", "2026-12-28T00:00"),
+                ("2027-05-23T00:00", "2027-05-24T00:00"),
+                ("2029-01-03T00:00", "2029-01-04T00:00"),
+                ("2029-04-21T00:00", "2029-04-22T00:00"),
+                ("2029-09-07T00:00", "2029-09-08T00:00"),
+                ("2026-10-16T00:00", "2026-10-17T00:00"),
+                ("2026-12-01T00:00", "2026-12-02T00:00"),
+                ("2027-05-23T00:00", "2027-05-24T00:00"),
                 ("2027-05-19T11:50", "2027-05-20T00:00"),
                 ("2028-12-18T00:00", "2028-12-25T00:00"),
                 ("2029-05-01T00:00", "2029-06-01T00:00"),
@@ -183,6 +241,10 @@ class ManualV8DatasetTest(unittest.TestCase):
             (
                 ("2029-04-18T00:00", "2029-04-19T00:00"),
                 ("2029-09-10T00:00", "2029-09-17T00:00"),
+                ("2029-04-21T00:00", "2029-04-22T00:00"),
+                ("2029-09-07T00:00", "2029-09-08T00:00"),
+                ("2026-10-16T00:00", "2026-10-17T00:00"),
+                ("2029-04-21T00:00", "2029-04-22T00:00"),
                 ("2026-10-12T13:20", "2026-10-13T00:00"),
                 ("2026-12-01T00:00", "2027-01-01T00:00"),
             ),

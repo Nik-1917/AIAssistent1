@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import random
-from calendar import monthrange
+from calendar import isleap, monthrange
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
@@ -23,9 +23,83 @@ TIME_ZONE = "Europe/Samara"
 WEEKDAYS = (
     "понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"
 )
+WEEKDAYS_AFTER_V = (
+    "в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу",
+    "в воскресенье",
+)
+MONTHS_NOMINATIVE = (
+    "январь", "февраль", "март", "апрель", "май", "июнь",
+    "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+)
 MONTHS_GENITIVE = (
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
+)
+MONTHS_PREPOSITIONAL = (
+    "январе", "феврале", "марте", "апреле", "мае", "июне",
+    "июле", "августе", "сентябре", "октябре", "ноябре", "декабре",
+)
+COMMON_YEAR_MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+QUARTER_MONTHS = {
+    1: (1, 2, 3),
+    2: (4, 5, 6),
+    3: (7, 8, 9),
+    4: (10, 11, 12),
+}
+QUARTER_PHRASES = {
+    1: "в первом квартале этого года",
+    2: "во втором квартале этого года",
+    3: "в третьем квартале этого года",
+    4: "в четвёртом квартале этого года",
+}
+HALF_YEAR_MONTHS = {
+    1: (1, 2, 3, 4, 5, 6),
+    2: (7, 8, 9, 10, 11, 12),
+}
+HALF_YEAR_PHRASES = {
+    1: "в первом полугодии этого года",
+    2: "во втором полугодии этого года",
+}
+SEASON_MONTHS = {
+    "spring": (3, 4, 5),
+    "summer": (6, 7, 8),
+    "autumn": (9, 10, 11),
+    "winter": (12, 1, 2),
+}
+SEASON_CURRENT_PHRASES = {
+    "spring": "этой весной",
+    "summer": "этим летом",
+    "autumn": "этой осенью",
+    "winter": "этой зимой",
+}
+SEASON_NEXT_PHRASES = {
+    "spring": "следующей весной",
+    "summer": "следующим летом",
+    "autumn": "следующей осенью",
+    "winter": "следующей зимой",
+}
+SEARCH_PERIOD_KINDS = (
+    "today", "tomorrow", "after_tomorrow", "third_day", "in_two_days",
+    "in_three_days", "in_four_days", "in_30_days", "in_31_days", "in_365_days",
+    "this_week", "next_week", "previous_month", "month_ago", "next_month",
+    "in_one_month", "in_two_months", "in_quarter", "in_four_months", "in_half_year",
+    "in_one_year", "quarter_1", "quarter_2", "quarter_3", "quarter_4",
+    "half_year_1", "half_year_2", "current_season", "next_spring", "next_summer",
+    "next_autumn", "next_winter",
+    *(f"next_weekday_{weekday}" for weekday in range(7)),
+    *(f"named_month_{month}" for month in range(1, 13)),
+    "explicit",
+)
+SUM_PERIOD_KINDS = (
+    "today", "yesterday", "day_before_yesterday", "tomorrow", "after_tomorrow",
+    "this_week", "previous_week", "next_week", "current_month", "previous_month",
+    "next_month", "in_one_month", "in_two_months", "in_quarter", "in_four_months",
+    "in_half_year", "in_one_year", "in_365_days", "current_year", "previous_year",
+    "next_year", "quarter_1", "quarter_2", "quarter_3", "quarter_4",
+    "half_year_1", "half_year_2", "current_season", "next_spring", "next_summer",
+    "next_autumn", "next_winter",
+    *(f"next_weekday_{weekday}" for weekday in range(7)),
+    *(f"named_month_{month}" for month in range(1, 13)),
 )
 DAYS_GENITIVE = {
     1: "первого", 2: "второго", 3: "третьего", 4: "четвёртого", 5: "пятого",
@@ -135,6 +209,40 @@ def add_months(value: date, months: int) -> date:
     return date(year, month, min(value.day, monthrange(year, month)[1]))
 
 
+def is_gregorian_leap_year(year: int) -> bool:
+    """Return the Gregorian leap-year result, including century exceptions."""
+
+    if isinstance(year, bool) or not isinstance(year, int):
+        raise ValueError("year must be an integer")
+    return isleap(year)
+
+
+def calendar_year_days(year: int) -> int:
+    """Return 365 for an ordinary year and 366 for a leap year."""
+
+    return 366 if is_gregorian_leap_year(year) else 365
+
+
+def calendar_month_days(year: int, month: int) -> int:
+    """Return the actual length of one named Gregorian calendar month."""
+
+    if isinstance(year, bool) or not isinstance(year, int):
+        raise ValueError("year must be an integer")
+    if isinstance(month, bool) or not isinstance(month, int) or month not in range(1, 13):
+        raise ValueError("month must be an integer from 1 through 12")
+    return monthrange(year, month)[1]
+
+
+def add_years(value: date, years: int) -> date:
+    """Add calendar years and clamp 29 February only when required."""
+
+    if isinstance(years, bool) or not isinstance(years, int):
+        raise ValueError("years must be an integer")
+    target_year = value.year + years
+    target_day = min(value.day, calendar_month_days(target_year, value.month))
+    return date(target_year, value.month, target_day)
+
+
 def month_bounds(value: date, offset: int) -> tuple[date, date]:
     start = add_months(value.replace(day=1), offset)
     return start, add_months(start, 1)
@@ -143,6 +251,79 @@ def month_bounds(value: date, offset: int) -> tuple[date, date]:
 def week_bounds(value: date, offset: int) -> tuple[date, date]:
     start = value - timedelta(days=value.weekday()) + timedelta(days=offset * 7)
     return start, start + timedelta(days=7)
+
+
+def next_weekday_bounds(value: date, weekday: int) -> tuple[date, date]:
+    """Return one named day inside the next Monday-to-Monday week."""
+
+    if isinstance(weekday, bool) or not isinstance(weekday, int) or weekday not in range(7):
+        raise ValueError("weekday must be an integer from 0 through 6")
+    next_monday, _ = week_bounds(value, 1)
+    start = next_monday + timedelta(days=weekday)
+    return start, start + timedelta(days=1)
+
+
+def year_bounds(year: int) -> tuple[date, date]:
+    """Return the complete inclusive-start, exclusive-end calendar year."""
+
+    if isinstance(year, bool) or not isinstance(year, int):
+        raise ValueError("year must be an integer")
+    return date(year, 1, 1), date(year + 1, 1, 1)
+
+
+def quarter_bounds(year: int, quarter: int) -> tuple[date, date]:
+    """Return one complete named calendar quarter."""
+
+    if isinstance(quarter, bool) or not isinstance(quarter, int) or quarter not in QUARTER_MONTHS:
+        raise ValueError("quarter must be an integer from 1 through 4")
+    start_month = QUARTER_MONTHS[quarter][0]
+    start = date(year, start_month, 1)
+    return start, add_months(start, 3)
+
+
+def half_year_bounds(year: int, half: int) -> tuple[date, date]:
+    """Return the first or second complete calendar half-year."""
+
+    if isinstance(half, bool) or not isinstance(half, int) or half not in HALF_YEAR_MONTHS:
+        raise ValueError("half must be 1 or 2")
+    start_month = HALF_YEAR_MONTHS[half][0]
+    start = date(year, start_month, 1)
+    return start, add_months(start, 6)
+
+
+def season_bounds(start_year: int, season: str) -> tuple[date, date]:
+    """Return a meteorological season; winter starts in December of start_year."""
+
+    if season not in SEASON_MONTHS:
+        raise ValueError(f"unsupported season: {season}")
+    start_month = SEASON_MONTHS[season][0]
+    start = date(start_year, start_month, 1)
+    return start, add_months(start, 3)
+
+
+def current_season_bounds(value: date) -> tuple[str, date, date]:
+    """Return the meteorological season containing value."""
+
+    if value.month in SEASON_MONTHS["spring"]:
+        season, start_year = "spring", value.year
+    elif value.month in SEASON_MONTHS["summer"]:
+        season, start_year = "summer", value.year
+    elif value.month in SEASON_MONTHS["autumn"]:
+        season, start_year = "autumn", value.year
+    else:
+        season = "winter"
+        start_year = value.year if value.month == 12 else value.year - 1
+    start, end = season_bounds(start_year, season)
+    return season, start, end
+
+
+def next_season_bounds(value: date, season: str) -> tuple[date, date]:
+    """Return the first named season whose start is strictly after value."""
+
+    start, end = season_bounds(value.year, season)
+    if start <= value:
+        start, end = season_bounds(value.year + 1, season)
+    return start, end
 
 
 def system_message(anchor: datetime) -> str:
@@ -228,6 +409,15 @@ def period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tuple[str, 
         return "через три дня", today + timedelta(days=3), today + timedelta(days=4)
     if kind == "in_four_days":
         return "через четыре дня", today + timedelta(days=4), today + timedelta(days=5)
+    if kind == "in_30_days":
+        start = today + timedelta(days=30)
+        return "через тридцать дней", start, start + timedelta(days=1)
+    if kind == "in_31_days":
+        start = today + timedelta(days=31)
+        return "через тридцать один день", start, start + timedelta(days=1)
+    if kind == "in_365_days":
+        start = today + timedelta(days=365)
+        return "через триста шестьдесят пять дней", start, start + timedelta(days=1)
     if kind in {"previous_month", "month_ago"}:
         start, end = month_bounds(today, -1)
         return ("в предыдущем месяце" if kind == "previous_month" else "месяц назад"), start, end
@@ -261,6 +451,32 @@ def period(anchor: datetime, kind: str, explicit_offset: int = 0) -> tuple[str, 
     if kind == "in_half_year":
         start = add_months(today, 6)
         return "через полгода", start, start + timedelta(days=1)
+    if kind == "in_one_year":
+        start = add_years(today, 1)
+        return "через год", start, start + timedelta(days=1)
+    if kind.startswith("next_weekday_"):
+        weekday = int(kind.removeprefix("next_weekday_"))
+        start, end = next_weekday_bounds(today, weekday)
+        return f"на следующей неделе {WEEKDAYS_AFTER_V[weekday]}", start, end
+    if kind.startswith("named_month_"):
+        month = int(kind.removeprefix("named_month_"))
+        start = date(today.year, month, 1)
+        return f"в {MONTHS_PREPOSITIONAL[month - 1]} этого года", start, add_months(start, 1)
+    if kind.startswith("quarter_"):
+        quarter = int(kind.removeprefix("quarter_"))
+        start, end = quarter_bounds(today.year, quarter)
+        return QUARTER_PHRASES[quarter], start, end
+    if kind.startswith("half_year_"):
+        half = int(kind.removeprefix("half_year_"))
+        start, end = half_year_bounds(today.year, half)
+        return HALF_YEAR_PHRASES[half], start, end
+    if kind == "current_season":
+        season, start, end = current_season_bounds(today)
+        return SEASON_CURRENT_PHRASES[season], start, end
+    if kind.startswith("next_") and kind.removeprefix("next_") in SEASON_MONTHS:
+        season = kind.removeprefix("next_")
+        start, end = next_season_bounds(today, season)
+        return SEASON_NEXT_PHRASES[season], start, end
     if kind == "current_year":
         start = today.replace(month=1, day=1)
         return "в этом году", start, start.replace(year=start.year + 1)
@@ -410,16 +626,14 @@ def make_partial_additions(anchor: datetime, titles: tuple[str, ...], total: int
 
 def make_searches(anchor: datetime, titles: tuple[str, ...], total: int, start_index: int = 0) -> list[dict]:
     result = []
-    kinds = (
-        "today", "tomorrow", "after_tomorrow", "third_day", "in_two_days",
-        "in_three_days", "in_four_days", "this_week", "next_week", "previous_month",
-        "month_ago", "next_month", "in_one_month", "in_two_months", "explicit",
-    )
+    kinds = SEARCH_PERIOD_KINDS
     for index in range(start_index, start_index + total):
         kind = kinds[index % len(kinds)]
         phrase, start, end = search_period(anchor, kind, explicit_offset=(index % 20) + 1)
         title = titles[index % len(titles)]
-        query = "" if index % 3 == 0 else title
+        period_cycle = index // len(kinds)
+        # Vary the wildcard independently so no temporal phrase implies an empty query.
+        query = "" if period_cycle % 3 == 0 else title
         if query:
             user_templates = (
                 "Найди событие {title} {period}.",
@@ -507,27 +721,7 @@ def make_sums(
     total: int,
     start_index: int = 0,
 ) -> list[dict]:
-    kinds = (
-        "today",
-        "yesterday",
-        "day_before_yesterday",
-        "tomorrow",
-        "after_tomorrow",
-        "this_week",
-        "previous_week",
-        "next_week",
-        "current_month",
-        "previous_month",
-        "next_month",
-        "in_one_month",
-        "in_two_months",
-        "in_quarter",
-        "in_four_months",
-        "in_half_year",
-        "current_year",
-        "previous_year",
-        "next_year",
-    )
+    kinds = SUM_PERIOD_KINDS
     rows = []
     for index in range(start_index, start_index + total):
         title = titles[index % len(titles)]

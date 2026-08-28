@@ -250,8 +250,6 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
         and (has_starts_at or (has_date and has_time))
     )
     if is_complete:
-        if not reply.startswith("Событие создано:"):
-            _fail(f"{location}.reply", "a complete calendar_add reply must begin with 'Событие создано:'")
         if ", в " not in reply:
             _fail(
                 f"{location}.reply",
