@@ -55,6 +55,19 @@ examples for add, search, sum, update, and delete operations. The retained
 candidate and holdout files are unchanged. The generator source is synchronized
 with the same rules but must not be run for v7.
 
+The manually authored v8 correction layer is stored in
+`docs/calendar_assistant_manual_train_v8.jsonl` and
+`docs/calendar_assistant_manual_eval_v8.jsonl`. It teaches complete semantic
+event names for `calendar_add.title` and every named `query` or target field.
+Natural title reformulation is allowed when the full event meaning is retained;
+named search targets keep meaningful qualifiers instead of being reduced to a
+single generic word. The v7 files and frozen holdout remain byte-for-byte
+unchanged. The synchronized generator source must not be run for v8.
+
+V8 has not been staged, approved by a new artifact-bound provenance register,
+or used for training. `prepare_dataset.py --check-only` validates its checked-in
+sources without creating train, validation, or holdout artifacts.
+
 From the repository root, validate all current sources without writing
 artifacts:
 
@@ -63,6 +76,7 @@ python -B tools/calendar_sft/test_dataset_contract.py
 python -B tools/calendar_sft/test_search_periods.py
 python -B tools/calendar_sft/test_manual_v6_dataset.py
 python -B tools/calendar_sft/test_manual_v7_dataset.py
+python -B tools/calendar_sft/test_manual_v8_dataset.py
 python -B tools/calendar_sft/prepare_dataset.py --check-only
 ```
 
@@ -177,8 +191,10 @@ python tools/calendar_sft/verify_dataset_provenance.py `
    on one CUDA GPU and retain its `run_manifest.json`. The training preflight
    re-hashes the full source snapshot and repeats the provenance check.
 3. Score generated outputs with `evaluate_predictions.py`; semantic scoring
-   compares only `intent` and `params`, while reply wording is separately
-   schema-checked.
+   compares `intent` and `params`, applies the manually reviewed aliases in
+   `docs/calendar_assistant_holdout_semantic_acceptance.json`, and separately
+   reports exact parameter differences. Reply wording is schema-checked but is
+   not compared with one fixed sentence.
 4. Merge the chosen adapter with `merge_adapter.py`.
 5. Convert the merged Safetensors checkpoint using a separately pinned GGUF
    converter, calculate its SHA-256 and test that GGUF on the Android device.

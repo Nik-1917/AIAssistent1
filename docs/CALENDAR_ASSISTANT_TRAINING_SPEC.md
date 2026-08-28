@@ -78,6 +78,16 @@ events; it is not a placeholder for an unknown query.
 
 - Allowed parameters are only `title`, `starts_at`, `date`, `time`,
   `duration_min`, and `value`.
+- `title` is the complete semantic event name. Keep every event-specific
+  action, object, person, place, topic, and qualifier that belongs to the
+  event itself. Remove only calendar command words and data represented by
+  separate fields: date, time, duration, and value.
+- Exact copying is not required. A natural grammatical reformulation or a
+  contextually clear event name is valid when it preserves the complete event
+  meaning. For example, `Поздравить бабушку` and
+  `Поздравление с днём рождения бабушке` are both valid names for the
+  recognized event. Do not add details that contradict or redirect the user's
+  event.
 - `starts_at` is a complete local timestamp in `YYYY-MM-DDTHH:MM`.
 - `date` is a resolved date in `YYYY-MM-DD`; `time` is a known time in `HH:MM`.
   `time` may be paired with `date`, but must never appear without a resolved
@@ -112,11 +122,15 @@ events; it is not a placeholder for an unknown query.
 ### calendar_search
 
 - Allowed parameters are only `query`, `range_start`, and `range_end`.
-- `query` is a short title keyword/name, or `""` for all events.
+- `query` is the complete semantic name or description of the requested
+  events, or `""` for all events.
 - Build `query` from the user's named event wording. Remove command words,
-  temporal wording, and generic calendar nouns. Keep the shortest useful
-  event-title phrase and do not invent a synonym. A named event class is never
-  converted to the all-events wildcard.
+  temporal wording, generic calendar nouns, duration, and value. Keep all
+  meaningful event-specific words and relations. Do not reduce a named phrase
+  to a generic root: `визиты к подопечным` remains
+  `визиты к подопечным`, not `визит`. Natural grammatical normalization is
+  valid when it preserves the complete search meaning. A named event class is
+  never converted to the all-events wildcard.
 - Both boundaries are paired local timestamps in `YYYY-MM-DDTHH:MM` when the
   user supplied a resolvable period. If the period is unknown, omit both and
   let Android apply an enabled default period or keep the command incomplete.
@@ -151,8 +165,8 @@ events; it is not a placeholder for an unknown query.
 
 `target` identifies the existing event. Its allowed fields are:
 
-- `query`: a non-empty title word or name. If it exists, it takes priority over
-  any fallback flag.
+- `query`: a non-empty complete semantic event name or description. If it
+  exists, it takes priority over any fallback flag.
 - `range_start` and `range_end`: an optional, paired, local source period in
   `YYYY-MM-DDTHH:MM`. They may be used only with `query` and identify where to
   search for the old event.
@@ -160,9 +174,9 @@ events; it is not a placeholder for an unknown query.
   It means the last event added to the local calendar, not the last chat message
   or last modified event.
 
-When the user names an event, extract a short useful title phrase with the same
-rules as `calendar_search.query`. A named target always takes priority over
-`use_last_created`.
+When the user names an event, keep its complete semantic description with the
+same rules as `calendar_search.query`. A named target always takes priority
+over `use_last_created`.
 
 `changes` contains only the replacement fields that the user actually gave:
 
@@ -200,8 +214,8 @@ not begin it with an event-action prefix.
 `params` contains exactly one `target` object. An executable command identifies
 exactly one of:
 
-- `query`: a non-empty event title word or name, optionally constrained by the
-  paired `range_start` and `range_end` local timestamps;
+- `query`: a non-empty complete semantic event name or description, optionally
+  constrained by the paired `range_start` and `range_end` local timestamps;
 - `use_last_created`: `true` for the last event added to the local calendar.
 - `use_last_in_range`: `true` only with paired `range_start` and `range_end`.
   It means the last event in the calendar list for that period, ordered by its
@@ -224,7 +238,8 @@ begins with `Событие удалено:`.
 invents the result because it cannot read Room. Allowed parameters are only
 `query`, `range_start`, and `range_end`.
 
-- `query` is an optional event-title filter. Omit it when no filter was named.
+- `query` is an optional complete semantic event-title filter governed by the
+  `calendar_search.query` rules. Omit it when no filter was named.
 - `range_start` is inclusive and `range_end` is exclusive.
 - Emit both range boundaries together when the user supplied a resolvable
   explicit or relative period. If the period is unknown, omit both.
@@ -511,14 +526,25 @@ system message before this one.
   paired with non-leap contrasts and cover add timestamps, add dates, search
   and sum ranges, update destinations, and delete target ranges. Existing
   holdout rows are not copied into these files.
+- `calendar_assistant_manual_train_v8.jsonl` and
+  `calendar_assistant_manual_eval_v8.jsonl` are the manually authored
+  correction layer for complete semantic `title` and `query` values. They do
+  not copy H003, H017, or any other holdout prompt. Historical v7 sources stay
+  byte-for-byte unchanged so the trained v7 adapter remains reproducible.
+- `calendar_assistant_holdout_semantic_acceptance.json` records only explicitly
+  reviewed semantic alternatives. It is bound to the exact holdout SHA-256;
+  the scorer rejects it if the holdout changes. Exact params remain a separate
+  metric, and no unlisted wording difference is accepted automatically.
 - The checked-in files under `docs/calendar_assistant_candidates/` retain only
   the previously valid candidate rows. Old rows whose assistant reply requested
-  clarification were deleted as complete JSONL records.
+  clarification were deleted as complete JSONL records. Some retained
+  historical rows use the superseded short-query contract; they remain frozen
+  for provenance, while the manual v8 layer supplies the current full-query
+  supervision.
 - `tools/generate_calendar_training_dataset.py` is updated as a deterministic
-  reference implementation of the current contract. It is not a source of the
-  new v5 examples and was not run for this revision. Do not regenerate the
-  checked-in candidates before v5 review; a later regeneration is a separate,
-  explicitly reviewed dataset change.
+  reference implementation of the current contract. It was not run for the v7
+  or v8 additions. Do not regenerate the checked-in candidates; a later
+  regeneration is a separate, explicitly reviewed dataset change.
 - Template expansion alone is not a production-quality dataset. Review every
   retained candidate and every manual row for naturalness and semantic
   correctness before final SFT.

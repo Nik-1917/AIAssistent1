@@ -39,11 +39,13 @@ coverage checks.
 2. `в три часа` is an exact clock expression. `через три часа` is a relative
    offset. They must never be treated as synonyms.
 3. A search or target `query` removes command words, temporal wording, and
-   generic calendar nouns. It keeps the shortest useful event-title phrase and
-   does not invent a synonym.
-4. New event titles use sentence case in supervised parameters. Evaluation also
-   reports a semantic metric that ignores title case only. Exact params remain a
-   separate strict metric.
+   generic calendar nouns. Under the current full-query contract it keeps the
+   complete semantic event phrase, including meaningful qualifiers and
+   relations. This rule supersedes the earlier short-key decision used during
+   the historical v6 run.
+4. New event titles use sentence case in supervised parameters. Current
+   evaluation reports exact params separately and accepts only manually reviewed
+   semantic title or query variants bound to the frozen holdout.
 5. `value` is a signed integer in abstract units. Zero is valid. A fractional
    value is not rounded or truncated and is omitted because the schema cannot
    represent it exactly.
@@ -61,7 +63,7 @@ coverage checks.
 | H008 | Implicit date and reply | Earlier exact time means tomorrow; complete reply keeps the required comma. |
 | H010 | Duration | Preserve long durations such as twelve hours as 720 minutes. |
 | H011 | Duration | Keep a named twenty-minute duration as 20 minutes. |
-| H017 | Query exactness | Train short useful title phrases without temporal or command wording. |
+| H017 | Full query semantics | Preserve the complete phrase `визиты к подопечным` without temporal or command wording. |
 | H018 | Query omission | A named event class is not the all-events wildcard. |
 | H019 | Week boundary | Current week ends at the next Monday, not seven days from now. |
 | H021 | Previous month | Month ago means the complete previous calendar month. |

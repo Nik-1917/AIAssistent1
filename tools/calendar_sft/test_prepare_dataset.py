@@ -26,8 +26,8 @@ class DatasetStagingTest(unittest.TestCase):
         cls.holdout_prompts = {normalized_user_prompt(row) for row in cls.holdout}
 
     def test_known_raw_split_sizes_are_stable(self) -> None:
-        self.assertEqual(1355, len(self.raw_train))
-        self.assertEqual(370, len(self.raw_validation))
+        self.assertEqual(1380, len(self.raw_train))
+        self.assertEqual(380, len(self.raw_validation))
         self.assertEqual(57, len(self.holdout))
 
     def test_holdout_wording_is_excluded_without_mutating_sources(self) -> None:
@@ -37,8 +37,8 @@ class DatasetStagingTest(unittest.TestCase):
             self.holdout_prompts,
         )
 
-        self.assertEqual(1331, len(train))
-        self.assertEqual(367, len(validation))
+        self.assertEqual(1356, len(train))
+        self.assertEqual(377, len(validation))
         self.assertEqual(24, len(excluded_train))
         self.assertEqual(3, len(excluded_validation))
         self.assertFalse({normalized_user_prompt(row) for row in train} & self.holdout_prompts)
