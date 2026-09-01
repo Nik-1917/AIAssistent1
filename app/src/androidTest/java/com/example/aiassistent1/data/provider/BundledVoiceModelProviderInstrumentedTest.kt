@@ -2,6 +2,7 @@ package com.example.aiassistent1.data.provider
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.aiassistent1.di.AppModule
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -23,7 +24,11 @@ class BundledVoiceModelProviderInstrumentedTest {
         assertFalse("Для espeak-ng передан путь из APK", assets.ttsDataDirectory.startsWith("voice/"))
 
         val playback = SherpaOnnxSpeechPlayback(
-            SherpaOnnxSpeechSynthesizer(context, provider),
+            SherpaOnnxSpeechSynthesizer(
+                context,
+                provider,
+                AppModule.provideSettingsRepository(context),
+            ),
         )
         var playbackStarted = false
         val result = try {
