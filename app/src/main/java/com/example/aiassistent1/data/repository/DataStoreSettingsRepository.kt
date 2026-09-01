@@ -54,12 +54,12 @@ class DataStoreSettingsRepository(
 
     override val selectedModel: StateFlow<String> = context.settingsStore.data
         .map { preferences ->
-            preferences[selectedModelKey] ?: "ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf"
+            preferences[selectedModelKey] ?: ""
         }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
-            initialValue = "ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf"
+            initialValue = ""
         )
 
     override val showDeleteMessageConfirmation: StateFlow<Boolean> = context.settingsStore.data

@@ -118,8 +118,6 @@ class ChatViewModel(
                 withContext(Dispatchers.IO) {
                     chatRepository.deleteAllMessages()
                 }
-                // Сбрасываем модель на дефолтную (русскую) при первом запуске
-                settingsRepository.setSelectedModel("ruadapt_qwen2.5_3B_ext_u48_instruct_v4_Q4_K_M.gguf")
                 settingsRepository.setFirstRunCompleted()
             }
         }
@@ -281,7 +279,12 @@ class ChatViewModel(
                 // После успешного импорта выбираем эту модель
                 selectModel(importedFileName)
                 updateAvailableModels()
-                mutableUiState.update { it.copy(modelState = ModelState.Unloaded, isModelMissing = false) }
+                mutableUiState.update {
+                    it.copy(
+                        modelState = ModelState.Unloaded,
+                        modelAvailability = ModelAvailability.Available,
+                    )
+                }
             } catch (e: Exception) {
                 mutableUiState.update { it.copy(modelState = ModelState.Error(e.message ?: "Ошибка импорта")) }
             }
@@ -323,10 +326,24 @@ class ChatViewModel(
     }
 
     private fun checkModelPresence(fileName: String) {
+        if (fileName.isBlank()) {
+            mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Missing) }
+            return
+        }
+
+        mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Checking) }
         viewModelScope.launch(Dispatchers.IO) {
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
             val privateExists = privateFile.exists() && privateFile.length() > 0
-            mutableUiState.update { it.copy(isModelMissing = !privateExists) }
+            mutableUiState.update {
+                it.copy(
+                    modelAvailability = if (privateExists) {
+                        ModelAvailability.Available
+                    } else {
+                        ModelAvailability.Missing
+                    }
+                )
+            }
         }
     }
 

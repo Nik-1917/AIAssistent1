@@ -156,6 +156,7 @@ import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateField
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateTargetSelectionUiState
+import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
@@ -461,7 +462,7 @@ fun ChatScreen(
                 modelState = uiState.modelState,
                 isProcessing = uiState.isProcessing,
                 hasMessages = uiState.messages.isNotEmpty(),
-                isModelMissing = uiState.isModelMissing,
+                modelAvailability = uiState.modelAvailability,
                 selectedModel = uiState.selectedModel,
                 availableModels = uiState.availableModels,
                 onStop = viewModel::stopGeneration,
@@ -825,7 +826,7 @@ fun ChatScreen(
                         ImportProgress(progress = modelState.progress)
                     }
 
-                    if (uiState.isModelMissing && uiState.messages.isNotEmpty()) {
+                    if (uiState.modelAvailability == ModelAvailability.Missing && uiState.messages.isNotEmpty()) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -847,7 +848,7 @@ fun ChatScreen(
 
                     if (uiState.messages.isEmpty()) {
                         EmptyConversation(
-                            isModelMissing = uiState.isModelMissing,
+                            modelAvailability = uiState.modelAvailability,
                             onLoadModel = { filePickerLauncher.launch("*/*") },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -924,12 +925,12 @@ fun ChatScreen(
                         textInputEnabled = !uiState.isProcessing &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
-                            !uiState.isModelMissing &&
+                            uiState.modelAvailability == ModelAvailability.Available &&
                             !uiState.voiceDraft.isVisible,
                         microphoneEnabled = !uiState.isProcessing &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
-                            !uiState.isModelMissing,
+                            uiState.modelAvailability == ModelAvailability.Available,
                         isProcessing = uiState.isProcessing,
                         isVoiceMode = uiState.isVoiceMode,
                         onSend = viewModel::sendMessage,
@@ -1438,7 +1439,7 @@ private fun ChatTopBar(
     modelState: ModelState,
     isProcessing: Boolean,
     hasMessages: Boolean,
-    isModelMissing: Boolean,
+    modelAvailability: ModelAvailability,
     selectedModel: String,
     availableModels: List<String>,
     onStop: () -> Unit,
@@ -1457,7 +1458,11 @@ private fun ChatTopBar(
                 Text(text = "AI Assistant")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (isModelMissing) "Модель не найдена" else modelState.label(),
+                        text = when (modelAvailability) {
+                            ModelAvailability.Checking -> "Проверка модели"
+                            ModelAvailability.Missing -> "Модель не найдена"
+                            ModelAvailability.Available -> modelState.label()
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1494,7 +1499,7 @@ private fun ChatTopBar(
             }
         },
         actions = {
-            if (isModelMissing && modelState !is ModelState.Importing) {
+            if (modelAvailability == ModelAvailability.Missing && modelState !is ModelState.Importing) {
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
                 }
@@ -1525,7 +1530,7 @@ private fun ChatTopBar(
 
 @Composable
 private fun EmptyConversation(
-    isModelMissing: Boolean,
+    modelAvailability: ModelAvailability,
     onLoadModel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1535,13 +1540,17 @@ private fun EmptyConversation(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = if (isModelMissing) "Для начала работы нужно загрузить модель" else "Напишите сообщение, чтобы начать разговор",
+                text = when (modelAvailability) {
+                    ModelAvailability.Checking -> "Проверка модели"
+                    ModelAvailability.Missing -> "Модель не найдена"
+                    ModelAvailability.Available -> "Напишите сообщение, чтобы начать разговор"
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
-            if (isModelMissing) {
+            if (modelAvailability == ModelAvailability.Missing) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Выберите файл модели .gguf для импорта",

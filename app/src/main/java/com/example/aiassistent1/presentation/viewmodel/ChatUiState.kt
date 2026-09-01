@@ -9,6 +9,12 @@ import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.SpeechVoice
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
+enum class ModelAvailability {
+    Checking,
+    Missing,
+    Available,
+}
+
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isHistoryLoaded: Boolean = false,
@@ -17,7 +23,7 @@ data class ChatUiState(
     val floatingControlPositions: FloatingControlPositions = FloatingControlPositions(),
     val isFloatingControlPositionsLoaded: Boolean = false,
     val modelState: ModelState = ModelState.Unloaded,
-    val isModelMissing: Boolean = false,
+    val modelAvailability: ModelAvailability = ModelAvailability.Checking,
     val calendarEventDraft: CalendarEventDraftUiState? = null,
     val calendarUpdateDraft: CalendarUpdateDraftUiState? = null,
     val calendarUpdateTargetSelection: CalendarUpdateTargetSelectionUiState? = null,
