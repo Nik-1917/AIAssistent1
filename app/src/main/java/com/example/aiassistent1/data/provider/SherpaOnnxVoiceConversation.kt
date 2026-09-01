@@ -7,6 +7,8 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.media.audiofx.AudioEffect
+import android.media.audiofx.NoiseSuppressor
 import android.util.Log
 import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import androidx.core.content.ContextCompat
@@ -97,6 +99,7 @@ class SherpaOnnxVoiceInputProvider(
 
     private suspend fun captureSpeech(sessionId: Long) {
         val recorder = createRecorder()
+        val noiseSuppressor = createNoiseSuppressor(recorder)
         val pcm = ShortArray(FRAME_SIZE)
         try {
             recorder.startRecording()
@@ -107,6 +110,7 @@ class SherpaOnnxVoiceInputProvider(
             captureSegmentedSpeech(recorder, pcm, sessionId)
         } finally {
             if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) recorder.stop()
+            noiseSuppressor?.release()
             recorder.release()
             vad.reset()
             synchronized(lock) {
@@ -169,6 +173,30 @@ class SherpaOnnxVoiceInputProvider(
             "Не удалось инициализировать микрофон"
         }
         return recorder
+    }
+
+    private fun createNoiseSuppressor(recorder: AudioRecord): NoiseSuppressor? {
+        if (!NoiseSuppressor.isAvailable()) {
+            Log.i(TAG, "System noise suppression is unavailable")
+            return null
+        }
+        return runCatching {
+            val suppressor = NoiseSuppressor.create(recorder.audioSessionId)
+            if (suppressor == null) {
+                Log.i(TAG, "System noise suppressor could not be created")
+                return@runCatching null
+            }
+            if (suppressor.setEnabled(true) != AudioEffect.SUCCESS) {
+                suppressor.release()
+                Log.w(TAG, "System noise suppressor could not be enabled")
+                return@runCatching null
+            }
+            Log.d(TAG, "System noise suppression enabled")
+            suppressor
+        }.getOrElse { error ->
+            Log.w(TAG, "System noise suppressor failed", error)
+            null
+        }
     }
 
     private fun isCurrentSession(sessionId: Long): Boolean = synchronized(lock) {
