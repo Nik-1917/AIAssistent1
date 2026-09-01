@@ -3,7 +3,6 @@ package com.example.aiassistent1.domain.interfaces
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
-import com.example.aiassistent1.domain.model.SpeechVoice
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -34,9 +33,6 @@ interface SettingsRepository {
 
     val speechRate: StateFlow<Float>
     suspend fun setSpeechRate(rate: Float)
-
-    val speechVoice: StateFlow<SpeechVoice>
-    suspend fun setSpeechVoice(voice: SpeechVoice)
 
     val chatScrollPosition: Flow<ChatScrollPosition>
     suspend fun setChatScrollPosition(position: ChatScrollPosition)

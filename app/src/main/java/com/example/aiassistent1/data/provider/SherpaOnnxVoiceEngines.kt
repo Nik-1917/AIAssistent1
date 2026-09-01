@@ -86,19 +86,13 @@ class SherpaOnnxSpeechSynthesizer(
 ) : SpeechSynthesizer {
     private val mutex = Mutex()
     private var tts: OfflineTts? = null
-    private var activeVoice: String? = null
 
     override suspend fun synthesize(text: String): Result<SynthesizedSpeech> = runCatching {
         require(text.isNotBlank()) { "Текст для озвучивания пуст" }
         withContext(Dispatchers.Default) {
             mutex.withLock {
-                val assets = modelProvider.getAssets().getOrThrow()
-                val activeTts = (if (activeVoice == assets.speechVoice.storageId) tts else null)
-                    ?: createTts(assets).also {
-                        tts?.release()
-                        tts = it
-                        activeVoice = assets.speechVoice.storageId
-                    }
+                val activeTts = tts ?: createTts(modelProvider.getAssets().getOrThrow())
+                    .also { tts = it }
                 val audio = activeTts.generate(
                     text.trim(),
                     0,
@@ -112,7 +106,6 @@ class SherpaOnnxSpeechSynthesizer(
     override fun close() {
         tts?.release()
         tts = null
-        activeVoice = null
     }
 
     private fun createTts(assets: VoiceModelAssets): OfflineTts = OfflineTts(

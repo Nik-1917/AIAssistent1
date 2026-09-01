@@ -6,7 +6,6 @@ import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
-import com.example.aiassistent1.domain.model.SpeechVoice
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
 enum class ModelAvailability {
@@ -41,7 +40,6 @@ data class ChatUiState(
     val dialogueModeEnabled: Boolean = false,
     val autoPlaybackEnabled: Boolean = false,
     val speechRate: Float = SpeechRate.DEFAULT,
-    val speechVoice: SpeechVoice = SpeechVoice.IRINA,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",
     val modelParams: GenerationParams = GenerationParams(),
