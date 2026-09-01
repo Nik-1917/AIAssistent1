@@ -50,14 +50,15 @@ class DataStoreSettingsRepository(
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
     private val paramsFlows = mutableMapOf<String, StateFlow<GenerationParams>>()
 
-    override val selectedModel: StateFlow<String> = context.settingsStore.data
+    override val selectedModel: StateFlow<String?> = context.settingsStore.data
         .map { preferences ->
-            preferences[selectedModelKey] ?: ""
+            val selectedModel: String? = preferences[selectedModelKey] ?: ""
+            selectedModel
         }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
-            initialValue = ""
+            initialValue = null
         )
 
     override val showDeleteMessageConfirmation: StateFlow<Boolean> = context.settingsStore.data

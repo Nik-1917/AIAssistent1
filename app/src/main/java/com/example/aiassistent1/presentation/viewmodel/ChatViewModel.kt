@@ -108,7 +108,6 @@ class ChatViewModel(
         observeVoiceInputErrors()
         observeSpeechPlayback()
         restoreVoiceDraft()
-        checkModelPresence(settingsRepository.selectedModel.value)
         updateAvailableModels()
     }
 
@@ -126,9 +125,9 @@ class ChatViewModel(
     private fun observeSettings() {
         viewModelScope.launch {
             settingsRepository.selectedModel.collect { model ->
-                mutableUiState.update { it.copy(selectedModel = model) }
+                mutableUiState.update { it.copy(selectedModel = model.orEmpty()) }
                 checkModelPresence(model)
-                observeParams(model)
+                if (model != null) observeParams(model)
             }
         }
         viewModelScope.launch {
@@ -320,7 +319,12 @@ class ChatViewModel(
         return safeFileName
     }
 
-    private fun checkModelPresence(fileName: String) {
+    private fun checkModelPresence(fileName: String?) {
+        if (fileName == null) {
+            mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Checking) }
+            return
+        }
+
         if (fileName.isBlank()) {
             mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Missing) }
             return

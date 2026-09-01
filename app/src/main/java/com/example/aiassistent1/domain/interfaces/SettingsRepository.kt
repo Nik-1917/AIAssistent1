@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface SettingsRepository {
-    val selectedModel: StateFlow<String>
+    val selectedModel: StateFlow<String?>
     suspend fun setSelectedModel(modelName: String)
 
     fun getParamsForModel(modelName: String): StateFlow<GenerationParams>

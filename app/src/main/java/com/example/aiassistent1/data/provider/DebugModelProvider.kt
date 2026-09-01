@@ -14,6 +14,7 @@ class DebugModelProvider(
     override suspend fun getModelPath(): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val modelFileName = settingsRepository.selectedModel.value
+            require(!modelFileName.isNullOrBlank()) { "Модель не выбрана. Загрузите файл модели." }
             val modelFile = getFile(modelFileName)
             require(modelFile.exists()) {
                 "Модель не найдена по пути: ${modelFile.absolutePath}. Загрузите файл $modelFileName."

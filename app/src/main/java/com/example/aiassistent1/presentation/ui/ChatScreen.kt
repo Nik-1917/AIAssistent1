@@ -1462,7 +1462,7 @@ private fun ChatTopBar(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "($selectedModel)",
+                        text = selectedModel.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
