@@ -1460,15 +1460,6 @@ private fun ChatTopBar(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = selectedModel.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 120.dp)
-                    )
                 }
 
                 DropdownMenu(
