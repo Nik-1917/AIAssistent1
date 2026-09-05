@@ -8,9 +8,10 @@ import java.util.TimeZone
 class SystemPromptProvider {
     fun getSystemPrompt(): String {
         val locale = Locale.forLanguageTag("ru-RU")
-        val currentDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", locale).format(Date())
-        val dayOfWeek = SimpleDateFormat("EEEE", locale).format(Date())
+        val now = Date()
+        val currentDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", locale).format(now)
+        val dayOfWeek = SimpleDateFormat("EEEE", locale).format(now)
         val timeZone = TimeZone.getDefault().id
-        return "Сегодня дата и время: $currentDateTime. День недели сегодня: $dayOfWeek. Часовой пояс: $timeZone. При вопросе о том, какой сегодня день недели, используй это значение. ответ JSON"
+        return "Сегодня дата и время: $currentDateTime. День недели сегодня: $dayOfWeek. ответ JSON"
     }
 }
