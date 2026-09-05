@@ -10,11 +10,12 @@ class SystemPromptProviderTest {
         val prompt = SystemPromptProvider().getSystemPrompt()
 
         assertTrue(prompt.startsWith("Сегодня дата и время:"))
+        assertTrue(prompt.contains("День недели сегодня:"))
         assertTrue(prompt.endsWith(" ответ JSON"))
         assertFalse(prompt.contains("послепослезавтра"))
         assertTrue(
             Regex(
-                """Сегодня дата и время:\d{4}-\d{2}-\d{2} \(\p{IsCyrillic}+\) \d{2}:\d{2} \S+ ответ JSON""",
+                """Сегодня дата и время: \d{4}-\d{2}-\d{2} \d{2}:\d{2}\. День недели сегодня: \p{IsCyrillic}+\. Часовой пояс: \S+\. При вопросе о том, какой сегодня день недели, используй это значение\. ответ JSON""",
             ).matches(prompt),
         )
     }
