@@ -12,6 +12,6 @@ class SystemPromptProvider {
         val currentDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", locale).format(now)
         val dayOfWeek = SimpleDateFormat("EEEE", locale).format(now)
         val timeZone = TimeZone.getDefault().id
-        return "Сегодня $currentDateTime $timeZone день недели $dayOfWeek ответ JSON"
+        return "cегодня $currentDateTime $timeZone день недели $dayOfWeek ответ JSON"
     }
 }
