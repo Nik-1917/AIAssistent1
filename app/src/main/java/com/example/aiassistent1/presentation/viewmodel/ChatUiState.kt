@@ -36,7 +36,7 @@ data class ChatUiState(
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,
     val smoothResponseEnabled: Boolean = false,
-    val systemPromptEnabled: Boolean = false,
+    val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,
     val autoPlaybackEnabled: Boolean = false,
     val speechRate: Float = SpeechRate.DEFAULT,

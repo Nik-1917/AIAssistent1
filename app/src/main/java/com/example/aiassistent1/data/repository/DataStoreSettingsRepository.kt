@@ -90,11 +90,11 @@ class DataStoreSettingsRepository(
         )
 
     override val systemPromptEnabled: StateFlow<Boolean> = context.settingsStore.data
-        .map { preferences -> preferences[systemPromptEnabledKey] ?: false }
+        .map { preferences -> preferences[systemPromptEnabledKey] ?: true }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
-            initialValue = false,
+            initialValue = true,
         )
 
     override val dialogueModeEnabled: StateFlow<Boolean> = context.settingsStore.data
