@@ -17,6 +17,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -473,6 +474,8 @@ fun ChatScreen(
                 onLoadModel = { filePickerLauncher.launch("*/*") },
                 onSelectModel = viewModel::selectModel,
                 onOpenSettings = { showSettingsDialog = true },
+                systemPromptEnabled = uiState.systemPromptEnabled,
+                onSystemPromptToggle = viewModel::setSystemPromptEnabled,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -1441,6 +1444,8 @@ private fun ChatTopBar(
     onLoadModel: () -> Unit,
     onSelectModel: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    systemPromptEnabled: Boolean,
+    onSystemPromptToggle: (Boolean) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -1449,7 +1454,27 @@ private fun ChatTopBar(
             Column(
                 modifier = Modifier.clickable { showMenu = true }
             ) {
-                Text(text = "AI Assistant")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "AI Assistant")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Чат",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .background(
+                                color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.Transparent,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .clickable { onSystemPromptToggle(!systemPromptEnabled) }
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        color = if (!systemPromptEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = when (modelAvailability) {
