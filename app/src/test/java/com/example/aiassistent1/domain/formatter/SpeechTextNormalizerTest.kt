@@ -15,12 +15,41 @@ class SpeechTextNormalizerTest {
     @Test
     fun `normalizes unambiguous dates`() {
         assertEquals(
-            "Встреча двадцать первое августа две тысячи двадцать шестого года.",
+            "Встреча двадцать первого августа две тысячи двадцать шестого года.",
             SpeechTextNormalizer.normalize("Встреча 2026-08-21."),
         )
         assertEquals(
-            "Платёж пятое января две тысячи двадцать шестого года.",
+            "Платёж пятого января две тысячи двадцать шестого года.",
             SpeechTextNormalizer.normalize("Платёж 05.01.2026."),
+        )
+    }
+
+    @Test
+    fun `normalizes textual russian dates with correct day endings`() {
+        assertEquals(
+            "Встреча седьмого сентября две тысячи двадцать шестого года.",
+            SpeechTextNormalizer.normalize("Встреча 7 сентября 2026 года."),
+        )
+        assertEquals(
+            "Напомни двадцать первого сентября.",
+            SpeechTextNormalizer.normalize("Напомни 21 сентября."),
+        )
+    }
+
+    @Test
+    fun `normalizes year endings from grammatical context`() {
+        assertEquals(
+            "две тысячи двадцать шестой год, в две тысячи двадцать шестом году, " +
+                "к две тысячи двадцать шестому году, до две тысячи двадцать шестого года.",
+            SpeechTextNormalizer.normalize("2026 год, в 2026 году, к 2026 году, до 2026 года."),
+        )
+    }
+
+    @Test
+    fun `normalizes round and compound years`() {
+        assertEquals(
+            "тысяча девятисотый год. двухтысячный год. две тысячи первый год. две тысячи десятый год.",
+            SpeechTextNormalizer.normalize("1900 год. 2000 год. 2001 год. 2010 год."),
         )
     }
 
@@ -78,6 +107,7 @@ class SpeechTextNormalizerTest {
     @Test
     fun `leaves invalid dates unchanged`() {
         assertEquals("Дата 31.02.2026", SpeechTextNormalizer.normalize("Дата 31.02.2026"))
+        assertEquals("Дата 31 февраля 2026 года", SpeechTextNormalizer.normalize("Дата 31 февраля 2026 года"))
     }
 
     @Test

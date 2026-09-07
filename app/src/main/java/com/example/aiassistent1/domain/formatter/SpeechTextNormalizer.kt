@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.formatter
 
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -25,6 +26,25 @@ object SpeechTextNormalizer {
     private val numberedListAtStart = Regex("^[\\t ]*\\d{1,3}[\\t ]*(?:[.)]|[-—–:])[\\t ]+")
     private val isoDate = Regex("(?<!\\d)(\\d{4})-(\\d{2})-(\\d{2})(?!\\d)")
     private val dottedDate = Regex("(?<!\\d)(\\d{1,2})[./](\\d{1,2})[./](\\d{4})(?!\\d)")
+    private val textualDateWithYear = Regex(
+        "(?iu)(?<![\\p{L}\\p{N}_])(\\d{1,2})\\s+" +
+            "(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\\s+" +
+            "(\\d{4})(?:\\s*(?:г\\.|года|год))?(?![\\p{L}\\p{N}_])",
+    )
+    private val textualDateWithoutYear = Regex(
+        "(?iu)(?<![\\p{L}\\p{N}_])(\\d{1,2})\\s+" +
+            "(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)" +
+            "(?![\\p{L}\\p{N}_])",
+    )
+    private val yearWithPrepositionalContext = Regex(
+        "(?iu)(?<![\\p{L}\\p{N}_])(в|во)\\s+(\\d{4})\\s+(?:году|г\\.)(?![\\p{L}\\p{N}_])",
+    )
+    private val yearWithDativeContext = Regex(
+        "(?iu)(?<![\\p{L}\\p{N}_])(к|ко)\\s+(\\d{4})\\s+(?:году|г\\.)(?![\\p{L}\\p{N}_])",
+    )
+    private val yearWithWord = Regex(
+        "(?iu)(?<![\\p{L}\\p{N}_])(\\d{4})\\s+(год|года|году|г\\.)(?![\\p{L}\\p{N}_])",
+    )
     private val number = Regex("(?<![\\p{L}\\p{N}_])([+-]?(?:\\d{1,3}(?:[ _]\\d{3})+|\\d+))(?:[,.](\\d+))?(%?)(?![\\p{L}\\p{N}_])")
     private val uppercaseAbbreviation = Regex("(?<![A-ZА-ЯЁ])[A-ZА-ЯЁ]{2,}(?![A-ZА-ЯЁ])")
 
@@ -90,6 +110,43 @@ object SpeechTextNormalizer {
         }
         text = dottedDate.replace(text) { match ->
             protect(speakDate(match.groupValues[3], match.groupValues[2], match.groupValues[1]))
+        }
+        text = textualDateWithYear.replace(text) { match ->
+            protect(
+                speakTextualDate(
+                    day = match.groupValues[1],
+                    month = match.groupValues[2],
+                    year = match.groupValues[3],
+                ) ?: match.value,
+            )
+        }
+        text = textualDateWithoutYear.replace(text) { match ->
+            protect(
+                speakTextualDate(
+                    day = match.groupValues[1],
+                    month = match.groupValues[2],
+                    year = null,
+                ) ?: match.value,
+            )
+        }
+        text = yearWithPrepositionalContext.replace(text) { match ->
+            protect("${match.groupValues[1]} ${speakYear(match.groupValues[2].toInt(), YearCase.PREPOSITIONAL)} году")
+        }
+        text = yearWithDativeContext.replace(text) { match ->
+            protect("${match.groupValues[1]} ${speakYear(match.groupValues[2].toInt(), YearCase.DATIVE)} году")
+        }
+        text = yearWithWord.replace(text) { match ->
+            val grammaticalCase = when (match.groupValues[2].lowercase(Locale.ROOT)) {
+                "года" -> YearCase.GENITIVE
+                "году" -> YearCase.PREPOSITIONAL
+                else -> YearCase.NOMINATIVE
+            }
+            val yearWord = if (match.groupValues[2].equals("г.", ignoreCase = true)) {
+                "год"
+            } else {
+                match.groupValues[2]
+            }
+            protect("${speakYear(match.groupValues[1].toInt(), grammaticalCase)} $yearWord")
         }
         abbreviations.forEach { (abbreviation, spoken) ->
             val escaped = Regex.escape(abbreviation)
@@ -239,13 +296,62 @@ object SpeechTextNormalizer {
 
     private fun speakDate(year: String, month: String, day: String): String = runCatching {
         val date = LocalDate.parse("$year-$month-$day", DateTimeFormatter.ISO_LOCAL_DATE)
-        "${DAY_FORMS[date.dayOfMonth - 1]} ${MONTH_FORMS[date.monthValue - 1]} ${speakYear(date.year)} года"
+        "${DAY_GENITIVE_FORMS[date.dayOfMonth - 1]} ${MONTH_FORMS[date.monthValue - 1]} " +
+            "${speakYear(date.year, YearCase.GENITIVE)} года"
     }.getOrElse { "$day.$month.$year" }
 
-    private fun speakYear(year: Int): String {
-        val cardinal = speakInteger(year.toLong())
+    private fun speakTextualDate(day: String, month: String, year: String?): String? = runCatching {
+        val dayValue = day.toInt()
+        val monthIndex = MONTH_FORMS.indexOf(month.lowercase(Locale.ROOT)) + 1
+        require(monthIndex > 0)
+        if (year != null) {
+            val yearValue = year.toInt()
+            val date = LocalDate.of(yearValue, monthIndex, dayValue)
+            "${DAY_GENITIVE_FORMS[date.dayOfMonth - 1]} ${MONTH_FORMS[date.monthValue - 1]} " +
+                "${speakYear(date.year, YearCase.GENITIVE)} года"
+        } else {
+            require(dayValue in 1..YearMonth.of(2024, monthIndex).lengthOfMonth())
+            "${DAY_GENITIVE_FORMS[dayValue - 1]} ${MONTH_FORMS[monthIndex - 1]}"
+        }
+    }.getOrNull()
+
+    private fun speakYear(year: Int, grammaticalCase: YearCase): String {
+        val ordinal = if (year != 0 && year % 1_000 == 0) {
+            THOUSAND_ORDINALS[year / 1_000]
+        } else {
+            null
+        }
+        if (ordinal != null) return inflectOrdinal(ordinal, grammaticalCase)
+
+        val cardinal = speakInteger(year.toLong()).let { value ->
+            if (value.startsWith("одна тысяча ")) {
+                "тысяча ${value.removePrefix("одна тысяча ")}"
+            } else {
+                value
+            }
+        }
         val last = cardinal.substringAfterLast(' ')
-        return cardinal.removeSuffix(last) + (YEAR_ENDINGS[last] ?: last)
+        val nominativeOrdinal = YEAR_ORDINALS[last] ?: return cardinal
+        return cardinal.removeSuffix(last) + inflectOrdinal(nominativeOrdinal, grammaticalCase)
+    }
+
+    private fun inflectOrdinal(nominative: String, grammaticalCase: YearCase): String {
+        if (grammaticalCase == YearCase.NOMINATIVE) return nominative
+        if (nominative == "третий") {
+            return when (grammaticalCase) {
+                YearCase.GENITIVE -> "третьего"
+                YearCase.PREPOSITIONAL -> "третьем"
+                YearCase.DATIVE -> "третьему"
+                YearCase.NOMINATIVE -> nominative
+            }
+        }
+        val stem = nominative.dropLast(2)
+        return stem + when (grammaticalCase) {
+            YearCase.GENITIVE -> "ого"
+            YearCase.PREPOSITIONAL -> "ом"
+            YearCase.DATIVE -> "ому"
+            YearCase.NOMINATIVE -> nominative.takeLast(2)
+        }
     }
 
     private fun speakNumber(integerPart: String, fractionPart: String?, isPercent: Boolean): String {
@@ -366,15 +472,34 @@ object SpeechTextNormalizer {
     }
 
     private data class Scale(val one: String, val few: String, val many: String, val feminine: Boolean)
+    private enum class YearCase { NOMINATIVE, GENITIVE, PREPOSITIONAL, DATIVE }
 
     private val UNITS = arrayOf("", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять")
     private val FEMININE_UNITS = arrayOf("", "одна", "две", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять")
     private val TEENS = arrayOf("десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать", "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать")
     private val TENS = arrayOf("", "", "двадцать", "тридцать", "сорок", "пятьдесят", "шестьдесят", "семьдесят", "восемьдесят", "девяносто")
     private val HUNDREDS = arrayOf("", "сто", "двести", "триста", "четыреста", "пятьсот", "шестьсот", "семьсот", "восемьсот", "девятьсот")
-    private val DAY_FORMS = arrayOf("первое", "второе", "третье", "четвёртое", "пятое", "шестое", "седьмое", "восьмое", "девятое", "десятое", "одиннадцатое", "двенадцатое", "тринадцатое", "четырнадцатое", "пятнадцатое", "шестнадцатое", "семнадцатое", "восемнадцатое", "девятнадцатое", "двадцатое", "двадцать первое", "двадцать второе", "двадцать третье", "двадцать четвёртое", "двадцать пятое", "двадцать шестое", "двадцать седьмое", "двадцать восьмое", "двадцать девятое", "тридцатое", "тридцать первое")
+    private val DAY_GENITIVE_FORMS = arrayOf("первого", "второго", "третьего", "четвёртого", "пятого", "шестого", "седьмого", "восьмого", "девятого", "десятого", "одиннадцатого", "двенадцатого", "тринадцатого", "четырнадцатого", "пятнадцатого", "шестнадцатого", "семнадцатого", "восемнадцатого", "девятнадцатого", "двадцатого", "двадцать первого", "двадцать второго", "двадцать третьего", "двадцать четвёртого", "двадцать пятого", "двадцать шестого", "двадцать седьмого", "двадцать восьмого", "двадцать девятого", "тридцатого", "тридцать первого")
     private val MONTH_FORMS = arrayOf("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря")
-    private val YEAR_ENDINGS = mapOf("один" to "первого", "два" to "второго", "три" to "третьего", "четыре" to "четвёртого", "пять" to "пятого", "шесть" to "шестого", "семь" to "седьмого", "восемь" to "восьмого", "девять" to "девятого", "десять" to "десятого", "двадцать" to "двадцатого", "тридцать" to "тридцатого", "сорок" to "сорокового", "пятьдесят" to "пятидесятого", "сто" to "сотого", "двести" to "двухсотого")
+    private val YEAR_ORDINALS = mapOf(
+        "ноль" to "нулевой",
+        "один" to "первый", "два" to "второй", "три" to "третий", "четыре" to "четвёртый",
+        "пять" to "пятый", "шесть" to "шестой", "семь" to "седьмой", "восемь" to "восьмой", "девять" to "девятый",
+        "десять" to "десятый", "одиннадцать" to "одиннадцатый", "двенадцать" to "двенадцатый",
+        "тринадцать" to "тринадцатый", "четырнадцать" to "четырнадцатый", "пятнадцать" to "пятнадцатый",
+        "шестнадцать" to "шестнадцатый", "семнадцать" to "семнадцатый", "восемнадцать" to "восемнадцатый",
+        "девятнадцать" to "девятнадцатый", "двадцать" to "двадцатый", "тридцать" to "тридцатый",
+        "сорок" to "сороковой", "пятьдесят" to "пятидесятый", "шестьдесят" to "шестидесятый",
+        "семьдесят" to "семидесятый", "восемьдесят" to "восьмидесятый", "девяносто" to "девяностый",
+        "сто" to "сотый", "двести" to "двухсотый", "триста" to "трёхсотый", "четыреста" to "четырёхсотый",
+        "пятьсот" to "пятисотый", "шестьсот" to "шестисотый", "семьсот" to "семисотый",
+        "восемьсот" to "восьмисотый", "девятьсот" to "девятисотый",
+    )
+    private val THOUSAND_ORDINALS = mapOf(
+        1 to "тысячный", 2 to "двухтысячный", 3 to "трёхтысячный", 4 to "четырёхтысячный",
+        5 to "пятитысячный", 6 to "шеститысячный", 7 to "семитысячный", 8 to "восьмитысячный",
+        9 to "девятитысячный",
+    )
     private val LETTERS = mapOf('А' to "а", 'Б' to "бэ", 'В' to "вэ", 'Г' to "гэ", 'Д' to "дэ", 'Е' to "е", 'Ё' to "ё", 'Ж' to "жэ", 'З' to "зэ", 'И' to "и", 'Й' to "й", 'К' to "ка", 'Л' to "эл", 'М' to "эм", 'Н' to "эн", 'О' to "о", 'П' to "пэ", 'Р' to "эр", 'С' to "эс", 'Т' to "тэ", 'У' to "у", 'Ф' to "эф", 'Х' to "ха", 'Ц' to "цэ", 'Ч' to "че", 'Ш' to "ша", 'Щ' to "ща", 'Ы' to "ы", 'Э' to "э", 'Ю' to "ю", 'Я' to "я", 'A' to "эй", 'B' to "би", 'C' to "си", 'D' to "ди", 'E' to "и", 'F' to "эф", 'G' to "джи", 'H' to "эйч", 'I' to "ай", 'J' to "джей", 'K' to "кей", 'L' to "эл", 'M' to "эм", 'N' to "эн", 'O' to "оу", 'P' to "пи", 'Q' to "кью", 'R' to "ар", 'S' to "эс", 'T' to "ти", 'U' to "ю", 'V' to "ви", 'W' to "дабл ю", 'X' to "икс", 'Y' to "уай", 'Z' to "зэд", '0' to "ноль", '1' to "один", '2' to "два", '3' to "три", '4' to "четыре", '5' to "пять", '6' to "шесть", '7' to "семь", '8' to "восемь", '9' to "девять")
     private val CODE_SYMBOLS = mapOf('=' to "равно", '+' to "плюс", '-' to "минус", '*' to "звёздочка", '/' to "слэш", '\\' to "обратный слэш", '_' to "подчёркивание", '.' to "точка", ':' to "двоеточие", ';' to "точка с запятой", ',' to "запятая", '(' to "открывающая скобка", ')' to "закрывающая скобка", '{' to "открывающая фигурная скобка", '}' to "закрывающая фигурная скобка", '[' to "открывающая квадратная скобка", ']' to "закрывающая квадратная скобка", '"' to "кавычка", '\'' to "апостроф", '<' to "меньше", '>' to "больше")
     private val PARENTHETICAL_TRAILING_PUNCTUATION = setOf(',', ';', ':', '.', '!', '?', '…')
