@@ -1458,7 +1458,7 @@ private fun ChatTopBar(
                     Text(text = "AI Assistant")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Чат",
+                        text = if (!systemPromptEnabled) "Чат" else "Календарь",
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier
                             .background(
