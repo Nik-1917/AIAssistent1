@@ -396,9 +396,13 @@ class ChatViewModel(
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
             try {
+                val currentState = mutableUiState.value
                 val responseFlowResult = sendMessage(
-                    modelContextBuilder.build(mutableUiState.value.messages),
-                    useSystemPrompt = mutableUiState.value.systemPromptEnabled,
+                    modelContextBuilder.build(
+                        currentState.messages,
+                        appendChatStyleInstruction = !currentState.systemPromptEnabled,
+                    ),
+                    useSystemPrompt = currentState.systemPromptEnabled,
                 )
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }

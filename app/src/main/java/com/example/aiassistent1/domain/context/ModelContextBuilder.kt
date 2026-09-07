@@ -10,10 +10,26 @@ class ModelContextBuilder(
         require(maximumUserMessages > 0) { "The user-message limit must be positive." }
     }
 
-    fun build(chatHistory: List<ChatMessage>): List<ChatMessage> =
+    fun build(
+        chatHistory: List<ChatMessage>,
+        appendChatStyleInstruction: Boolean = false,
+    ): List<ChatMessage> =
         chatHistory
             .asSequence()
             .filter { it.role == MessageRole.USER }
             .toList()
             .takeLast(maximumUserMessages)
+            .let { messages ->
+                if (!appendChatStyleInstruction) {
+                    messages
+                } else {
+                    messages.map { message ->
+                        message.copy(content = message.content + CHAT_STYLE_INSTRUCTION_SUFFIX)
+                    }
+                }
+            }
+
+    private companion object {
+        const val CHAT_STYLE_INSTRUCTION_SUFFIX = "\n\nотвечай очень вежливо используй эмодзи"
+    }
 }

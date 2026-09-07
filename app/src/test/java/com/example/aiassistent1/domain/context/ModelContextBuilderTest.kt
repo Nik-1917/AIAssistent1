@@ -32,5 +32,44 @@ class ModelContextBuilderTest {
         assertEquals(listOf("Единственное"), context.map(ChatMessage::content))
     }
 
+    @Test
+    fun `appends chat style instruction to visible chat mode context only`() {
+        val context = builder.build(
+            chatHistory = listOf(
+                message(MessageRole.USER, "Первое"),
+                message(MessageRole.USER, "Второе"),
+            ),
+            appendChatStyleInstruction = true,
+        )
+
+        assertEquals(
+            listOf(
+                "Первое\n\nотвечай очень вежливо используй эмодзи",
+                "Второе\n\nотвечай очень вежливо используй эмодзи",
+            ),
+            context.map(ChatMessage::content),
+        )
+    }
+
+    @Test
+    fun `keeps only recent user messages before appending chat style instruction`() {
+        val context = builder.build(
+            chatHistory = listOf(
+                message(MessageRole.USER, "Первое"),
+                message(MessageRole.USER, "Второе"),
+                message(MessageRole.USER, "Третье"),
+            ),
+            appendChatStyleInstruction = true,
+        )
+
+        assertEquals(
+            listOf(
+                "Второе\n\nотвечай очень вежливо используй эмодзи",
+                "Третье\n\nотвечай очень вежливо используй эмодзи",
+            ),
+            context.map(ChatMessage::content),
+        )
+    }
+
     private fun message(role: MessageRole, content: String) = ChatMessage(role = role, content = content)
 }
