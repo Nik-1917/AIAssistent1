@@ -374,8 +374,9 @@ class ChatViewModel(
 
         val userMessage = ChatMessage(role = MessageRole.USER, content = trimmedText)
         mutableUiState.update { state ->
+            val newMessages = if (state.systemPromptEnabled) listOf(userMessage) else state.messages + userMessage
             state.copy(
-                messages = state.messages + userMessage,
+                messages = newMessages,
                 isProcessing = true,
                 isStopping = false, // Сбрасываем флаг при новом сообщении
                 isVoiceMode = preserveVoiceMode,
@@ -385,7 +386,12 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { chatRepository.saveMessage(userMessage) }
+            withContext(Dispatchers.IO) {
+                if (mutableUiState.value.systemPromptEnabled) {
+                    chatRepository.deleteAllMessages()
+                }
+                chatRepository.saveMessage(userMessage)
+            }
             startGenerationFlow()
         }
         return true

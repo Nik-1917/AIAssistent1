@@ -1456,24 +1456,28 @@ private fun ChatTopBar(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "AI Assistant")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (!systemPromptEnabled) "Чат" else "Календарь",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .background(
-                                color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.Transparent,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .clickable { onSystemPromptToggle(!systemPromptEnabled) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = if (!systemPromptEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (modelAvailability == ModelAvailability.Available) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (!systemPromptEnabled) "Чат" else "Календарь",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier
+                                .background(
+                                    color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary.copy(
+                                        alpha = 0.8f
+                                    ) else Color.Transparent,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .clickable { onSystemPromptToggle(!systemPromptEnabled) }
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            color = if (!systemPromptEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
