@@ -111,8 +111,15 @@ fun CalendarScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val dateText = remember {
+                        val now = LocalDate.now()
+                        val dayOfWeek = now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale("ru"))
+                        val dayOfMonth = now.dayOfMonth
+                        "сегодня $dayOfWeek $dayOfMonth число"
+                    }
                     Text(
-                        text = "Мой календарь",
+                        text = dateText,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                 },
