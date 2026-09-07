@@ -15,13 +15,15 @@ actual database result.
 | `chat` | Shows an ordinary reply. |
 | `calendar_add` | Supplies the known fields of a new event. |
 | `calendar_search` | Supplies known title and period fields for a local search. |
-| `calendar_update` | Resolves an existing local event and opens a change preview. |
-| `calendar_delete` | Resolves exactly one local event and deletes it immediately. |
 | `calendar_sum` | Requests the sum of integer event values in a period. |
+| `note_add` | Carries the user's exact note text for local persistence. |
 
-Remote calendars, reminders, and `use_last_referenced` are not executable
-model operations in this release. Do not emit `use_last_referenced` in training
-data until the application has persistent last-referenced-event state.
+V14 permits exactly these five intents. Changing or deleting an existing event,
+remote calendars, reminders, and `use_last_referenced` are not executable model
+operations in this release. A request to change or delete an event produces a
+factual non-action `chat` response with `params: {}`.
+`note_add` is executed by the Android application only after the text has been
+written to the local notes database.
 
 ## Exact response schema
 
@@ -49,15 +51,11 @@ For a partial creation command, known date and time may be separate:
 ```
 
 ```json
-{"intent":"calendar_update","reply":"...","params":{"target":{"query":"..."},"changes":{"date":"YYYY-MM-DD"}}}
-```
-
-```json
-{"intent":"calendar_delete","reply":"...","params":{"target":{"query":"..."}}}
-```
-
-```json
 {"intent":"calendar_sum","reply":"...","params":{"range_start":"YYYY-MM-DDTHH:MM","range_end":"YYYY-MM-DDTHH:MM"}}
+```
+
+```json
+{"intent":"note_add","reply":"Сохраняю заметку.","params":{"text":"..."}}
 ```
 
 Never send `null`, an empty string, `0`, or an invented default as a placeholder
@@ -73,6 +71,23 @@ events; it is not a placeholder for an unknown query.
 - Use it for ordinary conversation and operations unsupported by the
   application. A calendar search with an omitted period remains
   `calendar_search` and contains the other known search fields.
+- Factual date and time answers may contain numeric dates, years, and clock
+  values. They must be calculated from the supplied local system timestamp and
+  its IANA time zone.
+
+### note_add
+
+- `params` contains exactly one non-empty string field: `text`.
+- Matching of the command prefix is case-insensitive. Supported direct forms
+  include `в заметки`, `запиши в заметки`, `добавь в заметки`, and
+  `сохрани в заметки`.
+- Remove only the command prefix and optional separator immediately after it.
+  Preserve the remaining text exactly, including capitalization, punctuation,
+  numbers, line breaks, names, dates, and clock values. Do not summarize,
+  correct, or reformulate the note.
+- The model reply is exactly `Сохраняю заметку.` It does not claim that the
+  note was saved. The Android executor owns the database result and adds the
+  actual local date, time, weekday, and time zone.
 
 ### calendar_add
 
@@ -95,6 +110,9 @@ events; it is not a placeholder for an unknown query.
 - Do not combine `starts_at` with `date` or `time` in one command.
 - Every `calendar_add` contains either `starts_at` or `date`.
 - `duration_min` is a positive integer number of minutes.
+- Emit `duration_min` only when the user explicitly supplied the event
+  duration. Relative scheduling such as `через два часа` does not by itself
+  supply a duration.
 - `value` is an integer number of abstract event-value units. It has no
   currency and no fractional form. Omit it when the user did not supply it.
   If the user supplies a fractional value, do not round or truncate it and do
@@ -153,89 +171,13 @@ events; it is not a placeholder for an unknown query.
 - Do not invent search results: Android owns the actual local query result.
 - A search reply must not begin with an event-action prefix.
 
-### calendar_update
+### Unsupported event mutations
 
-`params` contains exactly two objects: `target` and `changes`.
-
-```json
-{
-  "intent":"calendar_update",
-  "reply":"Событие изменено: Тренировка перенесено на завтра.",
-  "params":{
-    "target":{"query":"тренировка"},
-    "changes":{"date":"2026-08-25"}
-  }
-}
-```
-
-`target` identifies the existing event. Its allowed fields are:
-
-- `query`: a non-empty complete semantic event name or description. If it
-  exists, it takes priority over any fallback flag.
-- `range_start` and `range_end`: an optional, paired, local source period in
-  `YYYY-MM-DDTHH:MM`. They may be used only with `query` and identify where to
-  search for the old event.
-- `use_last_created`: `true` only when the user did not name a particular event.
-  It means the last event added to the local calendar, not the last chat message
-  or last modified event.
-
-When the user names an event, keep its complete semantic description with the
-same rules as `calendar_search.query`. A named target always takes priority
-over `use_last_created`.
-
-`changes` contains only the replacement fields that the user actually gave:
-
-- `title`: a non-empty new title;
-- `date`: a new local date in `YYYY-MM-DD`;
-- `time`: a new local time in `HH:MM`;
-- `duration_min`: a positive new duration in minutes.
-- `value`: a new integer event value without currency or fractional units.
-- `clear_value`: `true` only when the user explicitly asks to remove the stored
-  value. Do not combine `clear_value: true` with `value`.
-
-Omitted fields preserve their values in the resolved event. Therefore a time
-change does not alter the title, date, duration, or value; a date move preserves
-the old time, duration, and value. `changes` may be `{}` when the event is known
-but the user did not say what to change; Android decides how to represent the
-incomplete command. The model does not ask the user for a change.
-
-The source period and destination date have different roles. For example,
-“Завтрашнюю тренировку перенеси на пятницу” must keep 25 August in
-`target.range_start`/`target.range_end` and put 28 August only in
-`changes.date`. Never use the destination date to search for the old event.
-
-If a query matches several local events, Android presents a selection instead of
-silently choosing one. If it matches none, Android reports that the event was
-not found. The model must not fabricate an event ID or claim a database result.
-
-For an executable update command, use a concise reply beginning with
-`Событие изменено:`. It describes the prepared update command; the UI still
-shows its preview and controls the actual Room update.
-When `changes` is `{}`, use an individually authored declarative reply and do
-not begin it with an event-action prefix.
-
-### calendar_delete
-
-`params` contains exactly one `target` object. An executable command identifies
-exactly one of:
-
-- `query`: a non-empty complete semantic event name or description, optionally
-  constrained by the paired `range_start` and `range_end` local timestamps;
-- `use_last_created`: `true` for the last event added to the local calendar.
-- `use_last_in_range`: `true` only with paired `range_start` and `range_end`.
-  It means the last event in the calendar list for that period, ordered by its
-  start time and then event ID. For example, “Удали последнее на сегодня” uses
-  today’s 00:00-to-next-day-00:00 period; it does not mean the last event added
-  to the database today.
-
-When the user expressed a delete intent but supplied no target, emit
-`{"target":{}}`; do not invent a target and do not ask for one. Its individually
-authored declarative `reply` must not begin with an event-action prefix. Android
-keeps that command incomplete and deletes nothing. Android deletes an event
-only when exactly one target mode is present and resolves to exactly one local
-event. If it matches none or several events, Android does not delete anything
-and replaces the model reply with the actual result. An executable delete reply
-begins with `Событие удалено:`.
+V14 does not expose an intent for changing or deleting existing events. Such a
+request always uses `chat`, an empty `params` object, and concise factual wording
+that the operation is unavailable. The reply may list the supported creation,
+search, sum, and note functions, but it must not claim that calendar data was
+changed.
 
 ### calendar_sum
 
@@ -261,6 +203,38 @@ invents the result because it cannot read Room. Allowed parameters are only
 Every request supplies the current local date-time and IANA time-zone ID.
 Resolve relative expressions in that supplied zone. The application then
 interprets returned local timestamps in its system zone.
+
+### Factual date and time questions
+
+- Treat the date, weekday, time, and IANA zone in the system message as the
+  single current local anchor. Input capitalization does not change meaning.
+- For `какое сегодня число`, `какой сегодня день недели`, and equivalent
+  questions, return the exact anchor date. Monday is the first day of the
+  calendar week and Sunday is the seventh.
+- For an explicitly named date with a year, compute its weekday in the
+  proleptic Gregorian calendar. No calendar database lookup is required.
+- When a day and month omit the year, past-tense forms such as `какой день был`
+  select the latest matching date that is not after the current local date.
+  Future-tense forms such as `какой день будет` select the first matching date
+  strictly after the current local date. A form with neither a year nor a
+  past/future direction is underspecified; state that the year is required.
+- `завтра`, `послезавтра`, and `послепослезавтра` mean calendar-date offsets
+  `+1`, `+2`, and `+3`. `вчера` and `позавчера` mean `-1` and `-2`.
+- `через N минут`, `через N часов`, `N минут назад`, and `N часов назад` are
+  elapsed-time operations on the complete local timestamp. Carry across hour,
+  day, month, year, and leap-day boundaries before deriving the weekday.
+- `через N дней` is an elapsed `N * 24` hour offset. `через неделю` and
+  `через две недели` are `+7` and `+14` days and therefore retain the weekday.
+- A factual point-in-time question using `через месяц`, `через два месяца`,
+  `через квартал`, `через четыре месяца`, or `через полгода` adds respectively
+  one, two, three, four, or six calendar months while preserving local time and
+  clamping the day to the last valid day of the target month.
+- A factual point-in-time question using `через год` adds one calendar year,
+  preserving month, local time, and day except that 29 February clamps to
+  28 February when the target year is not leap. `через 365 дней` remains a
+  fixed-day offset and is not a synonym for `через год`.
+- Include the resolved date and weekday in a date answer. Include the resolved
+  local clock value when the user asks for a moment or time.
 
 ### Calendar units and elapsed units
 
@@ -302,8 +276,8 @@ February. For example:
 - from 29 February 2024, `завтра` is 1 March 2024;
 - from 28 February 2023, `завтра` is 1 March 2023.
 
-Apply these boundaries consistently to `date`, `starts_at`, update destination
-dates, and search, sum, update-source, or delete-target ranges. A one-day range
+Apply these boundaries consistently to `date`, `starts_at`, and search or sum
+ranges. A one-day range
 that selects 29 February 2024 starts at `2024-02-29T00:00` and ends at
 `2024-03-01T00:00`. The relative wording in `reply` must describe the same
 calendar date as the technical fields in `params`.
@@ -411,7 +385,7 @@ When the date is omitted, resolve it in the supplied local zone with minute
 precision: an exact event time strictly later than the current `HH:MM` means
 today, while an earlier or equal time means tomorrow. Without an exact event
 time, use today in `date` and omit `time`. This implicit rule applies only to
-`calendar_add`; it does not create search, update, delete, or sum periods.
+`calendar_add`; it does not create search or sum periods.
 
 The model must resolve the clock value before it applies this date rule. The
 comparison with the supplied current time selects only the event date. It must
@@ -424,14 +398,14 @@ date. An explicitly named date bypasses this comparison: `послезавтра
 
 | Russian expression | Search/source range |
 | --- | --- |
-| `сегодня` | for `calendar_search` and `calendar_sum`: supplied current local time to next date `00:00`; for an update source or delete target: current date `00:00` to next date `00:00` |
+| `сегодня` | for `calendar_search` and `calendar_sum`: supplied current local time to next date `00:00` |
 | `вчера` | previous date `00:00` to current date `00:00` |
 | `позавчера` | second previous date `00:00` to previous date `00:00` |
 | `завтра` | next date `00:00` to the following date `00:00` |
 | `послезавтра`, `через два дня` | second next date `00:00` to third next date `00:00` |
 | `послепослезавтра`, `через три дня` | third next date `00:00` to fourth next date `00:00` |
 | `через четыре дня` | fourth next date `00:00` to fifth next date `00:00` |
-| `на этой неделе` | for `calendar_search` and `calendar_sum`: supplied current local time to next Monday `00:00`; for an update source or delete target: current Monday `00:00` to next Monday `00:00` |
+| `на этой неделе` | for `calendar_search` and `calendar_sum`: supplied current local time to next Monday `00:00` |
 | `на прошлой неделе` | previous Monday `00:00` to current Monday `00:00` |
 | `на следующей неделе` | next Monday `00:00` to the Monday after it `00:00` |
 | `в этом месяце` | first day of the current calendar month `00:00` to first day of the next month `00:00` |
@@ -455,10 +429,8 @@ date. An explicitly named date bypasses this comparison: `послезавтра
 | `в следующем году` | first day of the next year `00:00` to first day of the following year `00:00` |
 | explicit date | that date `00:00` to next date `00:00` |
 
-For a date update, emit the exact destination date only when the wording makes
-that date exact. A vague month without a day is a search/source period, not a
-license to invent a destination day. The seed data resolves only exact event
-times. Day-parts such as “утром” and “после обеда” leave the time unknown; omit
+A vague month without a day is a search period, not a license to invent an event
+date. Day-parts such as “утром” and “после обеда” leave the time unknown; omit
 the exact time field.
 
 ### Spoken form for 12:00
@@ -569,6 +541,24 @@ One day (`сутки`, `одни сутки`, `двадцать четыре ч�
 - `через двое суток` and `через сорок восемь часов` mean the supplied current
   local date-time plus 48 hours.
 
+In an explicit duration construction such as `на ...`, `длительностью ...`,
+or `продолжительностью ...`, spoken minute and hour quantities are converted
+arithmetically:
+
+- every whole minute phrase from `одна минута` through `шестьдесят минут`
+  maps to the integer from 1 through 60;
+- `четверть часа` is 15 minutes, `полчаса` and the recognized user variant
+  `пол часа` are 30 minutes, and `три четверти часа` is 45 minutes;
+- `час без N минут`, for every whole `N` from 1 through 29, is
+  `60 - N` minutes, so `час без десяти минут` is 50 minutes;
+- a compound duration adds its components: `два часа тридцать пять минут`
+  is `2 * 60 + 35 = 155` minutes;
+- `час` is 60 minutes, `полтора часа` is 90 minutes, `два часа` is 120
+  minutes, `один день` is 1440 minutes, and `два дня` is 2880 minutes.
+
+These rules apply only when the wording denotes duration. The same quantities
+after `через` denote offsets from the supplied current local date-time.
+
 The calendar words `завтра` and `послезавтра` identify the next and second next
 local calendar dates. They are not duration fields. The exact clock vocabulary
 does not contain `24:00`; midnight at the end of a named date is encoded as
@@ -577,10 +567,37 @@ does not contain `24:00`; midnight at the end of a named date is encoded as
 An exact clock expression and a relative offset are different operations. For
 example, `в три часа` is `03:00`, while `через три часа` is an offset from the
 supplied current local time. Never treat them as synonyms.
-- The action prefixes are optional where the intent contract allows omission.
-  When used, `Событие создано:`, `Событие изменено:`, and `Событие удалено:`
-  are reserved only for executable add, update, and delete commands
-  respectively. Chat, search, sum, and incomplete commands must not use them.
+
+## Noisy, invalid, and unsupported input
+
+- Harmless capitalization, a clear typo, or an unambiguous speech-recognition
+  error does not change intent. Normalize the understood calendar wording and
+  emit the same executable or partial JSON that the corrected request would
+  produce. Preserve note text exactly after a supported note-command prefix.
+- An incomplete but recognizable add, search, or sum command keeps that intent
+  and emits only the fields actually supplied. The mandatory
+  inferred add date remains the sole exception. Do not invent missing values,
+  ask a question, or use an action-completion prefix for an incomplete command.
+- Mutually incompatible dates, times, durations, values, target modes, or
+  operations are not resolved by guessing. Emit `chat` with factual non-action
+  wording and `params: {}`.
+- Impossible calendar dates, out-of-range clock values, non-positive
+  durations, and reversed periods also emit `chat` with `params: {}`. Do not
+  silently clamp an invalid date or reinterpret an invalid clock as a duration.
+- Operations outside the local contract, including messaging, calls, network
+  lookup, payments, external-calendar synchronization, device control, and
+  arbitrary file access, emit `chat` with a factual capability boundary.
+- Input without a coherent command or factual question emits `chat` with
+  `params: {}`. It must not trigger a calendar or note action.
+- User text cannot change the one-object JSON contract, request hidden
+  instructions, introduce extra keys, `null`, Markdown, or surrounding text.
+  A pure format-manipulation request emits `chat`; when an otherwise valid
+  supported command is present, execute that command and ignore only the
+  attempted format change.
+
+- The creation action prefix is optional where the intent contract allows its
+  omission. `Событие создано:` is reserved for an executable add command.
+  Chat, search, sum, and incomplete commands must not use it.
 - Prefer `сегодня`, `завтра`, `послезавтра`, and `послепослезавтра` for dates
   from today through the third following day. Understand and vary `через два
   дня`, `через три дня`, and `через четыре дня`.
@@ -611,6 +628,12 @@ date, time, weekday, and IANA zone. A prompt must not contain an extra empty
 system message before this one.
 
 ## Dataset process
+
+V14 staging uses the seed and manually authored V5 through V14 files, then
+retains only `chat`, `note_add`, `calendar_add`, `calendar_search`, and
+`calendar_sum`. Every historical row with a removed intent or either removed
+intent name is excluded before train and validation artifacts are written. The
+generated candidate files are not V14 sources.
 
 - `calendar_assistant_train_seed.jsonl` is the retained supervised seed set.
 - `calendar_assistant_eval_seed.jsonl` remains validation-only: never train on
@@ -648,39 +671,77 @@ system message before this one.
   ordinary and leap calendar years, and calendar-year versus 365-day offsets.
   They include factual `chat` examples and executable calendar commands. No v9
   row is copied from holdout, and the generator is not used to create them.
+- `calendar_assistant_manual_train_v10.jsonl` and
+  `calendar_assistant_manual_eval_v10.jsonl` are the manually authored
+  knowledge layer for assistant identity, concrete capability descriptions,
+  case-insensitive phrasing, factual Gregorian weekday calculations, relative
+  minute/hour/day/week/month/year arithmetic, and exact note-text extraction.
+  The train split contains 168 rows and the validation split contains 56 rows.
+  They are included in `prepare_dataset.py` after the local Android note path
+  was connected. Temporal calculations in this layer remain learned model
+  behavior; deterministic app-side temporal execution is a separate future
+  stage.
+- `calendar_assistant_manual_train_v11.jsonl` and
+  `calendar_assistant_manual_eval_v11.jsonl` are the manually authored
+  correction layer for H004, H008, and H011. The train split contains 45 rows
+  and the validation split contains 15 rows: 20 examples per error across both
+  splits. They reinforce February 28 transitions in leap and ordinary years,
+  implicit today-or-tomorrow selection from the requested clock time, and the
+  distinction between twenty, eighty, and one hundred twenty minutes. Leap
+  examples cover Gregorian leap years through 2080. No holdout prompt is
+  copied, and the dataset generator is not used to create this layer.
+- `calendar_assistant_manual_train_v12.jsonl` and
+  `calendar_assistant_manual_eval_v12.jsonl` are the manually authored final
+  value, omission, and duration-vocabulary layer. The train split contains 200
+  rows and the validation split contains 55 rows. Together they contain 15
+  integer-value examples, 40 field-omission examples, all minute durations
+  from one through sixty, every `час без N минут` form for `N` from one
+  through twenty-nine, compound hour-plus-minute arithmetic, and four
+  supervised phrasings for each core alias from a quarter hour through two
+  days. Unknown fields stay absent except for the mandatory inferred add date.
+  No holdout prompt is copied, and the dataset generator is not used to create
+  this layer.
+- `calendar_assistant_manual_train_v13.jsonl` and
+  `calendar_assistant_manual_eval_v13.jsonl` are the manually authored noisy
+  and invalid-input layer. The train split contains 200 rows and the validation
+  split contains 60 rows. Together they cover recoverable typo and speech
+  noise, incomplete commands, contradictory requests, impossible dates and
+  times, unsupported operations, incoherent input, resistance to requested
+  schema violations, and targeted corrections for H004, H054, H056, omitted
+  add fields, and `clear_value`. The 260 rows are never template-generated.
+- `calendar_assistant_negative_holdout_v13.jsonl` contains 40 separately
+  authored cases with stable `N001` through `N040` identifiers. It is excluded
+  from both training and validation and is scored only as an independent
+  negative/contrastive holdout. Its semantic-acceptance file is bound to the
+  exact holdout SHA-256 and currently permits no alternate parameter objects.
+  The dataset generator is not used for either V13 source or this holdout.
+- `calendar_assistant_manual_train_v14.jsonl` and
+  `calendar_assistant_manual_eval_v14.jsonl` are the manually authored V14
+  layer. They contain exactly 300 training and 90 validation rows covering
+  creation, search, sum, unsupported event mutations, assistant identity, and
+  exact note capture. `value` and `duration_min` occur only in creation rows
+  whose user wording explicitly supplies those fields.
+- `calendar_assistant_manual_holdout_v14.jsonl` contains 60 independently
+  authored cases with stable `V14H001` through `V14H060` identifiers: 18 add,
+  16 search, 12 sum, 8 mutation-refusal, 3 identity, and 3 note cases. It is
+  excluded from training and validation. Its semantic-acceptance policy is
+  bound to the exact file SHA-256 and currently permits no alternate params.
 - `calendar_assistant_holdout_semantic_acceptance.json` records only explicitly
   reviewed semantic alternatives. It is bound to the exact holdout SHA-256;
   the scorer rejects it if the holdout changes. Exact params remain a separate
   metric, and no unlisted wording difference is accepted automatically.
-- The checked-in files under `docs/calendar_assistant_candidates/` retain only
-  the previously valid candidate rows. Old rows whose assistant reply requested
-  clarification were deleted as complete JSONL records. Some retained
-  historical rows use the superseded short-query contract; they remain frozen
-  for provenance, while the manual v8 layer supplies the current full-query
-  supervision.
-- `tools/generate_calendar_training_dataset.py` is updated as a deterministic
-  reference implementation of the current contract. It was not run for the v7,
-  v8, or v9 additions. Do not regenerate the checked-in candidates; a later
-  regeneration is a separate, explicitly reviewed dataset change.
+- The checked-in files under `docs/calendar_assistant_candidates/` are retained
+  only as historical artifacts. `prepare_dataset.py` excludes them from V14.
+- `tools/generate_calendar_training_dataset.py` must not be run. All V14 rows
+  are authored directly and validated without invoking the generator.
 - Template expansion alone is not a production-quality dataset. Review every
   retained candidate and every manual row for naturalness and semantic
   correctness before final SFT.
 - Every line contains `messages` in system/user/assistant order and a category.
-- Before use, validate every assistant JSON string with the production parser,
-  the update mapper, and the schema above.
+- Before use, validate every assistant JSON string with the strict dataset
+  parser and the schema above.
 - Do not include real calendar data. Search results are application-owned data
   and are intentionally absent from model examples.
-
-## Update coverage
-
-The retained update candidates cover moves, time changes, duration changes,
-renaming, source-period versus destination-date separation, duplicate-title
-selection, and last-created fallback. Manually authored v5 rows cover an
-incomplete change request without a clarification reply. The sources include
-work-life wording for a manicurist, hairdresser, doctor, official, worker,
-farmer, athlete, office employee, taxi driver, cleaner, driver, teacher,
-student, social worker, and factory worker. The titles are fictional and must
-remain so in future expansions.
 
 ## SFT pilot package
 

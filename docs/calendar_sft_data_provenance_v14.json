@@ -1,0 +1,53 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 assistant SFT V14 dataset and its sealed V14 holdout.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v14-20260906",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-09-06",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-09-06 confirms that V14 and its holdout belong to the project, contain no real personal data, and are permitted for model training and derivative-weight distribution. The authorization approves the five-intent contract, a 300-row manual train layer, a 90-row manual validation layer, a 60-row sealed holdout, calendar_sum, and the implementation plan. Earlier retained sources remain covered by the VERIFIED V13 register. The dataset generator was not run. prepare_dataset.py excluded generated candidates and every historical row with a removed mutation intent before producing the exact V14 artifacts."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "6ba547160ab43b935a138593292526172aad3c174a6873c380226b77289c2f8e"
+    },
+    "validation": {
+      "sha256": "fae64a58545563a52d6f7b2c59a2c6d44673da74a09252c3b00f857c1851b120"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_data_provenance_v13.json; sha256=a5dc0b42856697bfc180e5d8a5a9078bc2a2eb76ed07b0a648799169efca55ff; covers retained V1-V13 sources",
+      "rights_evidence": "All retained earlier sources are covered by the VERIFIED V13 rights register; V14 staging removes disallowed rows without adding external data.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v14.jsonl; sha256=1cda8c68864be208d75a1c14dcd6b5071e52516037a4652f3a44fb3c6f762e13",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 300 manually authored V14 training examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v14.jsonl; sha256=dca613de5fa7cf40597fb08ce4d9c62b0715bdf596ee2d523e3a51bb0c8f34ed",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 90 manually authored V14 validation examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_holdout_v14.jsonl; sha256=42b76df17667453f08adde97a1bd3751106efb4b2b9428ddeed01177a7d6edf6",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 60 manually authored sealed V14 holdout examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

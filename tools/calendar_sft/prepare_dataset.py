@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 from typing import Any
@@ -21,31 +22,48 @@ from dataset_contract import (
     load_jsonl,
     message_signature,
     normalized_user_prompt,
+    V14_FORBIDDEN_INTENTS,
+    V14_INTENTS,
 )
 
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 DEFAULT_OUTPUT_DIR = ROOT / "build" / "calendar_sft_dataset"
+V14_ALLOWED_INTENTS = V14_INTENTS
+V14_FORBIDDEN_INTENT_NAMES = tuple(sorted(V14_FORBIDDEN_INTENTS))
+V14_DURATION_EXPRESSION_RE = re.compile(
+    r"\b(?:минут\w*|час\w*|полчас\w*|пол\s+(?:час|чес)\w*|полутора\w*|полтора|"
+    r"четверт\w*|сут\w*|день|дня|дней)\b",
+    re.IGNORECASE,
+)
 DEFAULT_TRAIN = (
     DOCS / "calendar_assistant_train_seed.jsonl",
-    DOCS / "calendar_assistant_candidates" / "calendar_assistant_train_candidates.jsonl",
     DOCS / "calendar_assistant_manual_train_v5.jsonl",
     DOCS / "calendar_assistant_manual_train_v6.jsonl",
     DOCS / "calendar_assistant_manual_train_v7.jsonl",
     DOCS / "calendar_assistant_manual_train_v8.jsonl",
     DOCS / "calendar_assistant_manual_train_v9.jsonl",
+    DOCS / "calendar_assistant_manual_train_v10.jsonl",
+    DOCS / "calendar_assistant_manual_train_v11.jsonl",
+    DOCS / "calendar_assistant_manual_train_v12.jsonl",
+    DOCS / "calendar_assistant_manual_train_v13.jsonl",
+    DOCS / "calendar_assistant_manual_train_v14.jsonl",
 )
 DEFAULT_VALIDATION = (
     DOCS / "calendar_assistant_eval_seed.jsonl",
-    DOCS / "calendar_assistant_candidates" / "calendar_assistant_eval_candidates.jsonl",
     DOCS / "calendar_assistant_manual_eval_v5.jsonl",
     DOCS / "calendar_assistant_manual_eval_v6.jsonl",
     DOCS / "calendar_assistant_manual_eval_v7.jsonl",
     DOCS / "calendar_assistant_manual_eval_v8.jsonl",
     DOCS / "calendar_assistant_manual_eval_v9.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v10.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v11.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v12.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v13.jsonl",
+    DOCS / "calendar_assistant_manual_eval_v14.jsonl",
 )
-DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout.jsonl",)
+DEFAULT_HOLDOUT = (DOCS / "calendar_assistant_manual_holdout_v14.jsonl",)
 MODEL_MANIFEST = ROOT / "tools" / "calendar_sft" / "clean_room_qwen3_source_lock.json"
 
 
@@ -116,6 +134,64 @@ def assert_holdout_ids(rows: list[dict[str, Any]]) -> None:
         raise DatasetContractError("holdout: case_id values must be unique")
 
 
+def assistant_payload(row: dict[str, Any]) -> dict[str, Any]:
+    return json.loads(row["messages"][-1]["content"])
+
+
+def contains_forbidden_intent_name(row: dict[str, Any]) -> bool:
+    return any(
+        forbidden in message["content"]
+        for message in row["messages"]
+        for forbidden in V14_FORBIDDEN_INTENT_NAMES
+    )
+
+
+def select_v14_rows(
+    rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    selected: list[dict[str, Any]] = []
+    excluded_intent = 0
+    excluded_literal = 0
+    for row in rows:
+        if assistant_payload(row)["intent"] not in V14_ALLOWED_INTENTS:
+            excluded_intent += 1
+        elif contains_forbidden_intent_name(row):
+            excluded_literal += 1
+        else:
+            selected.append(row)
+    return selected, {
+        "forbidden_intent": excluded_intent,
+        "forbidden_literal": excluded_literal,
+    }
+
+
+def assert_v14_contract(rows: list[dict[str, Any]], split_name: str) -> None:
+    for index, row in enumerate(rows, start=1):
+        location = f"{split_name}: normalized row {index}"
+        payload = assistant_payload(row)
+        intent = payload["intent"]
+        if intent not in V14_ALLOWED_INTENTS:
+            raise DatasetContractError(f"{location}: forbidden intent {intent!r}")
+        if contains_forbidden_intent_name(row):
+            raise DatasetContractError(f"{location}: contains a forbidden intent name")
+        params = payload["params"]
+        if intent != "calendar_add" and ({"duration_min", "value"} & set(params)):
+            raise DatasetContractError(
+                f"{location}: duration_min and value are allowed only for calendar_add",
+            )
+        if intent != "calendar_add":
+            continue
+        user_text = " ".join(message["content"] for message in row["messages"][1:-1])
+        if "duration_min" in params and V14_DURATION_EXPRESSION_RE.search(user_text) is None:
+            raise DatasetContractError(
+                f"{location}: duration_min is not explicitly supported by the user wording",
+            )
+        if "value" in params and "ценност" not in user_text.casefold():
+            raise DatasetContractError(
+                f"{location}: value is not explicitly supported by the user wording",
+            )
+
+
 def exclude_holdout_prompt_overlaps(
     rows: list[dict[str, Any]],
     holdout_prompts: set[str],
@@ -139,12 +215,20 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 def main() -> int:
     args = parse_args()
     try:
-        train, train_sources = load_split(DEFAULT_TRAIN, "train")
-        validation, validation_sources = load_split(DEFAULT_VALIDATION, "validation")
-        holdout, holdout_sources = load_split(DEFAULT_HOLDOUT, "holdout")
+        raw_train, train_sources = load_split(DEFAULT_TRAIN, "train")
+        raw_validation, validation_sources = load_split(DEFAULT_VALIDATION, "validation")
+        raw_holdout, holdout_sources = load_split(DEFAULT_HOLDOUT, "holdout")
+        train, excluded_train_contract = select_v14_rows(raw_train)
+        validation, excluded_validation_contract = select_v14_rows(raw_validation)
+        holdout, excluded_holdout_contract = select_v14_rows(raw_holdout)
+        if any(excluded_holdout_contract.values()):
+            raise DatasetContractError("holdout: contains rows forbidden by the V14 contract")
         holdout_prompts = {normalized_user_prompt(row) for row in holdout}
         train, excluded_train = exclude_holdout_prompt_overlaps(train, holdout_prompts)
         validation, excluded_validation = exclude_holdout_prompt_overlaps(validation, holdout_prompts)
+        assert_v14_contract(train, "train")
+        assert_v14_contract(validation, "validation")
+        assert_v14_contract(holdout, "holdout")
         train_signatures = assert_no_duplicates(train, "train")
         validation_signatures = assert_no_duplicates(validation, "validation")
         holdout_signatures = assert_no_duplicates(holdout, "holdout")
@@ -163,6 +247,11 @@ def main() -> int:
         "excluded_holdout_prompt_overlaps": {
             "train": len(excluded_train),
             "validation": len(excluded_validation),
+        },
+        "excluded_v14_contract": {
+            "train": excluded_train_contract,
+            "validation": excluded_validation_contract,
+            "holdout": excluded_holdout_contract,
         },
     }
     if args.check_only:
@@ -185,8 +274,22 @@ def main() -> int:
 
     manifest = {
         "format_version": 1,
+        "dataset_version": "V14",
         "runtime_system_prompt": "Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON",
         "model_manifest_sha256": file_sha256(MODEL_MANIFEST),
+        "v14_contract": {
+            "allowed_intents": sorted(V14_ALLOWED_INTENTS),
+            "forbidden_intent_names": list(V14_FORBIDDEN_INTENT_NAMES),
+            "excluded_rows": {
+                "train": excluded_train_contract,
+                "validation": excluded_validation_contract,
+                "holdout": excluded_holdout_contract,
+            },
+            "optional_add_fields": {
+                "duration_min": "only when explicitly stated by the user",
+                "value": "only when explicitly stated by the user",
+            },
+        },
         "holdout_prompt_exclusion": {
             "normalization": "casefold_alphanumeric_words",
             "train_rows": len(excluded_train),

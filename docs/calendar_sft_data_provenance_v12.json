@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 assistant SFT v12 dataset.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12-20260906",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-09-06",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-09-06 confirms that V12 belongs to the project, contains no real personal data, and is permitted for model training and derivative-weight distribution. The authorization also approves the meaning hour minus N minutes equals 60 minus N and the exact volume of 255 manually authored examples. Earlier sources retain the verified authorization recorded by the V11 register. The dataset generator was not run. prepare_dataset.py only assembled approved sources into the exact V12 artifacts."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "dd5876638ecce193404c63bc72f286dae47af87c575346fbeaca362dc46a7051"
+    },
+    "validation": {
+      "sha256": "d7c9c23a32498d977ae7565450639273e1f5209ad1f8220ab5c1c6f960d7cdee"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_data_provenance_v11.json; covers all retained V1-V11 train and validation sources",
+      "rights_evidence": "All retained earlier sources are covered by the VERIFIED V11 rights register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v12.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 200 manually authored V12 training examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v12.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 55 manually authored V12 validation examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

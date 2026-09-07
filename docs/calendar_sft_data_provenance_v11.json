@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 assistant SFT v11 dataset.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v11-20260905",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-09-05",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-09-05 confirms that V11 belongs to the project, contains no real personal data, and is permitted for model training and derivative-weight distribution. Earlier sources retain the verified authorization recorded by the V10 register. V11 was authored manually; the dataset generator was not run. prepare_dataset.py only assembled approved sources into the exact V11 artifacts."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "2a94f523045a3b1920a17a141aa164b537f020f19bd27277453c5fdd557c370a"
+    },
+    "validation": {
+      "sha256": "9af6f27c7e8b8d3aa22bb714d263179469e4f08715448a37480794e6da44a424"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_data_provenance_v10.json; covers all retained V1-V10 train and validation sources",
+      "rights_evidence": "All retained earlier sources are covered by the VERIFIED V10 rights register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v11.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-05 covers the manually authored V11 training examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v11.jsonl",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-05 covers the manually authored V11 validation examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

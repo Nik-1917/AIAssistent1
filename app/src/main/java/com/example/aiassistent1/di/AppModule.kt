@@ -18,6 +18,7 @@ import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.engine.LlamatikEngine
 import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.data.local.ChatDatabase
+import com.example.aiassistent1.data.local.NoteDatabase
 import com.example.aiassistent1.data.provider.DebugModelProvider
 import com.example.aiassistent1.data.provider.BundledVoiceModelProvider
 import com.example.aiassistent1.data.provider.SherpaOnnxSpeechPlayback
@@ -29,6 +30,7 @@ import com.example.aiassistent1.data.repository.*
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
+import com.example.aiassistent1.domain.interfaces.NoteRepository
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
@@ -45,6 +47,12 @@ import kotlinx.coroutines.SupervisorJob
 object AppModule {
 	@Volatile
 	private var chatDatabase: ChatDatabase? = null
+
+	@Volatile
+	private var noteDatabase: NoteDatabase? = null
+
+	@Volatile
+	private var noteRepository: NoteRepository? = null
 
 	@Volatile
 	private var calendarDatabase: CalendarDatabase? = null
@@ -155,6 +163,12 @@ object AppModule {
 		provideChatDatabase(context).chatMessageDao(),
 	)
 
+	fun provideNoteRepository(context: Context): NoteRepository = noteRepository ?: synchronized(this) {
+		noteRepository ?: RoomNoteRepository(
+			provideNoteDatabase(context).noteDao(),
+		).also { noteRepository = it }
+	}
+
 	fun provideVoiceDraftRepository(context: Context): VoiceDraftRepository = voiceDraftRepository ?: synchronized(this) {
 		voiceDraftRepository ?: DataStoreVoiceDraftRepository(
 			context.applicationContext.voiceDraftStore(),
@@ -167,6 +181,14 @@ object AppModule {
 			ChatDatabase::class.java,
 			"ai_assistant.db",
 		).build().also { chatDatabase = it }
+	}
+
+	private fun provideNoteDatabase(context: Context): NoteDatabase = noteDatabase ?: synchronized(this) {
+		noteDatabase ?: Room.databaseBuilder(
+			context.applicationContext,
+			NoteDatabase::class.java,
+			"assistant_notes.db",
+		).build().also { noteDatabase = it }
 	}
 
 	private fun provideCalendarDatabase(context: Context): CalendarDatabase = calendarDatabase ?: synchronized(this) {

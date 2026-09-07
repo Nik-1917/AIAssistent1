@@ -44,6 +44,34 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
+### Active V14 release
+
+V14 permits exactly `chat`, `note_add`, `calendar_add`, `calendar_search`, and
+`calendar_sum`. `prepare_dataset.py` excludes generated candidate files and
+filters every historical row that contains a removed event-mutation intent.
+The 300-row train layer, 90-row validation layer, and 60-row sealed holdout are
+manually authored. `value` and `duration_min` are accepted only in
+`calendar_add` when the user explicitly supplies them. The application, not the
+model, calculates a requested sum.
+
+Do not run `tools/generate_calendar_training_dataset.py`. Validate and stage
+the checked-in manual data directly:
+
+```powershell
+python -m unittest discover -s tools/calendar_sft -p "test_*.py"
+python tools/calendar_sft/prepare_dataset.py --check-only
+python tools/calendar_sft/prepare_dataset.py `
+  --output-dir build/calendar_sft_dataset_v14 `
+  --overwrite
+```
+
+The V14 holdout uses stable identifiers `V14H001` through `V14H060` and is
+never used for fitting or model selection. A V14 adapter must start from the
+locked clean base checkpoint, not from an earlier adapter that learned removed
+intents.
+
+### Historical layers
+
 The reviewed source history is retained in the manually authored v5 and v6
 JSONL files. The v7 clock and Gregorian calendar additions are manually
 authored in `docs/calendar_assistant_manual_train_v7.jsonl` and
@@ -90,8 +118,8 @@ The result is `build/calendar_sft_dataset/` with three disjoint files:
 
 - `train.jsonl` is the only SFT input.
 - `validation.jsonl` is used during training selection.
-- `holdout.jsonl` is never used to tune a model. It contains independently
-  authored cases for dates, searches, updates, partial commands and refusals.
+- `holdout.jsonl` is never used to tune a model. V14 contains independently
+  authored add, search, sum, mutation-refusal, identity, and note cases.
 
 Every row is normalised to the exact Android temporal system prompt:
 

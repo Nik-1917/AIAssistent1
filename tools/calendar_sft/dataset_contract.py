@@ -1,7 +1,7 @@
 """Shared validation for calendar-assistant supervised data and model output.
 
 The module deliberately has no third-party dependencies. It validates the
-contract that Android accepts before a record can reach an SFT job or a score.
+training contract before a record can reach an SFT job or a score.
 """
 
 from __future__ import annotations
@@ -16,7 +16,20 @@ from typing import Any, Iterable
 
 
 INTENTS = frozenset(
-    {"chat", "calendar_add", "calendar_search", "calendar_update", "calendar_delete", "calendar_sum"},
+    {
+        "chat",
+        "calendar_add",
+        "calendar_search",
+        "calendar_update",
+        "calendar_delete",
+        "calendar_sum",
+        "note_add",
+    },
+)
+V14_INTENTS = frozenset({"chat", "note_add", "calendar_add", "calendar_search", "calendar_sum"})
+V14_FORBIDDEN_INTENTS = frozenset({"calendar_delete", "calendar_update"})
+CALENDAR_INTENTS = frozenset(
+    {"calendar_add", "calendar_search", "calendar_update", "calendar_delete", "calendar_sum"},
 )
 TOP_LEVEL_KEYS = frozenset({"intent", "reply", "params"})
 RUNTIME_SYSTEM_RE = re.compile(
@@ -34,10 +47,17 @@ CLOCK_RE = re.compile(
     r"\b(?:\d|[01]\d|2[0-3]):[0-5]\d\b"
     r"|\b(?:\d|[01]\d|2[0-3])\s+(?:(?:[0-5]\d)\b|утра\b|дня\b|вечера\b|ночи\b)",
 )
+NOTE_COMMAND_RE = re.compile(
+    r"^\s*(?:(?:запиши|добавь|сохрани)\s+)?в\s+заметки\s*"
+    r"(?::|,|-)?\s*(?P<text>.+?)\s*$",
+    re.IGNORECASE | re.DOTALL,
+)
 ACTION_REPLY_PREFIXES = (
     "Событие создано:",
     "Событие изменено:",
     "Событие удалено:",
+    "Заметка сохранена:",
+    "Сохраняю заметку.",
 )
 FORBIDDEN_GENERIC_REPLIES = frozenset(
     {
@@ -180,22 +200,23 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
         _fail(location, "must contain exactly intent, reply, and params")
     if _contains_null(response):
         _fail(location, "must not contain null")
-    if _contains_forbidden_text_punctuation(response):
-        _fail(location, "must not contain forbidden text punctuation")
-
     intent = response["intent"]
     if intent not in INTENTS:
         _fail(f"{location}.intent", f"unsupported intent {intent!r}")
+    # note_add.params.text is opaque user-authored text and may contain any
+    # punctuation that the user wants preserved verbatim.
+    if intent != "note_add" and _contains_forbidden_text_punctuation(response):
+        _fail(location, "must not contain forbidden text punctuation")
     reply = _require_string(response["reply"], f"{location}.reply", non_empty=True)
     if reply in FORBIDDEN_GENERIC_REPLIES:
         _fail(f"{location}.reply", "uses an excluded generic fallback reply")
     if CLARIFICATION_REPLY_RE.search(reply):
         _fail(f"{location}.reply", "must not ask the user for clarification")
-    if intent != "chat" and CALENDAR_FIELD_REQUEST_RE.search(reply):
+    if intent in CALENDAR_INTENTS and CALENDAR_FIELD_REQUEST_RE.search(reply):
         _fail(f"{location}.reply", "must not request a missing calendar field")
-    if YEAR_RE.search(reply):
+    if intent in CALENDAR_INTENTS and YEAR_RE.search(reply):
         _fail(f"{location}.reply", "must not contain a year")
-    if CLOCK_RE.search(reply):
+    if intent in CALENDAR_INTENTS and CLOCK_RE.search(reply):
         _fail(f"{location}.reply", "must spell event times in words")
     params = response["params"]
     if not isinstance(params, dict):
@@ -213,6 +234,8 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
         _validate_delete(params, reply, location)
     elif intent == "calendar_sum":
         _validate_sum(params, reply, location)
+    elif intent == "note_add":
+        _validate_note_add(params, reply, location)
     else:
         _validate_update(params, reply, location)
     return response
@@ -385,6 +408,14 @@ def _validate_sum(params: dict[str, Any], reply: str, location: str) -> None:
     _reject_action_reply_prefix(reply, location, "a calendar_sum")
 
 
+def _validate_note_add(params: dict[str, Any], reply: str, location: str) -> None:
+    if set(params) != {"text"}:
+        _fail(f"{location}.params", "note_add needs exactly one text field")
+    _require_string(params["text"], f"{location}.params.text", non_empty=True)
+    if reply != "Сохраняю заметку.":
+        _fail(f"{location}.reply", "note_add reply must be exactly 'Сохраняю заметку.'")
+
+
 def normalize_record(record: Any, location: str) -> dict[str, Any]:
     """Validate a JSONL row and return its deterministic training representation."""
 
@@ -397,6 +428,17 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
     messages = record["messages"]
     if not isinstance(messages, list) or len(messages) not in {3, 4}:
         _fail(f"{location}.messages", "must contain system, one or two user messages, and assistant")
+    last_index = len(messages) - 1
+    last_message = messages[last_index]
+    if not isinstance(last_message, dict) or set(last_message) != {"role", "content"}:
+        _fail(f"{location}.messages[{last_index}]", "each message needs exactly role and content")
+    if last_message["role"] != "assistant":
+        _fail(f"{location}.messages[{last_index}].role", "last role must be assistant")
+    assistant_response = parse_and_validate_assistant_response(
+        last_message["content"],
+        f"{location}.messages[{last_index}].content",
+    )
+    is_note_add = assistant_response["intent"] == "note_add"
     normalized_messages: list[dict[str, str]] = []
     for index, message in enumerate(messages):
         if not isinstance(message, dict) or set(message) != {"role", "content"}:
@@ -407,24 +449,36 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
             if role != "system":
                 _fail(f"{location}.messages[0].role", "first role must be system")
             content = canonical_system_prompt(content)
-        elif index == len(messages) - 1:
+        elif index == last_index:
             if role != "assistant":
                 _fail(f"{location}.messages[{index}].role", "last role must be assistant")
-            response = parse_and_validate_assistant_response(content, f"{location}.messages[{index}].content")
-            content = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
+            content = json.dumps(assistant_response, ensure_ascii=False, separators=(",", ":"))
         elif role != "user":
             _fail(f"{location}.messages[{index}].role", "middle roles must be user")
-        elif FORBIDDEN_TEXT_PUNCTUATION_RE.search(content):
+        elif not is_note_add and FORBIDDEN_TEXT_PUNCTUATION_RE.search(content):
             _fail(
                 f"{location}.messages[{index}].content",
                 "must not contain forbidden text punctuation",
             )
-        elif CLOCK_RE.search(content):
+        elif not is_note_add and CLOCK_RE.search(content):
             _fail(
                 f"{location}.messages[{index}].content",
                 "must spell clock times in words",
             )
         normalized_messages.append({"role": role, "content": content})
+    if is_note_add:
+        source_text = normalized_messages[-2]["content"]
+        matched = NOTE_COMMAND_RE.fullmatch(source_text)
+        if not matched:
+            _fail(
+                f"{location}.messages[-2].content",
+                "note_add source must use a supported note command prefix",
+            )
+        if matched.group("text") != assistant_response["params"]["text"]:
+            _fail(
+                f"{location}.messages[-1].content.params.text",
+                "must exactly preserve the note text after the command prefix",
+            )
     normalized: dict[str, Any] = {"category": category, "messages": normalized_messages}
     if "case_id" in record:
         normalized["case_id"] = _require_string(record["case_id"], f"{location}.case_id", non_empty=True)

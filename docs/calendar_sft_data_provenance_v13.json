@@ -1,0 +1,53 @@
+{
+  "format_version": 1,
+  "purpose": "Rights register for the clean-room AIAssistent1 assistant SFT v13 dataset and its independent negative holdout.",
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v13-20260906",
+  "review": {
+    "reviewed_by": "AIAssistent1 project rights holder",
+    "reviewed_on": "2026-09-06",
+    "decision_evidence": "Direct rights-holder authorization in the Codex task on 2026-09-06 confirms that V13 and the negative holdout belong to the project, contain no real personal data, and are permitted for model training and derivative-weight distribution. The authorization approves exactly 260 manually authored train and validation examples plus 40 independent holdout examples and approves the implementation plan. Earlier sources retain the verified authorization recorded by the V12 register. The dataset generator was not run. prepare_dataset.py only assembled approved sources into the exact V13 artifacts."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "0e04195d59ea55ea0dd41b8c2f73362dc1dc40fa179fe44b38a37501fadffb04"
+    },
+    "validation": {
+      "sha256": "a676e4019785fc08958e8aed9e16103093ab21910007c5110cbb5859391304ae"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_data_provenance_v12.json; covers all retained V1-V12 train and validation sources",
+      "rights_evidence": "All retained earlier sources are covered by the VERIFIED V12 rights register.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_train_v13.jsonl; sha256=f43625e5136d31fdbd2844c5727600fb663c802723a1eb6333ac206bdbfa0e33",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 200 manually authored V13 training examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_manual_eval_v13.jsonl; sha256=3baf26d9257393eac21ad4aa5d5bf7684426ae6c0a84920e58d31e0fcda197ef",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 60 manually authored V13 validation examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    },
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_assistant_negative_holdout_v13.jsonl; sha256=9feec64165bc3cce004e18fa7f4793c34cd54429e6b64812fcbd234838322c24",
+      "rights_evidence": "Direct rights-holder authorization on 2026-09-06 covers the 40 manually authored independent negative holdout examples.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

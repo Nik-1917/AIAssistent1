@@ -1,7 +1,7 @@
 """Score model JSON outputs against the independent calendar holdout.
 
 Predictions are JSONL objects with exactly two keys:
-    {"case_id":"H001","output":"{...strict assistant JSON...}"}
+    {"case_id":"V14H001","output":"{...strict assistant JSON...}"}
 
 The scorer intentionally does not compare the wording of `reply`; it validates
 reply-format rules, reports exact executable params, and separately applies a
@@ -22,14 +22,29 @@ from dataset_contract import (
     file_sha256,
     load_jsonl,
     parse_and_validate_assistant_response,
+    V14_FORBIDDEN_INTENTS,
+    V14_INTENTS,
 )
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_HOLDOUT = ROOT / "docs" / "calendar_assistant_manual_holdout.jsonl"
+DEFAULT_HOLDOUT = ROOT / "docs" / "calendar_assistant_manual_holdout_v14.jsonl"
 DEFAULT_SEMANTIC_ACCEPTANCE = (
-    ROOT / "docs" / "calendar_assistant_holdout_semantic_acceptance.json"
+    ROOT / "docs" / "calendar_assistant_manual_holdout_v14_semantic_acceptance.json"
 )
+V14_CRITICAL_TEMPORAL_FIELDS = {
+    "V14H001": ("starts_at",),
+    "V14H002": ("starts_at",),
+    "V14H003": ("starts_at",),
+    "V14H007": ("duration_min",),
+    "V14H008": ("duration_min",),
+    "V14H017": ("duration_min",),
+    "V14H018": ("duration_min",),
+    "V14H028": ("range_start", "range_end"),
+    "V14H029": ("range_start", "range_end"),
+    "V14H043": ("range_start", "range_end"),
+    "V14H044": ("range_start", "range_end"),
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,6 +120,73 @@ def params_semantically_equal(
         normalized_actual == normalize_semantic_text_case(candidate)
         for candidate in (expected, *accepted_alternatives)
     )
+
+
+def extract_raw_intent(output: str) -> str | None:
+    """Read an emitted intent without requiring the rest of the response to validate."""
+
+    try:
+        payload = json.loads(output)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    intent = payload.get("intent")
+    return intent if isinstance(intent, str) else None
+
+
+def is_json_object(output: str) -> bool:
+    try:
+        return isinstance(json.loads(output), dict)
+    except json.JSONDecodeError:
+        return False
+
+
+def extract_raw_params(output: str) -> dict[str, Any] | None:
+    """Read emitted params even when reply wording or the intent schema is invalid."""
+
+    try:
+        payload = json.loads(output)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    params = payload.get("params")
+    return params if isinstance(params, dict) else None
+
+
+def critical_temporal_fields_match(
+    case_id: str,
+    actual_params: dict[str, Any] | None,
+    expected_params: dict[str, Any],
+) -> bool | None:
+    fields = V14_CRITICAL_TEMPORAL_FIELDS.get(case_id)
+    if fields is None:
+        return None
+    if actual_params is None:
+        return False
+    return all(
+        field in actual_params
+        and field in expected_params
+        and actual_params[field] == expected_params[field]
+        for field in fields
+    )
+
+
+def v14_output_violations(
+    output: str,
+    parsed: dict[str, Any] | None = None,
+) -> tuple[str, ...]:
+    violations: list[str] = []
+    intent = extract_raw_intent(output)
+    if intent is None and parsed is not None:
+        intent = parsed.get("intent")
+    if intent is not None and intent not in V14_INTENTS:
+        violations.append(f"intent {intent!r} is forbidden by the V14 contract")
+    for forbidden in sorted(V14_FORBIDDEN_INTENTS):
+        if forbidden in output:
+            violations.append(f"output contains forbidden intent name {forbidden!r}")
+    return tuple(violations)
 
 
 def load_semantic_acceptance(
@@ -193,6 +275,13 @@ def main() -> int:
     intent_match_count = 0
     params_match_count = 0
     semantic_pass_count = 0
+    forbidden_intent_count = 0
+    forbidden_literal_count = 0
+    json_object_valid_count = 0
+    mutation_request_total = 0
+    mutation_request_chat_count = 0
+    critical_temporal_total = 0
+    critical_temporal_pass_count = 0
 
     for row in holdout:
         case_id = row["case_id"]
@@ -200,20 +289,50 @@ def main() -> int:
         totals = by_category[category]
         totals["total"] += 1
         actual_text = predictions.get(case_id)
-        if actual_text is None:
-            errors.append({"case_id": case_id, "error": "missing prediction"})
-            continue
-        try:
-            actual = parse_and_validate_assistant_response(actual_text, f"prediction[{case_id}]")
-        except DatasetContractError as error:
-            errors.append({"case_id": case_id, "error": str(error)})
-            continue
-        valid_response_count += 1
-        totals["valid_response"] += 1
         expected = parse_and_validate_assistant_response(
             row["messages"][-1]["content"],
             f"holdout[{case_id}]",
         )
+        critical_temporal_match = critical_temporal_fields_match(
+            case_id,
+            extract_raw_params(actual_text) if actual_text is not None else None,
+            expected["params"],
+        )
+        if critical_temporal_match is not None:
+            critical_temporal_total += 1
+            if critical_temporal_match:
+                critical_temporal_pass_count += 1
+        if category == "manual_v14_holdout_refuse":
+            mutation_request_total += 1
+        if actual_text is None:
+            errors.append({"case_id": case_id, "error": "missing prediction"})
+            continue
+        if is_json_object(actual_text):
+            json_object_valid_count += 1
+        raw_intent = extract_raw_intent(actual_text)
+        if category == "manual_v14_holdout_refuse":
+            if raw_intent == "chat":
+                mutation_request_chat_count += 1
+        violations = v14_output_violations(actual_text)
+        if raw_intent is not None and raw_intent not in V14_INTENTS:
+            forbidden_intent_count += 1
+            totals["forbidden_intent"] += 1
+        if any("forbidden intent name" in violation for violation in violations):
+            forbidden_literal_count += 1
+            totals["forbidden_literal"] += 1
+        try:
+            actual = parse_and_validate_assistant_response(actual_text, f"prediction[{case_id}]")
+        except DatasetContractError as error:
+            error_text = str(error)
+            if violations:
+                error_text += "; " + "; ".join(violations)
+            errors.append({"case_id": case_id, "error": error_text})
+            continue
+        if violations:
+            errors.append({"case_id": case_id, "error": "; ".join(violations)})
+            continue
+        valid_response_count += 1
+        totals["valid_response"] += 1
         intent_match = actual["intent"] == expected["intent"]
         params_match = actual["params"] == expected["params"]
         semantic_params_match = params_semantically_equal(
@@ -261,17 +380,37 @@ def main() -> int:
             "intent_match_percent": percent(metrics["intent_match"], metrics["total"]),
             "params_match_percent": percent(metrics["params_match"], metrics["total"]),
             "semantic_pass_percent": percent(metrics["semantic_pass"], metrics["total"]),
+            "forbidden_intent_percent": percent(metrics["forbidden_intent"], metrics["total"]),
+            "forbidden_literal_percent": percent(metrics["forbidden_literal"], metrics["total"]),
         }
         for category, metrics in sorted(by_category.items())
     }
     report: dict[str, Any] = {
-        "format_version": 2,
+        "format_version": 4,
         "total_cases": total,
         "predictions_received": len(predictions),
+        "json_object_valid_count": json_object_valid_count,
+        "json_object_valid_percent": percent(json_object_valid_count, total),
         "valid_response_percent": percent(valid_response_count, total),
         "intent_match_percent": percent(intent_match_count, total),
         "params_match_percent": percent(params_match_count, total),
         "semantic_pass_percent": percent(semantic_pass_count, total),
+        "forbidden_intent_count": forbidden_intent_count,
+        "forbidden_intent_percent": percent(forbidden_intent_count, total),
+        "forbidden_literal_count": forbidden_literal_count,
+        "forbidden_literal_percent": percent(forbidden_literal_count, total),
+        "mutation_request_total": mutation_request_total,
+        "mutation_request_chat_count": mutation_request_chat_count,
+        "mutation_request_chat_percent": percent(
+            mutation_request_chat_count,
+            mutation_request_total,
+        ),
+        "critical_temporal_total": critical_temporal_total,
+        "critical_temporal_pass_count": critical_temporal_pass_count,
+        "critical_temporal_pass_percent": percent(
+            critical_temporal_pass_count,
+            critical_temporal_total,
+        ),
         "semantic_acceptance": {
             "path": report_path(args.semantic_acceptance),
             "sha256": file_sha256(args.semantic_acceptance),
