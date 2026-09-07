@@ -53,4 +53,16 @@ class SpeechTextChunkerTest {
             SpeechTextChunker.split("Да? Нет! «Возможно…» Продолжим"),
         )
     }
+
+    @Test
+    fun `treats colon as the end of a sentence`() {
+        assertEquals(
+            listOf("Статус:", "готово"),
+            SpeechTextChunker.split("Статус: готово"),
+        )
+        assertEquals(
+            listOf("Статус:", "готово"),
+            SpeechTextChunker.split("Статус:готово"),
+        )
+    }
 }

@@ -27,7 +27,8 @@ object SpeechTextChunker {
         var sentenceStart = 0
         var index = 0
         while (index < text.length) {
-            if (text[index] !in SENTENCE_ENDINGS) {
+            val sentenceEnding = text[index]
+            if (sentenceEnding !in SENTENCE_ENDINGS) {
                 index++
                 continue
             }
@@ -35,7 +36,7 @@ object SpeechTextChunker {
             var sentenceEnd = index + 1
             while (sentenceEnd < text.length && text[sentenceEnd] in SENTENCE_ENDINGS) sentenceEnd++
             while (sentenceEnd < text.length && text[sentenceEnd] in CLOSING_CHARACTERS) sentenceEnd++
-            if (sentenceEnd < text.length && !text[sentenceEnd].isWhitespace()) {
+            if (sentenceEnding != ':' && sentenceEnd < text.length && !text[sentenceEnd].isWhitespace()) {
                 index = sentenceEnd
                 continue
             }
@@ -73,6 +74,6 @@ object SpeechTextChunker {
         return chunks
     }
 
-    private val SENTENCE_ENDINGS = setOf('.', '!', '?', '…')
+    private val SENTENCE_ENDINGS = setOf('.', '!', '?', '…', ':')
     private val CLOSING_CHARACTERS = setOf('"', '\'', '»', ')', ']', '}')
 }

@@ -37,13 +37,33 @@ class SpeechTextNormalizerTest {
         assertEquals(
             listOf(
                 "Документация:",
-                "ссылка: сайт.",
-                "адрес: эйч ти ти пи эс двоеточие двойной слэш example точка com слэш v два " +
+                "ссылка:",
+                "сайт.",
+                "адрес:",
+                "эйч ти ти пи эс двоеточие двойной слэш example точка com слэш v два " +
                     "вопросительный знак a равно один и b равно два",
             ),
             SpeechTextChunker.split(
                 SpeechTextNormalizer.normalize("**Документация:** [сайт](https://example.com/v2?a=1&b=2)"),
             ),
+        )
+    }
+
+    @Test
+    fun `removes markdown images from speech`() {
+        assertEquals(
+            "Текст до текст после",
+            SpeechTextNormalizer.normalize(
+                "Текст до ![кот](https://example.com/cat.png) текст после",
+            ),
+        )
+    }
+
+    @Test
+    fun `removes emoji icons and complete emoji sequences from speech`() {
+        assertEquals(
+            "Привет мир готово",
+            SpeechTextNormalizer.normalize("Привет 😊 мир ❤️ 👍🏽 👨‍💻 1️⃣ ✓ → готово"),
         )
     }
 
@@ -315,7 +335,8 @@ class SpeechTextNormalizerTest {
             listOf(
                 "ссылка:",
                 "Open docs.",
-                "адрес: эйч ти ти пи эс двоеточие двойной слэш example точка com слэш guide",
+                "адрес:",
+                "эйч ти ти пи эс двоеточие двойной слэш example точка com слэш guide",
             ),
             SpeechTextChunker.split(
                 SpeechTextNormalizer.normalize("[Open docs](https://example.com/guide)"),

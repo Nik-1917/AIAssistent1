@@ -54,14 +54,17 @@ object SpeechTextNormalizer {
             return "\uE000${marker(protected.lastIndex)}\uE001"
         }
 
-        var text = source
+        var text = removeEmojiAndIcons(source)
         text = Regex("(?s)(```|~~~)[^\\r\\n]*\\r?\\n?.*?\\1").replace(text, " ")
         text = Regex("`[^`\\r\\n]+`").replace(text, " ")
         text = removeBalancedCurlyBlocks(text)
         text = markdownLink.replace(text) { match ->
-            val kind = if (match.groupValues[1] == "!") "изображение" else "ссылка"
-            val spokenTitle = markEnglishPhrases("${match.groupValues[2]}.")
-            protect("$kind: $spokenTitle адрес: ${speakUrl(match.groupValues[3])}")
+            if (match.groupValues[1] == "!") {
+                " "
+            } else {
+                val spokenTitle = markEnglishPhrases("${match.groupValues[2]}.")
+                protect("ссылка: $spokenTitle адрес: ${speakUrl(match.groupValues[3])}")
+            }
         }
         text = url.replace(text) { match ->
             val raw = match.value
@@ -106,6 +109,40 @@ object SpeechTextNormalizer {
         }
         return text.replace(Regex("\\s+"), " ").trim()
     }
+
+    private fun removeEmojiAndIcons(value: String): String {
+        val result = StringBuilder(value.length)
+        var index = 0
+        while (index < value.length) {
+            val codePoint = Character.codePointAt(value, index)
+            val codePointLength = Character.charCount(codePoint)
+            if (isKeycapStart(codePoint)) {
+                var nextIndex = index + codePointLength
+                if (nextIndex < value.length && Character.codePointAt(value, nextIndex) == VARIATION_SELECTOR_16) {
+                    nextIndex += Character.charCount(VARIATION_SELECTOR_16)
+                }
+                if (nextIndex < value.length && Character.codePointAt(value, nextIndex) == COMBINING_ENCLOSING_KEYCAP) {
+                    index = nextIndex + Character.charCount(COMBINING_ENCLOSING_KEYCAP)
+                    continue
+                }
+            }
+            if (!isEmojiOrIcon(codePoint)) result.appendCodePoint(codePoint)
+            index += codePointLength
+        }
+        return result.toString()
+    }
+
+    private fun isKeycapStart(codePoint: Int): Boolean =
+        codePoint == '#'.code || codePoint == '*'.code || codePoint in '0'.code..'9'.code
+
+    private fun isEmojiOrIcon(codePoint: Int): Boolean =
+        codePoint == ZERO_WIDTH_JOINER ||
+            codePoint == COMBINING_ENCLOSING_KEYCAP ||
+            codePoint in VARIATION_SELECTORS ||
+            codePoint in EMOJI_MODIFIERS ||
+            codePoint in EMOJI_TAG_CHARACTERS ||
+            MISCELLANEOUS_EMOJI_AND_ICONS.any { codePoint in it } ||
+            codePoint in SUPPLEMENTARY_EMOJI
 
     private fun speechSection(value: String): String =
         "$SPEECH_SECTION_BOUNDARY${value.trim()}$SPEECH_SECTION_BOUNDARY"
@@ -341,4 +378,29 @@ object SpeechTextNormalizer {
     private val LETTERS = mapOf('А' to "а", 'Б' to "бэ", 'В' to "вэ", 'Г' to "гэ", 'Д' to "дэ", 'Е' to "е", 'Ё' to "ё", 'Ж' to "жэ", 'З' to "зэ", 'И' to "и", 'Й' to "й", 'К' to "ка", 'Л' to "эл", 'М' to "эм", 'Н' to "эн", 'О' to "о", 'П' to "пэ", 'Р' to "эр", 'С' to "эс", 'Т' to "тэ", 'У' to "у", 'Ф' to "эф", 'Х' to "ха", 'Ц' to "цэ", 'Ч' to "че", 'Ш' to "ша", 'Щ' to "ща", 'Ы' to "ы", 'Э' to "э", 'Ю' to "ю", 'Я' to "я", 'A' to "эй", 'B' to "би", 'C' to "си", 'D' to "ди", 'E' to "и", 'F' to "эф", 'G' to "джи", 'H' to "эйч", 'I' to "ай", 'J' to "джей", 'K' to "кей", 'L' to "эл", 'M' to "эм", 'N' to "эн", 'O' to "оу", 'P' to "пи", 'Q' to "кью", 'R' to "ар", 'S' to "эс", 'T' to "ти", 'U' to "ю", 'V' to "ви", 'W' to "дабл ю", 'X' to "икс", 'Y' to "уай", 'Z' to "зэд", '0' to "ноль", '1' to "один", '2' to "два", '3' to "три", '4' to "четыре", '5' to "пять", '6' to "шесть", '7' to "семь", '8' to "восемь", '9' to "девять")
     private val CODE_SYMBOLS = mapOf('=' to "равно", '+' to "плюс", '-' to "минус", '*' to "звёздочка", '/' to "слэш", '\\' to "обратный слэш", '_' to "подчёркивание", '.' to "точка", ':' to "двоеточие", ';' to "точка с запятой", ',' to "запятая", '(' to "открывающая скобка", ')' to "закрывающая скобка", '{' to "открывающая фигурная скобка", '}' to "закрывающая фигурная скобка", '[' to "открывающая квадратная скобка", ']' to "закрывающая квадратная скобка", '"' to "кавычка", '\'' to "апостроф", '<' to "меньше", '>' to "больше")
     private val PARENTHETICAL_TRAILING_PUNCTUATION = setOf(',', ';', ':', '.', '!', '?', '…')
+    private const val ZERO_WIDTH_JOINER = 0x200D
+    private const val VARIATION_SELECTOR_16 = 0xFE0F
+    private const val COMBINING_ENCLOSING_KEYCAP = 0x20E3
+    private val VARIATION_SELECTORS = 0xFE00..0xFE0F
+    private val EMOJI_MODIFIERS = 0x1F3FB..0x1F3FF
+    private val EMOJI_TAG_CHARACTERS = 0xE0020..0xE007F
+    private val MISCELLANEOUS_EMOJI_AND_ICONS = listOf(
+        0x00A9..0x00A9,
+        0x00AE..0x00AE,
+        0x203C..0x203C,
+        0x2049..0x2049,
+        0x2122..0x2122,
+        0x2139..0x2139,
+        0x2190..0x21FF,
+        0x2300..0x23FF,
+        0x2460..0x24FF,
+        0x25A0..0x27BF,
+        0x2934..0x2935,
+        0x2B00..0x2BFF,
+        0x3030..0x3030,
+        0x303D..0x303D,
+        0x3297..0x3297,
+        0x3299..0x3299,
+    )
+    private val SUPPLEMENTARY_EMOJI = 0x1F000..0x1FAFF
 }
