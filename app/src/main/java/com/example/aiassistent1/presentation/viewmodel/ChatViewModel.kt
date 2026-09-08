@@ -89,6 +89,7 @@ class ChatViewModel(
         SpeechPlaybackController(context, it)
     }
     private var generationJob: Job? = null
+    private var activeChatJob: Job? = null
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
@@ -101,7 +102,7 @@ class ChatViewModel(
 
     init {
         checkFirstRun()
-        observeHistory()
+        observeHistory("general")
         observeModelState()
         observeSettings()
         observeVoiceInput()
@@ -115,7 +116,8 @@ class ChatViewModel(
         viewModelScope.launch {
             if (settingsRepository.isFirstRun.first()) {
                 withContext(Dispatchers.IO) {
-                    chatRepository.deleteAllMessages()
+                    chatRepository.deleteAllMessages("general")
+                    chatRepository.deleteAllMessages("calendar")
                 }
                 settingsRepository.setFirstRunCompleted()
             }
@@ -147,7 +149,20 @@ class ChatViewModel(
         }
         viewModelScope.launch {
             settingsRepository.systemPromptEnabled.collect { enabled ->
-                mutableUiState.update { it.copy(systemPromptEnabled = enabled) }
+                val newChatId = if (enabled) "calendar" else "general"
+                if (mutableUiState.value.activeChatId != newChatId) {
+                    mutableUiState.update {
+                        it.copy(
+                            systemPromptEnabled = enabled,
+                            activeChatId = newChatId,
+                            messages = emptyList(),
+                            isHistoryLoaded = false
+                        )
+                    }
+                    observeHistory(newChatId)
+                } else {
+                    mutableUiState.update { it.copy(systemPromptEnabled = enabled) }
+                }
             }
         }
         viewModelScope.launch {
@@ -358,37 +373,48 @@ class ChatViewModel(
         clearPersistedVoiceDraft()
     }
 
+    fun setChatMode(isCalendar: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSystemPromptEnabled(isCalendar)
+        }
+    }
+
     private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
         val trimmedText = text.trim()
+        val state = mutableUiState.value
         when {
             trimmedText.isEmpty() -> return false
             trimmedText.length > MAX_MESSAGE_LENGTH -> {
                 mutableUiState.update { it.copy(error = "Сообщение не должно превышать 3000 символов") }
                 return false
             }
-            mutableUiState.value.isProcessing -> return false
+            state.isProcessing -> return false
         }
 
         stopVoiceInput()
         speechPlaybackController?.stop(SpeechStopReason.NewMessage)
 
-        val userMessage = ChatMessage(role = MessageRole.USER, content = trimmedText)
-        mutableUiState.update { state ->
-            val newMessages = if (state.systemPromptEnabled) listOf(userMessage) else state.messages + userMessage
-            state.copy(
+        val userMessage = ChatMessage(
+            role = MessageRole.USER,
+            content = trimmedText,
+            chatId = state.activeChatId
+        )
+        mutableUiState.update { currentState ->
+            val newMessages = if (currentState.isCalendarMode) listOf(userMessage) else currentState.messages + userMessage
+            currentState.copy(
                 messages = newMessages,
                 isProcessing = true,
-                isStopping = false, // Сбрасываем флаг при новом сообщении
+                isStopping = false,
                 isVoiceMode = preserveVoiceMode,
-                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
+                voiceDraft = currentState.voiceDraft.copy(isVisible = false, isRecording = false),
                 error = null,
             )
         }
 
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                if (mutableUiState.value.systemPromptEnabled) {
-                    chatRepository.deleteAllMessages()
+                if (mutableUiState.value.isCalendarMode) {
+                    chatRepository.deleteAllMessages("calendar")
                 }
                 chatRepository.saveMessage(userMessage)
             }
@@ -406,16 +432,21 @@ class ChatViewModel(
                 val responseFlowResult = sendMessage(
                     modelContextBuilder.build(
                         currentState.messages,
-                        appendChatStyleInstruction = !currentState.systemPromptEnabled,
+                        appendChatStyleInstruction = !currentState.isCalendarMode,
                     ),
-                    useSystemPrompt = currentState.systemPromptEnabled,
+                    useSystemPrompt = true,
+                    isCalendarMode = currentState.isCalendarMode,
                 )
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                     return@launch
                 }
 
-                assistantMessage = ChatMessage(role = MessageRole.ASSISTANT, content = "")
+                assistantMessage = ChatMessage(
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    chatId = currentState.activeChatId
+                )
                 mutableUiState.update { state ->
                     state.copy(messages = state.messages + assistantMessage!!)
                 }
@@ -684,7 +715,8 @@ class ChatViewModel(
 
     fun clearChat() {
         val activeGeneration = generationJob
-        val voiceDraft = mutableUiState.value.voiceDraft
+        val state = mutableUiState.value
+        val voiceDraft = state.voiceDraft
         llmEngine.cancelGeneration()
         stopVoiceInput()
         speechPlaybackController?.stop(SpeechStopReason.User)
@@ -694,7 +726,7 @@ class ChatViewModel(
 
         viewModelScope.launch {
             activeGeneration?.join()
-            withContext(Dispatchers.IO) { chatRepository.deleteAllMessages() }
+            withContext(Dispatchers.IO) { chatRepository.deleteAllMessages(state.activeChatId) }
             settingsRepository.setChatScrollPosition(ChatScrollPosition())
             mutableUiState.update {
                 it.copy(
@@ -1547,10 +1579,12 @@ class ChatViewModel(
         }
     }
 
-    private fun observeHistory() {
-        viewModelScope.launch {
-            chatRepository.observeMessages().collect { persistedMessages ->
+    private fun observeHistory(chatId: String) {
+        activeChatJob?.cancel()
+        activeChatJob = viewModelScope.launch {
+            chatRepository.observeMessages(chatId).collect { persistedMessages ->
                 mutableUiState.update { state ->
+                    if (state.activeChatId != chatId) return@update state
                     val persistedIds = persistedMessages.mapTo(mutableSetOf()) { it.id }
                     val pendingMessages = state.messages.filterNot { it.id in persistedIds }
                     state.copy(

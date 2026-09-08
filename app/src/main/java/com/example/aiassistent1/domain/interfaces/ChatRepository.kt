@@ -4,8 +4,8 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
-    fun observeMessages(): Flow<List<ChatMessage>>
+    fun observeMessages(chatId: String): Flow<List<ChatMessage>>
     suspend fun saveMessage(message: ChatMessage)
     suspend fun deleteMessage(id: String)
-    suspend fun deleteAllMessages()
+    suspend fun deleteAllMessages(chatId: String)
 }

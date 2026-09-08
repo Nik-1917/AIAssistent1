@@ -10,4 +10,5 @@ data class ChatMessageEntity(
     val content: String,
     val createdAtEpochMillis: Long,
     val isInterrupted: Boolean,
+    val chatId: String = "general",
 )

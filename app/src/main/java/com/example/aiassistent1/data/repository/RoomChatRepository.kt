@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.map
 class RoomChatRepository(
     private val chatMessageDao: ChatMessageDao,
 ) : ChatRepository {
-    override fun observeMessages(): Flow<List<ChatMessage>> =
-        chatMessageDao.observeAll().map { messages -> messages.map(ChatMessageEntity::toDomain) }
+    override fun observeMessages(chatId: String): Flow<List<ChatMessage>> =
+        chatMessageDao.observeAll(chatId).map { messages -> messages.map(ChatMessageEntity::toDomain) }
 
     override suspend fun saveMessage(message: ChatMessage) {
         chatMessageDao.upsert(message.toEntity())
@@ -22,8 +22,8 @@ class RoomChatRepository(
         chatMessageDao.deleteById(id)
     }
 
-    override suspend fun deleteAllMessages() {
-        chatMessageDao.deleteAll()
+    override suspend fun deleteAllMessages(chatId: String) {
+        chatMessageDao.deleteAll(chatId)
     }
 }
 
@@ -33,6 +33,7 @@ private fun ChatMessageEntity.toDomain() = ChatMessage(
     content = content,
     createdAtEpochMillis = createdAtEpochMillis,
     isInterrupted = isInterrupted,
+    chatId = chatId,
 )
 
 private fun ChatMessage.toEntity() = ChatMessageEntity(
@@ -41,4 +42,5 @@ private fun ChatMessage.toEntity() = ChatMessageEntity(
     content = content,
     createdAtEpochMillis = createdAtEpochMillis,
     isInterrupted = isInterrupted,
+    chatId = chatId,
 )

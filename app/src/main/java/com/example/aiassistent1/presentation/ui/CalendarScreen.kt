@@ -84,6 +84,7 @@ import java.util.Locale
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     onNavigateBack: () -> Unit,
+    onOpenChat: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -138,6 +139,9 @@ fun CalendarScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 actions = {
+                    TextButton(onClick = onOpenChat) {
+                        Text("Чат")
+                    }
                     IconButton(onClick = viewModel::refreshCalendar) {
                         Icon(
                             imageVector = Icons.Default.Refresh,

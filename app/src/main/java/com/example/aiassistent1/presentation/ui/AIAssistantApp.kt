@@ -56,6 +56,10 @@ fun AIAssistantApp(
             AppDestination.CALENDAR -> CalendarScreen(
                 viewModel = calendarViewModel,
                 onNavigateBack = { destination = AppDestination.CHAT },
+                onOpenChat = {
+                    chatViewModel.setChatMode(false)
+                    destination = AppDestination.CHAT
+                }
             )
         }
     }

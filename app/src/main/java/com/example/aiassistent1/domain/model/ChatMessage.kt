@@ -8,6 +8,7 @@ data class ChatMessage(
     val content: String,
     val createdAtEpochMillis: Long = System.currentTimeMillis(),
     val isInterrupted: Boolean = false,
+    val chatId: String = "general",
 )
 
 enum class MessageRole {

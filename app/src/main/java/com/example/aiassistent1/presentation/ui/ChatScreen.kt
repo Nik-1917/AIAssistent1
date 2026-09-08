@@ -474,8 +474,8 @@ fun ChatScreen(
                 onLoadModel = { filePickerLauncher.launch("*/*") },
                 onSelectModel = viewModel::selectModel,
                 onOpenSettings = { showSettingsDialog = true },
-                systemPromptEnabled = uiState.systemPromptEnabled,
-                onSystemPromptToggle = viewModel::setSystemPromptEnabled,
+                isCalendarMode = uiState.isCalendarMode,
+                onModeToggle = { viewModel.setChatMode(it) },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -1444,8 +1444,8 @@ private fun ChatTopBar(
     onLoadModel: () -> Unit,
     onSelectModel: (String) -> Unit,
     onOpenSettings: () -> Unit,
-    systemPromptEnabled: Boolean,
-    onSystemPromptToggle: (Boolean) -> Unit,
+    isCalendarMode: Boolean,
+    onModeToggle: (Boolean) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -1459,23 +1459,23 @@ private fun ChatTopBar(
                     if (modelAvailability == ModelAvailability.Available) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (!systemPromptEnabled) "Чат" else "Календарь",
+                            text = if (!isCalendarMode) "Чат" else "Календарь",
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier
                                 .background(
-                                    color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary.copy(
+                                    color = if (!isCalendarMode) MaterialTheme.colorScheme.primary.copy(
                                         alpha = 0.8f
                                     ) else Color.Transparent,
                                     shape = RoundedCornerShape(4.dp)
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = if (!systemPromptEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                    color = if (!isCalendarMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                     shape = RoundedCornerShape(4.dp)
                                 )
-                                .clickable { onSystemPromptToggle(!systemPromptEnabled) }
+                                .clickable { onModeToggle(!isCalendarMode) }
                                 .padding(horizontal = 6.dp, vertical = 2.dp),
-                            color = if (!systemPromptEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (!isCalendarMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

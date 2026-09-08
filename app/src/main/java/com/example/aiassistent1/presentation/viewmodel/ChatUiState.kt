@@ -39,8 +39,11 @@ data class ChatUiState(
     val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,
     val autoPlaybackEnabled: Boolean = false,
+    val activeChatId: String = "general",
     val speechRate: Float = SpeechRate.DEFAULT,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",
     val modelParams: GenerationParams = GenerationParams(),
-)
+) {
+    val isCalendarMode: Boolean get() = activeChatId == "calendar"
+}

@@ -180,7 +180,7 @@ object AppModule {
 			context.applicationContext,
 			ChatDatabase::class.java,
 			"ai_assistant.db",
-		).build().also { chatDatabase = it }
+		).fallbackToDestructiveMigration().build().also { chatDatabase = it }
 	}
 
 	private fun provideNoteDatabase(context: Context): NoteDatabase = noteDatabase ?: synchronized(this) {
