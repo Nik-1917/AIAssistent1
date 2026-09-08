@@ -188,9 +188,16 @@ def _contains_forbidden_text_punctuation(value: Any) -> bool:
     return False
 
 
-def parse_and_validate_assistant_response(content: str, location: str = "assistant.content") -> dict[str, Any]:
+def parse_and_validate_assistant_response(
+    content: str,
+    location: str = "assistant.content",
+    *,
+    contract_version: str | None = None,
+) -> dict[str, Any]:
     """Parse and validate one strict response object, returning its JSON value."""
 
+    if contract_version not in {None, "v12.1"}:
+        _fail(location, f"unsupported contract version {contract_version!r}")
     raw = _require_string(content, location, non_empty=True)
     try:
         response = json.loads(raw)
@@ -227,7 +234,7 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
             _fail(f"{location}.params", "chat params must be exactly {}")
         _reject_action_reply_prefix(reply, location, "a chat")
     elif intent == "calendar_add":
-        _validate_add(params, reply, location)
+        _validate_add(params, reply, location, contract_version=contract_version)
     elif intent == "calendar_search":
         _validate_search(params, reply, location)
     elif intent == "calendar_delete":
@@ -241,7 +248,9 @@ def parse_and_validate_assistant_response(content: str, location: str = "assista
     return response
 
 
-def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
+def _validate_add(
+    params: dict[str, Any], reply: str, location: str, *, contract_version: str | None = None,
+) -> None:
     allowed = {"title", "starts_at", "date", "time", "duration_min", "value"}
     if not set(params).issubset(allowed):
         _fail(f"{location}.params", "contains an unsupported calendar_add field")
@@ -272,7 +281,11 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
         and "duration_min" in params
         and (has_starts_at or (has_date and has_time))
     )
-    if is_complete:
+    if contract_version == "v12.1":
+        expected_reply = v12_1_creation_reply(params)
+        if reply != expected_reply:
+            _fail(f"{location}.reply", "v12.1 calendar_add reply must contain only the title")
+    elif is_complete:
         if ", в " not in reply:
             _fail(
                 f"{location}.reply",
@@ -280,6 +293,15 @@ def _validate_add(params: dict[str, Any], reply: str, location: str) -> None:
             )
     else:
         _reject_action_reply_prefix(reply, location, "a partial calendar_add")
+
+
+def v12_1_creation_reply(params: dict[str, Any]) -> str:
+    """Copy the reviewed title, without a saving claim or scheduling metadata."""
+
+    title = params.get("title")
+    if title is None:
+        return "Название события не указано."
+    return title if title.endswith((".", "!", "?")) else title + "."
 
 
 def _validate_search(params: dict[str, Any], reply: str, location: str) -> None:
@@ -421,9 +443,12 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
 
     if not isinstance(record, dict):
         _fail(location, "row must be an object")
-    allowed = {"category", "messages", "case_id"}
+    allowed = {"category", "messages", "case_id", "contract_version"}
     if not set(record).issubset(allowed) or not {"category", "messages"}.issubset(record):
-        _fail(location, "row must contain category and messages only, with optional case_id")
+        _fail(location, "row needs category and messages, with optional case_id and contract_version")
+    contract_version = record.get("contract_version")
+    if "contract_version" in record and contract_version != "v12.1":
+        _fail(location, "explicit contract_version must be v12.1")
     category = _require_string(record["category"], f"{location}.category", non_empty=True)
     messages = record["messages"]
     if not isinstance(messages, list) or len(messages) not in {3, 4}:
@@ -437,6 +462,7 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
     assistant_response = parse_and_validate_assistant_response(
         last_message["content"],
         f"{location}.messages[{last_index}].content",
+        contract_version=contract_version,
     )
     is_note_add = assistant_response["intent"] == "note_add"
     normalized_messages: list[dict[str, str]] = []
@@ -480,6 +506,8 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
                 "must exactly preserve the note text after the command prefix",
             )
     normalized: dict[str, Any] = {"category": category, "messages": normalized_messages}
+    if contract_version is not None:
+        normalized["contract_version"] = contract_version
     if "case_id" in record:
         normalized["case_id"] = _require_string(record["case_id"], f"{location}.case_id", non_empty=True)
     return normalized

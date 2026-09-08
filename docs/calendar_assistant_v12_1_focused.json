@@ -1,0 +1,41 @@
+{
+  "train": {
+    "system": "Сегодня дата и время:2026-09-07 (понедельник) 15:00 Europe/Samara ответ JSON",
+    "cases": [
+      {"id":"T12101","category":"v12_1_title_relative","users":["запиши на послезавтра к парикмахеру"],"response":{"intent":"calendar_add","reply":"К парикмахеру.","params":{"title":"К парикмахеру","date":"2026-09-09"}}},
+      {"id":"T12102","category":"v12_1_title_uppercase","users":["ЗАПИШИ НА ПОСЛЕЗАВТРА К ПАРИКМАХЕРУ"],"response":{"intent":"calendar_add","reply":"К парикмахеру.","params":{"title":"К парикмахеру","date":"2026-09-09"}}},
+      {"id":"T12103","category":"v12_1_title_word_order","users":["Запиши к парикмахеру на завтра."],"response":{"intent":"calendar_add","reply":"К парикмахеру.","params":{"title":"К парикмахеру","date":"2026-09-08"}}},
+      {"id":"T12104","category":"v12_1_title_word_order","users":["На завтра запиши к стоматологу."],"response":{"intent":"calendar_add","reply":"К стоматологу.","params":{"title":"К стоматологу","date":"2026-09-08"}}},
+      {"id":"T12105","category":"v12_1_title_weekday","users":["Запиши в четверг на массаж."],"response":{"intent":"calendar_add","reply":"Массаж.","params":{"title":"Массаж","date":"2026-09-10"}}},
+      {"id":"T12106","category":"v12_1_title_relative","users":["Поставь через три дня тренировку."],"response":{"intent":"calendar_add","reply":"Тренировка.","params":{"title":"Тренировка","date":"2026-09-10"}}},
+      {"id":"T12107","category":"v12_1_title_time","users":["Добавь завтра в шесть вечера йогу."],"response":{"intent":"calendar_add","reply":"Йога.","params":{"title":"Йога","starts_at":"2026-09-08T18:00"}}},
+      {"id":"T12108","category":"v12_1_title_duration","users":["Создай пробежку на полчаса."],"response":{"intent":"calendar_add","reply":"Пробежка.","params":{"title":"Пробежка","date":"2026-09-07","duration_min":30}}},
+      {"id":"T12109","category":"v12_1_title_value","users":["Добавь завтра прогулку ценностью пять."],"response":{"intent":"calendar_add","reply":"Прогулка.","params":{"title":"Прогулка","date":"2026-09-08","value":5}}},
+      {"id":"T12110","category":"v12_1_no_title","users":["Создай событие завтра."],"response":{"intent":"calendar_add","reply":"Название события не указано.","params":{"date":"2026-09-08"}}},
+      {"id":"T12111","category":"v12_1_literal_title","users":["Добавь событие с названием \"Завтра\"."],"response":{"intent":"calendar_add","reply":"Завтра.","params":{"title":"Завтра","date":"2026-09-07"}}},
+      {"id":"T12112","category":"v12_1_short_context","users":["Запиши чтение на завтра.","В восемь вечера на четверть часа."],"response":{"intent":"calendar_add","reply":"Чтение.","params":{"title":"Чтение","starts_at":"2026-09-08T20:00","duration_min":15}}}
+    ]
+  },
+  "validation": {
+    "system": "Сегодня дата и время:2028-02-28 (понедельник) 10:00 Europe/Samara ответ JSON",
+    "cases": [
+      {"id":"E12101","category":"v12_1_title_word_order","users":["Послезавтра запиши меня к парикмахеру."],"response":{"intent":"calendar_add","reply":"К парикмахеру.","params":{"title":"К парикмахеру","date":"2028-03-01"}}},
+      {"id":"E12102","category":"v12_1_title_relative","users":["Запиши завтра на маникюр."],"response":{"intent":"calendar_add","reply":"Маникюр.","params":{"title":"Маникюр","date":"2028-02-29"}}},
+      {"id":"E12103","category":"v12_1_title_uppercase","users":["ДОБАВЬ В СРЕДУ ПЛАВАНИЕ."],"response":{"intent":"calendar_add","reply":"Плавание.","params":{"title":"Плавание","date":"2028-03-01"}}},
+      {"id":"E12104","category":"v12_1_short_context","users":["Запиши завтра к терапевту в полдень.","На двадцать минут."],"response":{"intent":"calendar_add","reply":"К терапевту.","params":{"title":"К терапевту","starts_at":"2028-02-29T12:00","duration_min":20}}},
+      {"id":"E12105","category":"v12_1_no_title","users":["Поставь завтра в семь утра."],"response":{"intent":"calendar_add","reply":"Название события не указано.","params":{"starts_at":"2028-02-29T07:00"}}},
+      {"id":"E12106","category":"v12_1_literal_title","users":["Создай на завтра событие \"Вечерняя прогулка\"."],"response":{"intent":"calendar_add","reply":"Вечерняя прогулка.","params":{"title":"Вечерняя прогулка","date":"2028-02-29"}}}
+    ]
+  },
+  "holdout": {
+    "system": "Сегодня дата и время:2027-12-31 (пятница) 21:00 Europe/Samara ответ JSON",
+    "cases": [
+      {"id":"H12101","category":"v12_1_title_word_order","users":["К парикмахеру запиши на послезавтра."],"response":{"intent":"calendar_add","reply":"К парикмахеру.","params":{"title":"К парикмахеру","date":"2028-01-02"}}},
+      {"id":"H12102","category":"v12_1_title_uppercase","users":["ЗАВТРА ЗАПИШИ НА СТРИЖКУ."],"response":{"intent":"calendar_add","reply":"Стрижка.","params":{"title":"Стрижка","date":"2028-01-01"}}},
+      {"id":"H12103","category":"v12_1_short_context","users":["Добавь завтра уборку в десять утра.","На полтора часа, ценность ноль."],"response":{"intent":"calendar_add","reply":"Уборка.","params":{"title":"Уборка","starts_at":"2028-01-01T10:00","duration_min":90,"value":0}}},
+      {"id":"H12104","category":"v12_1_title_explicit_date","users":["Запиши второго января к окулисту."],"response":{"intent":"calendar_add","reply":"К окулисту.","params":{"title":"К окулисту","date":"2028-01-02"}}},
+      {"id":"H12105","category":"v12_1_no_title","users":["Добавь послезавтра на четверть часа."],"response":{"intent":"calendar_add","reply":"Название события не указано.","params":{"date":"2028-01-02","duration_min":15}}},
+      {"id":"H12106","category":"v12_1_literal_title","users":["Запиши на завтра событие \"Планы на завтра\"."],"response":{"intent":"calendar_add","reply":"Планы на завтра.","params":{"title":"Планы на завтра","date":"2028-01-01"}}}
+    ]
+  }
+}

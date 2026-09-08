@@ -1,0 +1,28 @@
+{
+  "version": "v12.1",
+  "checked_on": "2026-09-07",
+  "checks": {
+    "regression_tests": {"passed": 162, "failed": 0, "v12_1_tests": 15},
+    "source_sha256": "PASS",
+    "preserved_payload_sha256": "PASS",
+    "jsonl_contract": "PASS",
+    "exact_context_disjointness": "PASS",
+    "holdout_wording_exclusion": "PASS",
+    "new_focused_wording_disjointness": "PASS",
+    "provenance_binding": "PASS",
+    "offline_tokenization": {
+      "model_snapshot": "Qwen3-4B-Instruct-2507/cdbee75f17c01a7cc42f958dc650907174af0554",
+      "max_seq_length": 256,
+      "truncated_rows": 0,
+      "train": {"rows": 1872, "max_tokens": 256},
+      "validation": {"rows": 541, "max_tokens": 206},
+      "holdout": {"rows": 63, "max_tokens": 178}
+    }
+  },
+  "data_generator": "NOT_RUN",
+  "test_search_periods": "NOT_RUN_IMPORTS_DATA_GENERATOR",
+  "training": "NOT_RUN",
+  "model_holdout": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "android_device_validation": "NOT_RUN"
+}
