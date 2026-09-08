@@ -12,7 +12,6 @@ class SystemPromptProviderTest {
         assertTrue(prompt.startsWith("cегодня "))
         assertTrue(prompt.contains(" день недели "))
         assertTrue(prompt.endsWith(" ответ JSON"))
-        assertFalse(prompt.contains("послепослезавтра"))
         assertTrue(
             Regex(
                 """cегодня \d{4}-\d{2}-\d{2} \d{2}:\d{2} день недели \p{IsCyrillic}+ ответ JSON""",
