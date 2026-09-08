@@ -7,6 +7,8 @@ import java.util.Locale
 
 /** Converts message text to a Russian-friendly form used only by speech synthesis. */
 object SpeechTextNormalizer {
+    private const val SPEECH_ICON_BOUNDARY = "\uE202"
+    private val markdownImage = Regex("!\\[[^]]*]\\((?:[^()\\r\\n]|\\([^()\\r\\n]*\\))*\\)")
     private val markdownLink = Regex("(!)?\\[([^]]+)]\\((https?://[^)\\s]+)\\)", RegexOption.IGNORE_CASE)
     private val url = Regex("(?i)\\b(?:https?://|www\\.)[^\\s<>()\\[\\]{}]+")
     private val atxHeading = Regex("(?m)^[\\t ]{0,3}#{1,6}[\\t ]+(.+?)(?:[\\t ]+#+)?[\\t ]*$")
@@ -74,23 +76,25 @@ object SpeechTextNormalizer {
             return "\uE000${marker(protected.lastIndex)}\uE001"
         }
 
-        var text = removeEmojiAndIcons(source)
+        var text = source
         text = Regex("(?s)(```|~~~)[^\\r\\n]*\\r?\\n?.*?\\1").replace(text, " ")
         text = Regex("`[^`\\r\\n]+`").replace(text, " ")
         text = removeBalancedCurlyBlocks(text)
+        text = markdownImage.replace(text, " $SPEECH_ICON_BOUNDARY ")
         text = markdownLink.replace(text) { match ->
             if (match.groupValues[1] == "!") {
-                " "
+                " $SPEECH_ICON_BOUNDARY "
             } else {
-                val spokenTitle = markEnglishPhrases("${match.groupValues[2]}.")
-                protect("ссылка: $spokenTitle адрес: ${speakUrl(match.groupValues[3])}")
+                val spokenTitle = markEnglishPhrases(replaceEmojiAndIcons("${match.groupValues[2]}."))
+                protect("ссылка: $spokenTitle адрес: ${replaceEmojiAndIcons(speakUrl(match.groupValues[3]))}")
             }
         }
         text = url.replace(text) { match ->
             val raw = match.value
             val trailing = raw.takeLastWhile { it in ".,!?;:" }
-            protect(speakUrl(raw.dropLast(trailing.length))) + trailing
+            protect(replaceEmojiAndIcons(speakUrl(raw.dropLast(trailing.length)))) + trailing
         }
+        text = replaceEmojiAndIcons(text)
         text = protectParentheticals(text) { value -> protect(value) }
 
         text = setextHeading.replace(text) { match -> speechSection(match.groupValues[1]) }
@@ -164,10 +168,16 @@ object SpeechTextNormalizer {
         protected.indices.reversed().forEach { index ->
             text = text.replace("\uE000${marker(index)}\uE001", protected[index])
         }
-        return text.replace(Regex("\\s+"), " ").trim()
+        // Handle dashes after list markers, then collapse mixed runs while keeping trailing punctuation.
+        text = text.replace("\u2014", SPEECH_ICON_BOUNDARY)
+        text = text.replace(Regex("(?:\\s*$SPEECH_ICON_BOUNDARY\\s*)+([.,!?…:;]*)")) { match ->
+            "${match.groupValues[1]}$SPEECH_SECTION_BOUNDARY"
+        }
+        return text.replace(Regex("\\s+"), " ")
+            .trim { it.isWhitespace() || it.toString() == SPEECH_SECTION_BOUNDARY }
     }
 
-    private fun removeEmojiAndIcons(value: String): String {
+    private fun replaceEmojiAndIcons(value: String): String {
         val result = StringBuilder(value.length)
         var index = 0
         while (index < value.length) {
@@ -179,11 +189,16 @@ object SpeechTextNormalizer {
                     nextIndex += Character.charCount(VARIATION_SELECTOR_16)
                 }
                 if (nextIndex < value.length && Character.codePointAt(value, nextIndex) == COMBINING_ENCLOSING_KEYCAP) {
+                    result.append(SPEECH_ICON_BOUNDARY)
                     index = nextIndex + Character.charCount(COMBINING_ENCLOSING_KEYCAP)
                     continue
                 }
             }
-            if (!isEmojiOrIcon(codePoint)) result.appendCodePoint(codePoint)
+            if (isEmojiOrIcon(codePoint)) {
+                result.append(SPEECH_ICON_BOUNDARY)
+            } else {
+                result.appendCodePoint(codePoint)
+            }
             index += codePointLength
         }
         return result.toString()

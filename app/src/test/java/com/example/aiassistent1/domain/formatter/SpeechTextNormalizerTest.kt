@@ -79,11 +79,11 @@ class SpeechTextNormalizerTest {
     }
 
     @Test
-    fun `removes markdown images from speech`() {
+    fun `uses markdown images as speech boundaries`() {
         assertEquals(
-            "Текст до текст после",
-            SpeechTextNormalizer.normalize(
-                "Текст до ![кот](https://example.com/cat.png) текст после",
+            listOf("Текст до", "текст после"),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Текст до ![кот](https://example.com/cat.png) текст после"),
             ),
         )
     }
@@ -91,9 +91,90 @@ class SpeechTextNormalizerTest {
     @Test
     fun `removes emoji icons and complete emoji sequences from speech`() {
         assertEquals(
-            "Привет мир готово",
-            SpeechTextNormalizer.normalize("Привет 😊 мир ❤️ 👍🏽 👨‍💻 1️⃣ ✓ → готово"),
+            listOf("Привет", "мир", "готово"),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("Привет 😊 мир ❤️ 👍🏽 👨‍💻 1️⃣ ✓ → готово"),
+            ),
         )
+    }
+
+    @Test
+    fun `uses one boundary for each mixed icon and image group`() {
+        listOf(
+            "—", "———", "— —", "— 😊 — ![картинка](images/photo.png) — ❤️",
+            "😊", "😊❤️👍", "😊 ❤️ 👍", "👨‍💻", "👍🏽", "❤️", "1️⃣", "1\u20E3",
+            "![кот](https://example.com/cat.png)",
+            "![](https://example.com/cat.png)",
+            "![😊](images/cat.png)",
+            "![кот](https://example.com/cat_(small).png)",
+            "😊 ![кот](https://example.com/cat.png) ❤️ ![](images/photo.png) ✓",
+        ).forEach { group ->
+            assertEquals(
+                group,
+                "До${SPEECH_SECTION_BOUNDARY}после",
+                SpeechTextNormalizer.normalize("До $group после"),
+            )
+            assertEquals(
+                group,
+                listOf("До", "после"),
+                SpeechTextChunker.split(SpeechTextNormalizer.normalize("До${group}после")),
+            )
+        }
+    }
+
+    @Test
+    fun `does not create empty speech from leading trailing or icon only groups`() {
+        val group = "— 😊 ❤️ — ![кот](https://example.com/cat.png) 1️⃣ —"
+        assertEquals("Текст", SpeechTextNormalizer.normalize("$group Текст $group"))
+        assertEquals("", SpeechTextNormalizer.normalize(group))
+        assertEquals(emptyList<String>(), SpeechTextChunker.split(SpeechTextNormalizer.normalize(group)))
+    }
+
+    @Test
+    fun `keeps punctuation next to icons with the preceding speech fragment`() {
+        listOf("До. 😊 после", "До 😊. после", "До: 😊 после").forEach { source ->
+            val ending = if (':' in source) ":" else "."
+            assertEquals(
+                listOf("До$ending", "после"),
+                SpeechTextChunker.split(SpeechTextNormalizer.normalize(source)),
+            )
+        }
+    }
+
+    @Test
+    fun `does not introduce boundaries for icons in excluded code or image descriptions`() {
+        assertEquals("До после", SpeechTextNormalizer.normalize("До `😊` после"))
+        assertEquals(
+            listOf("До", "после"),
+            SpeechTextChunker.split(
+                SpeechTextNormalizer.normalize("До ![описание 😊 картинки ❤️](images/photo.png) после"),
+            ),
+        )
+    }
+
+    @Test
+    fun `recognizes an emoji boundary immediately after a url`() {
+        assertEquals(
+            listOf("эйч ти ти пи эс двоеточие двойной слэш example точка com", "дальше"),
+            SpeechTextChunker.split(SpeechTextNormalizer.normalize("https://example.com😊 дальше")),
+        )
+    }
+
+    @Test
+    fun `keeps ordinary hyphens and en dashes unchanged`() {
+        assertEquals(
+            "Кто-то сказал - да – возможно",
+            SpeechTextNormalizer.normalize("Кто-то сказал - да – возможно"),
+        )
+    }
+
+    @Test
+    fun `keeps punctuation attached at an em dash boundary`() {
+        assertEquals(
+            listOf("Готово.", "Дальше"),
+            SpeechTextChunker.split(SpeechTextNormalizer.normalize("Готово — 😊. Дальше")),
+        )
+        assertEquals("", SpeechTextNormalizer.normalize("— —"))
     }
 
     @Test
