@@ -37,6 +37,7 @@ import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.parser.AssistantResponseParser
+import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.service.GenerationForegroundService
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
@@ -83,6 +84,7 @@ class ChatViewModel(
     private val searchCalendarEvents: SearchCalendarEventsUseCase,
     private val assistantResponseParser: AssistantResponseParser,
     private val modelContextBuilder: ModelContextBuilder,
+    private val formatCalendarField: FormatCalendarFieldUseCase,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private val speechPlaybackController = speechPlayback?.let {
@@ -1243,42 +1245,15 @@ class ChatViewModel(
             state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isFormatting = true, error = null))
         }
         viewModelScope.launch {
-            val result = runCatching {
-                llmEngine.ensureLoaded().getOrThrow()
-                val request = ChatMessage(
-                    role = MessageRole.USER,
-                    content = """
-                        {"intent":"calendar_field_format","field":"${field.modelName}","value":${JSONObject.quote(rawValue)},"expected_format":"${field.expectedFormat}","instruction":"Format only the requested field. Return JSON with exactly field and value. Do not change other event data."}
-                    """.trimIndent(),
-                )
-                var response = ""
-                llmEngine.generate(
-                    listOf(
-                        ChatMessage(
-                            role = MessageRole.SYSTEM,
-                            content = "Return only valid JSON. Never create, search, or modify calendar events.",
-                        ),
-                        request,
-                    ),
-                ).collect { response += it }
-                parseFormattedCalendarField(field, response)
-            }
-            result.onSuccess { value -> applyCalendarDraftField(field, value) }
+            formatCalendarField(
+                modelName = field.modelName,
+                expectedFormat = field.expectedFormat,
+                rawValue = rawValue
+            ).mapCatching { value ->
+                validateCalendarField(field, value).getOrThrow()
+            }.onSuccess { value -> applyCalendarDraftField(field, value) }
                 .onFailure { error -> setCalendarDraftError(error.userMessage()) }
         }
-    }
-
-    private fun parseFormattedCalendarField(field: CalendarEventField, response: String): String {
-        val jsonStart = response.indexOf('{')
-        val jsonEnd = response.lastIndexOf('}')
-        require(jsonStart >= 0 && jsonEnd > jsonStart) { "Модель не вернула JSON для форматирования поля." }
-        val json = JSONObject(response.substring(jsonStart, jsonEnd + 1))
-        require(json.optString("field") == field.modelName) { "Модель вернула другое поле." }
-        val value = when (field) {
-            CalendarEventField.DurationMinutes -> json.optInt("value", 0).toString()
-            else -> json.optString("value")
-        }
-        return validateCalendarField(field, value).getOrThrow()
     }
 
     private fun validateCalendarField(field: CalendarEventField, rawValue: String): Result<String> = runCatching {

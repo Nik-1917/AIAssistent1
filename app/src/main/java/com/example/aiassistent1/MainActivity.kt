@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
                     searchCalendarEvents = AppModule.provideSearchCalendarEventsUseCase(applicationContext),
                     assistantResponseParser = AppModule.provideAssistantResponseParser(),
                     modelContextBuilder = AppModule.provideModelContextBuilder(),
+                    formatCalendarField = AppModule.provideFormatCalendarFieldUseCase(llmEngine),
                 ) as T
             }
         }

@@ -7,7 +7,7 @@ import org.junit.Test
 class SystemPromptProviderTest {
     @Test
     fun `contains only current temporal context and JSON instruction`() {
-        val prompt = SystemPromptProvider().getSystemPrompt()
+        val prompt = SystemPromptProvider().getSystemPrompt(isCalendarMode = true)
 
         assertTrue(prompt.startsWith("cегодня "))
         assertTrue(prompt.contains(" день недели "))
@@ -17,5 +17,13 @@ class SystemPromptProviderTest {
                 """cегодня \d{4}-\d{2}-\d{2} \d{2}:\d{2} день недели \p{IsCyrillic}+ ответ JSON""",
             ).matches(prompt),
         )
+    }
+
+    @Test
+    fun `returns chat prompt when calendar mode is disabled`() {
+        val prompt = SystemPromptProvider().getSystemPrompt(isCalendarMode = false)
+
+        assertTrue(prompt.contains("Ты - полезный ИИ ассистент."))
+        assertFalse(prompt.endsWith(" ответ JSON"))
     }
 }

@@ -39,6 +39,7 @@ import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
+import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -124,6 +125,9 @@ object AppModule {
 		llmEngine,
         provideSystemPromptProvider()
 	)
+
+	fun provideFormatCalendarFieldUseCase(llmEngine: LLMEngine): FormatCalendarFieldUseCase =
+		FormatCalendarFieldUseCase(llmEngine)
 
 	fun provideCalendarEventRepository(context: Context): CalendarEventRepository =
 		calendarEventRepository ?: synchronized(this) {

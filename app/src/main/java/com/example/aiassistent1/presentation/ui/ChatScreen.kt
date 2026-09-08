@@ -2303,7 +2303,7 @@ private enum class MicrophoneAction {
 }
 
 private fun ModelState.label(): String = when (this) {
-    ModelState.Unloaded -> "Модель будет загружена при первом сообщении"
+    ModelState.Unloaded -> "Модель найдена"
     ModelState.Loading -> "Загрузка модели"
     ModelState.Ready -> "Модель готова"
     is ModelState.Error -> "Ошибка: ${this.message}"
