@@ -28,11 +28,25 @@ class CalendarEventDraftUiStateTest {
             date = "2030-12-07",
             time = "15:00",
             durationMinutes = 120,
+            value = 0,
         ).withNextField()
 
         assertEquals("2030-12-07T15:00", draft.startsAt)
         assertTrue(draft.isComplete)
         assertEquals(null, draft.activeField)
+    }
+
+    @Test
+    fun `requests value when the model omitted it`() {
+        val draft = CalendarEventDraftUiState(
+            title = "Проверка отчёта",
+            date = "2030-12-07",
+            time = "15:00",
+            durationMinutes = 120,
+        ).withNextField()
+
+        assertEquals(CalendarEventField.Value, draft.activeField)
+        assertFalse(draft.isComplete)
     }
 
     @Test

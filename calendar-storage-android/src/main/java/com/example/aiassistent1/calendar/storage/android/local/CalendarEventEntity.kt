@@ -1,5 +1,6 @@
 package com.example.aiassistent1.calendar.storage.android.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -18,4 +19,6 @@ data class CalendarEventEntity(
     val endsAtEpochMillis: Long,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+    @ColumnInfo(defaultValue = "NULL") val value: Long? = null,
+    @ColumnInfo(defaultValue = "0") val revision: Long = 0,
 )

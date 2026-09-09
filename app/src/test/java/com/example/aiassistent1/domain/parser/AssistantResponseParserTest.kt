@@ -4,6 +4,7 @@ import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarDeleteParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.CalendarUpdateParams
+import com.example.aiassistent1.domain.model.CalendarSumParams
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -60,6 +61,19 @@ class AssistantResponseParserTest {
         assertNull(params.startsAt)
         assertNull(params.date)
         assertEquals("15:00", params.time)
+    }
+
+    @Test
+    fun `normalizes a time-only starts_at emitted with an explicit date`() {
+        val response = parser.parse(
+            """{"intent":"calendar_add","reply":"Подтвердите","params":{"title":"Встреча","date":"2026-09-10","starts_at":"09:15","duration_min":30}}""",
+        )
+
+        val params = response?.params as CalendarAddParams
+        assertNull(params.startsAt)
+        assertEquals("2026-09-10", params.date)
+        assertEquals("09:15", params.time)
+        assertEquals(30, params.durationMin)
     }
 
     @Test
@@ -150,5 +164,26 @@ class AssistantResponseParserTest {
         assertTrue(params.target.useLastInRange)
         assertEquals("2026-08-25T00:00", params.target.rangeStart)
         assertEquals("2026-08-26T00:00", params.target.rangeEnd)
+    }
+
+    @Test
+    fun `parses sum and preserves an integer value`() {
+        val response = parser.parse(
+            """{"intent":"calendar_sum","reply":"Готовлю сумму","params":{"range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"}}""",
+        )
+
+        assertTrue(response?.params is CalendarSumParams)
+        assertNull((response?.params as CalendarSumParams).query)
+        val add = parser.parse(
+            """{"intent":"calendar_add","reply":"Событие","params":{"title":"Поезд","starts_at":"2026-08-25T15:00","duration_min":60,"value":0}}""",
+        )?.params as CalendarAddParams
+        assertEquals(0L, add.value)
+    }
+
+    @Test
+    fun `rejects coercion, arrays and surrounding text`() {
+        assertNull(parser.parse("""{"intent":"calendar_add","reply":"x","params":{"title":"x","date":"2026-08-25","duration_min":"60"}}"""))
+        assertNull(parser.parse("""prefix {"intent":"chat","reply":"x","params":{}} suffix"""))
+        assertNull(parser.parse("""{"intent":"chat","reply":"x","params":[]}"""))
     }
 }

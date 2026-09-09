@@ -3,6 +3,7 @@ package com.example.aiassistent1.presentation.viewmodel
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
 import com.example.aiassistent1.calendar.core.domain.CalendarEventChanges
 import com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand
+import com.example.aiassistent1.calendar.core.domain.CalendarUpdateTarget
 
 enum class CalendarUpdateField(val label: String) {
     Title("Новое название события"),
@@ -16,6 +17,8 @@ data class CalendarUpdateDraftUiState(
     val previewTitle: String,
     val previewStartsAt: String,
     val previewDurationMinutes: Int,
+    val target: CalendarUpdateTarget,
+    val requestId: String,
     val isSelectingField: Boolean = false,
     val activeField: CalendarUpdateField? = null,
     val input: String = "",
@@ -28,4 +31,5 @@ data class CalendarUpdateDraftUiState(
 data class CalendarUpdateTargetSelectionUiState(
     val candidates: List<CalendarEvent>,
     val command: CalendarUpdateCommand,
+    val requestId: String = "",
 )

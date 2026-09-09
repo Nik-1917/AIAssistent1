@@ -6,6 +6,9 @@ import com.example.aiassistent1.calendar.core.domain.CalendarEventRepository
 import com.example.aiassistent1.calendar.core.domain.CalendarEventUpdate
 import com.example.aiassistent1.calendar.storage.android.local.CalendarEventDao
 import com.example.aiassistent1.calendar.storage.android.local.CalendarEventEntity
+import com.example.aiassistent1.calendar.core.domain.CalendarMutation
+import com.example.aiassistent1.calendar.core.domain.CalendarReceipt
+import com.example.aiassistent1.calendar.core.domain.calendarResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -16,7 +19,7 @@ class RoomCalendarEventRepository(
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) : CalendarEventRepository {
 
-    override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> = runCatching {
+    override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> = calendarResult {
         validate(draft.title, draft.startsAtEpochMillis, draft.endsAtEpochMillis)
         val now = nowEpochMillis()
         val event = CalendarEventEntity(
@@ -26,12 +29,13 @@ class RoomCalendarEventRepository(
             endsAtEpochMillis = draft.endsAtEpochMillis,
             createdAtEpochMillis = now,
             updatedAtEpochMillis = now,
+            value = draft.value,
         )
         dao.insert(event)
         event.toDomain()
     }
 
-    override suspend fun getById(id: String): Result<CalendarEvent?> = runCatching {
+    override suspend fun getById(id: String): Result<CalendarEvent?> = calendarResult {
         require(id.isNotBlank()) { "Event id must not be blank." }
         dao.getById(id)?.toDomain()
     }
@@ -45,22 +49,23 @@ class RoomCalendarEventRepository(
             .map { events -> events.map(CalendarEventEntity::toDomain) }
     }
 
-    override suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent> = runCatching {
+    override suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent> = calendarResult {
         require(update.id.isNotBlank()) { "Event id must not be blank." }
         validate(update.title, update.startsAtEpochMillis, update.endsAtEpochMillis)
-        val existing = dao.getById(update.id)
-            ?: throw NoSuchElementException("Calendar event '${update.id}' does not exist.")
-        val changed = existing.copy(
-            title = update.title.trim(),
-            startsAtEpochMillis = update.startsAtEpochMillis,
-            endsAtEpochMillis = update.endsAtEpochMillis,
-            updatedAtEpochMillis = nowEpochMillis(),
-        )
-        check(dao.update(changed) == 1) { "Calendar event '${update.id}' was not updated." }
-        changed.toDomain()
+        dao.updateChecked(update, nowEpochMillis()).toDomain()
     }
 
-    override suspend fun delete(id: String): Result<Unit> = runCatching {
+    override suspend fun getReceipt(requestId: String): Result<CalendarReceipt?> = calendarResult {
+        dao.getReceipt(requestId)?.let { CalendarReceipt(it.requestId, it.kind, it.eventId, it.title) }
+    }
+
+    override suspend fun commit(requestId: String, mutation: CalendarMutation): Result<CalendarReceipt> = calendarResult {
+        dao.commitMutation(requestId, mutation, newId(), nowEpochMillis()).let {
+            CalendarReceipt(it.requestId, it.kind, it.eventId, it.title)
+        }
+    }
+
+    override suspend fun delete(id: String): Result<Unit> = calendarResult {
         require(id.isNotBlank()) { "Event id must not be blank." }
         if (dao.deleteById(id) != 1) {
             throw NoSuchElementException("Calendar event '$id' does not exist.")
@@ -71,7 +76,7 @@ class RoomCalendarEventRepository(
         query: String,
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
-    ): Result<List<CalendarEvent>> = runCatching {
+    ): Result<List<CalendarEvent>> = calendarResult {
         validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
         val normalizedQuery = query.trim()
         dao.findInRange(
@@ -87,7 +92,7 @@ class RoomCalendarEventRepository(
         query: String,
         rangeStartEpochMillis: Long?,
         rangeEndEpochMillis: Long?,
-    ): Result<List<CalendarEvent>> = runCatching {
+    ): Result<List<CalendarEvent>> = calendarResult {
         require(query.isNotBlank()) { "Event query must not be blank." }
         require((rangeStartEpochMillis == null) == (rangeEndEpochMillis == null)) {
             "Both target range boundaries must be supplied together."
@@ -103,14 +108,14 @@ class RoomCalendarEventRepository(
             .filter { event -> event.title.contains(normalizedQuery, ignoreCase = true) }
     }
 
-    override suspend fun getLastCreated(): Result<CalendarEvent?> = runCatching {
+    override suspend fun getLastCreated(): Result<CalendarEvent?> = calendarResult {
         dao.getLastCreated()?.toDomain()
     }
 
     override suspend fun getLastInRange(
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
-    ): Result<CalendarEvent?> = runCatching {
+    ): Result<CalendarEvent?> = calendarResult {
         validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
         dao.getLastInRange(rangeStartEpochMillis, rangeEndEpochMillis)?.toDomain()
     }
@@ -134,4 +139,6 @@ private fun CalendarEventEntity.toDomain() = CalendarEvent(
     endsAtEpochMillis = endsAtEpochMillis,
     createdAtEpochMillis = createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis,
+    value = value,
+    revision = revision,
 )

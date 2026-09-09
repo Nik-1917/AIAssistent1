@@ -11,6 +11,8 @@ import com.example.aiassistent1.calendar.core.domain.PrepareCalendarEventUpdateU
 import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTargetUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.CalendarCommandExecutor
+import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
 import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventRepository
 import com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapper
 import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
@@ -160,6 +162,11 @@ object AppModule {
 	fun provideCalendarDeleteCommandMapper(): CalendarDeleteCommandMapper =
 		CalendarDeleteCommandMapper()
 
+	fun provideCalendarCommandMapper(): CalendarCommandMapper = CalendarCommandMapper()
+
+	fun provideCalendarCommandExecutor(context: Context): CalendarCommandExecutor =
+		CalendarCommandExecutor(provideCalendarEventRepository(context))
+
 	fun provideDeleteCalendarEventUseCase(context: Context): DeleteCalendarEventUseCase =
 		DeleteCalendarEventUseCase(provideCalendarEventRepository(context))
 
@@ -200,6 +207,6 @@ object AppModule {
 			context.applicationContext,
 			CalendarDatabase::class.java,
 			"calendar_core.db",
-		).build().also { calendarDatabase = it }
+		).addMigrations(CalendarDatabase.MIGRATION_1_2).build().also { calendarDatabase = it }
 	}
 }

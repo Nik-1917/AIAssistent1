@@ -62,6 +62,7 @@ data class CalendarEventChanges(
     val date: LocalDate? = null,
     val time: LocalTime? = null,
     val durationMinutes: Int? = null,
+    val valueChange: CalendarValueChange = CalendarValueChange.Keep,
 ) {
     init {
         require(durationMinutes == null || durationMinutes > 0) {
@@ -71,7 +72,7 @@ data class CalendarEventChanges(
     }
 
     val isEmpty: Boolean
-        get() = title == null && date == null && time == null && durationMinutes == null
+        get() = title == null && date == null && time == null && durationMinutes == null && valueChange == CalendarValueChange.Keep
 }
 
 data class CalendarUpdateCommand(
@@ -88,7 +89,7 @@ sealed interface CalendarUpdateTargetResolution {
 class ResolveCalendarUpdateTargetUseCase(
     private val repository: CalendarEventRepository,
 ) {
-    suspend operator fun invoke(target: CalendarUpdateTarget): Result<CalendarUpdateTargetResolution> = runCatching {
+    suspend operator fun invoke(target: CalendarUpdateTarget): Result<CalendarUpdateTargetResolution> = calendarResult {
         val candidates = when (target.mode) {
             CalendarTargetMode.BY_QUERY -> repository.findForUpdate(
                 query = requireNotNull(target.query),
@@ -132,12 +133,11 @@ class PrepareCalendarEventUpdateUseCase(
         ).toMinutes()
         require(currentDurationMinutes > 0) { "У события некорректная длительность." }
 
-        val newStart = currentStart
+        val newLocalStart = currentStart
             .with(changes.date ?: currentStart.toLocalDate())
             .with(changes.time ?: currentStart.toLocalTime())
-            .atZone(zoneId)
-            .toInstant()
-            .toEpochMilli()
+        val newStart = if (changes.date == null && changes.time == null) event.startsAtEpochMillis
+            else CalendarTime.toEpochMillis(newLocalStart, zoneId)
         val durationMillis = Math.multiplyExact(
             (changes.durationMinutes ?: currentDurationMinutes).toLong(),
             MILLIS_PER_MINUTE,
@@ -148,6 +148,8 @@ class PrepareCalendarEventUpdateUseCase(
             title = changes.title ?: event.title,
             startsAtEpochMillis = newStart,
             endsAtEpochMillis = Math.addExact(newStart, durationMillis),
+            valueChange = changes.valueChange,
+            expectedRevision = event.revision,
         )
     }
 

@@ -3,6 +3,12 @@ package com.example.aiassistent1.calendar.core.domain
 import kotlinx.coroutines.flow.Flow
 
 interface CalendarEventRepository {
+    /** Receipt and mutation must commit in the same storage transaction. */
+    suspend fun commit(requestId: String, mutation: CalendarMutation): Result<CalendarReceipt> =
+        Result.failure(UnsupportedOperationException("Atomic calendar mutations are not implemented"))
+
+    suspend fun getReceipt(requestId: String): Result<CalendarReceipt?> = Result.success(null)
+
     suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent>
 
     suspend fun getById(id: String): Result<CalendarEvent?>

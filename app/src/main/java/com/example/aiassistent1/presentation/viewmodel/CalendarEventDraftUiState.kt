@@ -9,6 +9,7 @@ enum class CalendarEventField(val label: String) {
     Date("Дата (ГГГГ-ММ-ДД)"),
     Time("Время (ЧЧ:ММ)"),
     DurationMinutes("Длительность в минутах"),
+    Value("Ценность события"),
 }
 
 data class CalendarEventDraftUiState(
@@ -16,6 +17,8 @@ data class CalendarEventDraftUiState(
     val date: String? = null,
     val time: String? = null,
     val durationMinutes: Int? = null,
+    val value: Long? = null,
+    val requestId: String = "",
     val activeField: CalendarEventField? = null,
     val input: String = "",
     val error: String? = null,
@@ -26,7 +29,8 @@ data class CalendarEventDraftUiState(
         get() = if (date.isNullOrBlank() || time.isNullOrBlank()) null else "$date" + "T" + "$time"
 
     val isComplete: Boolean
-        get() = !title.isNullOrBlank() && !date.isNullOrBlank() && !time.isNullOrBlank() && durationMinutes != null
+        get() = !title.isNullOrBlank() && !date.isNullOrBlank() && !time.isNullOrBlank() &&
+            durationMinutes != null && value != null
 }
 
 val CalendarEventField.modelName: String
@@ -35,6 +39,7 @@ val CalendarEventField.modelName: String
         CalendarEventField.Date -> "date"
         CalendarEventField.Time -> "time"
         CalendarEventField.DurationMinutes -> "duration_min"
+        CalendarEventField.Value -> "value"
     }
 
 val CalendarEventField.expectedFormat: String
@@ -43,6 +48,7 @@ val CalendarEventField.expectedFormat: String
         CalendarEventField.Date -> "YYYY-MM-DD"
         CalendarEventField.Time -> "HH:MM"
         CalendarEventField.DurationMinutes -> "positive_integer_minutes"
+        CalendarEventField.Value -> "integer"
     }
 
 fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
@@ -51,6 +57,7 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
         date.isNullOrBlank() -> CalendarEventField.Date
         time.isNullOrBlank() -> CalendarEventField.Time
         durationMinutes == null -> CalendarEventField.DurationMinutes
+        value == null -> CalendarEventField.Value
         else -> null
     }
     return copy(activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)

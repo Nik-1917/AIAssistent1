@@ -23,7 +23,6 @@ class MainActivity : ComponentActivity() {
                     context = applicationContext,
                     chatRepository = AppModule.provideChatRepository(applicationContext),
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
-                    createCalendarEvent = AppModule.provideCreateCalendarEventUseCase(applicationContext),
                     calendarUpdateCommandMapper = AppModule.provideCalendarUpdateCommandMapper(),
                     resolveCalendarUpdateTarget = AppModule.provideResolveCalendarUpdateTargetUseCase(applicationContext),
                     prepareCalendarEventUpdate = AppModule.providePrepareCalendarEventUpdateUseCase(),
@@ -39,6 +38,8 @@ class MainActivity : ComponentActivity() {
                     assistantResponseParser = AppModule.provideAssistantResponseParser(),
                     modelContextBuilder = AppModule.provideModelContextBuilder(),
                     formatCalendarField = AppModule.provideFormatCalendarFieldUseCase(llmEngine),
+                    calendarCommandExecutor = AppModule.provideCalendarCommandExecutor(applicationContext),
+                    calendarCommandMapper = AppModule.provideCalendarCommandMapper(),
                 ) as T
             }
         }

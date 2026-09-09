@@ -9,7 +9,13 @@ data class AssistantResponse(
 sealed interface AssistantParams
 
 data class CalendarSearchParams(
-    val query: String,
+    val query: String?,
+    val rangeStart: String?,
+    val rangeEnd: String?,
+) : AssistantParams
+
+data class CalendarSumParams(
+    val query: String?,
     val rangeStart: String?,
     val rangeEnd: String?,
 ) : AssistantParams
@@ -20,8 +26,9 @@ data class CalendarAddParams(
     val durationMin: Int?,
     /** A known event date when the user has not specified its time yet. */
     val date: String? = null,
-    /** A known event time; Android resolves an omitted date from local current time. */
+    /** A known event time paired with a resolved date. */
     val time: String? = null,
+    val value: Long? = null,
 ) : AssistantParams
 
 /** JSON transport model only. Map it to calendar-core's CalendarUpdateCommand before execution. */
@@ -43,6 +50,8 @@ data class CalendarUpdateChangesParams(
     val date: String? = null,
     val time: String? = null,
     val durationMin: Int? = null,
+    val value: Long? = null,
+    val clearValue: Boolean = false,
 )
 
 /** JSON transport model for an immediate local-calendar deletion. */
