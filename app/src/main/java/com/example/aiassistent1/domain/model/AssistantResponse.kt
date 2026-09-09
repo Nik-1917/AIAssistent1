@@ -8,10 +8,6 @@ data class AssistantResponse(
 
 sealed interface AssistantParams
 
-data class NoteAddParams(
-    val text: String?,
-) : AssistantParams
-
 data class CalendarSearchParams(
     val query: String,
     val rangeStart: String?,

@@ -1,0 +1,57 @@
+{
+  "version": "v12.3",
+  "checked_on": "2026-09-09",
+  "max_seq_length": 256,
+  "tokenizer_directory": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_models\\Qwen3-4B-Instruct-2507\\cdbee75f17c01a7cc42f958dc650907174af0554",
+  "tokenizer_sha256": {
+    "tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "tokenizer_config.json": "a62ff0a2472a0fa1b8eaabcb57c59b58afa42a22831dc141400b6e0cf2b65ce3",
+    "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+    "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3"
+  },
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "splits": {
+    "train": {
+      "rows": 1964,
+      "max_tokens": 256,
+      "new_rows": 60,
+      "new_max_tokens": 128,
+      "over_limit": 0
+    },
+    "validation": {
+      "rows": 585,
+      "max_tokens": 206,
+      "new_rows": 36,
+      "new_max_tokens": 125,
+      "over_limit": 0
+    },
+    "holdout": {
+      "rows": 36,
+      "max_tokens": 134,
+      "new_rows": 36,
+      "new_max_tokens": 134,
+      "over_limit": 0
+    },
+    "calendar_holdout_v12_2": {
+      "rows": 8,
+      "max_tokens": 124,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "over_limit": 0
+    },
+    "regression_holdout": {
+      "rows": 63,
+      "max_tokens": 178,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "over_limit": 0
+    }
+  },
+  "total_rows": 2656,
+  "truncation": "NONE",
+  "assistant_only_labels": "PASS",
+  "model_weights_loaded": false,
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "data_generator": "NOT_RUN"
+}

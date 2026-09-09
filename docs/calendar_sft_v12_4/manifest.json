@@ -1,0 +1,35 @@
+{
+  "dataset_id": "aiassistent1-assistant-sft-v12.4-20260909",
+  "source": "docs/calendar_sft_v12_3",
+  "policy": "manual removal of note_add records; all retained records byte-preserved",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "kept": 8,
+      "removed_note_add": 0
+    },
+    "holdout.jsonl": {
+      "kept": 36,
+      "removed_note_add": 0
+    },
+    "regression_holdout.jsonl": {
+      "kept": 63,
+      "removed_note_add": 0
+    },
+    "train.jsonl": {
+      "kept": 1950,
+      "removed_note_add": 14
+    },
+    "validation.jsonl": {
+      "kept": 581,
+      "removed_note_add": 4
+    }
+  },
+  "supported_intents": [
+    "chat",
+    "calendar_add",
+    "calendar_search",
+    "calendar_update",
+    "calendar_delete",
+    "calendar_sum"
+  ]
+}

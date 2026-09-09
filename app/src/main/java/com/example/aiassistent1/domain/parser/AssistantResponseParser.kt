@@ -8,7 +8,6 @@ import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.CalendarUpdateChangesParams
 import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import com.example.aiassistent1.domain.model.CalendarUpdateTargetParams
-import com.example.aiassistent1.domain.model.NoteAddParams
 import org.json.JSONObject
 
 class AssistantResponseParser {
@@ -68,12 +67,7 @@ class AssistantResponseParser {
                         ),
                     )
                 }
-                "note_add" -> {
-                    NoteAddParams(
-                        text = paramsJson?.optionalNonBlankStringPreservingContent("text"),
-                    )
-                }
-                else -> null
+                else -> return null
             }
 
             AssistantResponse(intent, reply, params)
@@ -102,8 +96,3 @@ private fun JSONObject.optionalPositiveInt(name: String): Int? =
     takeIf { has(name) && !isNull(name) }
         ?.optInt(name, 0)
         ?.takeIf { it > 0 }
-
-private fun JSONObject.optionalNonBlankStringPreservingContent(name: String): String? =
-    takeIf { has(name) && !isNull(name) }
-        ?.optString(name)
-        ?.takeIf { it.isNotBlank() }

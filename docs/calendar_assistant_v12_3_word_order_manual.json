@@ -1,0 +1,315 @@
+{
+  "version": "v12.3",
+  "contract_version": "v12.1",
+  "authorship": "Every user sentence and shared expected response below was written explicitly by hand. The assembler copies these literals; it does not generate permutations or answers.",
+  "families": [
+    {
+      "id": "V123T01", "split": "train", "now": "2027-04-12T10:10",
+      "spans": {"title": "встречу с редактором", "day": "завтра", "time": "в пятнадцать двадцать"},
+      "date_check": {"kind": "relative_days", "days": 1}, "time_format": "words", "clock": "15:20",
+      "response": {"intent": "calendar_add", "reply": "Встреча с редактором.", "params": {"title": "Встреча с редактором", "starts_at": "2027-04-13T15:20"}},
+      "variants": [
+        {"id": "V123T01A", "order": "title_day_time", "user": "Запиши встречу с редактором завтра в пятнадцать двадцать."},
+        {"id": "V123T01B", "order": "title_time_day", "user": "Встречу с редактором запиши в пятнадцать двадцать завтра."},
+        {"id": "V123T01C", "order": "day_title_time", "user": "Завтра запиши встречу с редактором в пятнадцать двадцать."},
+        {"id": "V123T01D", "order": "day_time_title", "user": "Запиши завтра в пятнадцать двадцать встречу с редактором."},
+        {"id": "V123T01E", "order": "time_title_day", "user": "В пятнадцать двадцать запиши встречу с редактором завтра."},
+        {"id": "V123T01F", "order": "time_day_title", "user": "В пятнадцать двадцать завтра запиши встречу с редактором."}
+      ]
+    },
+    {
+      "id": "V123T02", "split": "train", "now": "2028-06-14T09:00",
+      "spans": {"title": "примерку костюма", "day": "послезавтра", "time": "в семь вечера"},
+      "date_check": {"kind": "relative_days", "days": 2}, "time_format": "words", "clock": "19:00",
+      "response": {"intent": "calendar_add", "reply": "Примерка костюма.", "params": {"title": "Примерка костюма", "starts_at": "2028-06-16T19:00"}},
+      "variants": [
+        {"id": "V123T02A", "order": "title_day_time", "user": "Поставь примерку костюма послезавтра в семь вечера."},
+        {"id": "V123T02B", "order": "title_time_day", "user": "Примерку костюма поставь в семь вечера послезавтра."},
+        {"id": "V123T02C", "order": "day_title_time", "user": "Послезавтра поставь примерку костюма в семь вечера."},
+        {"id": "V123T02D", "order": "day_time_title", "user": "Поставь послезавтра в семь вечера примерку костюма."},
+        {"id": "V123T02E", "order": "time_title_day", "user": "В семь вечера поставь примерку костюма послезавтра."},
+        {"id": "V123T02F", "order": "time_day_title", "user": "В семь вечера послезавтра поставь примерку костюма."}
+      ]
+    },
+    {
+      "id": "V123T03", "split": "train", "now": "2029-11-18T18:25",
+      "spans": {"title": "проверку счётчика воды", "day": "через три дня", "time": "в восемь сорок пять утра"},
+      "date_check": {"kind": "relative_days", "days": 3}, "time_format": "words", "clock": "08:45",
+      "response": {"intent": "calendar_add", "reply": "Проверка счётчика воды.", "params": {"title": "Проверка счётчика воды", "starts_at": "2029-11-21T08:45"}},
+      "variants": [
+        {"id": "V123T03A", "order": "title_day_time", "user": "Добавь проверку счётчика воды через три дня в восемь сорок пять утра."},
+        {"id": "V123T03B", "order": "title_time_day", "user": "Проверку счётчика воды добавь в восемь сорок пять утра через три дня."},
+        {"id": "V123T03C", "order": "day_title_time", "user": "Через три дня добавь проверку счётчика воды в восемь сорок пять утра."},
+        {"id": "V123T03D", "order": "day_time_title", "user": "Добавь через три дня в восемь сорок пять утра проверку счётчика воды."},
+        {"id": "V123T03E", "order": "time_title_day", "user": "В восемь сорок пять утра добавь проверку счётчика воды через три дня."},
+        {"id": "V123T03F", "order": "time_day_title", "user": "В восемь сорок пять утра через три дня добавь проверку счётчика воды."}
+      ]
+    },
+    {
+      "id": "V123T04", "split": "train", "now": "2030-07-09T08:20",
+      "spans": {"title": "доставку кресла", "day": "сегодня", "time": "в пять тридцать вечера"},
+      "date_check": {"kind": "relative_days", "days": 0}, "time_format": "words", "clock": "17:30",
+      "response": {"intent": "calendar_add", "reply": "Доставка кресла.", "params": {"title": "Доставка кресла", "starts_at": "2030-07-09T17:30"}},
+      "variants": [
+        {"id": "V123T04A", "order": "title_day_time", "user": "Запиши доставку кресла сегодня в пять тридцать вечера."},
+        {"id": "V123T04B", "order": "title_time_day", "user": "Доставку кресла запиши в пять тридцать вечера сегодня."},
+        {"id": "V123T04C", "order": "day_title_time", "user": "Сегодня запиши доставку кресла в пять тридцать вечера."},
+        {"id": "V123T04D", "order": "day_time_title", "user": "Запиши сегодня в пять тридцать вечера доставку кресла."},
+        {"id": "V123T04E", "order": "time_title_day", "user": "В пять тридцать вечера запиши доставку кресла сегодня."},
+        {"id": "V123T04F", "order": "time_day_title", "user": "В пять тридцать вечера сегодня запиши доставку кресла."}
+      ]
+    },
+    {
+      "id": "V123T05", "split": "train", "now": "2027-08-09T11:40",
+      "spans": {"title": "осмотр велосипеда", "day": "в пятницу", "time": "в десять часов утра"},
+      "date_check": {"kind": "weekday", "weekday": 4}, "time_format": "words", "clock": "10:00",
+      "response": {"intent": "calendar_add", "reply": "Осмотр велосипеда.", "params": {"title": "Осмотр велосипеда", "starts_at": "2027-08-13T10:00"}},
+      "variants": [
+        {"id": "V123T05A", "order": "title_day_time", "user": "Поставь осмотр велосипеда в пятницу в десять часов утра."},
+        {"id": "V123T05B", "order": "title_time_day", "user": "Осмотр велосипеда поставь в десять часов утра в пятницу."},
+        {"id": "V123T05C", "order": "day_title_time", "user": "В пятницу поставь осмотр велосипеда в десять часов утра."},
+        {"id": "V123T05D", "order": "day_time_title", "user": "Поставь в пятницу в десять часов утра осмотр велосипеда."},
+        {"id": "V123T05E", "order": "time_title_day", "user": "В десять часов утра поставь осмотр велосипеда в пятницу."},
+        {"id": "V123T05F", "order": "time_day_title", "user": "В десять часов утра в пятницу поставь осмотр велосипеда."}
+      ]
+    },
+    {
+      "id": "V123T06", "split": "train", "now": "2028-10-02T16:10",
+      "spans": {"title": "замену фильтра", "day": "в четверг", "time": "в девять утра"},
+      "date_check": {"kind": "weekday", "weekday": 3}, "time_format": "words", "clock": "09:00",
+      "response": {"intent": "calendar_add", "reply": "Замена фильтра.", "params": {"title": "Замена фильтра", "starts_at": "2028-10-05T09:00"}},
+      "variants": [
+        {"id": "V123T06A", "order": "title_day_time", "user": "Добавь замену фильтра в четверг в девять утра."},
+        {"id": "V123T06B", "order": "title_time_day", "user": "Замену фильтра добавь в девять утра в четверг."},
+        {"id": "V123T06C", "order": "day_title_time", "user": "В четверг добавь замену фильтра в девять утра."},
+        {"id": "V123T06D", "order": "day_time_title", "user": "Добавь в четверг в девять утра замену фильтра."},
+        {"id": "V123T06E", "order": "time_title_day", "user": "В девять утра добавь замену фильтра в четверг."},
+        {"id": "V123T06F", "order": "time_day_title", "user": "В девять утра в четверг добавь замену фильтра."}
+      ]
+    },
+    {
+      "id": "V123T07", "split": "train", "now": "2029-05-03T07:55",
+      "spans": {"title": "сверку показаний", "day": "18 мая", "time": "в двенадцать сорок"},
+      "date_check": {"kind": "explicit_date", "year": 2029, "month": 5, "day": 18}, "time_format": "words", "clock": "12:40",
+      "response": {"intent": "calendar_add", "reply": "Сверка показаний.", "params": {"title": "Сверка показаний", "starts_at": "2029-05-18T12:40"}},
+      "variants": [
+        {"id": "V123T07A", "order": "title_day_time", "user": "Запиши сверку показаний 18 мая в двенадцать сорок."},
+        {"id": "V123T07B", "order": "title_time_day", "user": "Сверку показаний запиши в двенадцать сорок 18 мая."},
+        {"id": "V123T07C", "order": "day_title_time", "user": "18 мая запиши сверку показаний в двенадцать сорок."},
+        {"id": "V123T07D", "order": "day_time_title", "user": "Запиши 18 мая в двенадцать сорок сверку показаний."},
+        {"id": "V123T07E", "order": "time_title_day", "user": "В двенадцать сорок запиши сверку показаний 18 мая."},
+        {"id": "V123T07F", "order": "time_day_title", "user": "В двенадцать сорок 18 мая запиши сверку показаний."}
+      ]
+    },
+    {
+      "id": "V123T08", "split": "train", "now": "2030-09-12T12:15",
+      "spans": {"title": "занятие керамикой", "day": "двадцать пятого сентября", "time": "в полдень"},
+      "date_check": {"kind": "explicit_date", "year": 2030, "month": 9, "day": 25}, "time_format": "words", "clock": "12:00",
+      "response": {"intent": "calendar_add", "reply": "Занятие керамикой.", "params": {"title": "Занятие керамикой", "starts_at": "2030-09-25T12:00"}},
+      "variants": [
+        {"id": "V123T08A", "order": "title_day_time", "user": "Поставь занятие керамикой двадцать пятого сентября в полдень."},
+        {"id": "V123T08B", "order": "title_time_day", "user": "Занятие керамикой поставь в полдень двадцать пятого сентября."},
+        {"id": "V123T08C", "order": "day_title_time", "user": "Двадцать пятого сентября поставь занятие керамикой в полдень."},
+        {"id": "V123T08D", "order": "day_time_title", "user": "Поставь двадцать пятого сентября в полдень занятие керамикой."},
+        {"id": "V123T08E", "order": "time_title_day", "user": "В полдень поставь занятие керамикой двадцать пятого сентября."},
+        {"id": "V123T08F", "order": "time_day_title", "user": "В полдень двадцать пятого сентября поставь занятие керамикой."}
+      ]
+    },
+    {
+      "id": "V123T09", "split": "train", "now": "2031-12-31T18:05",
+      "spans": {"title": "\"Вечерняя прогулка\"", "day": "завтра", "time": "в восемь утра"},
+      "date_check": {"kind": "relative_days", "days": 1}, "time_format": "words", "clock": "08:00",
+      "response": {"intent": "calendar_add", "reply": "Вечерняя прогулка.", "params": {"title": "Вечерняя прогулка", "starts_at": "2032-01-01T08:00"}},
+      "variants": [
+        {"id": "V123T09A", "order": "title_day_time", "user": "Добавь событие \"Вечерняя прогулка\" завтра в восемь утра."},
+        {"id": "V123T09B", "order": "title_time_day", "user": "Событие \"Вечерняя прогулка\" добавь в восемь утра завтра."},
+        {"id": "V123T09C", "order": "day_title_time", "user": "Завтра добавь событие \"Вечерняя прогулка\" в восемь утра."},
+        {"id": "V123T09D", "order": "day_time_title", "user": "Добавь завтра в восемь утра событие \"Вечерняя прогулка\"."},
+        {"id": "V123T09E", "order": "time_title_day", "user": "В восемь утра добавь событие \"Вечерняя прогулка\" завтра."},
+        {"id": "V123T09F", "order": "time_day_title", "user": "В восемь утра завтра добавь событие \"Вечерняя прогулка\"."}
+      ]
+    },
+    {
+      "id": "V123T10", "split": "train", "now": "2028-02-28T11:10",
+      "spans": {"title": "возврат палатки", "day": "послезавтра", "time": "в восемнадцать ноль пять"},
+      "date_check": {"kind": "relative_days", "days": 2}, "time_format": "words", "clock": "18:05",
+      "response": {"intent": "calendar_add", "reply": "Возврат палатки.", "params": {"title": "Возврат палатки", "starts_at": "2028-03-01T18:05"}},
+      "variants": [
+        {"id": "V123T10A", "order": "title_day_time", "user": "Запиши возврат палатки послезавтра в восемнадцать ноль пять."},
+        {"id": "V123T10B", "order": "title_time_day", "user": "Возврат палатки запиши в восемнадцать ноль пять послезавтра."},
+        {"id": "V123T10C", "order": "day_title_time", "user": "Послезавтра запиши возврат палатки в восемнадцать ноль пять."},
+        {"id": "V123T10D", "order": "day_time_title", "user": "Запиши послезавтра в восемнадцать ноль пять возврат палатки."},
+        {"id": "V123T10E", "order": "time_title_day", "user": "В восемнадцать ноль пять запиши возврат палатки послезавтра."},
+        {"id": "V123T10F", "order": "time_day_title", "user": "В восемнадцать ноль пять послезавтра запиши возврат палатки."}
+      ]
+    },
+    {
+      "id": "V123E01", "split": "validation", "now": "2027-12-31T10:25",
+      "spans": {"title": "получение пропуска", "day": "завтра", "time": "в девять пятьдесят утра"},
+      "date_check": {"kind": "relative_days", "days": 1}, "time_format": "words", "clock": "09:50",
+      "response": {"intent": "calendar_add", "reply": "Получение пропуска.", "params": {"title": "Получение пропуска", "starts_at": "2028-01-01T09:50"}},
+      "variants": [
+        {"id": "V123E01A", "order": "title_day_time", "user": "Получение пропуска запиши завтра в девять пятьдесят утра."},
+        {"id": "V123E01B", "order": "title_time_day", "user": "Запиши получение пропуска в девять пятьдесят утра завтра."},
+        {"id": "V123E01C", "order": "day_title_time", "user": "Запиши завтра получение пропуска в девять пятьдесят утра."},
+        {"id": "V123E01D", "order": "day_time_title", "user": "Завтра в девять пятьдесят утра запиши получение пропуска."},
+        {"id": "V123E01E", "order": "time_title_day", "user": "Запиши в девять пятьдесят утра получение пропуска завтра."},
+        {"id": "V123E01F", "order": "time_day_title", "user": "Запиши в девять пятьдесят утра завтра получение пропуска."}
+      ]
+    },
+    {
+      "id": "V123E02", "split": "validation", "now": "2032-02-28T13:05",
+      "spans": {"title": "сборку стеллажа", "day": "послезавтра", "time": "в шесть вечера"},
+      "date_check": {"kind": "relative_days", "days": 2}, "time_format": "words", "clock": "18:00",
+      "response": {"intent": "calendar_add", "reply": "Сборка стеллажа.", "params": {"title": "Сборка стеллажа", "starts_at": "2032-03-01T18:00"}},
+      "variants": [
+        {"id": "V123E02A", "order": "title_day_time", "user": "Сборку стеллажа поставь послезавтра в шесть вечера."},
+        {"id": "V123E02B", "order": "title_time_day", "user": "Поставь сборку стеллажа в шесть вечера послезавтра."},
+        {"id": "V123E02C", "order": "day_title_time", "user": "Поставь послезавтра сборку стеллажа в шесть вечера."},
+        {"id": "V123E02D", "order": "day_time_title", "user": "Послезавтра в шесть вечера поставь сборку стеллажа."},
+        {"id": "V123E02E", "order": "time_title_day", "user": "Поставь в шесть вечера сборку стеллажа послезавтра."},
+        {"id": "V123E02F", "order": "time_day_title", "user": "Поставь в шесть вечера послезавтра сборку стеллажа."}
+      ]
+    },
+    {
+      "id": "V123E03", "split": "validation", "now": "2029-04-27T11:30",
+      "spans": {"title": "выдачу ключей", "day": "через четыре дня", "time": "в шестнадцать пятнадцать"},
+      "date_check": {"kind": "relative_days", "days": 4}, "time_format": "words", "clock": "16:15",
+      "response": {"intent": "calendar_add", "reply": "Выдача ключей.", "params": {"title": "Выдача ключей", "starts_at": "2029-05-01T16:15"}},
+      "variants": [
+        {"id": "V123E03A", "order": "title_day_time", "user": "Выдачу ключей добавь через четыре дня в шестнадцать пятнадцать."},
+        {"id": "V123E03B", "order": "title_time_day", "user": "Добавь выдачу ключей в шестнадцать пятнадцать через четыре дня."},
+        {"id": "V123E03C", "order": "day_title_time", "user": "Добавь через четыре дня выдачу ключей в шестнадцать пятнадцать."},
+        {"id": "V123E03D", "order": "day_time_title", "user": "Через четыре дня в шестнадцать пятнадцать добавь выдачу ключей."},
+        {"id": "V123E03E", "order": "time_title_day", "user": "Добавь в шестнадцать пятнадцать выдачу ключей через четыре дня."},
+        {"id": "V123E03F", "order": "time_day_title", "user": "Добавь в шестнадцать пятнадцать через четыре дня выдачу ключей."}
+      ]
+    },
+    {
+      "id": "V123E04", "split": "validation", "now": "2030-06-11T07:20",
+      "spans": {"title": "чистку аквариума", "day": "сегодня", "time": "в одиннадцать утра"},
+      "date_check": {"kind": "relative_days", "days": 0}, "time_format": "words", "clock": "11:00",
+      "response": {"intent": "calendar_add", "reply": "Чистка аквариума.", "params": {"title": "Чистка аквариума", "starts_at": "2030-06-11T11:00"}},
+      "variants": [
+        {"id": "V123E04A", "order": "title_day_time", "user": "Чистку аквариума запиши сегодня в одиннадцать утра."},
+        {"id": "V123E04B", "order": "title_time_day", "user": "Запиши чистку аквариума в одиннадцать утра сегодня."},
+        {"id": "V123E04C", "order": "day_title_time", "user": "Запиши сегодня чистку аквариума в одиннадцать утра."},
+        {"id": "V123E04D", "order": "day_time_title", "user": "Сегодня в одиннадцать утра запиши чистку аквариума."},
+        {"id": "V123E04E", "order": "time_title_day", "user": "Запиши в одиннадцать утра чистку аквариума сегодня."},
+        {"id": "V123E04F", "order": "time_day_title", "user": "Запиши в одиннадцать утра сегодня чистку аквариума."}
+      ]
+    },
+    {
+      "id": "V123E05", "split": "validation", "now": "2031-03-10T08:50",
+      "spans": {"title": "настройку проектора", "day": "в субботу", "time": "в четырнадцать тридцать пять"},
+      "date_check": {"kind": "weekday", "weekday": 5}, "time_format": "words", "clock": "14:35",
+      "response": {"intent": "calendar_add", "reply": "Настройка проектора.", "params": {"title": "Настройка проектора", "starts_at": "2031-03-15T14:35"}},
+      "variants": [
+        {"id": "V123E05A", "order": "title_day_time", "user": "Настройку проектора поставь в субботу в четырнадцать тридцать пять."},
+        {"id": "V123E05B", "order": "title_time_day", "user": "Поставь настройку проектора в четырнадцать тридцать пять в субботу."},
+        {"id": "V123E05C", "order": "day_title_time", "user": "Поставь в субботу настройку проектора в четырнадцать тридцать пять."},
+        {"id": "V123E05D", "order": "day_time_title", "user": "В субботу в четырнадцать тридцать пять поставь настройку проектора."},
+        {"id": "V123E05E", "order": "time_title_day", "user": "Поставь в четырнадцать тридцать пять настройку проектора в субботу."},
+        {"id": "V123E05F", "order": "time_day_title", "user": "Поставь в четырнадцать тридцать пять в субботу настройку проектора."}
+      ]
+    },
+    {
+      "id": "V123E06", "split": "validation", "now": "2028-05-02T10:15",
+      "spans": {"title": "лекцию \"Завтра\"", "day": "21 мая", "time": "в десять утра"},
+      "date_check": {"kind": "explicit_date", "year": 2028, "month": 5, "day": 21}, "time_format": "words", "clock": "10:00",
+      "response": {"intent": "calendar_add", "reply": "Лекция \"Завтра\".", "params": {"title": "Лекция \"Завтра\"", "starts_at": "2028-05-21T10:00"}},
+      "variants": [
+        {"id": "V123E06A", "order": "title_day_time", "user": "Лекцию \"Завтра\" добавь 21 мая в десять утра."},
+        {"id": "V123E06B", "order": "title_time_day", "user": "Добавь лекцию \"Завтра\" в десять утра 21 мая."},
+        {"id": "V123E06C", "order": "day_title_time", "user": "Добавь 21 мая лекцию \"Завтра\" в десять утра."},
+        {"id": "V123E06D", "order": "day_time_title", "user": "21 мая в десять утра добавь лекцию \"Завтра\"."},
+        {"id": "V123E06E", "order": "time_title_day", "user": "Добавь в десять утра лекцию \"Завтра\" 21 мая."},
+        {"id": "V123E06F", "order": "time_day_title", "user": "Добавь в десять утра 21 мая лекцию \"Завтра\"."}
+      ]
+    },
+    {
+      "id": "V123H01", "split": "holdout", "now": "2029-12-31T22:10",
+      "spans": {"title": "проверку домофона", "day": "завтра", "time": "в тринадцать двадцать пять"},
+      "date_check": {"kind": "relative_days", "days": 1}, "time_format": "words", "clock": "13:25",
+      "response": {"intent": "calendar_add", "reply": "Проверка домофона.", "params": {"title": "Проверка домофона", "starts_at": "2030-01-01T13:25"}},
+      "variants": [
+        {"id": "V123H01A", "order": "title_day_time", "user": "Добавь проверку домофона на завтра в тринадцать двадцать пять."},
+        {"id": "V123H01B", "order": "title_time_day", "user": "Проверку домофона добавь в тринадцать двадцать пять на завтра."},
+        {"id": "V123H01C", "order": "day_title_time", "user": "На завтра добавь проверку домофона в тринадцать двадцать пять."},
+        {"id": "V123H01D", "order": "day_time_title", "user": "На завтра в тринадцать двадцать пять добавь проверку домофона."},
+        {"id": "V123H01E", "order": "time_title_day", "user": "Добавь в тринадцать двадцать пять проверку домофона на завтра."},
+        {"id": "V123H01F", "order": "time_day_title", "user": "В тринадцать двадцать пять добавь на завтра проверку домофона."}
+      ]
+    },
+    {
+      "id": "V123H02", "split": "holdout", "now": "2030-02-27T09:35",
+      "spans": {"title": "возврат проездного", "day": "послезавтра", "time": "в восемь вечера"},
+      "date_check": {"kind": "relative_days", "days": 2}, "time_format": "words", "clock": "20:00",
+      "response": {"intent": "calendar_add", "reply": "Возврат проездного.", "params": {"title": "Возврат проездного", "starts_at": "2030-03-01T20:00"}},
+      "variants": [
+        {"id": "V123H02A", "order": "title_day_time", "user": "Запиши возврат проездного на послезавтра в восемь вечера."},
+        {"id": "V123H02B", "order": "title_time_day", "user": "Возврат проездного запиши в восемь вечера на послезавтра."},
+        {"id": "V123H02C", "order": "day_title_time", "user": "На послезавтра запиши возврат проездного в восемь вечера."},
+        {"id": "V123H02D", "order": "day_time_title", "user": "На послезавтра в восемь вечера запиши возврат проездного."},
+        {"id": "V123H02E", "order": "time_title_day", "user": "Запиши в восемь вечера возврат проездного на послезавтра."},
+        {"id": "V123H02F", "order": "time_day_title", "user": "В восемь вечера запиши на послезавтра возврат проездного."}
+      ]
+    },
+    {
+      "id": "V123H03", "split": "holdout", "now": "2028-10-29T14:45",
+      "spans": {"title": "отправку посылки", "day": "через три дня", "time": "в семь десять утра"},
+      "date_check": {"kind": "relative_days", "days": 3}, "time_format": "words", "clock": "07:10",
+      "response": {"intent": "calendar_add", "reply": "Отправка посылки.", "params": {"title": "Отправка посылки", "starts_at": "2028-11-01T07:10"}},
+      "variants": [
+        {"id": "V123H03A", "order": "title_day_time", "user": "Отправку посылки через три дня запиши в семь десять утра."},
+        {"id": "V123H03B", "order": "title_time_day", "user": "Запиши отправку посылки в семь десять утра через три дня."},
+        {"id": "V123H03C", "order": "day_title_time", "user": "Через три дня отправку посылки запиши в семь десять утра."},
+        {"id": "V123H03D", "order": "day_time_title", "user": "Через три дня в семь десять утра запиши отправку посылки."},
+        {"id": "V123H03E", "order": "time_title_day", "user": "В семь десять утра отправку посылки запиши через три дня."},
+        {"id": "V123H03F", "order": "time_day_title", "user": "В семь десять утра запиши через три дня отправку посылки."}
+      ]
+    },
+    {
+      "id": "V123H04", "split": "holdout", "now": "2031-09-04T06:50",
+      "spans": {"title": "обновление пропуска", "day": "сегодня", "time": "в половине третьего дня"},
+      "date_check": {"kind": "relative_days", "days": 0}, "time_format": "words", "clock": "14:30",
+      "response": {"intent": "calendar_add", "reply": "Обновление пропуска.", "params": {"title": "Обновление пропуска", "starts_at": "2031-09-04T14:30"}},
+      "variants": [
+        {"id": "V123H04A", "order": "title_day_time", "user": "Обновление пропуска сегодня поставь в половине третьего дня."},
+        {"id": "V123H04B", "order": "title_time_day", "user": "Поставь обновление пропуска в половине третьего дня сегодня."},
+        {"id": "V123H04C", "order": "day_title_time", "user": "Сегодня обновление пропуска поставь в половине третьего дня."},
+        {"id": "V123H04D", "order": "day_time_title", "user": "Сегодня в половине третьего дня поставь обновление пропуска."},
+        {"id": "V123H04E", "order": "time_title_day", "user": "В половине третьего дня обновление пропуска поставь сегодня."},
+        {"id": "V123H04F", "order": "time_day_title", "user": "В половине третьего дня поставь сегодня обновление пропуска."}
+      ]
+    },
+    {
+      "id": "V123H05", "split": "holdout", "now": "2027-07-06T10:00",
+      "spans": {"title": "встречу с архитектором", "day": "в воскресенье", "time": "в семнадцать пятьдесят пять"},
+      "date_check": {"kind": "weekday", "weekday": 6}, "time_format": "words", "clock": "17:55",
+      "response": {"intent": "calendar_add", "reply": "Встреча с архитектором.", "params": {"title": "Встреча с архитектором", "starts_at": "2027-07-11T17:55"}},
+      "variants": [
+        {"id": "V123H05A", "order": "title_day_time", "user": "Встречу с архитектором в воскресенье добавь в семнадцать пятьдесят пять."},
+        {"id": "V123H05B", "order": "title_time_day", "user": "Добавь встречу с архитектором в семнадцать пятьдесят пять в воскресенье."},
+        {"id": "V123H05C", "order": "day_title_time", "user": "В воскресенье встречу с архитектором добавь в семнадцать пятьдесят пять."},
+        {"id": "V123H05D", "order": "day_time_title", "user": "В воскресенье в семнадцать пятьдесят пять добавь встречу с архитектором."},
+        {"id": "V123H05E", "order": "time_title_day", "user": "В семнадцать пятьдесят пять встречу с архитектором добавь в воскресенье."},
+        {"id": "V123H05F", "order": "time_day_title", "user": "В семнадцать пятьдесят пять добавь в воскресенье встречу с архитектором."}
+      ]
+    },
+    {
+      "id": "V123H06", "split": "holdout", "now": "2032-08-03T12:10",
+      "spans": {"title": "занятие каллиграфией", "day": "двадцатого августа", "time": "в два часа дня"},
+      "date_check": {"kind": "explicit_date", "year": 2032, "month": 8, "day": 20}, "time_format": "words", "clock": "14:00",
+      "response": {"intent": "calendar_add", "reply": "Занятие каллиграфией.", "params": {"title": "Занятие каллиграфией", "starts_at": "2032-08-20T14:00"}},
+      "variants": [
+        {"id": "V123H06A", "order": "title_day_time", "user": "Занятие каллиграфией двадцатого августа запиши в два часа дня."},
+        {"id": "V123H06B", "order": "title_time_day", "user": "Запиши занятие каллиграфией в два часа дня двадцатого августа."},
+        {"id": "V123H06C", "order": "day_title_time", "user": "Двадцатого августа занятие каллиграфией запиши в два часа дня."},
+        {"id": "V123H06D", "order": "day_time_title", "user": "Двадцатого августа в два часа дня запиши занятие каллиграфией."},
+        {"id": "V123H06E", "order": "time_title_day", "user": "В два часа дня занятие каллиграфией запиши двадцатого августа."},
+        {"id": "V123H06F", "order": "time_day_title", "user": "В два часа дня запиши двадцатого августа занятие каллиграфией."}
+      ]
+    }
+  ]
+}

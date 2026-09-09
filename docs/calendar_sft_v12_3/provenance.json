@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12.3-20260909",
+  "review": {
+    "reviewed_by": "Codex, preparation audit under the project owner's approval",
+    "reviewed_on": "2026-09-09",
+    "decision_evidence": "The user approved preparation of V12.3, reducing the proposed train quota from 30 to 10 examples per order. The approved plan retains 6 validation and 6 holdout examples per order. The user requires manual authorship, unchanged rules, and a final report before training. All new examples describe fictional project-authored events. This register documents data provenance, not permission to start training in this step."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "7a567d04b3552726ddf4f2c8e9cdb3fc9b09f8812828eaa77915c87e7ff54ba8"
+    },
+    "validation": {
+      "sha256": "23a0228830c7d9b30cc548b6d2a950a1175c00d728523025e09e4d4ba2d21696"
+    },
+    "holdout": {
+      "sha256": "802b5a36765f4f1bd522fee9a86fae14929ea61fe7a07fcad360781d38e9ab8e"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "4751b71f4bd492c92b7f26aed522feadfe92d2a77e35468fedb8cff2bf69da8e"
+    },
+    "regression_holdout": {
+      "sha256": "e65beab07d78d525986fb4d3416fdde2bd4b330aa70b6b130875d16737b494ad"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_2/provenance.json; workspace:docs/calendar_assistant_v12_3_word_order_manual.json",
+      "rights_evidence": "Inherited V12.2 data remain byte-for-byte unchanged under their VERIFIED provenance. New sentences and targets were authored explicitly for this project's training dataset under the owner's approval, without external source content or real personal data. Model execution and release have not been performed.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

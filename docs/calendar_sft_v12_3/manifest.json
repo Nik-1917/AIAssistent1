@@ -1,0 +1,345 @@
+{
+  "version": "v12.3",
+  "contract_version": "v12.1",
+  "base_version": "v12.2",
+  "source_sha256": {
+    "train": "fad13f167f25118537b0ec535b65b6975ceb7cd02ebcf0c244d77a6f3b2fe2dc",
+    "validation": "acd55ba4be417715e08dcaa905d4dcff28432e9170e9b820c2926ae7749ca908",
+    "holdout": "4751b71f4bd492c92b7f26aed522feadfe92d2a77e35468fedb8cff2bf69da8e",
+    "regression_holdout": "e65beab07d78d525986fb4d3416fdde2bd4b330aa70b6b130875d16737b494ad"
+  },
+  "manual_sha256": "9aa7c87804e0cb61956fb5f24619ed9a63b74ed907f62770f170a63a033662db",
+  "parent_provenance_sha256": "197ff576c16e5628e859e7212c04a4fa1d43a60fcc35bc8d9f82733a1b643064",
+  "manual_families": 22,
+  "manual_rows": 132,
+  "manual_split_counts": {
+    "train": 60,
+    "validation": 36,
+    "holdout": 36
+  },
+  "manual_order_counts": {
+    "train": {
+      "title_day_time": 10,
+      "title_time_day": 10,
+      "day_title_time": 10,
+      "day_time_title": 10,
+      "time_title_day": 10,
+      "time_day_title": 10
+    },
+    "validation": {
+      "title_day_time": 6,
+      "title_time_day": 6,
+      "day_title_time": 6,
+      "day_time_title": 6,
+      "time_title_day": 6,
+      "time_day_title": 6
+    },
+    "holdout": {
+      "title_day_time": 6,
+      "title_time_day": 6,
+      "day_title_time": 6,
+      "day_time_title": 6,
+      "time_title_day": 6,
+      "time_day_title": 6
+    }
+  },
+  "family_index": [
+    {
+      "id": "V123T01",
+      "split": "train",
+      "case_ids": [
+        "V123T01A",
+        "V123T01B",
+        "V123T01C",
+        "V123T01D",
+        "V123T01E",
+        "V123T01F"
+      ]
+    },
+    {
+      "id": "V123T02",
+      "split": "train",
+      "case_ids": [
+        "V123T02A",
+        "V123T02B",
+        "V123T02C",
+        "V123T02D",
+        "V123T02E",
+        "V123T02F"
+      ]
+    },
+    {
+      "id": "V123T03",
+      "split": "train",
+      "case_ids": [
+        "V123T03A",
+        "V123T03B",
+        "V123T03C",
+        "V123T03D",
+        "V123T03E",
+        "V123T03F"
+      ]
+    },
+    {
+      "id": "V123T04",
+      "split": "train",
+      "case_ids": [
+        "V123T04A",
+        "V123T04B",
+        "V123T04C",
+        "V123T04D",
+        "V123T04E",
+        "V123T04F"
+      ]
+    },
+    {
+      "id": "V123T05",
+      "split": "train",
+      "case_ids": [
+        "V123T05A",
+        "V123T05B",
+        "V123T05C",
+        "V123T05D",
+        "V123T05E",
+        "V123T05F"
+      ]
+    },
+    {
+      "id": "V123T06",
+      "split": "train",
+      "case_ids": [
+        "V123T06A",
+        "V123T06B",
+        "V123T06C",
+        "V123T06D",
+        "V123T06E",
+        "V123T06F"
+      ]
+    },
+    {
+      "id": "V123T07",
+      "split": "train",
+      "case_ids": [
+        "V123T07A",
+        "V123T07B",
+        "V123T07C",
+        "V123T07D",
+        "V123T07E",
+        "V123T07F"
+      ]
+    },
+    {
+      "id": "V123T08",
+      "split": "train",
+      "case_ids": [
+        "V123T08A",
+        "V123T08B",
+        "V123T08C",
+        "V123T08D",
+        "V123T08E",
+        "V123T08F"
+      ]
+    },
+    {
+      "id": "V123T09",
+      "split": "train",
+      "case_ids": [
+        "V123T09A",
+        "V123T09B",
+        "V123T09C",
+        "V123T09D",
+        "V123T09E",
+        "V123T09F"
+      ]
+    },
+    {
+      "id": "V123T10",
+      "split": "train",
+      "case_ids": [
+        "V123T10A",
+        "V123T10B",
+        "V123T10C",
+        "V123T10D",
+        "V123T10E",
+        "V123T10F"
+      ]
+    },
+    {
+      "id": "V123E01",
+      "split": "validation",
+      "case_ids": [
+        "V123E01A",
+        "V123E01B",
+        "V123E01C",
+        "V123E01D",
+        "V123E01E",
+        "V123E01F"
+      ]
+    },
+    {
+      "id": "V123E02",
+      "split": "validation",
+      "case_ids": [
+        "V123E02A",
+        "V123E02B",
+        "V123E02C",
+        "V123E02D",
+        "V123E02E",
+        "V123E02F"
+      ]
+    },
+    {
+      "id": "V123E03",
+      "split": "validation",
+      "case_ids": [
+        "V123E03A",
+        "V123E03B",
+        "V123E03C",
+        "V123E03D",
+        "V123E03E",
+        "V123E03F"
+      ]
+    },
+    {
+      "id": "V123E04",
+      "split": "validation",
+      "case_ids": [
+        "V123E04A",
+        "V123E04B",
+        "V123E04C",
+        "V123E04D",
+        "V123E04E",
+        "V123E04F"
+      ]
+    },
+    {
+      "id": "V123E05",
+      "split": "validation",
+      "case_ids": [
+        "V123E05A",
+        "V123E05B",
+        "V123E05C",
+        "V123E05D",
+        "V123E05E",
+        "V123E05F"
+      ]
+    },
+    {
+      "id": "V123E06",
+      "split": "validation",
+      "case_ids": [
+        "V123E06A",
+        "V123E06B",
+        "V123E06C",
+        "V123E06D",
+        "V123E06E",
+        "V123E06F"
+      ]
+    },
+    {
+      "id": "V123H01",
+      "split": "holdout",
+      "case_ids": [
+        "V123H01A",
+        "V123H01B",
+        "V123H01C",
+        "V123H01D",
+        "V123H01E",
+        "V123H01F"
+      ]
+    },
+    {
+      "id": "V123H02",
+      "split": "holdout",
+      "case_ids": [
+        "V123H02A",
+        "V123H02B",
+        "V123H02C",
+        "V123H02D",
+        "V123H02E",
+        "V123H02F"
+      ]
+    },
+    {
+      "id": "V123H03",
+      "split": "holdout",
+      "case_ids": [
+        "V123H03A",
+        "V123H03B",
+        "V123H03C",
+        "V123H03D",
+        "V123H03E",
+        "V123H03F"
+      ]
+    },
+    {
+      "id": "V123H04",
+      "split": "holdout",
+      "case_ids": [
+        "V123H04A",
+        "V123H04B",
+        "V123H04C",
+        "V123H04D",
+        "V123H04E",
+        "V123H04F"
+      ]
+    },
+    {
+      "id": "V123H05",
+      "split": "holdout",
+      "case_ids": [
+        "V123H05A",
+        "V123H05B",
+        "V123H05C",
+        "V123H05D",
+        "V123H05E",
+        "V123H05F"
+      ]
+    },
+    {
+      "id": "V123H06",
+      "split": "holdout",
+      "case_ids": [
+        "V123H06A",
+        "V123H06B",
+        "V123H06C",
+        "V123H06D",
+        "V123H06E",
+        "V123H06F"
+      ]
+    }
+  ],
+  "artifacts": {
+    "train": {
+      "sha256": "7a567d04b3552726ddf4f2c8e9cdb3fc9b09f8812828eaa77915c87e7ff54ba8"
+    },
+    "validation": {
+      "sha256": "23a0228830c7d9b30cc548b6d2a950a1175c00d728523025e09e4d4ba2d21696"
+    },
+    "holdout": {
+      "sha256": "802b5a36765f4f1bd522fee9a86fae14929ea61fe7a07fcad360781d38e9ab8e"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "4751b71f4bd492c92b7f26aed522feadfe92d2a77e35468fedb8cff2bf69da8e"
+    },
+    "regression_holdout": {
+      "sha256": "e65beab07d78d525986fb4d3416fdde2bd4b330aa70b6b130875d16737b494ad"
+    }
+  },
+  "total_rows": {
+    "train": 1964,
+    "validation": 585,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "calendar_assertions": "PASS",
+  "word_order_assertions": "PASS",
+  "split_checks": "PASS",
+  "balance_scope": "new handwritten layer only; inherited rows unchanged",
+  "data_generator": "NOT_RUN",
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "android_validation": "NOT_RUN"
+}

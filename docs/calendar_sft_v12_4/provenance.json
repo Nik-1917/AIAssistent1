@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12.4-20260909",
+  "review": {
+    "reviewed_by": "Codex, preparation audit under project owner approval",
+    "reviewed_on": "2026-09-09",
+    "decision_evidence": "V12.4 was approved for retraining after manual removal of all note_add records from the V12.3 train and validation files."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "b21987b00d9e4045e47ee7795b8dc1d9ec023121d6c2ac03bed89c64d4d52e8b"
+    },
+    "validation": {
+      "sha256": "6a8e357e3d0c60de20dc99ebee6b325b70c6ac989b60487b9caeefdcdf843f39"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_3; workspace:docs/calendar_sft_v12_4",
+      "rights_evidence": "Inherited project-authored data remain under their existing verified provenance. V12.4 only removes records; no external content or personal data was added.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

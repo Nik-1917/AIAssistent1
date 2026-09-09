@@ -83,6 +83,15 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `rejects removed note intent`() {
+        val response = parser.parse(
+            """{"intent":"note_add","reply":"Сохраняю","params":{"text":"текст"}}""",
+        )
+
+        assertNull(response)
+    }
+
+    @Test
     fun `parses an update command with target and partial changes`() {
         val response = parser.parse(
             """{"intent":"calendar_update","reply":"Событие изменено","params":{"target":{"query":"тренировка","range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"},"changes":{"date":"2026-08-28"}}}""",

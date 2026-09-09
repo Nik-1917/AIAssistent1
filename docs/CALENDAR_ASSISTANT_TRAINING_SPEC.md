@@ -1,5 +1,13 @@
 # Calendar Assistant: training contract
 
+## Active V12.4 scope
+
+For the current V12.4 training and runtime contract, the supported intents are
+`chat`, `calendar_add`, `calendar_search`, `calendar_update`,
+`calendar_delete`, and `calendar_sum`. The current training files contain no
+`note_add` records. The historical sections below describe older releases and
+are not used as V12.4 training input.
+
 ## Scope
 
 This contract covers only the application's local Room calendar. The model has
