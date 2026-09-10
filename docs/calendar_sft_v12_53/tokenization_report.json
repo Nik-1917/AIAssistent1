@@ -1,0 +1,49 @@
+{
+  "dataset": "v12.53",
+  "status": "PASS",
+  "max_seq_length": 256,
+  "weights_loaded": false,
+  "training": "NOT_RUN",
+  "truncated_rows": 0,
+  "assistant_loss_mask": "PASS",
+  "tokenizer_path": "build/calendar_sft_models/Qwen3-4B-Instruct-2507/cdbee75f17c01a7cc42f958dc650907174af0554",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 124,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 134,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 63,
+      "max_tokens": 178,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "train.jsonl": {
+      "rows": 2401,
+      "max_tokens": 256,
+      "new_rows": 265,
+      "new_max_tokens": 174,
+      "sha256": "a83bbc409dddbdcc74e5d1c43a78b1045e48778eafcf2103911b034ddba0e528"
+    },
+    "validation.jsonl": {
+      "rows": 720,
+      "max_tokens": 206,
+      "new_rows": 73,
+      "new_max_tokens": 180,
+      "sha256": "88dd361060ac58a43cad1baae69c40cd40a7f66c00e28a507095bb800a3e52e5"
+    }
+  },
+  "total_rows": 3228
+}

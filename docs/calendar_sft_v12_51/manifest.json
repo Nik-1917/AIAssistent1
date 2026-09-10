@@ -1,0 +1,55 @@
+{
+  "version": "v12.51",
+  "base_version": "v12.5",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "39e9570260c74313bbcd916e1c21a2250c49c6ed44812a15db01958433a46517",
+    "validation": "6c518d9743c23e461f6ad89f0170615c270a4be11b3e560febf64f7f9dc31bfb",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+  },
+  "manual_sha256": "44a6d033cb8a3b319081f50190301a1d798b1f56c1b09e7571d543d12e2c42fc",
+  "new_counts": {
+    "train": {
+      "v12_51_on_hour_compact": 24,
+      "v12_51_on_hour_expanded": 24
+    },
+    "validation": {
+      "v12_51_on_hour_mixed": 24
+    }
+  },
+  "new_quota_per_hour": {
+    "train": 2,
+    "validation": 1
+  },
+  "total_rows": {
+    "train": 2004,
+    "validation": 611,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "61bc4089ccd989c754f5a6c8b66b018882f2092cfe3e2b60233e6f39a96ff261"
+    },
+    "validation": {
+      "sha256": "5cc25372d2660df0d98ceb9f2560039cad9deeac8f76ef9d151c495f95438fa9"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+    }
+  },
+  "inherited_bytes": "UNCHANGED",
+  "holdouts": "UNCHANGED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

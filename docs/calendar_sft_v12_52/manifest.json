@@ -1,0 +1,50 @@
+{
+  "version": "v12.52",
+  "base_version": "v12.51",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "61bc4089ccd989c754f5a6c8b66b018882f2092cfe3e2b60233e6f39a96ff261",
+    "validation": "5cc25372d2660df0d98ceb9f2560039cad9deeac8f76ef9d151c495f95438fa9",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+  },
+  "manual_sha256": "1bd06ced6fbee96c15d363b72c4ab08f934e5b3ee439ac8d23e06703379c11db",
+  "new_counts": {
+    "train": 132,
+    "validation": 36
+  },
+  "new_quota_per_named_hour": {
+    "train": 11,
+    "validation": 3
+  },
+  "total_rows": {
+    "train": 2136,
+    "validation": 647,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "beacf682dec8b08330c03bb9a205b617b5f109349830cd9cc46ba772ad7033d2"
+    },
+    "validation": {
+      "sha256": "74e1d422e08d7868279106ef435d7980550f91c8e0215ab77f1b40c3f517fe01"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+    }
+  },
+  "inherited_bytes": "UNCHANGED",
+  "holdouts": "UNCHANGED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

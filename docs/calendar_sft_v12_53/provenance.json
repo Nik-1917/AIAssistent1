@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12.53",
+  "review": {
+    "reviewed_by": "Codex, preparation audit under project owner instructions",
+    "reviewed_on": "2026-09-10",
+    "decision_evidence": "The user approved the preceding manual preparation and requested short hour-minute forms from one oh-five through twenty-three fifty-five and midnight, naming this addition V12.53. This register covers preparation, not a training run."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "a83bbc409dddbdcc74e5d1c43a78b1045e48778eafcf2103911b034ddba0e528"
+    },
+    "validation": {
+      "sha256": "88dd361060ac58a43cad1baae69c40cd40a7f66c00e28a507095bb800a3e52e5"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_52/provenance.json; workspace:docs/calendar_assistant_v12_53_compact_clock_manual.json; workspace:docs/calendar_assistant_v12_53_reply_edits_manual.json",
+      "rights_evidence": "Verified V12.52 rows retain their prompts, intents and parameters. A manual register supplies complete replacement replies omitting clock dayparts as requested by the user. The 338 new fictional examples were individually authored as complete literal requests and responses for this project. No external material, inference predictions or real personal data was imported.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

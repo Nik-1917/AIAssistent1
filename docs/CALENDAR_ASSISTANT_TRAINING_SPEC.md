@@ -1,12 +1,47 @@
 # Calendar Assistant: training contract
 
-## Active V12.4 scope
+## Active V12.53 addition to V12.52
 
-For the current V12.4 training and runtime contract, the supported intents are
+For the V12.53 dataset, the supported intents remain
 `chat`, `calendar_add`, `calendar_search`, `calendar_update`,
 `calendar_delete`, and `calendar_sum`. The current training files contain no
-`note_add` records. The historical sections below describe older releases and
-are not used as V12.4 training input.
+`note_add` records. The inherited V12.4 rows retain their frozen `v12.1`
+JSON contract. The twelve V12.5 relative-clock rows, the 72
+V12.51 whole-hour rows, the 168 V12.52 minute-of-hour rows and the
+338 new V12.53 compact-clock rows use
+`contract_version: "v12.5"`; the dataset version does not require a different
+JSON contract. The current addition is defined in
+[CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md](CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md).
+[The V12.51 whole-hour rules](CALENDAR_ASSISTANT_V12_51_ON_HOUR.md) and
+[the V12.5 relative-clock rules](CALENDAR_ASSISTANT_V12_5_RELATIVE_CLOCK.md)
+continue to govern input understanding. V12.53 supersedes their reply daypart
+wording: replies omit clock qualifiers `утра`, `дня`, `вечера`, `ночи`.
+Archived V12.52 files remain unchanged. In the new copies, a manual register
+replaces only 337 inherited reply strings. All source prompts, parameters,
+intents, categories and IDs remain unchanged. Historical V14 intent sections
+below are not the active V12.53 intent inventory.
+
+**Reply rules apply only to the `reply` string.** They do not apply to
+`intent`, `params`, nested targets/changes, event titles, user messages, system
+messages or stored calendar fields. In particular, spoken clock forms, year
+omission and reply punctuation rules must never rewrite `params.title`,
+`params.query`, ISO dates/times or numeric durations/values. Parameter-specific
+type and extraction rules still apply to their own fields. Historical
+validation remains versioned for reproducibility.
+
+When an action reply mentions a known clock time, V12.5 uses `четверть` for
+`:15`, `пол...` or `половина...` for `:30`, and `без четверти` for `:45`.
+These expressions refer to the upcoming named hour; JSON parameters retain
+the exact resolved time. A title-only reply need not invent scheduling details.
+The model's reply is not proof that an operation has been saved.
+
+**Understand dayparts in the input; omit them when speaking clock times in
+`reply`.** For example, `четверть третьего дня` resolves to `14:15`,
+while the reply says `в четверть третьего`. This applies to exact hours,
+ordinary minutes, minutes of the upcoming hour, quarter, half, and quarter-to
+forms, including both endpoints of an interval. Do not infer the stored
+24-hour value from the shortened reply. Date phrases such as `через три дня`
+and exact title copies keep their meaning and text.
 
 ## Scope
 
@@ -441,22 +476,79 @@ A vague month without a day is a search period, not a license to invent an event
 date. Day-parts such as “утром” and “после обеда” leave the time unknown; omit
 the exact time field.
 
-### Spoken form for 12:00
+### Spoken whole hours with two zero minute digits
 
-Treat the spoken user expression `двенадцать ноль ноль` as the exact local time
-`12:00`. Encode that time as `12:00` only in the technical JSON parameter. In
-`reply`, use a word form such as `двенадцать ноль ноль` or `двенадцать часов
-дня`, never digits.
+Treat a spoken hour from zero through twenty-three followed by `ноль ноль`
+as an exact local clock time with minutes `00`. Recognize forms with or without
+`час/часа/часов` and with or without the final `минут`: `час ноль ноль` =
+`01:00`, `двенадцать ноль ноль` = `12:00`, `двадцать ноль ноль` = `20:00`,
+`двадцать три часа ноль ноль минут` = `23:00`, and
+`ноль часов ноль ноль минут` = `00:00`. Use the complete hour phrase:
+`двадцать один` is 21, not 1. Never infer an extra twelve hours for this
+explicit clock construction.
 
-In all supervised conversational text, both user messages and `reply` write
-event times in words. The `HH:MM` notation is reserved for the system temporal
-context and technical JSON parameters.
+Midnight is the beginning of the requested date; the phrase itself does not
+move that date forward. Do not output `24:00`. A separately specified duration
+or offset retains its own meaning; the two zero minute digits do not set
+`duration_min` to zero. The full 24-hour mapping is documented in the V12.51
+rules. Keep `HH:00` in technical parameters. In `reply`, use the exact spoken
+whole hour, such as `в двадцать часов`; do not turn `:00` into a quarter or half.
+
+In the current contract, `reply` writes event times in words. User messages
+may contain numeric clock forms; system context and technical JSON parameters
+retain their specified numeric formats. Frozen older contracts keep their
+original input-authoring restrictions.
+
+### Minutes of the upcoming named hour
+
+V12.52 recognizes `пять минут первого` through
+`пятьдесят пять минут двенадцатого`, with minute values
+5, 10, 15, 20, 25, 30, 35, 40, 45, 50 and 55 for each named hour.
+The ordinal names the upcoming hour, while the minutes have elapsed since
+the previous hour. Preserve the given minute count without rounding.
+With explicit daypart context, `пять минут первого ночи` = `00:05`,
+`десять минут первого дня` = `12:10`,
+`пятьдесят пять минут двенадцатого дня` = `11:55`, and
+`пятьдесят пять минут двенадцатого ночи` = `23:55`.
+
+The date belongs to the actual event start, not the upcoming named hour.
+Do not advance the event date merely because the named hour is midnight.
+Without enough context to distinguish the two halves of the day, do not
+invent a daypart. This construction does not change the existing date rules.
+Do not confuse it with a duration after `на` or an offset after `через`.
+
+In `reply` only, the existing V12.5 forms still apply at `:15`, `:30`
+and `:45`. Other minute values may use the exact `в ... минут ...`
+expression. Numeric time and duration fields retain their own formats.
+
+### Compact current-hour and minute expressions
+
+V12.53 recognizes a cardinal current hour from zero through twenty-three
+followed by minutes 5, 10, 15, 20, 25, 30, 35, 40, 45, 50 or 55, with or
+without explicit hour/minute nouns. `час пять` and `один час пять минут`
+mean `01:05`; `двадцать пять` in this clock construction means `20:05`;
+`двадцать один двадцать пять` means `21:25`;
+`двадцать три пятьдесят пять` means `23:55`.
+Read the full compound hour: `двадцать один`, `двадцать два`,
+`двадцать три` are 21, 22 and 23. Do not subtract an hour from a cardinal
+hour; that subtraction belongs to the ordinal upcoming-hour construction.
+`пять минут первого ночи` is `00:05`, while `час пять` is `01:05`.
+
+`ноль пять` means `00:05`; standalone `ноль часов` means `00:00`
+at the beginning of the requested date. Never write `24:00`, round minutes
+or advance the date again because the clock is near midnight. Explicit dates,
+implicit-date rules, durations after `на`, and offsets after `через`
+keep their existing semantics. For example, `в двадцать пять на десять минут`
+contains time `20:05` and duration `10`, not a duration of 25.
 
 ## Reply style
 
+Every presentation rule in this section applies exclusively to `reply`.
+It must not normalize, remove, decline or rephrase content in other fields.
+
 - Concise, neutral Russian, without Markdown.
-- Do not emit Unicode U+2014, U+00AB, or U+00BB in supervised user text,
-  `reply`, or string parameters. Join text separated by U+2014 with exactly one
+- Do not emit Unicode U+2014, U+00AB, or U+00BB in `reply`.
+  In `reply` only, join text separated by U+2014 with exactly one
   ordinary space and remove U+00AB/U+00BB without replacement.
 - Never ask the user a question. Do not use `?`, `уточните`, `укажите`, or an
   imperative such as `скажите` to request missing data. A direct how-to answer
@@ -465,6 +557,12 @@ context and technical JSON parameters.
 - Never mention a year in `reply`.
 - Write known event times in words in `reply`; retain ISO digits only in JSON
   params.
+- At `:15`, use `четверть` of the upcoming hour; at `:30`, use `пол...` or
+  `половина...` of the upcoming hour; at `:45`, use `без четверти` the upcoming
+  hour. Omit `утра`, `дня`, `вечера` and `ночи` attached to a clock
+  time in every reply form. Keep those qualifiers in the user's input and
+  use them to resolve the exact numerical parameters. The V12.53 rule
+  supersedes archived reply examples containing clock dayparts.
 
 ### Exact clock vocabulary
 

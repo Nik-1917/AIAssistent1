@@ -1,0 +1,115 @@
+{
+  "version": "v12.5",
+  "authorship": "Every message, date, clock value, duration, title and response is written explicitly. Preparation only validates and serializes these literals.",
+  "reference": "V14 has two train and two validation user requests with 'без четверти'. V12.4 has zero. V14 supplies the count only; none of its rows are imported.",
+  "examples": [
+    {
+      "split": "train", "form": "quarter", "day_offset": 1, "next_hour_24": 9, "clock": "08:15", "duration_min": 20,
+      "time_phrase": "в четверть девятого утра", "reply_time_phrase": "в четверть девятого утра",
+      "row": {"category": "v12_5_clock_quarter", "contract_version": "v12.5", "case_id": "V125T01", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2027-04-12 (понедельник) 07:10 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Запиши проверку термометра завтра в четверть девятого утра на двадцать минут."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка термометра завтра, в четверть девятого утра, на двадцать минут.\",\"params\":{\"title\":\"Проверка термометра\",\"starts_at\":\"2027-04-13T08:15\",\"duration_min\":20}}"}
+      ]}
+    },
+    {
+      "split": "train", "form": "quarter", "day_offset": 0, "next_hour_24": 18, "clock": "17:15", "duration_min": 60,
+      "time_phrase": "в четверть шестого вечера", "reply_time_phrase": "в четверть шестого вечера",
+      "row": {"category": "v12_5_clock_quarter", "contract_version": "v12.5", "case_id": "V125T02", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2028-06-14 (среда) 09:00 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Сегодня в четверть шестого вечера добавь разбор чертежей на час."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разбор чертежей сегодня, в четверть шестого вечера, на час.\",\"params\":{\"title\":\"Разбор чертежей\",\"starts_at\":\"2028-06-14T17:15\",\"duration_min\":60}}"}
+      ]}
+    },
+    {
+      "split": "train", "form": "pol", "day_offset": 2, "next_hour_24": 3, "clock": "02:30", "duration_min": 30,
+      "time_phrase": "в полтретьего ночи", "reply_time_phrase": "в полтретьего ночи",
+      "row": {"category": "v12_5_clock_pol", "contract_version": "v12.5", "case_id": "V125T03", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2028-02-28 (понедельник) 20:00 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Послезавтра запиши ночную проверку сервера в полтретьего ночи на полчаса."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Ночная проверка сервера послезавтра, в полтретьего ночи, на полчаса.\",\"params\":{\"title\":\"Ночная проверка сервера\",\"starts_at\":\"2028-03-01T02:30\",\"duration_min\":30}}"}
+      ]}
+    },
+    {
+      "split": "train", "form": "pol", "day_offset": 1, "next_hour_24": 23, "clock": "22:30", "duration_min": 15,
+      "time_phrase": "в пол-одиннадцатого вечера", "reply_time_phrase": "в пол-одиннадцатого вечера",
+      "row": {"category": "v12_5_clock_pol", "contract_version": "v12.5", "case_id": "V125T04", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2030-07-09 (вторник) 08:20 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "В пол-одиннадцатого вечера завтра поставь чтение романа на четверть часа."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Чтение романа завтра, в пол-одиннадцатого вечера, на четверть часа.\",\"params\":{\"title\":\"Чтение романа\",\"starts_at\":\"2030-07-10T22:30\",\"duration_min\":15}}"}
+      ]}
+    },
+    {
+      "split": "train", "form": "polovina", "day_offset": 1, "next_hour_24": 12, "clock": "11:30", "duration_min": 45,
+      "time_phrase": "в половине двенадцатого дня", "reply_time_phrase": "в половине двенадцатого дня",
+      "row": {"category": "v12_5_clock_polovina", "contract_version": "v12.5", "case_id": "V125T05", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2027-12-31 (пятница) 10:25 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "В половине двенадцатого дня запиши приём оборудования завтра на сорок пять минут."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём оборудования завтра, в половине двенадцатого дня, на сорок пять минут.\",\"params\":{\"title\":\"Приём оборудования\",\"starts_at\":\"2028-01-01T11:30\",\"duration_min\":45}}"}
+      ]}
+    },
+    {
+      "split": "train", "form": "polovina", "day_offset": 0, "next_hour_24": 0, "clock": "23:30", "duration_min": 30,
+      "time_phrase": "в половине двенадцатого ночи", "reply_time_phrase": "в половине двенадцатого ночи",
+      "row": {"category": "v12_5_clock_polovina", "contract_version": "v12.5", "case_id": "V125T06", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2031-12-31 (среда) 19:00 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Дежурство на складе в половине двенадцатого ночи добавь сегодня на полчаса."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Дежурство на складе сегодня, в половине двенадцатого ночи, на полчаса.\",\"params\":{\"title\":\"Дежурство на складе\",\"starts_at\":\"2031-12-31T23:30\",\"duration_min\":30}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "quarter", "day_offset": 1, "next_hour_24": 4, "clock": "03:15", "duration_min": 15,
+      "time_phrase": "в четверть четвёртого ночи", "reply_time_phrase": "в четверть четвёртого ночи",
+      "row": {"category": "v12_5_clock_quarter", "contract_version": "v12.5", "case_id": "V125E01", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2029-02-28 (среда) 21:00 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Завтра в четверть четвёртого ночи запиши проверку резервного питания на пятнадцать минут."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка резервного питания завтра, в четверть четвёртого ночи, на пятнадцать минут.\",\"params\":{\"title\":\"Проверка резервного питания\",\"starts_at\":\"2029-03-01T03:15\",\"duration_min\":15}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "quarter", "day_offset": 2, "next_hour_24": 16, "clock": "15:15", "duration_min": 30,
+      "time_phrase": "в четверть четвёртого дня", "reply_time_phrase": "в четверть четвёртого дня",
+      "row": {"category": "v12_5_clock_quarter", "contract_version": "v12.5", "case_id": "V125E02", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2030-09-12 (четверг) 12:15 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Запиши настройку проектора послезавтра в четверть четвёртого дня на полчаса."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Настройка проектора послезавтра, в четверть четвёртого дня, на полчаса.\",\"params\":{\"title\":\"Настройка проектора\",\"starts_at\":\"2030-09-14T15:15\",\"duration_min\":30}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "pol", "day_offset": 1, "next_hour_24": 8, "clock": "07:30", "duration_min": 20,
+      "time_phrase": "в пол восьмого утра", "reply_time_phrase": "в полвосьмого утра",
+      "row": {"category": "v12_5_clock_pol", "contract_version": "v12.5", "case_id": "V125E03", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2028-02-29 (вторник) 06:00 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "В пол восьмого утра запиши осмотр насоса завтра на двадцать минут."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр насоса завтра, в полвосьмого утра, на двадцать минут.\",\"params\":{\"title\":\"Осмотр насоса\",\"starts_at\":\"2028-03-01T07:30\",\"duration_min\":20}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "pol", "day_offset": 1, "next_hour_24": 13, "clock": "12:30", "duration_min": 45,
+      "time_phrase": "в полпервого дня", "reply_time_phrase": "в полпервого дня",
+      "row": {"category": "v12_5_clock_pol", "contract_version": "v12.5", "case_id": "V125E04", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2029-11-18 (воскресенье) 18:25 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Завтра поставь обсуждение макета в полпервого дня на сорок пять минут."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Обсуждение макета завтра, в полпервого дня, на сорок пять минут.\",\"params\":{\"title\":\"Обсуждение макета\",\"starts_at\":\"2029-11-19T12:30\",\"duration_min\":45}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "polovina", "day_offset": 1, "next_hour_24": 1, "clock": "00:30", "duration_min": 30,
+      "time_phrase": "половина первого ночи", "reply_time_phrase": "в половине первого ночи",
+      "row": {"category": "v12_5_clock_polovina", "contract_version": "v12.5", "case_id": "V125E05", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2031-09-04 (четверг) 06:50 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Завтра запиши сверку архива. Начало половина первого ночи, длительность полчаса."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка архива завтра, в половине первого ночи, на полчаса.\",\"params\":{\"title\":\"Сверка архива\",\"starts_at\":\"2031-09-05T00:30\",\"duration_min\":30}}"}
+      ]}
+    },
+    {
+      "split": "validation", "form": "polovina", "day_offset": 0, "next_hour_24": 21, "clock": "20:30", "duration_min": 60,
+      "time_phrase": "в половине девятого вечера", "reply_time_phrase": "в половине девятого вечера",
+      "row": {"category": "v12_5_clock_polovina", "contract_version": "v12.5", "case_id": "V125E06", "messages": [
+        {"role": "system", "content": "Сегодня дата и время:2027-08-09 (понедельник) 11:40 Europe/Samara ответ JSON"},
+        {"role": "user", "content": "Урок рисования в половине девятого вечера запиши сегодня на час."},
+        {"role": "assistant", "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок рисования сегодня, в половине девятого вечера, на час.\",\"params\":{\"title\":\"Урок рисования\",\"starts_at\":\"2027-08-09T20:30\",\"duration_min\":60}}"}
+      ]}
+    }
+  ]
+}

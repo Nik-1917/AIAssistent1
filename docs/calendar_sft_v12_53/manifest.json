@@ -1,0 +1,65 @@
+{
+  "version": "v12.53",
+  "base_version": "v12.52",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "beacf682dec8b08330c03bb9a205b617b5f109349830cd9cc46ba772ad7033d2",
+    "validation": "74e1d422e08d7868279106ef435d7980550f91c8e0215ab77f1b40c3f517fe01",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+  },
+  "manual_sha256": "8a4f225cb5f861e034c77e580fcfa647ba236505051b13de5968f3cff972e980",
+  "reply_edits_manual_sha256": "b75626e3798f4622a324c8cc6942cd535243d263a540f1fad8a0a57f0bd35fe6",
+  "inherited_reply_edits": {
+    "train": 260,
+    "validation": 74,
+    "holdout": 0,
+    "calendar_holdout_v12_2": 0,
+    "regression_holdout": 3
+  },
+  "new_counts": {
+    "train": 265,
+    "validation": 73
+  },
+  "new_grid_per_hour": {
+    "train": 11,
+    "validation": 3
+  },
+  "additional_midnight_per_split": 1,
+  "new_grid_each_word_order": {
+    "train": 44,
+    "validation": 12
+  },
+  "total_rows": {
+    "train": 2401,
+    "validation": 720,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "a83bbc409dddbdcc74e5d1c43a78b1045e48778eafcf2103911b034ddba0e528"
+    },
+    "validation": {
+      "sha256": "88dd361060ac58a43cad1baae69c40cd40a7f66c00e28a507095bb800a3e52e5"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    }
+  },
+  "archived_sources": "UNCHANGED",
+  "inherited_fields_except_reply": "UNCHANGED",
+  "holdout_prompts_and_params": "UNCHANGED",
+  "reply_clock_dayparts": "OMITTED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

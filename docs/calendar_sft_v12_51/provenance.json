@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12.51",
+  "review": {
+    "reviewed_by": "Codex, preparation audit under project owner instructions",
+    "reviewed_on": "2026-09-09",
+    "decision_evidence": "The user requested manually authored whole-hour examples from one through midnight and named the addition V12.51. This register covers preparation, not a training run."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "61bc4089ccd989c754f5a6c8b66b018882f2092cfe3e2b60233e6f39a96ff261"
+    },
+    "validation": {
+      "sha256": "5cc25372d2660df0d98ceb9f2560039cad9deeac8f76ef9d151c495f95438fa9"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_5/provenance.json; workspace:docs/calendar_assistant_v12_51_on_hour_manual.json",
+      "rights_evidence": "Verified V12.5 rows are copied unchanged. The 72 new fictional examples were individually authored as complete literal requests and responses for this project. No external material, inference predictions or real personal data was imported.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

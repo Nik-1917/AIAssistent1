@@ -44,7 +44,89 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-### Active V14 release
+### Current V12.53 compact clocks and reply wording
+
+`prepare_v12_53.py` prepares 265 complete handwritten train examples and
+73 independent validation examples. The main grid covers 24 hours and every
+five-minute value from 5 to 55; validation covers 5, 30 and 55. Each split has
+one additional standalone `ноль часов` example. The six event/day/time orders
+have 44 train and 12 validation examples each within the main grid.
+
+The source files and numerical extraction remain unchanged. A separate manual
+register supplies complete replacement replies for 260 inherited train rows,
+74 validation rows and three regression rows. They omit clock dayparts while
+retaining words for dates, durations and titles. Holdout prompts and parameters
+remain unchanged. The final counts are 2401 train, 720 validation and
+36 + 8 + 63 holdout rows; no removed intent is reintroduced.
+
+```powershell
+python -X utf8 -B tools/calendar_sft/prepare_v12_53.py --check-only
+```
+
+See [V12.53 rules, examples and verification](../../docs/CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md).
+The assembler only validates and serializes literal messages or copies a
+complete handwritten replacement reply; it does not generate sentences.
+Preparation does not train model weights or run inference.
+
+### Archived V12.52 minute-of-hour addition
+
+`prepare_v12_52.py` appends 132 complete handwritten train examples and 36
+independent validation examples to the exact V12.51 files. Training covers
+every named hour from first to twelfth and every five-minute value from 5 to
+55. Validation checks 5, 30 and 55 for each named hour in the opposite half
+of the day. Both splits balance times before and after noon.
+
+The resulting dataset contains 2136 train and 647 validation rows. All
+inherited rows and three holdouts retain their exact bytes; new records keep
+the `v12.5` JSON contract and apply presentation rules only to `reply`.
+
+```powershell
+python -B tools/calendar_sft/prepare_v12_52.py --check-only
+```
+
+See [V12.52 rules and complete examples](../../docs/CALENDAR_ASSISTANT_V12_52_MINUTES_OF_HOUR.md).
+The assembler validates literal input and output messages without generating
+sentences or repairing targets. Preparation does not train weights or run
+model inference.
+
+### V12.51 whole-hour addition
+
+`prepare_v12_51.py` appends 48 complete handwritten train examples and 24
+independent validation examples to the exact V12.5 files. Each clock hour
+`00` through `23` has two train forms and one validation form, including
+`час ноль ноль`, `двадцать ноль ноль`, and `ноль часов ноль ноль минут`.
+The inherited JSON contract is still `v12.5`; reply rules apply only to `reply`.
+The V12.5 data and all three holdouts remain byte-for-byte identical.
+
+```powershell
+python -B tools/calendar_sft/prepare_v12_51.py --check-only
+```
+
+See [V12.51 rules and complete examples](../../docs/CALENDAR_ASSISTANT_V12_51_ON_HOUR.md).
+The validator reads literal assertions; it does not generate training language
+or repair answers. Preparation does not start training or overwrite a GGUF.
+
+### V12.5 relative-clock addition
+
+`prepare_v12_5.py` appends twelve fully handwritten examples to the exact V12.4
+artifacts. Each of `четверть`, `пол...` and `половина...` receives two train and
+two validation rows, matching the count of `без четверти` requests in the V14
+manual source files. V14 supplies only the count: no V14 data are imported.
+The three V12.4 holdouts remain unchanged.
+
+The new `v12.5` contract applies reply presentation rules to **`reply` only**.
+It accepts literal titles and user input independently of reply style, retains
+numeric JSON parameters, and permits known spoken time in creation replies.
+Inherited `v12.1` rows keep their historical validation.
+
+```powershell
+python -B tools/calendar_sft/prepare_v12_5.py --check-only
+```
+
+See [the current rules and complete examples](../../docs/CALENDAR_ASSISTANT_V12_5_RELATIVE_CLOCK.md).
+Preparation does not start training or overwrite a GGUF file.
+
+### Historical V14 release
 
 V14 permits exactly `chat`, `note_add`, `calendar_add`, `calendar_search`, and
 `calendar_sum`. `prepare_dataset.py` excludes generated candidate files and
@@ -134,8 +216,9 @@ uses today for a later exact time, tomorrow for an earlier or equal exact time,
 and today when no exact time is known. Other defaults and actual Room query
 results remain Android-owned and are not part of SFT responses.
 
-Supervised user text, replies, and string parameters exclude Unicode U+2014,
-U+00AB, and U+00BB. Validation rejects any row that contains them.
+The historical contracts excluded Unicode U+2014, U+00AB and U+00BB in user
+text, replies and string parameters. In the current `v12.5` contract, these
+presentation restrictions apply only to `reply`.
 
 ## Staged model dry run
 

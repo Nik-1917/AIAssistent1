@@ -1,0 +1,51 @@
+{
+  "version": "v12.5",
+  "base_version": "v12.4",
+  "inherited_contract": "v12.1",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "b21987b00d9e4045e47ee7795b8dc1d9ec023121d6c2ac03bed89c64d4d52e8b",
+    "validation": "6a8e357e3d0c60de20dc99ebee6b325b70c6ac989b60487b9caeefdcdf843f39",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "86f072490ca838989bad172ecd269b0f6d76fe048a9a15cd2ce807245b1c7ef2"
+  },
+  "manual_sha256": "f288f51d623cb863745f5380e7ce6e48c356f9fb2808ec81e0353ac335293bf7",
+  "count_reference": {
+    "train": {
+      "path": "docs\\calendar_assistant_manual_train_v14.jsonl",
+      "sha256": "1cda8c68864be208d75a1c14dcd6b5071e52516037a4652f3a44fb3c6f762e13",
+      "user_rows_without_quarter": 2
+    },
+    "validation": {
+      "path": "docs\\calendar_assistant_manual_eval_v14.jsonl",
+      "sha256": "dca613de5fa7cf40597fb08ce4d9c62b0715bdf596ee2d523e3a51bb0c8f34ed",
+      "user_rows_without_quarter": 2
+    }
+  },
+  "reference_usage": "Counts only; zero V14 rows imported.",
+  "new_counts": {
+    "train": {
+      "v12_5_clock_quarter": 2,
+      "v12_5_clock_pol": 2,
+      "v12_5_clock_polovina": 2
+    },
+    "validation": {
+      "v12_5_clock_quarter": 2,
+      "v12_5_clock_pol": 2,
+      "v12_5_clock_polovina": 2
+    }
+  },
+  "total_rows": {
+    "train": 1956,
+    "validation": 587,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "inherited_bytes": "UNCHANGED",
+  "holdouts": "UNCHANGED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

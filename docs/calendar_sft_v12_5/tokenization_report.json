@@ -1,0 +1,13 @@
+{
+  "max_seq_length": 256,
+  "weights_loaded": false,
+  "training": "NOT_RUN",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {"rows": 8, "max_tokens": 124, "new_rows": 0, "new_max_tokens": null},
+    "holdout.jsonl": {"rows": 36, "max_tokens": 134, "new_rows": 0, "new_max_tokens": null},
+    "regression_holdout.jsonl": {"rows": 63, "max_tokens": 178, "new_rows": 0, "new_max_tokens": null},
+    "train.jsonl": {"rows": 1956, "max_tokens": 256, "new_rows": 6, "new_max_tokens": 154},
+    "validation.jsonl": {"rows": 587, "max_tokens": 206, "new_rows": 6, "new_max_tokens": 162}
+  }
+}
