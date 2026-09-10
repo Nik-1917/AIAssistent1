@@ -9,6 +9,7 @@ import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.media.audiofx.AudioEffect
 import android.media.audiofx.NoiseSuppressor
+import android.os.SystemClock
 import android.util.Log
 import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import androidx.core.content.ContextCompat
@@ -45,8 +46,30 @@ class SherpaOnnxVoiceInputProvider(
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 1)
     private val lock = Any()
     private var recordingJob: Job? = null
+    private var warmUpJob: Job? = null
     private var activeSessionId: Long? = null
     private var nextSessionId = 0L
+
+    init {
+        warmUpJob = scope.launch {
+            val startedAt = SystemClock.elapsedRealtime()
+            try {
+                // Keep initialization sequential to avoid a CPU/RAM spike on weaker devices.
+                vad.prepare()
+                recognizer.prepare()
+                Log.d(
+                    TAG,
+                    "Voice model warm-up completed in " +
+                        "${SystemClock.elapsedRealtime() - startedAt} ms",
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // Capture keeps its existing lazy-init fallback if preparation fails.
+                Log.w(TAG, "Voice model warm-up failed; lazy initialization will be used", error)
+            }
+        }
+    }
 
     override fun observeInput(): Flow<VoiceInputEvent> = input
 
@@ -92,6 +115,7 @@ class SherpaOnnxVoiceInputProvider(
 
     override fun close() {
         stop()
+        warmUpJob?.cancel()
         scope.cancel()
         recognizer.close()
         vad.close()

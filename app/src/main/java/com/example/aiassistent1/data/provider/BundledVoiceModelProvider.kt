@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
 import com.example.aiassistent1.domain.model.VoiceModelAssets
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -11,19 +13,24 @@ import java.io.FileOutputStream
 class BundledVoiceModelProvider(
     private val context: Context,
 ) : VoiceModelProvider {
+    private val assetsMutex = Mutex()
+    private var cachedAssets: VoiceModelAssets? = null
+
     override suspend fun getAssets(): Result<VoiceModelAssets> = runCatching {
-        withContext(Dispatchers.IO) {
-            REQUIRED_FILES.forEach(::requireNonEmptyAsset)
-            VoiceModelAssets(
-                asrEncoder = ASR_ENCODER,
-                asrDecoder = ASR_DECODER,
-                asrJoiner = ASR_JOINER,
-                asrTokens = ASR_TOKENS,
-                ttsModel = TTS_MODEL,
-                ttsTokens = TTS_TOKENS,
-                ttsDataDirectory = copyTtsDataDirectory().absolutePath,
-                vadModel = VAD_MODEL,
-            )
+        assetsMutex.withLock {
+            cachedAssets ?: withContext(Dispatchers.IO) {
+                REQUIRED_FILES.forEach(::requireNonEmptyAsset)
+                VoiceModelAssets(
+                    asrEncoder = ASR_ENCODER,
+                    asrDecoder = ASR_DECODER,
+                    asrJoiner = ASR_JOINER,
+                    asrTokens = ASR_TOKENS,
+                    ttsModel = TTS_MODEL,
+                    ttsTokens = TTS_TOKENS,
+                    ttsDataDirectory = copyTtsDataDirectory().absolutePath,
+                    vadModel = VAD_MODEL,
+                )
+            }.also { cachedAssets = it }
         }
     }
 

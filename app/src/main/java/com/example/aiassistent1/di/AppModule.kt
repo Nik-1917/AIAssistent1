@@ -69,6 +69,9 @@ object AppModule {
 	@Volatile
 	private var settingsRepository: SettingsRepository? = null
 
+	@Volatile
+	private var voiceModelProvider: VoiceModelProvider? = null
+
 	fun provideSettingsRepository(context: Context): SettingsRepository = settingsRepository ?: synchronized(this) {
 		settingsRepository ?: DataStoreSettingsRepository(
 			context.applicationContext,
@@ -85,9 +88,11 @@ object AppModule {
 		modelProvider = provideModelProvider(context),
 	)
 
-	fun provideVoiceModelProvider(context: Context): VoiceModelProvider = BundledVoiceModelProvider(
-		context.applicationContext,
-	)
+	fun provideVoiceModelProvider(context: Context): VoiceModelProvider = voiceModelProvider ?: synchronized(this) {
+		voiceModelProvider ?: BundledVoiceModelProvider(
+			context.applicationContext,
+		).also { voiceModelProvider = it }
+	}
 
 	fun provideSpeechRecognizer(context: Context): SpeechRecognizer = SherpaOnnxSpeechRecognizer(
 		context.applicationContext,

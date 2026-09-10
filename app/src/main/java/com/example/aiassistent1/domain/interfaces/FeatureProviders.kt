@@ -19,6 +19,7 @@ interface InputProvider {
 }
 
 interface SpeechRecognizer : AutoCloseable {
+    suspend fun prepare() = Unit
     suspend fun recognize(samples: FloatArray): Result<String>
 }
 
@@ -32,6 +33,7 @@ interface SpeechPlayback : AutoCloseable {
 }
 
 interface VoiceActivityDetector : AutoCloseable {
+    suspend fun prepare() = Unit
     suspend fun accept(samples: FloatArray): List<FloatArray>
     fun reset()
 }

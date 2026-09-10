@@ -33,6 +33,16 @@ class SherpaOnnxSpeechRecognizer(
     private val mutex = Mutex()
     private var recognizer: OfflineRecognizer? = null
 
+    override suspend fun prepare() {
+        withContext(Dispatchers.Default) {
+            mutex.withLock {
+                if (recognizer == null) {
+                    recognizer = createRecognizer(modelProvider.getAssets().getOrThrow())
+                }
+            }
+        }
+    }
+
     override suspend fun recognize(samples: FloatArray): Result<String> = runCatching {
         require(samples.isNotEmpty()) { "Аудиофрагмент пуст" }
         withContext(Dispatchers.Default) {
@@ -134,6 +144,16 @@ class SherpaOnnxVoiceActivityDetector(
 ) : VoiceActivityDetector {
     private val mutex = Mutex()
     private var vad: Vad? = null
+
+    override suspend fun prepare() {
+        withContext(Dispatchers.Default) {
+            mutex.withLock {
+                if (vad == null) {
+                    vad = createVad(modelProvider.getAssets().getOrThrow())
+                }
+            }
+        }
+    }
 
     override suspend fun accept(samples: FloatArray): List<FloatArray> {
         require(samples.isNotEmpty()) { "Аудиофрагмент пуст" }
