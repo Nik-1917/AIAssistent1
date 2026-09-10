@@ -14,7 +14,7 @@ class SystemPromptProvider {
         return if (isCalendarMode) {
             "cегодня $currentDateTime день недели $dayOfWeek ответ JSON"
         } else {
-            "cегодня $currentDateTime день недели $dayOfWeek Ты - полезный ИИ ассистент."
+            "cегодня $currentDateTime день недели $dayOfWeek"
         }
     }
 }
