@@ -13,7 +13,7 @@ class AssistantResponseParser {
         val reply = json.string("reply", required = true)!!
         val raw = json.objectValue("params")
         val params: AssistantParams? = when (intent) {
-            "chat" -> { Fields(raw, "$.params", emptySet()); null }
+            "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
                 val p = Fields(raw, "$.params", setOf("title", "starts_at", "date", "time", "duration_min", "value"))
                 val startValue = p.string("starts_at")

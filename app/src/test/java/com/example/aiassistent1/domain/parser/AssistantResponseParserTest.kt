@@ -97,6 +97,15 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `treats chat_reply as an alias of chat`() {
+        val response = parser.parse("""{"intent":"chat_reply","reply":"На какое время?","params":{}}""")
+
+        assertEquals("chat_reply", response?.intent)
+        assertNull(response?.params)
+        assertTrue(response?.reply?.isNotBlank() == true)
+    }
+
+    @Test
     fun `rejects removed note intent`() {
         val response = parser.parse(
             """{"intent":"note_add","reply":"Сохраняю","params":{"text":"текст"}}""",

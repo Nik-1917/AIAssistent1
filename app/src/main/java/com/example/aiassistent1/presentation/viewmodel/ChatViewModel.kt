@@ -3,6 +3,7 @@ package com.example.aiassistent1.presentation.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
@@ -468,21 +469,24 @@ class ChatViewModel(
                 val finalMessage = assistantMessage
                 if (finalMessage != null) {
                     if (finalMessage.content.isNotBlank()) {
-                        val parsed = assistantResponseParser.parse(finalMessage.content)
+                        val parseOutcome = assistantResponseParser.parseResult(finalMessage.content)
+                        val parsed = parseOutcome.getOrNull()
                             ?.resolveImplicitCalendarAddDate(
                                 LocalDateTime.now(ZoneId.systemDefault()),
                             )
                         val messageToSave = if (parsed != null) {
                             finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
                         } else {
-                            finalMessage
+                            Log.w(
+                                TAG,
+                                "Не удалось разобрать ответ ассистента: ${parseOutcome.exceptionOrNull()?.message}. Сырой ответ: ${finalMessage.content}",
+                            )
+                            finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте повторить запрос.")
                         }
 
-                        // Update UI with the reply if parsed
-                        if (parsed != null) {
-                            assistantMessage = messageToSave
-                            updateMessage(messageToSave)
-                        }
+                        // Обновляем UI как для разобранного ответа, так и для фолбэка при ошибке парсинга
+                        assistantMessage = messageToSave
+                        updateMessage(messageToSave)
 
                         withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
                         
@@ -1611,6 +1615,7 @@ class ChatViewModel(
     private fun Throwable.userMessage(): String = message ?: "Не удалось сгенерировать ответ"
 
     private companion object {
+        const val TAG = "ChatViewModel"
         const val MAX_MESSAGE_LENGTH = 3000
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
