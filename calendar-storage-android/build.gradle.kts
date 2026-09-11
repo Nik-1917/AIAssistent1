@@ -15,6 +15,16 @@ android {
         minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    // Room migration and persistence checks run locally, without a device.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+val calendarSchemasPath = layout.projectDirectory.dir("schemas").asFile.absolutePath
+tasks.withType<Test>().configureEach {
+    systemProperty("calendar.schemas", calendarSchemasPath)
 }
 
 ksp {
@@ -26,6 +36,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("org.robolectric:robolectric:4.16")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)

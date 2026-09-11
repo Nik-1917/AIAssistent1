@@ -98,6 +98,7 @@ abstract class CalendarEventDao {
         if (update.expectedRevision != null && existing.revision != update.expectedRevision) throw CalendarConflictException()
         val changed = existing.copy(title = update.title.trim(), startsAtEpochMillis = update.startsAtEpochMillis,
             endsAtEpochMillis = update.endsAtEpochMillis, value = update.valueChange.applyTo(existing.value),
+            notes = update.notes?.takeIf { it.isNotBlank() } ?: existing.notes,
             updatedAtEpochMillis = now, revision = Math.addExact(existing.revision, 1))
         check(update(changed) == 1) { "Событие не обновлено" }
         return changed
@@ -114,7 +115,7 @@ abstract class CalendarEventDao {
                 val draft = mutation.draft
                 require(draft.title.isNotBlank() && draft.startsAtEpochMillis < draft.endsAtEpochMillis)
                 event = CalendarEventEntity(newId, draft.title.trim(), draft.startsAtEpochMillis,
-                    draft.endsAtEpochMillis, now, now, draft.value)
+                    draft.endsAtEpochMillis, now, now, draft.value, notes = draft.notes?.takeIf { it.isNotBlank() })
                 insert(event)
                 kind = "calendar_add"
             }
@@ -130,6 +131,6 @@ abstract class CalendarEventDao {
                 kind = "calendar_delete"
             }
         }
-        return CalendarReceiptEntity(requestId, kind, event.id, event.title).also { insertReceipt(it) }
+        return CalendarReceiptEntity(requestId, kind, event.id, event.title, event.notes).also { insertReceipt(it) }
     }
 }

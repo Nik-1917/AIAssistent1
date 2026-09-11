@@ -15,7 +15,7 @@ class AssistantResponseParser {
         val params: AssistantParams? = when (intent) {
             "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
-                val p = Fields(raw, "$.params", setOf("title", "starts_at", "date", "time", "duration_min", "value"))
+                val p = Fields(raw, "$.params", setOf("title", "starts_at", "date", "time", "duration_min", "value", "notes"))
                 val startValue = p.string("starts_at")
                 val start = startValue?.takeIf { p.isDateTime(it) }
                 val shorthandTime = startValue?.takeIf { !p.isDateTime(it) }?.also {
@@ -25,7 +25,7 @@ class AssistantResponseParser {
                 val date = p.date("date")
                 val time = p.time("time") ?: shorthandTime
                 require(start == null || (date == null && time == null)) { "$.params: starts_at несовместим с date/time" }
-                CalendarAddParams(p.string("title"), start, p.duration(), date, time, p.integer("value"))
+                CalendarAddParams(p.string("title"), start, p.duration(), date, time, p.integer("value"), p.notes())
             }
             "calendar_search", "calendar_sum" -> {
                 val p = Fields(raw, "$.params", setOf("query", "range_start", "range_end"))
@@ -37,7 +37,7 @@ class AssistantResponseParser {
             "calendar_update" -> {
                 val p = Fields(raw, "$.params", setOf("target", "changes"))
                 val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created"))
-                val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "clear_value"))
+                val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "clear_value", "notes"))
                 val query = t.string("query")
                 val last = t.flag("use_last_created")
                 val (start, end) = t.range()
@@ -48,7 +48,7 @@ class AssistantResponseParser {
                 require(value == null || !clear) { "$.params.changes: value несовместим с clear_value" }
                 CalendarUpdateParams(
                     CalendarUpdateTargetParams(query, start, end, last),
-                    CalendarUpdateChangesParams(c.string("title"), c.date("date"), c.time("time"), c.duration(), value, clear),
+                    CalendarUpdateChangesParams(c.string("title"), c.date("date"), c.time("time"), c.duration(), value, clear, c.notes()),
                 )
             }
             "calendar_delete" -> {
@@ -78,6 +78,8 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         require(value is String && (allowEmpty || value.isNotBlank())) { "$path.$key: требуется строка допустимой длины" }
         return value
     }
+    // Blank notes are absent; meaningful text is never trimmed or rewritten.
+    fun notes(): String? = string("notes", allowEmpty = true)?.takeIf { it.isNotBlank() }
     @Suppress("UNCHECKED_CAST")
     fun objectValue(key: String): Map<String, Any> {
         require(values[key] is Map<*, *>) { "$path.$key: требуется объект" }

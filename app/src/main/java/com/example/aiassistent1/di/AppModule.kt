@@ -212,6 +212,6 @@ object AppModule {
 			context.applicationContext,
 			CalendarDatabase::class.java,
 			"calendar_core.db",
-		).addMigrations(CalendarDatabase.MIGRATION_1_2).build().also { calendarDatabase = it }
+		).addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3).build().also { calendarDatabase = it }
 	}
 }

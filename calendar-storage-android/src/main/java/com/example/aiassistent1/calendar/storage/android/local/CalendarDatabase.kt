@@ -7,13 +7,20 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CalendarEventEntity::class, CalendarReceiptEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class CalendarDatabase : RoomDatabase() {
     abstract fun calendarEventDao(): CalendarEventDao
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE calendar_events ADD COLUMN notes TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE calendar_command_receipts ADD COLUMN notes TEXT DEFAULT NULL")
+            }
+        }
+
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE calendar_events ADD COLUMN value INTEGER DEFAULT NULL")

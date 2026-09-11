@@ -30,6 +30,7 @@ class RoomCalendarEventRepository(
             createdAtEpochMillis = now,
             updatedAtEpochMillis = now,
             value = draft.value,
+            notes = draft.notes?.takeIf { it.isNotBlank() },
         )
         dao.insert(event)
         event.toDomain()
@@ -56,12 +57,12 @@ class RoomCalendarEventRepository(
     }
 
     override suspend fun getReceipt(requestId: String): Result<CalendarReceipt?> = calendarResult {
-        dao.getReceipt(requestId)?.let { CalendarReceipt(it.requestId, it.kind, it.eventId, it.title) }
+        dao.getReceipt(requestId)?.let { CalendarReceipt(it.requestId, it.kind, it.eventId, it.title, it.notes) }
     }
 
     override suspend fun commit(requestId: String, mutation: CalendarMutation): Result<CalendarReceipt> = calendarResult {
         dao.commitMutation(requestId, mutation, newId(), nowEpochMillis()).let {
-            CalendarReceipt(it.requestId, it.kind, it.eventId, it.title)
+            CalendarReceipt(it.requestId, it.kind, it.eventId, it.title, it.notes)
         }
     }
 
@@ -141,4 +142,5 @@ private fun CalendarEventEntity.toDomain() = CalendarEvent(
     updatedAtEpochMillis = updatedAtEpochMillis,
     value = value,
     revision = revision,
+    notes = notes,
 )

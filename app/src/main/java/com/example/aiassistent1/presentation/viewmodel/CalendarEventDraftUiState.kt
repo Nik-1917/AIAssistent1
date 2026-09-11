@@ -24,6 +24,7 @@ data class CalendarEventDraftUiState(
     val error: String? = null,
     val isFormatting: Boolean = false,
     val isVoiceInputActive: Boolean = false,
+    val notes: String? = null,
 ) {
     val startsAt: String?
         get() = if (date.isNullOrBlank() || time.isNullOrBlank()) null else "$date" + "T" + "$time"

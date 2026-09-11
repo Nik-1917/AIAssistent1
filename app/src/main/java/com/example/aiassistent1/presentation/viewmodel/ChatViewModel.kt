@@ -1,5 +1,7 @@
 package com.example.aiassistent1.presentation.viewmodel
 
+import com.example.aiassistent1.domain.formatter.withCalendarNotes
+
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -477,7 +479,12 @@ class ChatViewModel(
                                     LocalDateTime.now(ZoneId.systemDefault()),
                                 )
                             val messageToSave = if (parsed != null) {
-                                finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
+                                val notes = when (val params = parsed.params) {
+                                    is CalendarAddParams -> params.notes
+                                    is CalendarUpdateParams -> params.changes.notes
+                                    else -> null
+                                }
+                                finalMessage.copy(content = (parsed.calendarReplyOrNull() ?: parsed.reply).withCalendarNotes(notes))
                             } else {
                                 Log.w(
                                     TAG,
@@ -796,7 +803,7 @@ class ChatViewModel(
                                 is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Found -> {
                                     val resultsText = if (outcome.events.isNotEmpty()) {
                                         "\n\nНайдено:\n" + outcome.events.joinToString("\n") {
-                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)"
+                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)".withCalendarNotes(it.notes)
                                         }
                                     } else "\n\nНичего не найдено."
                                     replaceAssistantReply(messageId, response.reply + resultsText)
@@ -852,7 +859,7 @@ class ChatViewModel(
                 .onSuccess { outcome ->
                     when (outcome) {
                         is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Completed -> {
-                            replaceAssistantReply(messageId, "Событие удалено: ${outcome.receipt.title}.")
+                            replaceAssistantReply(messageId, "Событие удалено: ${outcome.receipt.title}.".withCalendarNotes(outcome.receipt.notes))
                             mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
                         }
                         is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Selection -> {
@@ -925,6 +932,17 @@ class ChatViewModel(
 
     private fun startCalendarUpdateDraft(event: CalendarEvent, command: CalendarUpdateCommand, requestId: String = "") {
         val changes = command.changes
+        // A partial update still refers to an event with its existing notes.
+        // Supplied notes were already added to the model reply when it was parsed.
+        if (changes.notes.isNullOrBlank() && !event.notes.isNullOrBlank()) {
+            viewModelScope.launch {
+                val message = uiState.value.messages.firstOrNull { it.id == requestId } ?: return@launch
+                val suffix = "\nПримечание: ${event.notes}"
+                if (!message.content.endsWith(suffix)) {
+                    replaceAssistantReply(requestId, message.content.withCalendarNotes(event.notes))
+                }
+            }
+        }
         if (changes.isEmpty) {
             mutableUiState.update {
                 it.copy(
@@ -1179,6 +1197,7 @@ class ChatViewModel(
                 ?: params.time?.takeIf { isCalendarTime(it) },
             durationMinutes = params.durationMin,
             value = params.value,
+            notes = params.notes,
             requestId = requestId,
         )
         mutableUiState.update { it.copy(calendarEventDraft = draft.withNextField()) }
@@ -1253,6 +1272,7 @@ class ChatViewModel(
                 time = start.toLocalTime(),
                 durationMinutes = duration,
                 value = value,
+                notes = draft.notes,
             )
             val requestId = draft.requestId.ifBlank { "add-${System.currentTimeMillis()}" }
             calendarCommandExecutor.execute(command, requestId, confirmed = true)

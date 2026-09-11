@@ -10,6 +10,7 @@ data class CalendarEvent(
     val updatedAtEpochMillis: Long,
     val value: Long? = null,
     val revision: Long = 0,
+    val notes: String? = null,
 )
 
 data class CalendarEventDraft(
@@ -17,6 +18,7 @@ data class CalendarEventDraft(
     val startsAtEpochMillis: Long,
     val endsAtEpochMillis: Long,
     val value: Long? = null,
+    val notes: String? = null,
 )
 
 data class CalendarEventUpdate(
@@ -26,6 +28,8 @@ data class CalendarEventUpdate(
     val endsAtEpochMillis: Long,
     val valueChange: CalendarValueChange = CalendarValueChange.Keep,
     val expectedRevision: Long? = null,
+    /** Null or blank preserves the stored notes. */
+    val notes: String? = null,
 )
 
 sealed interface CalendarValueChange {

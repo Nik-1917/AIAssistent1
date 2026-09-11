@@ -1250,6 +1250,7 @@ private fun CalendarEventDraftDialog(
                 Text("Время: ${draft.time ?: "не указано"}")
                 Text("Длительность: ${draft.durationMinutes?.let { "$it мин" } ?: "не указана"}")
                 Text("Ценность: ${draft.value ?: "не указана"}")
+                CalendarNotesText(draft.notes)
 
                 if (!draft.isComplete) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1322,6 +1323,7 @@ private fun CalendarUpdateTargetSelectionDialog(
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(event.title, style = MaterialTheme.typography.bodyLarge)
+                            CalendarNotesText(event.notes)
                             Text(
                                 "${formatCalendarDialogDateTime(event.startsAtEpochMillis)} · ${calendarDialogDurationMinutes(event.startsAtEpochMillis, event.endsAtEpochMillis)} мин",
                                 style = MaterialTheme.typography.bodySmall,
@@ -1354,11 +1356,13 @@ private fun CalendarUpdateDraftDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text("Было", style = MaterialTheme.typography.labelLarge)
                 Text("Название: ${draft.event.title}")
+                CalendarNotesText(draft.event.notes)
                 Text("Дата и время: ${formatCalendarDialogDateTime(draft.event.startsAtEpochMillis)}")
                 Text("Длительность: ${calendarDialogDurationMinutes(draft.event.startsAtEpochMillis, draft.event.endsAtEpochMillis)} мин")
                 Spacer(modifier = Modifier.height(12.dp))
                 Text("Будет", style = MaterialTheme.typography.labelLarge)
                 Text("Название: ${draft.previewTitle}")
+                CalendarNotesText(draft.previewNotes)
                 Text("Дата и время: ${draft.previewStartsAt}")
                 Text("Длительность: ${draft.previewDurationMinutes} мин")
 

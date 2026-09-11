@@ -63,6 +63,7 @@ data class CalendarEventChanges(
     val time: LocalTime? = null,
     val durationMinutes: Int? = null,
     val valueChange: CalendarValueChange = CalendarValueChange.Keep,
+    val notes: String? = null,
 ) {
     init {
         require(durationMinutes == null || durationMinutes > 0) {
@@ -72,7 +73,7 @@ data class CalendarEventChanges(
     }
 
     val isEmpty: Boolean
-        get() = title == null && date == null && time == null && durationMinutes == null && valueChange == CalendarValueChange.Keep
+        get() = title == null && date == null && time == null && durationMinutes == null && valueChange == CalendarValueChange.Keep && notes.isNullOrBlank()
 }
 
 data class CalendarUpdateCommand(
@@ -150,6 +151,7 @@ class PrepareCalendarEventUpdateUseCase(
             endsAtEpochMillis = Math.addExact(newStart, durationMillis),
             valueChange = changes.valueChange,
             expectedRevision = event.revision,
+            notes = changes.notes?.takeIf { it.isNotBlank() },
         )
     }
 

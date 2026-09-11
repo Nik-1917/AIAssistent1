@@ -1,5 +1,8 @@
 package com.example.aiassistent1.presentation.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -239,7 +242,12 @@ fun CalendarScreen(
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
             title = { Text("Удалить событие?") },
-            text = { Text("«${event.title}» будет удалено из локального календаря без возможности восстановления.") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text("«${event.title}» будет удалено из локального календаря без возможности восстановления.")
+                    CalendarNotesText(event.notes)
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -396,6 +404,7 @@ private fun CalendarEventCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                CalendarNotesText(event.notes)
                 AssistChip(
                     onClick = onEdit,
                     label = { Text(event.timeRange()) },
@@ -428,8 +437,12 @@ private fun CalendarEventEditorDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (event == null) "Новое событие" else "Изменить событие") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Text("Дата: ${date.format(selectedDateFormatter())}")
+                CalendarNotesText(event?.notes)
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },

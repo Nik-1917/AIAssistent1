@@ -17,7 +17,7 @@ import java.time.ZoneId
 }
 
 sealed interface CalendarCommand {
-    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null) : CalendarCommand
+    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null, val notes: String? = null) : CalendarCommand
     data class Search(val query: String?, val range: CalendarRange?) : CalendarCommand
     data class Sum(val query: String?, val range: CalendarRange?) : CalendarCommand
     data class Update(val target: CalendarUpdateTarget?, val changes: CalendarEventChanges) : CalendarCommand
@@ -34,7 +34,7 @@ sealed interface CalendarMutation {
     data class Delete(val id: String, val expectedRevision: Long) : CalendarMutation
 }
 
-data class CalendarReceipt(val requestId: String, val kind: String, val eventId: String, val title: String)
+data class CalendarReceipt(val requestId: String, val kind: String, val eventId: String, val title: String, val notes: String? = null)
 class CalendarConflictException : IllegalStateException("Событие изменилось после выбора. Повторите запрос с актуальными данными.")
 
 enum class MissingCalendarField { TITLE, TIME, DURATION, VALUE, QUERY, RANGE, TARGET }
@@ -80,7 +80,7 @@ class CalendarCommandExecutor(
                 else {
                     val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), zoneId)
                     val draft = CalendarEventDraft(command.title!!, start,
-                        Math.addExact(start, Math.multiplyExact(command.durationMinutes!!.toLong(), 60_000L)), command.value)
+                        Math.addExact(start, Math.multiplyExact(command.durationMinutes!!.toLong(), 60_000L)), command.value, command.notes)
                     CalendarCommandResult.Completed(repository.commit(requestId, CalendarMutation.Create(draft)).getOrThrow())
                 }
             }

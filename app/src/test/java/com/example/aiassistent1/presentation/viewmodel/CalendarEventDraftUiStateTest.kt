@@ -10,6 +10,21 @@ import java.time.LocalTime
 
 class CalendarEventDraftUiStateTest {
     @Test
+    fun `notes survive field completion but are never required`() {
+        val incomplete = CalendarEventDraftUiState(
+            title = "Встреча", date = "2026-09-11", time = "14:30",
+            durationMinutes = 20, notes = "  Текст\n12500  ",
+        ).withNextField()
+        assertEquals(CalendarEventField.Value, incomplete.activeField)
+        assertFalse(incomplete.isComplete)
+        val complete = incomplete.copy(value = 0).withNextField()
+        assertTrue(complete.isComplete)
+        assertEquals(incomplete.notes, complete.notes)
+        assertEquals(null, complete.activeField)
+        assertTrue(complete.copy(notes = null).isComplete)
+    }
+
+    @Test
     fun `retains a known date and requests only the time`() {
         val draft = CalendarEventDraftUiState(
             title = "Проверка отчёта",

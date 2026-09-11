@@ -21,4 +21,5 @@ data class CalendarEventEntity(
     val updatedAtEpochMillis: Long,
     @ColumnInfo(defaultValue = "NULL") val value: Long? = null,
     @ColumnInfo(defaultValue = "0") val revision: Long = 0,
+    @ColumnInfo(defaultValue = "NULL") val notes: String? = null,
 )

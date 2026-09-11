@@ -24,6 +24,9 @@ data class CalendarUpdateDraftUiState(
     val input: String = "",
     val error: String? = null,
 ) {
+    val previewNotes: String?
+        get() = changes.notes?.takeIf { it.isNotBlank() } ?: event.notes
+
     val isReadyForConfirmation: Boolean
         get() = !isSelectingField && activeField == null && !changes.isEmpty
 }

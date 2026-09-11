@@ -29,6 +29,7 @@ data class CalendarAddParams(
     /** A known event time paired with a resolved date. */
     val time: String? = null,
     val value: Long? = null,
+    val notes: String? = null,
 ) : AssistantParams
 
 /** JSON transport model only. Map it to calendar-core's CalendarUpdateCommand before execution. */
@@ -52,6 +53,7 @@ data class CalendarUpdateChangesParams(
     val durationMin: Int? = null,
     val value: Long? = null,
     val clearValue: Boolean = false,
+    val notes: String? = null,
 )
 
 /** JSON transport model for an immediate local-calendar deletion. */
