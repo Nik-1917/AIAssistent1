@@ -1,0 +1,46 @@
+{
+  "dataset": "v12.54",
+  "checked_on": "2026-09-11",
+  "preparation_status": "PASS",
+  "total_rows": 3228,
+  "manually_authored_full_reply_replacements": 180,
+  "edited_rows": {"train": 144, "validation": 36},
+  "unchanged_rows_byte_identical": 3048,
+  "frozen_v12_53_source_hashes": "PASS",
+  "all_fields_except_selected_reply_clock_text": "UNCHANGED",
+  "input_meaning_and_numeric_parameters": "UNCHANGED",
+  "case_ids_categories_row_order_and_splits": "UNCHANGED",
+  "all_three_holdout_files": "BYTE_IDENTICAL",
+  "training_replies_per_new_form": {"35": 36, "40": 36, "50": 36, "55": 36},
+  "validation_replies_per_new_form": {"35": 0, "40": 0, "50": 0, "55": 36},
+  "python_tests": {
+    "status": "PASS",
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "working_directory": "tools/calendar_sft",
+    "command": "python -X utf8 -B -m unittest test_v12_54_dataset test_v12_53_dataset test_v12_52_dataset test_v12_51_dataset test_v12_5_dataset test_dataset_contract test_v12_4_dataset test_v12_3_dataset test_v12_2_dataset test_v12_1_dataset test_train_qlora test_dataset_provenance"
+  },
+  "android_formatter_tests": {
+    "status": "PASS",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "command": ".\\gradlew.bat --offline :app:testDebugUnitTest --tests com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest",
+    "result_file": "app/build/test-results/testDebugUnitTest/TEST-com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest.xml"
+  },
+  "tokenization": {
+    "status": "PASS",
+    "rows": 3228,
+    "truncated_rows": 0,
+    "max_seq_length": 256,
+    "edited_max_tokens": 176,
+    "assistant_only_loss_mask": "PASS",
+    "report": "tokenization_report.json"
+  },
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "v12_54_device_validation": "NOT_RUN"
+}

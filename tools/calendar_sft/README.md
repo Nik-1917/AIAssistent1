@@ -44,7 +44,29 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-### Current V12.53 compact clocks and reply wording
+### Current V12.54 minutes-to reply wording
+
+`prepare_v12_54.py` prepares a separate copy of V12.53, replacing only 180
+complete replies from a handwritten register: 144 train and 36 validation.
+For clock minutes 35, 40, 50 and 55, replies use `без двадцати пяти минут`,
+`без двадцати минут`, `без десяти минут` and `без пяти минут` followed by
+the upcoming cardinal hour. Existing quarter, half and quarter-to forms stay
+unchanged. Each new form has 36 training examples; the inherited validation
+grid contributes 36 changed replies at minute 55. No examples change splits.
+
+Inputs, parameters, IDs, categories and all three holdout files are preserved.
+The assembler validates the full literal replacement against the source and
+exact numerical clock; it does not generate or replace sentence fragments.
+Unchanged rows are copied byte for byte. V12.53 remains reproducible.
+
+```powershell
+python -X utf8 -B tools/calendar_sft/prepare_v12_54.py --check-only
+```
+
+See [V12.54 reply rules and preparation](../../docs/CALENDAR_ASSISTANT_V12_54_REPLY_MINUTES_TO.md).
+Preparation does not update model weights or run inference.
+
+### Archived V12.53 compact clocks and reply wording
 
 `prepare_v12_53.py` prepares 265 complete handwritten train examples and
 73 independent validation examples. The main grid covers 24 hours and every

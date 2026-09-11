@@ -1,0 +1,66 @@
+{
+  "version": "v12.54",
+  "base_version": "v12.53",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "a83bbc409dddbdcc74e5d1c43a78b1045e48778eafcf2103911b034ddba0e528",
+    "validation": "88dd361060ac58a43cad1baae69c40cd40a7f66c00e28a507095bb800a3e52e5",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+  },
+  "reply_edits_manual_sha256": "7ca5e07bd0b26cf81ae72fc15272b809ffc5bc51ba3c957f83b81f9460bc8462",
+  "inherited_reply_edits": {
+    "train": 144,
+    "validation": 36,
+    "holdout": 0,
+    "calendar_holdout_v12_2": 0,
+    "regression_holdout": 0
+  },
+  "reply_edits_by_minute": {
+    "train": {
+      "35": 36,
+      "40": 36,
+      "50": 36,
+      "55": 36
+    },
+    "validation": {
+      "55": 36
+    },
+    "holdout": {},
+    "calendar_holdout_v12_2": {},
+    "regression_holdout": {}
+  },
+  "total_rows": {
+    "train": 2401,
+    "validation": 720,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "51c0b4d336aabc99b5d6f0063d78aace804958b480984b47c29c73e4ab873414"
+    },
+    "validation": {
+      "sha256": "832e2b83e21c28175d90c6e63301ebfed1efc6e80761b35af8a4e827ac7a2f4a"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    }
+  },
+  "archived_sources": "UNCHANGED",
+  "inherited_fields_except_reply": "UNCHANGED",
+  "holdouts": "BYTE_IDENTICAL",
+  "row_order_and_split_membership": "UNCHANGED",
+  "reply_clock_dayparts": "OMITTED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

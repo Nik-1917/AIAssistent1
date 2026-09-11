@@ -23,7 +23,11 @@ object CalendarReplyTimeFormatter {
         return when (minute) {
             15 -> "в четверть ${NEXT_HOUR_ORDINALS[nextHour]}"
             30 -> "в половине ${NEXT_HOUR_ORDINALS[nextHour]}"
+            35 -> "без двадцати пяти минут ${CLOCK_HOURS[nextHour]}"
+            40 -> "без двадцати минут ${CLOCK_HOURS[nextHour]}"
             45 -> "без четверти ${CLOCK_HOURS[nextHour]}"
+            50 -> "без десяти минут ${CLOCK_HOURS[nextHour]}"
+            55 -> "без пяти минут ${CLOCK_HOURS[nextHour]}"
             else -> "в ${EXACT_HOURS[hour % 12]}" + if (minute == 0) "" else " ${spokenMinutes(minute)}"
         }
     }
@@ -41,7 +45,7 @@ object CalendarReplyTimeFormatter {
         return "$words $noun"
     }
 
-    private val RELATIVE_MINUTES = setOf(15, 30, 45)
+    private val RELATIVE_MINUTES = setOf(15, 30, 35, 40, 45, 50, 55)
     private val NEXT_HOUR_ORDINALS = arrayOf(
         "двенадцатого", "первого", "второго", "третьего", "четвёртого", "пятого",
         "шестого", "седьмого", "восьмого", "девятого", "десятого", "одиннадцатого",

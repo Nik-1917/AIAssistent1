@@ -469,29 +469,34 @@ class ChatViewModel(
                 val finalMessage = assistantMessage
                 if (finalMessage != null) {
                     if (finalMessage.content.isNotBlank()) {
-                        val parseOutcome = assistantResponseParser.parseResult(finalMessage.content)
-                        val parsed = parseOutcome.getOrNull()
-                            ?.resolveImplicitCalendarAddDate(
-                                LocalDateTime.now(ZoneId.systemDefault()),
-                            )
-                        val messageToSave = if (parsed != null) {
-                            finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
+                        // Обычный чат живёт по своей логике: JSON-контракт парсится только в режиме календаря
+                        if (currentState.isCalendarMode) {
+                            val parseOutcome = assistantResponseParser.parseResult(finalMessage.content)
+                            val parsed = parseOutcome.getOrNull()
+                                ?.resolveImplicitCalendarAddDate(
+                                    LocalDateTime.now(ZoneId.systemDefault()),
+                                )
+                            val messageToSave = if (parsed != null) {
+                                finalMessage.copy(content = parsed.calendarReplyOrNull() ?: parsed.reply)
+                            } else {
+                                Log.w(
+                                    TAG,
+                                    "Не удалось разобрать ответ ассистента: ${parseOutcome.exceptionOrNull()?.message}. Сырой ответ: ${finalMessage.content}",
+                                )
+                                finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте повторить запрос.")
+                            }
+
+                            // Обновляем UI как для разобранного ответа, так и для фолбэка при ошибке парсинга
+                            assistantMessage = messageToSave
+                            updateMessage(messageToSave)
+
+                            withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
+
+                            if (parsed != null) {
+                                handleParsedResponse(parsed, messageToSave.id)
+                            }
                         } else {
-                            Log.w(
-                                TAG,
-                                "Не удалось разобрать ответ ассистента: ${parseOutcome.exceptionOrNull()?.message}. Сырой ответ: ${finalMessage.content}",
-                            )
-                            finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте повторить запрос.")
-                        }
-
-                        // Обновляем UI как для разобранного ответа, так и для фолбэка при ошибке парсинга
-                        assistantMessage = messageToSave
-                        updateMessage(messageToSave)
-
-                        withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
-                        
-                        if (parsed != null) {
-                            handleParsedResponse(parsed, messageToSave.id)
+                            withContext(Dispatchers.IO) { chatRepository.saveMessage(finalMessage) }
                         }
                     } else {
                         // Если сообщение пустое после завершения (например, сброс), удаляем из UI

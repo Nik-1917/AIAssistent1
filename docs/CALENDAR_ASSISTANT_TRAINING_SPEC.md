@@ -1,25 +1,27 @@
 # Calendar Assistant: training contract
 
-## Active V12.53 addition to V12.52
+## Active V12.54 reply addition to V12.53
 
-For the V12.53 dataset, the supported intents remain
+For the V12.54 dataset, the supported intents remain
 `chat`, `calendar_add`, `calendar_search`, `calendar_update`,
 `calendar_delete`, and `calendar_sum`. The current training files contain no
 `note_add` records. The inherited V12.4 rows retain their frozen `v12.1`
 JSON contract. The twelve V12.5 relative-clock rows, the 72
 V12.51 whole-hour rows, the 168 V12.52 minute-of-hour rows and the
-338 new V12.53 compact-clock rows use
+338 inherited V12.53 compact-clock rows use
 `contract_version: "v12.5"`; the dataset version does not require a different
-JSON contract. The current addition is defined in
-[CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md](CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md).
-[The V12.51 whole-hour rules](CALENDAR_ASSISTANT_V12_51_ON_HOUR.md) and
+JSON contract. The current reply-only addition is defined in
+[CALENDAR_ASSISTANT_V12_54_REPLY_MINUTES_TO.md](CALENDAR_ASSISTANT_V12_54_REPLY_MINUTES_TO.md).
+[The V12.53 compact-clock rules](CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md),
+[the V12.51 whole-hour rules](CALENDAR_ASSISTANT_V12_51_ON_HOUR.md) and
 [the V12.5 relative-clock rules](CALENDAR_ASSISTANT_V12_5_RELATIVE_CLOCK.md)
 continue to govern input understanding. V12.53 supersedes their reply daypart
 wording: replies omit clock qualifiers `утра`, `дня`, `вечера`, `ночи`.
-Archived V12.52 files remain unchanged. In the new copies, a manual register
-replaces only 337 inherited reply strings. All source prompts, parameters,
-intents, categories and IDs remain unchanged. Historical V14 intent sections
-below are not the active V12.53 intent inventory.
+The archived V12.53 files remain unchanged. In the V12.54 copies, a manual register
+replaces only 180 inherited reply strings (144 train and 36 validation).
+All source prompts, parameters, intents, categories and IDs remain unchanged.
+Historical V14 intent sections
+below are not the active V12.54 intent inventory.
 
 **Reply rules apply only to the `reply` string.** They do not apply to
 `intent`, `params`, nested targets/changes, event titles, user messages, system
@@ -29,8 +31,12 @@ omission and reply punctuation rules must never rewrite `params.title`,
 type and extraction rules still apply to their own fields. Historical
 validation remains versioned for reproducibility.
 
-When an action reply mentions a known clock time, V12.5 uses `четверть` for
+When an action reply mentions a known clock time, use `четверть` for
 `:15`, `пол...` or `половина...` for `:30`, and `без четверти` for `:45`.
+V12.54 additionally requires `без двадцати пяти минут` for `:35`,
+`без двадцати минут` for `:40`, `без десяти минут` for `:50`,
+and `без пяти минут` for `:55`, followed by the upcoming hour in cardinal
+form: `14:35` is spoken as `без двадцати пяти минут три`.
 These expressions refer to the upcoming named hour; JSON parameters retain
 the exact resolved time. A title-only reply need not invent scheduling details.
 The model's reply is not proof that an operation has been saved.
@@ -518,7 +524,8 @@ invent a daypart. This construction does not change the existing date rules.
 Do not confuse it with a duration after `на` or an offset after `через`.
 
 In `reply` only, the existing V12.5 forms still apply at `:15`, `:30`
-and `:45`. Other minute values may use the exact `в ... минут ...`
+and `:45`. V12.54 uses the minutes-to forms at `:35`, `:40`, `:50`,
+and `:55`. Other minute values may use the exact `в ... минут ...`
 expression. Numeric time and duration fields retain their own formats.
 
 ### Compact current-hour and minute expressions
@@ -559,7 +566,20 @@ It must not normalize, remove, decline or rephrase content in other fields.
   params.
 - At `:15`, use `четверть` of the upcoming hour; at `:30`, use `пол...` or
   `половина...` of the upcoming hour; at `:45`, use `без четверти` the upcoming
-  hour. Omit `утра`, `дня`, `вечера` and `ночи` attached to a clock
+  hour. At `:35`, `:40`, `:50` and `:55`, respectively use `без двадцати пяти
+  минут`, `без двадцати минут`, `без десяти минут` and `без пяти минут`,
+  followed by the upcoming cardinal hour (`час`, `два`, ..., `двенадцать`).
+  These V12.54 forms supersede the archived reply forms `в тридцать пять
+  минут ...`, `в сорок минут ...`, `в пятьдесят минут ...` and `в пятьдесят
+  пять минут ...`. Apply them to known starts and ends of events. Keep all
+  other minutes exact; never round them to one of these forms.
+- Apply clock wording only to the clock passage in `reply`; preserve exact
+  event title copies, durations and offsets such as `на сорок минут` and
+  `через пятьдесят минут`. A next-hour phrase does not change the event date:
+  `23:55` says `без пяти минут двенадцать` and retains the original date
+  and `23:55` in `params`. Do not add a preposition before `без`; use
+  independent clauses such as `начало без десяти минут три, окончание ...`.
+- Omit `утра`, `дня`, `вечера` and `ночи` attached to a clock
   time in every reply form. Keep those qualifiers in the user's input and
   use them to resolve the exact numerical parameters. The V12.53 rule
   supersedes archived reply examples containing clock dayparts.

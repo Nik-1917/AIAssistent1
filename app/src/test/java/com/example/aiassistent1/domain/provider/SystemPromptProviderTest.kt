@@ -23,7 +23,8 @@ class SystemPromptProviderTest {
     fun `returns chat prompt when calendar mode is disabled`() {
         val prompt = SystemPromptProvider().getSystemPrompt(isCalendarMode = false)
 
-        assertTrue(prompt.contains("Ты - полезный ИИ ассистент."))
+        assertTrue(prompt.startsWith("cегодня "))
+        assertTrue(prompt.contains(" день недели "))
         assertFalse(prompt.endsWith(" ответ JSON"))
     }
 }

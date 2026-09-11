@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-assistant-sft-v12.54",
+  "review": {
+    "reviewed_by": "Codex, preparation audit under project owner instructions",
+    "reviewed_on": "2026-09-11",
+    "decision_evidence": "The user approved the plan for 180 handwritten reply-only replacements and named the addition V12.54. Preparation and formatter checks are authorized; this register does not report a training run."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "51c0b4d336aabc99b5d6f0063d78aace804958b480984b47c29c73e4ab873414"
+    },
+    "validation": {
+      "sha256": "832e2b83e21c28175d90c6e63301ebfed1efc6e80761b35af8a4e827ac7a2f4a"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_53/provenance.json; workspace:docs/calendar_assistant_v12_54_reply_edits_manual.json",
+      "rights_evidence": "The verified V12.53 rows retain all inputs, intents, parameters, metadata and split membership. The 180 complete replacement replies were individually authored for these fictional project examples. No external material, inference predictions or real personal data was imported.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

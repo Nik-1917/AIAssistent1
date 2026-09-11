@@ -27,7 +27,7 @@ class CalendarReplyTimeFormatterTest {
     @Test
     fun `formats transition through midnight`() {
         assertEquals(
-            "Событие «Дежурство» запланировано с одиннадцати часов пятидесяти минут до двенадцати часов десяти минут.",
+            "Событие «Дежурство» запланировано: начало без десяти минут двенадцать, окончание в двенадцать часов десять минут.",
             CalendarReplyTimeFormatter.formatCreationReply("Дежурство", "2026-08-21T23:50", 20),
         )
     }
@@ -49,6 +49,65 @@ class CalendarReplyTimeFormatterTest {
         assertEquals(
             "Событие «Обход» запланировано: начало без четверти час, окончание в час.",
             CalendarReplyTimeFormatter.formatCreationReply("Обход", "2027-04-13T00:45", 15),
+        )
+    }
+
+    @Test
+    fun `speaks all five to-hour forms at both interval endpoints`() {
+        val cases = listOf(
+            Triple("2027-09-01T14:35", 5, "начало без двадцати пяти минут три, окончание без двадцати минут три"),
+            Triple("2027-09-01T14:40", 5, "начало без двадцати минут три, окончание без четверти три"),
+            Triple("2027-09-01T14:45", 5, "начало без четверти три, окончание без десяти минут три"),
+            Triple("2027-09-01T14:50", 5, "начало без десяти минут три, окончание без пяти минут три"),
+            Triple("2027-09-01T14:55", 5, "начало без пяти минут три, окончание в три часа"),
+        )
+        for ((start, duration, expected) in cases) {
+            assertEquals(
+                "Событие «Проверка» запланировано: $expected.",
+                CalendarReplyTimeFormatter.formatCreationReply("Проверка", start, duration),
+            )
+        }
+    }
+
+    @Test
+    fun `uses the upcoming hour across noon and midnight without moving the start`() {
+        assertEquals(
+            "Событие «Обход» запланировано: начало без двадцати пяти минут двенадцать, окончание без двадцати минут час.",
+            CalendarReplyTimeFormatter.formatCreationReply("Обход", "2027-09-01T11:35", 65),
+        )
+        assertEquals(
+            "Событие «Обход» запланировано: начало без пяти минут двенадцать, окончание без десяти минут час.",
+            CalendarReplyTimeFormatter.formatCreationReply("Обход", "2027-12-31T23:55", 55),
+        )
+        assertEquals(
+            "Событие «Обход» запланировано: начало без двадцати минут час, окончание в час.",
+            CalendarReplyTimeFormatter.formatCreationReply("Обход", "2028-01-01T00:40", 20),
+        )
+    }
+
+    @Test
+    fun `keeps nearby ordinary minutes exact without rounding`() {
+        assertEquals(
+            "Событие «Замер» запланировано с двух часов тридцати четырёх минут до двух часов тридцати шести минут.",
+            CalendarReplyTimeFormatter.formatCreationReply("Замер", "2027-09-01T14:34", 2),
+        )
+        assertEquals(
+            "Событие «Замер» запланировано: начало в два часа тридцать четыре минуты, окончание без двадцати пяти минут три.",
+            CalendarReplyTimeFormatter.formatCreationReply("Замер", "2027-09-01T14:34", 1),
+        )
+        assertEquals(
+            "Событие «Замер» запланировано: начало без пяти минут три, окончание в два часа пятьдесят шесть минут.",
+            CalendarReplyTimeFormatter.formatCreationReply("Замер", "2027-09-01T14:55", 1),
+        )
+    }
+
+    @Test
+    fun `preserves title clock text while changing only the spoken interval`() {
+        assertEquals(
+            "Событие «Итоги дня — 14:35, в сорок минут третьего» запланировано: начало без двадцати минут три, окончание без десяти минут три.",
+            CalendarReplyTimeFormatter.formatCreationReply(
+                "Итоги дня — 14:35, в сорок минут третьего", "2027-09-01T14:40", 10,
+            ),
         )
     }
 
