@@ -38,7 +38,7 @@ data class ChatUiState(
     val smoothResponseEnabled: Boolean = false,
     val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,
-    val autoPlaybackEnabled: Boolean = false,
+    val autoPlaybackEnabled: Boolean = true,
     val activeChatId: String = "general",
     val speechRate: Float = SpeechRate.DEFAULT,
     val availableModels: List<String> = emptyList(),

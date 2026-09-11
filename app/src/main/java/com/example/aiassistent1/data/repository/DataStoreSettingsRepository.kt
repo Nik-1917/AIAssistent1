@@ -106,11 +106,11 @@ class DataStoreSettingsRepository(
         )
 
     override val autoPlaybackEnabled: StateFlow<Boolean> = context.settingsStore.data
-        .map { preferences -> preferences[autoPlaybackEnabledKey] ?: false }
+        .map { preferences -> preferences[autoPlaybackEnabledKey] ?: true }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
-            initialValue = false,
+            initialValue = true,
         )
 
     override val speechRate: StateFlow<Float> = context.settingsStore.data

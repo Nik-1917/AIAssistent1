@@ -49,7 +49,7 @@ fun SpeechPlaybackStatusCard(
     modifier: Modifier = Modifier,
     isCollapsed: Boolean = true,
     onCollapsedChange: (Boolean) -> Unit = {},
-    autoPlaybackEnabled: Boolean = false,
+    autoPlaybackEnabled: Boolean = true,
     interactionEnabled: Boolean = true,
 ) {
     val useExpandedLayout = !isCollapsed
