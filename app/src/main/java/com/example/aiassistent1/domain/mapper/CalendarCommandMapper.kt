@@ -12,7 +12,8 @@ class CalendarCommandMapper(private val zoneId: ZoneId = ZoneId.systemDefault())
                 require(params.startsAt == null || (params.date == null && params.time == null))
                 val start = params.startsAt?.let(CalendarTime::dateTime)
                 CalendarCommand.Add(params.title, start?.toLocalDate() ?: CalendarTime.date(requireNotNull(params.date)),
-                    start?.toLocalTime() ?: params.time?.let(CalendarTime::time), params.durationMin, params.value, params.notes)
+                    start?.toLocalTime() ?: params.time?.let(CalendarTime::time), params.durationMin, params.value, params.notes,
+                    endsAt = params.endsAt?.let(CalendarTime::dateTime))
             }
             is CalendarSearchParams -> CalendarCommand.Search(params.query, range(params.rangeStart, params.rangeEnd))
             is CalendarSumParams -> CalendarCommand.Sum(params.query, range(params.rangeStart, params.rangeEnd))

@@ -25,6 +25,7 @@ data class CalendarEventDraftUiState(
     val isFormatting: Boolean = false,
     val isVoiceInputActive: Boolean = false,
     val notes: String? = null,
+    val endsAt: String? = null,
 ) {
     val startsAt: String?
         get() = if (date.isNullOrBlank() || time.isNullOrBlank()) null else "$date" + "T" + "$time"
@@ -53,15 +54,20 @@ val CalendarEventField.expectedFormat: String
     }
 
 fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
+    val resolvedDuration = if (endsAt == null) durationMinutes else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
+        startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+        endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+        durationMinutes, java.time.ZoneId.systemDefault(),
+    )
     val next = when {
         title.isNullOrBlank() -> CalendarEventField.Title
         date.isNullOrBlank() -> CalendarEventField.Date
         time.isNullOrBlank() -> CalendarEventField.Time
-        durationMinutes == null -> CalendarEventField.DurationMinutes
+        resolvedDuration == null -> CalendarEventField.DurationMinutes
         value == null -> CalendarEventField.Value
         else -> null
     }
-    return copy(activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)
+    return copy(durationMinutes = resolvedDuration, activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)
 }
 
 /**

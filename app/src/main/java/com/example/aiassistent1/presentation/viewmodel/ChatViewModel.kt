@@ -1163,7 +1163,7 @@ class ChatViewModel(
             ?: return "Уточните название события."
         val hasStart = startsAt?.let { isCalendarDateTime(it) } == true ||
             (date?.let { isCalendarDate(it) } == true && time?.let { isCalendarTime(it) } == true)
-        val hasDuration = durationMin?.let { it > 0 } == true
+        val hasDuration = durationMin?.let { it > 0 } == true || endsAt != null
         return when {
             hasStart && hasDuration -> null
             hasStart -> "Уточните длительность для события $title."
@@ -1178,6 +1178,9 @@ class ChatViewModel(
         val startsAt = params.startsAt ?: params.date?.let { date ->
             params.time?.let { time -> "$date" + "T" + "$time" }
         } ?: return null
+        params.endsAt?.let { end ->
+            return "Событие «$title»: начало $startsAt, окончание $end."
+        }
         val duration = params.durationMin ?: return null
         return runCatching {
             CalendarReplyTimeFormatter.formatCreationReply(title, startsAt, duration)
@@ -1198,9 +1201,12 @@ class ChatViewModel(
             durationMinutes = params.durationMin,
             value = params.value,
             notes = params.notes,
+            endsAt = params.endsAt,
             requestId = requestId,
         )
-        mutableUiState.update { it.copy(calendarEventDraft = draft.withNextField()) }
+        runCatching { draft.withNextField() }
+            .onSuccess { resolved -> mutableUiState.update { it.copy(calendarEventDraft = resolved) } }
+            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
     }
 
     fun updateCalendarDraftInput(value: String) {
@@ -1273,6 +1279,7 @@ class ChatViewModel(
                 durationMinutes = duration,
                 value = value,
                 notes = draft.notes,
+                endsAt = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
             )
             val requestId = draft.requestId.ifBlank { "add-${System.currentTimeMillis()}" }
             calendarCommandExecutor.execute(command, requestId, confirmed = true)
@@ -1296,7 +1303,10 @@ class ChatViewModel(
                 CalendarEventField.DurationMinutes -> current.copy(durationMinutes = value.toInt())
                 CalendarEventField.Value -> current.copy(value = value.toLong())
             }
-            state.copy(calendarEventDraft = changed.withNextField())
+            val next = runCatching { changed.withNextField() }.getOrElse { error ->
+                current.copy(error = error.userMessage(), isFormatting = false)
+            }
+            state.copy(calendarEventDraft = next)
         }
     }
 

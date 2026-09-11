@@ -1248,6 +1248,7 @@ private fun CalendarEventDraftDialog(
                 Text("Название: ${draft.title ?: "не указано"}")
                 Text("Дата: ${draft.date ?: "не указана"}")
                 Text("Время: ${draft.time ?: "не указано"}")
+                draft.endsAt?.let { Text("Окончание: $it") }
                 Text("Длительность: ${draft.durationMinutes?.let { "$it мин" } ?: "не указана"}")
                 Text("Ценность: ${draft.value ?: "не указана"}")
                 CalendarNotesText(draft.notes)

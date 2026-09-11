@@ -495,8 +495,12 @@ private fun CalendarEvent.localDate(): LocalDate =
 private fun CalendarEvent.localStartTimeText(): String =
     Instant.ofEpochMilli(startsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
 
-private fun CalendarEvent.timeRange(): String =
-    "${localStartTimeText()}–${Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)}"
+private fun CalendarEvent.timeRange(): String {
+    val end = Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault())
+    val endText = if (end.toLocalDate() == localDate()) end.format(TIME_FORMATTER)
+        else end.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+    return "${localStartTimeText()}–$endText"
+}
 
 private fun CalendarEvent.durationMinutes(): Long = (endsAtEpochMillis - startsAtEpochMillis) / 60_000L
 

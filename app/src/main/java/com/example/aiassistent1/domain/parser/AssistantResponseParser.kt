@@ -4,7 +4,7 @@ import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 
 /** V12.4 wire contract. Missing optional fields differ from invalid supplied fields. */
-class AssistantResponseParser {
+class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()) {
     fun parse(text: String): AssistantResponse? = parseResult(text).getOrNull()
 
     fun parseResult(text: String): Result<AssistantResponse> = runCatching {
@@ -15,7 +15,7 @@ class AssistantResponseParser {
         val params: AssistantParams? = when (intent) {
             "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
-                val p = Fields(raw, "$.params", setOf("title", "starts_at", "date", "time", "duration_min", "value", "notes"))
+                val p = Fields(raw, "$.params", setOf("title", "starts_at", "ends_at", "date", "time", "duration_min", "value", "notes"))
                 val startValue = p.string("starts_at")
                 val start = startValue?.takeIf { p.isDateTime(it) }
                 val shorthandTime = startValue?.takeIf { !p.isDateTime(it) }?.also {
@@ -25,7 +25,11 @@ class AssistantResponseParser {
                 val date = p.date("date")
                 val time = p.time("time") ?: shorthandTime
                 require(start == null || (date == null && time == null)) { "$.params: starts_at несовместим с date/time" }
-                CalendarAddParams(p.string("title"), start, p.duration(), date, time, p.integer("value"), p.notes())
+                val end = p.dateTime("ends_at")
+                val localStart = start?.let(CalendarTime::dateTime)
+                    ?: if (date != null && time != null) CalendarTime.dateTime("${date}T$time") else null
+                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
+                CalendarAddParams(p.string("title"), start, duration, date, time, p.integer("value"), p.notes(), end)
             }
             "calendar_search", "calendar_sum" -> {
                 val p = Fields(raw, "$.params", setOf("query", "range_start", "range_end"))

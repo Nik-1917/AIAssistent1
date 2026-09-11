@@ -17,7 +17,7 @@ import java.time.ZoneId
 }
 
 sealed interface CalendarCommand {
-    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null, val notes: String? = null) : CalendarCommand
+    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null, val notes: String? = null, val endsAt: LocalDateTime? = null) : CalendarCommand
     data class Search(val query: String?, val range: CalendarRange?) : CalendarCommand
     data class Sum(val query: String?, val range: CalendarRange?) : CalendarCommand
     data class Update(val target: CalendarUpdateTarget?, val changes: CalendarEventChanges) : CalendarCommand
@@ -69,18 +69,22 @@ class CalendarCommandExecutor(
             is CalendarCommand.Add -> {
                 require(command.title == null || command.title.isNotBlank()) { "Пустое название события" }
                 require(command.durationMinutes == null || command.durationMinutes > 0) { "Некорректная длительность" }
+                val duration = CalendarTime.durationMinutes(command.time?.let { LocalDateTime.of(command.date, it) },
+                    command.endsAt, command.durationMinutes, zoneId)
+                val resolved = command.copy(durationMinutes = duration)
                 val missing = buildList {
                     if (command.title == null) add(MissingCalendarField.TITLE)
                     if (command.time == null) add(MissingCalendarField.TIME)
-                    if (command.durationMinutes == null) add(MissingCalendarField.DURATION)
+                    if (duration == null && command.endsAt == null) add(MissingCalendarField.DURATION)
                     if (command.value == null) add(MissingCalendarField.VALUE)
                 }
-                if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(command, missing)
-                else if (!confirmed) CalendarCommandResult.AddDraft(command)
+                if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(resolved, missing)
+                else if (!confirmed) CalendarCommandResult.AddDraft(resolved)
                 else {
                     val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), zoneId)
                     val draft = CalendarEventDraft(command.title!!, start,
-                        Math.addExact(start, Math.multiplyExact(command.durationMinutes!!.toLong(), 60_000L)), command.value, command.notes)
+                        command.endsAt?.let { CalendarTime.toEpochMillis(it, zoneId) }
+                            ?: Math.addExact(start, Math.multiplyExact(duration!!.toLong(), 60_000L)), command.value, command.notes)
                     CalendarCommandResult.Completed(repository.commit(requestId, CalendarMutation.Create(draft)).getOrThrow())
                 }
             }

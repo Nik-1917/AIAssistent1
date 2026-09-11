@@ -36,6 +36,30 @@ class CalendarNotesStorageTest {
         .build().also { databases.add(it) }
     private fun repository(database: CalendarDatabase) = RoomCalendarEventRepository(database.calendarEventDao())
 
+    @Test fun explicitEndPersists() = runTest {
+        val name = newName()
+        val database = open(name)
+        val repo = repository(database)
+        val zone = java.time.ZoneOffset.UTC
+        val executor = CalendarCommandExecutor(repo, zone)
+        val end = CalendarTime.dateTime("2026-09-12T00:20")
+        val command = CalendarCommand.Add("Встреча", java.time.LocalDate.of(2026, 9, 11),
+            java.time.LocalTime.of(23, 40), null, value = 0, notes = text, endsAt = end)
+        val draft = executor.execute(command, "end-create").getOrThrow() as CalendarCommandResult.AddDraft
+        assertEquals(40, draft.command.durationMinutes)
+        val incomplete = executor.execute(command.copy(value = null), "missing-value").getOrThrow() as CalendarCommandResult.NeedsFields
+        assertEquals(listOf(MissingCalendarField.VALUE), incomplete.fields)
+        assertTrue(executor.execute(command.copy(durationMinutes = 20), "conflict", confirmed = true).isFailure)
+        assertTrue(repo.search("", 0, Long.MAX_VALUE).getOrThrow().isEmpty())
+        val result = executor.execute(command, "end-create", confirmed = true).getOrThrow() as CalendarCommandResult.Completed
+        database.close()
+        val saved = repository(open(name)).getById(result.receipt.eventId).getOrThrow()!!
+        assertEquals(CalendarTime.toEpochMillis(end, zone), saved.endsAtEpochMillis)
+        assertEquals(40 * 60_000L, saved.endsAtEpochMillis - saved.startsAtEpochMillis)
+        assertEquals(text, saved.notes)
+        assertEquals(0L, saved.value)
+    }
+
     @Test fun notesPersistAfterReopen() = runTest {
         val name = newName()
         val database = open(name)

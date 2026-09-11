@@ -30,6 +30,7 @@ data class CalendarAddParams(
     val time: String? = null,
     val value: Long? = null,
     val notes: String? = null,
+    val endsAt: String? = null,
 ) : AssistantParams
 
 /** JSON transport model only. Map it to calendar-core's CalendarUpdateCommand before execution. */
