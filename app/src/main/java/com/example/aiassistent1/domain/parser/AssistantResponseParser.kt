@@ -15,21 +15,32 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
         val params: AssistantParams? = when (intent) {
             "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
-                val p = Fields(raw, "$.params", setOf("title", "starts_at", "ends_at", "date", "time", "duration_min", "value", "notes"))
+                val p = Fields(raw, "$.params", setOf("title", "starts_at", "ends_at", "date", "time", "duration_min", "value", "date_value", "notes"))
                 val startValue = p.string("starts_at")
                 val start = startValue?.takeIf { p.isDateTime(it) }
                 val shorthandTime = startValue?.takeIf { !p.isDateTime(it) }?.also {
                     require(p.isTime(it)) { "$.params.starts_at: требуется дата-время или время HH:MM" }
-                    require(p.string("time") == null) { "$.params: starts_at-время несовместимо с time" }
                 }
                 val date = p.date("date")
-                val time = p.time("time") ?: shorthandTime
-                require(start == null || (date == null && time == null)) { "$.params: starts_at несовместим с date/time" }
+                val suppliedTime = p.time("time")
+                require(shorthandTime == null || suppliedTime == null || shorthandTime == suppliedTime) {
+                    "$.params: starts_at и time не совпадают"
+                }
+                val time = suppliedTime ?: shorthandTime
+                val fullStart = start?.let(CalendarTime::dateTime)
+                require(fullStart == null || date == null || CalendarTime.date(date) == fullStart.toLocalDate()) {
+                    "$.params: date не совпадает с датой starts_at"
+                }
+                require(fullStart == null || time == null || CalendarTime.time(time) == fullStart.toLocalTime()) {
+                    "$.params: time не совпадает со временем starts_at"
+                }
                 val end = p.dateTime("ends_at")
-                val localStart = start?.let(CalendarTime::dateTime)
+                val localStart = fullStart
                     ?: if (date != null && time != null) CalendarTime.dateTime("${date}T$time") else null
                 val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
-                CalendarAddParams(p.string("title"), start, duration, date, time, p.integer("value"), p.notes(), end)
+                CalendarAddParams(p.string("title"), start, duration,
+                    date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
+                    p.eventValue(), p.notes(), end)
             }
             "calendar_search", "calendar_sum" -> {
                 val p = Fields(raw, "$.params", setOf("query", "range_start", "range_end"))
@@ -41,13 +52,13 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
             "calendar_update" -> {
                 val p = Fields(raw, "$.params", setOf("target", "changes"))
                 val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created"))
-                val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "clear_value", "notes"))
+                val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "date_value", "clear_value", "notes"))
                 val query = t.string("query")
                 val last = t.flag("use_last_created")
                 val (start, end) = t.range()
                 require(!(query != null && last)) { "$.params.target: конфликт способов выбора события" }
                 require(start == null || query != null) { "$.params.target: период требует query" }
-                val value = c.integer("value")
+                val value = c.eventValue()
                 val clear = c.flag("clear_value")
                 require(value == null || !clear) { "$.params.changes: value несовместим с clear_value" }
                 CalendarUpdateParams(
@@ -93,6 +104,15 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         val value = values[key] ?: return null
         require(value is Long) { "$path.$key: требуется целое число Long" }
         return value
+    }
+    /** Normalize the wire alias before mapping, validation and persistence. */
+    fun eventValue(): Long? {
+        val value = integer("value")
+        val alias = integer("date_value")
+        require(value == null || alias == null || value == alias) {
+            "$path: value и date_value должны совпадать"
+        }
+        return value ?: alias
     }
     fun duration(): Int? = integer("duration_min")?.also {
         require(it in 1..Int.MAX_VALUE.toLong()) { "$path.duration_min: число вне диапазона 1..${Int.MAX_VALUE}" }

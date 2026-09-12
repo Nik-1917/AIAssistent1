@@ -79,7 +79,10 @@ fun AIAssistantApp(
 
             AppDestination.CALENDAR -> CalendarScreen(
                 viewModel = calendarViewModel,
-                onNavigateBack = chatViewModel::returnToConversation,
+                onNavigateBack = {
+                    chatViewModel.setChatMode(true)
+                    chatViewModel.returnToConversation()
+                },
                 onOpenChat = { chatViewModel.setChatMode(false) },
             )
         }

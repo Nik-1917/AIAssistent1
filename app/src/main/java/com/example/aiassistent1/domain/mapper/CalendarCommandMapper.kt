@@ -9,10 +9,17 @@ class CalendarCommandMapper(private val zoneId: ZoneId = ZoneId.systemDefault())
     fun map(params: AssistantParams): Result<CalendarCommand> = runCatching {
         when (params) {
             is CalendarAddParams -> {
-                require(params.startsAt == null || (params.date == null && params.time == null))
                 val start = params.startsAt?.let(CalendarTime::dateTime)
-                CalendarCommand.Add(params.title, start?.toLocalDate() ?: CalendarTime.date(requireNotNull(params.date)),
-                    start?.toLocalTime() ?: params.time?.let(CalendarTime::time), params.durationMin, params.value, params.notes,
+                val date = params.date?.let(CalendarTime::date)
+                val time = params.time?.let(CalendarTime::time)
+                require(start == null || date == null || date == start.toLocalDate()) {
+                    "date не совпадает с датой starts_at"
+                }
+                require(start == null || time == null || time == start.toLocalTime()) {
+                    "time не совпадает со временем starts_at"
+                }
+                CalendarCommand.Add(params.title, start?.toLocalDate() ?: requireNotNull(date),
+                    start?.toLocalTime() ?: time, params.durationMin, params.value, params.notes,
                     endsAt = params.endsAt?.let(CalendarTime::dateTime))
             }
             is CalendarSearchParams -> CalendarCommand.Search(params.query, range(params.rangeStart, params.rangeEnd))
