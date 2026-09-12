@@ -44,7 +44,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
             }
             "calendar_search", "calendar_sum" -> {
                 val p = Fields(raw, "$.params", setOf("query", "range_start", "range_end"))
-                val (start, end) = p.range()
+                val (start, end) = if (intent == "calendar_search") p.searchRange() else p.range()
                 val query = p.string("query", allowEmpty = intent == "calendar_search")
                 if (intent == "calendar_search") CalendarSearchParams(query, start, end)
                 else CalendarSumParams(query, start, end)
@@ -138,5 +138,22 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         require((start == null) == (end == null)) { "$path: обе границы периода должны быть указаны вместе" }
         require(start == null || start < end!!) { "$path: начало периода должно предшествовать концу" }
         return start to end
+    }
+    /** A lone start is an exact-moment search, represented as a one-minute interval. */
+    fun searchRange(): Pair<String?, String?> {
+        val start = dateTime("range_start")
+        val end = dateTime("range_end")
+        if (start == null && end == null) return null to null
+        if (start == null) {
+            require(end != null) { "$path: некорректный период" }
+            error("$path: range_end требует range_start")
+        }
+        if (end != null) {
+            require(start < end) { "$path: начало периода должно предшествовать концу" }
+            return start to end
+        }
+        val exactEnd = CalendarTime.dateTime(start).plusMinutes(1)
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
+        return start to exactEnd
     }
 }

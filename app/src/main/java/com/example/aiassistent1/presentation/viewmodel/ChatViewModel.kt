@@ -466,9 +466,11 @@ class ChatViewModel(
                                 }
                                 finalMessage.copy(content = (parsed.calendarReplyOrNull() ?: parsed.reply).withCalendarNotes(notes))
                             } else {
-                                Log.w(
+                                val rawModelJson = finalMessage.content.take(MAX_LOGCAT_PAYLOAD_LENGTH)
+                                Log.e(TAG, "RAW_MODEL_JSON: $rawModelJson")
+                                Log.e(
                                     TAG,
-                                    "Не удалось разобрать ответ ассистента: ${parseOutcome.exceptionOrNull()?.message}. Сырой ответ: ${finalMessage.content}",
+                                    "PARSE_ERROR: ${parseOutcome.exceptionOrNull()?.message ?: "неизвестная ошибка"}",
                                 )
                                 finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте повторить запрос.")
                             }
@@ -789,7 +791,11 @@ class ChatViewModel(
                                     replaceAssistantReply(messageId, response.reply + resultsText)
                                 }
                                 is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields ->
-                                    replaceAssistantReply(messageId, "Уточните период поиска событий.")
+                                    replaceAssistantReply(messageId, if (outcome.fields.contains(com.example.aiassistent1.calendar.core.domain.MissingCalendarField.QUERY)) {
+                                        "Уточните название события для поиска."
+                                    } else {
+                                        "Уточните параметры поиска событий."
+                                    })
                                 else -> replaceAssistantReply(messageId, "Не удалось выполнить поиск событий.")
                             }
                         }
@@ -1647,6 +1653,7 @@ class ChatViewModel(
     private companion object {
         const val TAG = "ChatViewModel"
         const val MAX_MESSAGE_LENGTH = 3000
+        const val MAX_LOGCAT_PAYLOAD_LENGTH = 3500
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
         const val VOICE_MODE_SHUTDOWN_DELAY_MILLIS = 1_000L

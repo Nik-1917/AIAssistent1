@@ -91,10 +91,12 @@ class CalendarCommandExecutor(
             is CalendarCommand.Search -> {
                 val missing = buildList {
                     if (command.query == null) add(MissingCalendarField.QUERY)
-                    if (command.range == null) add(MissingCalendarField.RANGE)
                 }
                 if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(command, missing)
-                else CalendarCommandResult.Found(repository.search(command.query!!, command.range!!.start, command.range.end).getOrThrow())
+                else {
+                    val range = command.range ?: CalendarRange(Long.MIN_VALUE + 1, Long.MAX_VALUE)
+                    CalendarCommandResult.Found(repository.search(command.query!!, range.start, range.end).getOrThrow())
+                }
             }
             is CalendarCommand.Sum -> {
                 if (command.range == null) CalendarCommandResult.NeedsFields(command, listOf(MissingCalendarField.RANGE))
