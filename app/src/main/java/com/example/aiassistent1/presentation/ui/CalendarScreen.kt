@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -144,12 +143,6 @@ fun CalendarScreen(
                 actions = {
                     TextButton(onClick = onOpenChat) {
                         Text("Чат")
-                    }
-                    IconButton(onClick = viewModel::refreshCalendar) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Обновить календарь",
-                        )
                     }
                 },
             )
