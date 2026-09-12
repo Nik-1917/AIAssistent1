@@ -159,7 +159,7 @@ class CalendarViewModel(
         startTime: LocalTime,
         endTime: LocalTime,
     ): Result<CalendarEventDraft> = runCatching {
-        val endDate = if (endTime <= startTime) date.plusDays(1) else date
+        val endDate = resolveCalendarEndDate(date, startTime, endTime)
         val start = LocalDateTime.of(date, startTime).toEpochMillis()
         val end = LocalDateTime.of(endDate, endTime).toEpochMillis()
         require(end > start) { "Окончание события должно быть позже начала." }
@@ -201,7 +201,6 @@ class CalendarViewModel(
     }
 
     private companion object {
-        const val MILLIS_PER_MINUTE = 60_000L
         const val MINIMUM_REFRESH_INDICATOR_MILLIS = 1_000L
     }
 
@@ -210,3 +209,9 @@ class CalendarViewModel(
         val requestId: Int,
     )
 }
+
+internal fun resolveCalendarEndDate(
+    eventDate: LocalDate,
+    startTime: LocalTime,
+    endTime: LocalTime,
+): LocalDate = if (endTime <= startTime) eventDate.plusDays(1) else eventDate
