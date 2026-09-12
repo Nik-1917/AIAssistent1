@@ -90,9 +90,9 @@ class CalendarViewModel(
         refreshRequests.value = requestId
     }
 
-    fun createEvent(title: String, date: LocalDate, startTime: LocalTime, durationMinutes: Int) {
+    fun createEvent(title: String, date: LocalDate, startTime: LocalTime, endTime: LocalTime) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, durationMinutes).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -107,10 +107,10 @@ class CalendarViewModel(
         title: String,
         date: LocalDate,
         startTime: LocalTime,
-        durationMinutes: Int,
+        endTime: LocalTime,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, durationMinutes).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -157,17 +157,16 @@ class CalendarViewModel(
         title: String,
         date: LocalDate,
         startTime: LocalTime,
-        durationMinutes: Int,
+        endTime: LocalTime,
     ): Result<CalendarEventDraft> = runCatching {
-        require(durationMinutes > 0) { "Длительность события должна быть больше нуля." }
+        val endDate = if (endTime <= startTime) date.plusDays(1) else date
         val start = LocalDateTime.of(date, startTime).toEpochMillis()
+        val end = LocalDateTime.of(endDate, endTime).toEpochMillis()
+        require(end > start) { "Окончание события должно быть позже начала." }
         CalendarEventDraft(
             title = title,
             startsAtEpochMillis = start,
-            endsAtEpochMillis = Math.addExact(
-                start,
-                Math.multiplyExact(durationMinutes.toLong(), MILLIS_PER_MINUTE),
-            ),
+            endsAtEpochMillis = end,
         )
     }
 

@@ -212,8 +212,8 @@ fun CalendarScreen(
             date = uiState.selectedDate,
             event = null,
             onDismiss = { isCreatingEvent = false },
-            onSave = { title, time, duration ->
-                viewModel.createEvent(title, uiState.selectedDate, time, duration)
+            onSave = { title, startTime, endTime ->
+                viewModel.createEvent(title, uiState.selectedDate, startTime, endTime)
                 isCreatingEvent = false
             },
         )
@@ -224,8 +224,8 @@ fun CalendarScreen(
             date = event.localDate(),
             event = event,
             onDismiss = { eventToEdit = null },
-            onSave = { title, time, duration ->
-                viewModel.updateEvent(event.id, title, event.localDate(), time, duration)
+            onSave = { title, startTime, endTime ->
+                viewModel.updateEvent(event.id, title, event.localDate(), startTime, endTime)
                 eventToEdit = null
             },
         )
@@ -419,11 +419,12 @@ private fun CalendarEventEditorDialog(
     date: LocalDate,
     event: CalendarEvent?,
     onDismiss: () -> Unit,
-    onSave: (title: String, startTime: LocalTime, durationMinutes: Int) -> Unit,
+    onSave: (title: String, startTime: LocalTime, endTime: LocalTime) -> Unit,
 ) {
     var title by remember(event) { mutableStateOf(event?.title.orEmpty()) }
     var startTimeText by remember(event) { mutableStateOf(event?.localStartTimeText() ?: "09:00") }
     var durationText by remember(event) { mutableStateOf(event?.durationMinutes()?.toString() ?: "60") }
+    var endTimeText by remember(event) { mutableStateOf(event?.localEndTimeText() ?: "10:00") }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -445,17 +446,50 @@ private fun CalendarEventEditorDialog(
                 )
                 OutlinedTextField(
                     value = startTimeText,
-                    onValueChange = { startTimeText = it },
+                    onValueChange = { value ->
+                        startTimeText = value
+                        runCatching {
+                            val start = LocalTime.parse(value, TIME_FORMATTER)
+                            val duration = durationText.toLong()
+                            require(duration > 0)
+                            start.plusMinutes(duration).format(TIME_FORMATTER)
+                        }.onSuccess { endTimeText = it }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Начало (ЧЧ:ММ)") },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = durationText,
-                    onValueChange = { durationText = it },
+                    onValueChange = { value ->
+                        durationText = value
+                        runCatching {
+                            val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
+                            val duration = value.toLong()
+                            require(duration > 0)
+                            start.plusMinutes(duration).format(TIME_FORMATTER)
+                        }.onSuccess { endTimeText = it }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Длительность, минут") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = endTimeText,
+                    onValueChange = { value ->
+                        endTimeText = value
+                        runCatching {
+                            val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
+                            val end = LocalTime.parse(value, TIME_FORMATTER)
+                            val minutes = java.time.Duration.between(start, end).toMinutes()
+                                .let { if (it <= 0) it + 24 * 60 else it }
+                            require(minutes > 0)
+                            minutes.toString()
+                        }.onSuccess { durationText = it }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Окончание (ЧЧ:ММ)") },
                     singleLine = true,
                 )
                 validationError?.let { error ->
@@ -468,12 +502,14 @@ private fun CalendarEventEditorDialog(
                 onClick = {
                     val parsed = runCatching {
                         require(title.isNotBlank()) { "Введите название события." }
-                        val time = LocalTime.parse(startTimeText, TIME_FORMATTER)
-                        val duration = durationText.toInt()
-                        require(duration > 0) { "Длительность должна быть больше нуля." }
-                        time to duration
+                        val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
+                        val end = LocalTime.parse(endTimeText, TIME_FORMATTER)
+                        val duration = java.time.Duration.between(start, end).toMinutes()
+                            .let { if (it <= 0) it + 24 * 60 else it }
+                        require(durationText.toLong() == duration) { "Проверьте длительность и окончание." }
+                        Triple(title, start, end)
                     }
-                    parsed.onSuccess { (time, duration) -> onSave(title, time, duration) }
+                    parsed.onSuccess { (savedTitle, start, end) -> onSave(savedTitle, start, end) }
                         .onFailure { validationError = it.message ?: "Проверьте введённые данные." }
                 },
             ) { Text("Сохранить") }
@@ -487,6 +523,9 @@ private fun CalendarEvent.localDate(): LocalDate =
 
 private fun CalendarEvent.localStartTimeText(): String =
     Instant.ofEpochMilli(startsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
+
+private fun CalendarEvent.localEndTimeText(): String =
+    Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
 
 private fun CalendarEvent.timeRange(): String {
     val end = Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault())
