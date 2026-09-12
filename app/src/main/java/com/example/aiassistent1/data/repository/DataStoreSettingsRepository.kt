@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.AppDestination
+import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
@@ -18,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -27,10 +30,12 @@ import kotlinx.coroutines.launch
 val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class DataStoreSettingsRepository(
-    private val context: Context,
+    private val dataStore: DataStore<Preferences>,
     private val scope: CoroutineScope,
 ) : SettingsRepository {
+    constructor(context: Context, scope: CoroutineScope) : this(context.settingsStore, scope)
 
+    private val appDestinationKey = stringPreferencesKey("last_app_destination")
     private val selectedModelKey = stringPreferencesKey("selected_model")
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
@@ -50,7 +55,23 @@ class DataStoreSettingsRepository(
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
     private val paramsFlows = mutableMapOf<String, StateFlow<GenerationParams>>()
 
-    override val selectedModel: StateFlow<String?> = context.settingsStore.data
+    // No placeholder emission: navigation becomes available only after reading storage.
+    override val navigationState = dataStore.data.map { preferences ->
+        AppNavigationState(
+            destination = AppDestination.entries.firstOrNull {
+                it.name == preferences[appDestinationKey]
+            } ?: AppDestination.CHAT,
+            isCalendarMode = preferences[systemPromptEnabledKey] ?: true,
+        )
+    }.distinctUntilChanged()
+
+    override suspend fun setAppDestination(destination: AppDestination) {
+        dataStore.edit { preferences ->
+            preferences[appDestinationKey] = destination.name
+        }
+    }
+
+    override val selectedModel: StateFlow<String?> = dataStore.data
         .map { preferences ->
             val selectedModel: String? = preferences[selectedModelKey] ?: ""
             selectedModel
@@ -61,7 +82,7 @@ class DataStoreSettingsRepository(
             initialValue = null
         )
 
-    override val showDeleteMessageConfirmation: StateFlow<Boolean> = context.settingsStore.data
+    override val showDeleteMessageConfirmation: StateFlow<Boolean> = dataStore.data
         .map { preferences ->
             preferences[showDeleteMessageConfirmationKey] ?: true
         }
@@ -71,7 +92,7 @@ class DataStoreSettingsRepository(
             initialValue = true
         )
 
-    override val showClearChatConfirmation: StateFlow<Boolean> = context.settingsStore.data
+    override val showClearChatConfirmation: StateFlow<Boolean> = dataStore.data
         .map { preferences ->
             preferences[showClearChatConfirmationKey] ?: true
         }
@@ -81,7 +102,7 @@ class DataStoreSettingsRepository(
             initialValue = true
         )
 
-    override val smoothResponseEnabled: StateFlow<Boolean> = context.settingsStore.data
+    override val smoothResponseEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[smoothResponseEnabledKey] ?: false }
         .stateIn(
             scope = scope,
@@ -89,7 +110,7 @@ class DataStoreSettingsRepository(
             initialValue = false,
         )
 
-    override val systemPromptEnabled: StateFlow<Boolean> = context.settingsStore.data
+    override val systemPromptEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[systemPromptEnabledKey] ?: true }
         .stateIn(
             scope = scope,
@@ -97,7 +118,7 @@ class DataStoreSettingsRepository(
             initialValue = true,
         )
 
-    override val dialogueModeEnabled: StateFlow<Boolean> = context.settingsStore.data
+    override val dialogueModeEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[dialogueModeEnabledKey] ?: false }
         .stateIn(
             scope = scope,
@@ -105,7 +126,7 @@ class DataStoreSettingsRepository(
             initialValue = false,
         )
 
-    override val autoPlaybackEnabled: StateFlow<Boolean> = context.settingsStore.data
+    override val autoPlaybackEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[autoPlaybackEnabledKey] ?: true }
         .stateIn(
             scope = scope,
@@ -113,7 +134,7 @@ class DataStoreSettingsRepository(
             initialValue = true,
         )
 
-    override val speechRate: StateFlow<Float> = context.settingsStore.data
+    override val speechRate: StateFlow<Float> = dataStore.data
         .map { preferences -> SpeechRate.normalize(preferences[speechRateKey] ?: SpeechRate.DEFAULT) }
         .stateIn(
             scope = scope,
@@ -121,7 +142,7 @@ class DataStoreSettingsRepository(
             initialValue = SpeechRate.DEFAULT,
         )
 
-    override val chatScrollPosition: kotlinx.coroutines.flow.Flow<ChatScrollPosition> = context.settingsStore.data
+    override val chatScrollPosition: kotlinx.coroutines.flow.Flow<ChatScrollPosition> = dataStore.data
         .map { preferences ->
             ChatScrollPosition(
                 anchorMessageId = preferences[chatScrollAnchorMessageIdKey],
@@ -129,7 +150,7 @@ class DataStoreSettingsRepository(
             )
         }
 
-    override val floatingControlPositions: kotlinx.coroutines.flow.Flow<FloatingControlPositions> = context.settingsStore.data
+    override val floatingControlPositions: kotlinx.coroutines.flow.Flow<FloatingControlPositions> = dataStore.data
         .map { preferences ->
             FloatingControlPositions(
                 speechCardXdp = preferences[speechCardXdpKey] ?: 0f,
@@ -139,20 +160,20 @@ class DataStoreSettingsRepository(
             )
         }
 
-    override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = context.settingsStore.data
+    override val isFirstRun: kotlinx.coroutines.flow.Flow<Boolean> = dataStore.data
         .map { preferences ->
             preferences[isFirstRunKey] ?: true
         }
 
     override suspend fun setSelectedModel(modelName: String) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[selectedModelKey] = modelName
         }
     }
 
     override fun getParamsForModel(modelName: String): StateFlow<GenerationParams> {
         return paramsFlows.getOrPut(modelName) {
-            context.settingsStore.data
+            dataStore.data
                 .map { preferences ->
                     GenerationParams(
                         contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 512,
@@ -179,7 +200,7 @@ class DataStoreSettingsRepository(
     }
 
     override suspend fun updateParamsForModel(modelName: String, params: GenerationParams) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[intPreferencesKey("${modelName}_contextSize")] = params.contextSize
             preferences[intPreferencesKey("${modelName}_maxTokens")] = params.maxTokens
             preferences[floatPreferencesKey("${modelName}_temperature")] = params.temperature
@@ -191,49 +212,50 @@ class DataStoreSettingsRepository(
     }
 
     override suspend fun setShowDeleteMessageConfirmation(show: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[showDeleteMessageConfirmationKey] = show
         }
     }
 
     override suspend fun setShowClearChatConfirmation(show: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[showClearChatConfirmationKey] = show
         }
     }
 
     override suspend fun setSmoothResponseEnabled(enabled: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[smoothResponseEnabledKey] = enabled
         }
     }
 
     override suspend fun setSystemPromptEnabled(enabled: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[systemPromptEnabledKey] = enabled
+            preferences[appDestinationKey] = AppDestination.CHAT.name
         }
     }
 
     override suspend fun setDialogueModeEnabled(enabled: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[dialogueModeEnabledKey] = enabled
         }
     }
 
     override suspend fun setAutoPlaybackEnabled(enabled: Boolean) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[autoPlaybackEnabledKey] = enabled
         }
     }
 
     override suspend fun setSpeechRate(rate: Float) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[speechRateKey] = SpeechRate.normalize(rate)
         }
     }
 
     override suspend fun setChatScrollPosition(position: ChatScrollPosition) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             position.anchorMessageId?.let { id ->
                 preferences[chatScrollAnchorMessageIdKey] = id
             } ?: preferences.remove(chatScrollAnchorMessageIdKey)
@@ -242,7 +264,7 @@ class DataStoreSettingsRepository(
     }
 
     override suspend fun setFloatingControlPositions(positions: FloatingControlPositions) {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[speechCardXdpKey] = positions.speechCardXdp
             preferences[speechCardYdpKey] = positions.speechCardYdp
             preferences[calendarButtonXdpKey] = positions.calendarButtonXdp
@@ -251,7 +273,7 @@ class DataStoreSettingsRepository(
     }
 
     override suspend fun setFirstRunCompleted() {
-        context.settingsStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[isFirstRunKey] = false
         }
     }

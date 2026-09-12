@@ -7,30 +7,54 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
-
-private enum class AppDestination {
-    CHAT,
-    CALENDAR,
-}
 
 @Composable
 fun AIAssistantApp(
     chatViewModel: ChatViewModel,
     calendarViewModel: CalendarViewModel,
     modifier: Modifier = Modifier,
+    onContentReady: () -> Unit = {},
 ) {
-    var destination by rememberSaveable { mutableStateOf(AppDestination.CHAT) }
+    val uiState by chatViewModel.uiState.collectAsStateWithLifecycle()
+    val navigation = uiState.navigationState
+    if (navigation == null) {
+        if (uiState.sessionError != null) {
+            Surface(modifier = modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text("Не удалось загрузить сохранённую страницу и сообщения.")
+                    Button(onClick = chatViewModel::observeAppSession) {
+                        Text("Повторить")
+                    }
+                }
+            }
+            SideEffect(onContentReady)
+        }
+        return
+    }
 
     AnimatedContent(
-        targetState = destination,
+        targetState = navigation.destination,
         modifier = modifier,
         transitionSpec = {
             if (targetState == AppDestination.CALENDAR) {
@@ -50,17 +74,15 @@ fun AIAssistantApp(
         when (currentDestination) {
             AppDestination.CHAT -> ChatScreen(
                 viewModel = chatViewModel,
-                onOpenCalendar = { destination = AppDestination.CALENDAR },
+                onOpenCalendar = chatViewModel::openCalendar,
             )
 
             AppDestination.CALENDAR -> CalendarScreen(
                 viewModel = calendarViewModel,
-                onNavigateBack = { destination = AppDestination.CHAT },
-                onOpenChat = {
-                    chatViewModel.setChatMode(false)
-                    destination = AppDestination.CHAT
-                }
+                onNavigateBack = chatViewModel::returnToConversation,
+                onOpenChat = { chatViewModel.setChatMode(false) },
             )
         }
     }
+    SideEffect(onContentReady)
 }

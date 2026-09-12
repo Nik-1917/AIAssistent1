@@ -13,21 +13,25 @@ class ModelContextBuilder(
     fun build(
         chatHistory: List<ChatMessage>,
         appendChatStyleInstruction: Boolean = false,
-    ): List<ChatMessage> =
-        chatHistory
-            .asSequence()
-            .filter { it.role == MessageRole.USER }
-            .toList()
-            .takeLast(maximumUserMessages)
-            .let { messages ->
-                if (!appendChatStyleInstruction) {
-                    messages
-                } else {
-                    messages.map { message ->
-                        message.copy(content = message.content + CHAT_STYLE_INSTRUCTION_SUFFIX)
-                    }
-                }
+        isCalendarMode: Boolean = false,
+    ): List<ChatMessage> {
+        val userIndices = chatHistory.indices
+            .filter { chatHistory[it].role == MessageRole.USER }
+            .takeLast(if (isCalendarMode) 1 else maximumUserMessages)
+            .toSet()
+        val assistantIndex = if (isCalendarMode) -1 else {
+            chatHistory.indexOfLast { it.role == MessageRole.ASSISTANT }
+        }
+
+        return chatHistory.mapIndexedNotNull { index, message ->
+            if (index !in userIndices && index != assistantIndex) return@mapIndexedNotNull null
+            if (appendChatStyleInstruction && message.role == MessageRole.USER) {
+                message.copy(content = message.content + CHAT_STYLE_INSTRUCTION_SUFFIX)
+            } else {
+                message
             }
+        }
+    }
 
     private companion object {
         const val CHAT_STYLE_INSTRUCTION_SUFFIX = "\n\nотвечай очень вежливо используй эмодзи"

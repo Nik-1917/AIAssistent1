@@ -1,6 +1,8 @@
 package com.example.aiassistent1
 
 import android.os.Bundle
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -63,11 +65,22 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Keep the launch window until Compose has the saved page and its history.
+        var contentReady = false
+        val contentView = findViewById<View>(android.R.id.content)
+        contentView.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (!contentReady) return false
+                contentView.viewTreeObserver.removeOnPreDrawListener(this)
+                return true
+            }
+        })
         setContent {
             AIAssistent1Theme {
                 AIAssistantApp(
                     chatViewModel = chatViewModel,
                     calendarViewModel = calendarViewModel,
+                    onContentReady = { contentReady = true },
                 )
             }
         }

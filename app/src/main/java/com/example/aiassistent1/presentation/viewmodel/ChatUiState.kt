@@ -1,6 +1,7 @@
 package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.FloatingControlPositions
@@ -15,6 +16,8 @@ enum class ModelAvailability {
 }
 
 data class ChatUiState(
+    val navigationState: AppNavigationState? = null,
+    val sessionError: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val isHistoryLoaded: Boolean = false,
     val chatScrollPosition: ChatScrollPosition = ChatScrollPosition(),

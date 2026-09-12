@@ -1,12 +1,17 @@
 package com.example.aiassistent1.domain.interfaces
 
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.AppDestination
+import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface SettingsRepository {
+    val navigationState: Flow<AppNavigationState>
+    suspend fun setAppDestination(destination: AppDestination)
+
     val selectedModel: StateFlow<String?>
     suspend fun setSelectedModel(modelName: String)
 

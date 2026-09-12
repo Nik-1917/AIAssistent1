@@ -1096,15 +1096,13 @@ fun ChatScreen(
         ModelSettingsDialog(
             params = uiState.modelParams,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
-            systemPromptEnabled = uiState.systemPromptEnabled,
             dialogueModeEnabled = uiState.dialogueModeEnabled,
             autoPlaybackEnabled = uiState.autoPlaybackEnabled,
             speechRate = uiState.speechRate,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, systemPromptEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate ->
+            onSave = { updatedParams, smoothResponseEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate ->
                 viewModel.updateModelParams(updatedParams)
                 viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
-                viewModel.setSystemPromptEnabled(systemPromptEnabled)
                 viewModel.setDialogueModeEnabled(dialogueModeEnabled)
                 viewModel.setAutoPlaybackEnabled(autoPlaybackEnabled)
                 viewModel.setSpeechRate(speechRate)
@@ -2071,12 +2069,11 @@ private fun VoiceMicrophoneButton(
 fun ModelSettingsDialog(
     params: GenerationParams,
     smoothResponseEnabled: Boolean,
-    systemPromptEnabled: Boolean,
     dialogueModeEnabled: Boolean,
     autoPlaybackEnabled: Boolean,
     speechRate: Float,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean, Boolean, Boolean, Float) -> Unit,
+    onSave: (GenerationParams, Boolean, Boolean, Boolean, Float) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -2084,7 +2081,6 @@ fun ModelSettingsDialog(
     var topP by remember { mutableStateOf(params.topP) }
     var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
-    var systemPrompt by remember { mutableStateOf(systemPromptEnabled) }
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
@@ -2163,23 +2159,6 @@ fun ModelSettingsDialog(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Использовать системный промпт")
-                        Text(
-                            "Передавать модели инструкции формата ответов и работы с календарём",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = systemPrompt,
-                        onCheckedChange = { systemPrompt = it },
-                    )
-                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2270,7 +2249,6 @@ fun ModelSettingsDialog(
                                 repeatPenalty = repeatPenalty,
                             ),
                             smoothResponse,
-                            systemPrompt,
                             dialogueMode,
                             autoPlayback,
                             selectedSpeechRate,
