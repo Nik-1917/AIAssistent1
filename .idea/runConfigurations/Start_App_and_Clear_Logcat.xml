@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Start app and clear logcat on exit" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$PROJECT_DIR$/tools/clear-logcat-on-app-exit.ps1&quot;" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="INTERPRETER_PATH" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <method v="2" />
+  </configuration>
+</component>

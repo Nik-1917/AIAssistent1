@@ -1,0 +1,58 @@
+{
+  "version": "v12.55",
+  "base_version": "v12.54",
+  "new_contract": "v12.5",
+  "source_sha256": {
+    "train": "51c0b4d336aabc99b5d6f0063d78aace804958b480984b47c29c73e4ab873414",
+    "validation": "832e2b83e21c28175d90c6e63301ebfed1efc6e80761b35af8a4e827ac7a2f4a",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+  },
+  "manual_sha256": "e1b5785e0d8ac01af30d576172fa021c28ecb518ab01a87052befa846d57b58a",
+  "new_counts": {
+    "train": 144,
+    "validation": 24,
+    "half_hour_holdout": 36
+  },
+  "total_rows": {
+    "train": 2545,
+    "validation": 744,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63,
+    "half_hour_holdout": 36
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "1cb9bfcb69dbef2b0f174db31adc9b89b60169dbeee1a18aaba7c20b344dc46c"
+    },
+    "validation": {
+      "sha256": "09c639b71310a25009f9734a43ae0aee379abf44406718020b485587c41fe99d"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout": {
+      "sha256": "fa9d19e273acad133b3c8a996221bfdd2cea7cc2902b03b08e0f7b6a766c5a9f"
+    }
+  },
+  "train_each_surface_form": 24,
+  "train_each_hour": 6,
+  "train_each_word_order": 24,
+  "train_each_surface_form_and_word_order": 4,
+  "validation_grid": "24 hours, one example per hour, four per surface form",
+  "half_hour_holdout_grid": "24 hours plus six ambiguity, three duration and three offset controls",
+  "archived_sources": "UNCHANGED",
+  "all_inherited_bytes": "UNCHANGED",
+  "runtime_prompt_and_reply_rules": "UNCHANGED",
+  "training": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

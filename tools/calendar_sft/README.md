@@ -44,7 +44,30 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-### Current V12.54 minutes-to reply wording
+### Current V12.55 half-hour input coverage
+
+`prepare_v12_55.py` appends 144 complete handwritten training conversations
+and 24 independent validation conversations to the frozen V12.54 bytes.
+Training covers all 24 resolved half-hour times and six input forms:
+`полтретьего`, `в полтретьего`, `пол третьего`, `в пол третьего`,
+`половина третьего`, and `в половине третьего`, generalized across all twelve
+named hours. Each form and each event/day/time order has 24 train examples;
+each form/order combination has four.
+
+The separate `half_hour_holdout.jsonl` contains 24 new clock cases and 12
+ambiguity, duration and offset controls. It is excluded from fitting data
+and must be explicitly included in a later model evaluation. All original
+3228 rows, including the three existing holdouts, remain byte-identical.
+Current reply rules and the runtime prompt are unchanged. Preparation does
+not train weights or demonstrate learned behavior.
+
+```powershell
+python -X utf8 -B tools/calendar_sft/prepare_v12_55.py --check-only
+```
+
+See [V12.55 manual data and verification](../../docs/CALENDAR_ASSISTANT_V12_55_HALF_HOUR.md).
+
+### Archived V12.54 minutes-to reply wording
 
 `prepare_v12_54.py` prepares a separate copy of V12.53, replacing only 180
 complete replies from a handwritten register: 144 train and 36 validation.

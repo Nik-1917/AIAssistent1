@@ -1,0 +1,36 @@
+{
+  "dataset": "v12.55",
+  "status": "PASS",
+  "new_examples": 204,
+  "total_rows": 3432,
+  "artifacts": {
+    "train": {
+      "sha256": "1cb9bfcb69dbef2b0f174db31adc9b89b60169dbeee1a18aaba7c20b344dc46c"
+    },
+    "validation": {
+      "sha256": "09c639b71310a25009f9734a43ae0aee379abf44406718020b485587c41fe99d"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout": {
+      "sha256": "fa9d19e273acad133b3c8a996221bfdd2cea7cc2902b03b08e0f7b6a766c5a9f"
+    }
+  },
+  "json_contract": "PASS",
+  "declared_clock_and_numeric_parameters": "PASS",
+  "dates_and_weekdays": "PASS",
+  "explicit_duration": "PASS",
+  "reply_clock_and_duration": "PASS",
+  "grid_and_word_order_balance": "PASS",
+  "new_cross_split_prompt_overlap": 0,
+  "inherited_bytes": "UNCHANGED",
+  "new_holdout_excluded_from_fitting": true,
+  "model_evaluation": "NOT_RUN"
+}
