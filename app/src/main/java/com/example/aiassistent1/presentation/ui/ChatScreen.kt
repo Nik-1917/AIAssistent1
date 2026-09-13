@@ -1140,6 +1140,13 @@ fun ChatScreen(
         )
     }
 
+    if (uiState.calendarChatPrompt != null) {
+        CalendarChatPromptDialog(
+            onConfirm = viewModel::confirmCalendarChatPrompt,
+            onDismiss = viewModel::dismissCalendarChatPrompt,
+        )
+    }
+
     if (showClearChatDialog) {
         var dontAskAgain by remember { mutableStateOf(false) }
         AlertDialog(
@@ -1400,6 +1407,24 @@ private fun CalendarUpdateDraftDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Отмена") }
+        },
+    )
+}
+
+@Composable
+private fun CalendarChatPromptDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Спросить об этом в чате?") },
+        text = { Text("Похоже, это не команда календаря. Перейти в обычный чат и задать этот вопрос там?") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("Да") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Нет") }
         },
     )
 }

@@ -1,0 +1,3 @@
+- [x] Update `topP` in `GenerationParams.kt`
+- [x] Update `topP` defaults in `DataStoreSettingsRepository.kt`
+- [x] Verify build

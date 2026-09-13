@@ -412,6 +412,7 @@ class ChatViewModel(
             var assistantMessage: ChatMessage? = null
             try {
                 val currentState = requestState
+                val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 val responseFlowResult = sendMessage(
                     modelContextBuilder.build(
                         currentState.messages,
@@ -482,7 +483,7 @@ class ChatViewModel(
                             withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
 
                             if (parsed != null) {
-                                handleParsedResponse(parsed, messageToSave.id)
+                                handleParsedResponse(parsed, messageToSave.id, lastUserMessageContent)
                             }
                         } else {
                             withContext(Dispatchers.IO) { chatRepository.saveMessage(finalMessage) }
@@ -768,7 +769,11 @@ class ChatViewModel(
         }
     }
 
-    private fun handleParsedResponse(response: com.example.aiassistent1.domain.model.AssistantResponse, messageId: String) {
+    private fun handleParsedResponse(
+        response: com.example.aiassistent1.domain.model.AssistantResponse,
+        messageId: String,
+        originalQuery: String,
+    ) {
         when (val params = response.params) {
             is com.example.aiassistent1.domain.model.CalendarAddParams -> {
                 startCalendarEventDraft(params, messageId)
@@ -807,8 +812,36 @@ class ChatViewModel(
             is com.example.aiassistent1.domain.model.CalendarSumParams -> handleCalendarSum(params, messageId)
             is CalendarDeleteParams -> handleCalendarDelete(params, messageId)
             is CalendarUpdateParams -> handleCalendarUpdate(params, messageId)
-            else -> {}
+            // intent="chat": the model itself decided this is not a calendar command.
+            else -> promptCalendarChatFallback(originalQuery)
         }
+    }
+
+    private fun promptCalendarChatFallback(query: String) {
+        if (query.isBlank()) return
+        mutableUiState.update { it.copy(calendarChatPrompt = CalendarChatPromptUiState(query = query)) }
+    }
+
+    fun confirmCalendarChatPrompt() {
+        val prompt = uiState.value.calendarChatPrompt ?: return
+        mutableUiState.update { it.copy(calendarChatPrompt = null) }
+        viewModelScope.launch {
+            try {
+                settingsRepository.setSystemPromptEnabled(false)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+                return@launch
+            }
+            // Wait for the chat/calendar switch to actually take effect before sending,
+            // otherwise the new message could land while activeChatId still points at "calendar".
+            uiState.first { !it.isCalendarMode }
+            sendMessageInternal(prompt.query)
+        }
+    }
+
+    fun dismissCalendarChatPrompt() {
+        mutableUiState.update { it.copy(calendarChatPrompt = null) }
     }
 
     private fun handleCalendarSum(params: com.example.aiassistent1.domain.model.CalendarSumParams, messageId: String) {

@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
                     createCalendarEvent = AppModule.provideCreateCalendarEventUseCase(applicationContext),
                     updateCalendarEvent = AppModule.provideUpdateCalendarEventUseCase(applicationContext),
                     deleteCalendarEvent = AppModule.provideDeleteCalendarEventUseCase(applicationContext),
+                    settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                 ) as T
             }
         }

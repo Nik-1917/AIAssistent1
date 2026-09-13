@@ -10,6 +10,8 @@ import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.domain.model.CalendarViewState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -43,6 +46,7 @@ class CalendarViewModel(
     private val createCalendarEvent: CreateCalendarEventUseCase,
     private val updateCalendarEvent: UpdateCalendarEventUseCase,
     private val deleteCalendarEvent: DeleteCalendarEventUseCase,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(CalendarUiState())
     private val visibleMonth = MutableStateFlow(mutableUiState.value.visibleMonth)
@@ -54,6 +58,7 @@ class CalendarViewModel(
     val uiState: StateFlow<CalendarUiState> = mutableUiState.asStateFlow()
 
     init {
+        restorePersistedCalendarPosition()
         viewModelScope.launch {
             combine(visibleMonth, refreshRequests) { month, request -> MonthRefreshRequest(month, request) }
                 .flatMapLatest { request ->
@@ -73,12 +78,24 @@ class CalendarViewModel(
         }
     }
 
+    /** Restores the last month/day shown before the app was closed or killed. */
+    private fun restorePersistedCalendarPosition() {
+        viewModelScope.launch {
+            val persisted = settingsRepository.calendarViewState.first()
+            val month = persisted.visibleMonth ?: return@launch
+            val date = persisted.selectedDate ?: month.atDay(1)
+            visibleMonth.value = month
+            mutableUiState.update { it.copy(visibleMonth = month, selectedDate = date) }
+        }
+    }
+
     fun showPreviousMonth() = showMonth(visibleMonth.value.minusMonths(1))
 
     fun showNextMonth() = showMonth(visibleMonth.value.plusMonths(1))
 
     fun selectDate(date: LocalDate) {
         mutableUiState.update { it.copy(selectedDate = date) }
+        persistCalendarPosition(visibleMonth.value, date)
     }
 
     fun refreshCalendar() {
@@ -86,7 +103,17 @@ class CalendarViewModel(
         val requestId = refreshRequests.value + 1
         pendingRefreshRequest = requestId
         refreshStartedAtElapsedMillis = SystemClock.elapsedRealtime()
-        mutableUiState.update { it.copy(isRefreshing = true) }
+        val today = LocalDate.now()
+        val currentMonth = YearMonth.from(today)
+        visibleMonth.value = currentMonth
+        mutableUiState.update {
+            it.copy(
+                isRefreshing = true,
+                visibleMonth = currentMonth,
+                selectedDate = today,
+            )
+        }
+        persistCalendarPosition(currentMonth, today)
         refreshRequests.value = requestId
     }
 
@@ -145,11 +172,19 @@ class CalendarViewModel(
 
     private fun showMonth(month: YearMonth) {
         visibleMonth.value = month
+        val resolvedDate = month.atDay(minOf(mutableUiState.value.selectedDate.dayOfMonth, month.lengthOfMonth()))
         mutableUiState.update {
             it.copy(
                 visibleMonth = month,
-                selectedDate = month.atDay(minOf(it.selectedDate.dayOfMonth, month.lengthOfMonth())),
+                selectedDate = resolvedDate,
             )
+        }
+        persistCalendarPosition(month, resolvedDate)
+    }
+
+    private fun persistCalendarPosition(month: YearMonth, date: LocalDate) {
+        viewModelScope.launch {
+            settingsRepository.setCalendarViewState(CalendarViewState(month, date))
         }
     }
 

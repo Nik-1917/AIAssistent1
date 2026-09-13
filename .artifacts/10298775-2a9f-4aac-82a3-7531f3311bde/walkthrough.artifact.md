@@ -1,22 +1,17 @@
-# Результаты задачи: Удаление пункта "Системный промпт" из настроек
+# Результаты задачи: Изменение значения Top P по умолчанию
 
-Пункт "Использовать системный промпт" был удален из диалога настроек, так как он дублировал функциональность переключения режимов в верхней панели.
+Параметр `Top P` в настройках генерации модели теперь по умолчанию имеет значение `0.90`.
 
 ## Что было сделано
 
 ### Изменения в коде
-1. **[ChatScreen.kt](file:///C:/Users/007/AndroidStudioProjects/AIAssistent1/app/src/main/java/com/example/aiassistent1/presentation/ui/ChatScreen.kt)**
-   - Из диалога `ModelSettingsDialog` удален параметр `systemPromptEnabled`.
-   - Из интерфейса диалога удалена строка (Row) с переключателем системного промпта.
-   - Обновлен вызов диалога в основном экране `ChatScreen` для соответствия новой сигнатуре.
+1. **[GenerationParams.kt](file:///C:/Users/007/AndroidStudioProjects/AIAssistent1/app/src/main/java/com/example/aiassistent1/domain/model/GenerationParams.kt)**
+   - Значение по умолчанию для `topP` в data-классе изменено с `0.8f` на `0.9f`. Это также автоматически обновило логику кнопки "Сброс настроек по умолчанию" в интерфейсе настроек.
 
-2. **[ChatViewModel.kt](file:///C:/Users/007/AndroidStudioProjects/AIAssistent1/app/src/main/java/com/example/aiassistent1/presentation/viewmodel/ChatViewModel.kt)**
-   - Метод `setSystemPromptEnabled` изменен: теперь он просто сохраняет значение в репозитории настроек, не переключая принудительно режим чата (ранее он вызывал `setChatMode`). Это гарантирует, что изменение настройки в фоне (если оно произойдет) не собьет текущий экран пользователя.
+2. **[DataStoreSettingsRepository.kt](file:///C:/Users/007/AndroidStudioProjects/AIAssistent1/app/src/main/java/com/example/aiassistent1/data/repository/DataStoreSettingsRepository.kt)**
+   - Обновлены фолбэк-значения при чтении из `DataStore` для существующих моделей.
+   - Обновлено начальное значение (`initialValue`) для `StateFlow` параметров.
 
 ## Верификация
 - Проект успешно собран (`gradle assembleDebug`).
-- Визуально подтверждено отсутствие лишнего пункта в настройках.
-- Переключение между режимами "Чат" и "Календарь" через верхнюю панель работает исправно.
-
-## Результат
-Интерфейс настроек стал чище и понятнее, исключена путаница между глобальной настройкой и текущим режимом работы ассистента.
+- Параметр `Top P` теперь будет предлагаться со значением `0.90` для всех новых моделей и при сбросе настроек.

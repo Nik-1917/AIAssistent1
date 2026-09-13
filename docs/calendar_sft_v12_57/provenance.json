@@ -1,0 +1,46 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.57-last-event-supplement",
+  "review": {
+    "reviewed_by": "Codex under project owner instructions",
+    "reviewed_on": "2026-09-13",
+    "decision_evidence": "User approved rules and handwritten examples for a single request only."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "59752b049ae427561b0bcaf4f56161bd6df2f353bdcc8ff1234778bbc1cdfc57"
+    },
+    "validation": {
+      "sha256": "3a43ef66df99d5e7d51c5fd54e74bf8e5cca2d5efa0d2e8757e93da72cb70549"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout": {
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c"
+    },
+    "interval_holdout": {
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1"
+    },
+    "last_event_holdout": {
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_56/provenance.json; workspace:docs/calendar_assistant_last_event_manual.json",
+      "rights_evidence": "Inherited approved V12.56 bytes and manually authored fictional requests and answers. No external material or model output imported.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

@@ -196,7 +196,7 @@ def parse_and_validate_assistant_response(
 ) -> dict[str, Any]:
     """Parse and validate one strict response object, returning its JSON value."""
 
-    if contract_version not in {None, "v12.1", "v12.5", "v12.56"}:
+    if contract_version not in {None, "v12.1", "v12.5", "v12.56", "v12.57"}:
         _fail(location, f"unsupported contract version {contract_version!r}")
     raw = _require_string(content, location, non_empty=True)
     try:
@@ -210,13 +210,13 @@ def parse_and_validate_assistant_response(
     intent = response["intent"]
     if intent not in INTENTS:
         _fail(f"{location}.intent", f"unsupported intent {intent!r}")
-    if contract_version in {"v12.5", "v12.56"} and intent == "note_add":
+    if contract_version in {"v12.5", "v12.56", "v12.57"} and intent == "note_add":
         _fail(f"{location}.intent", f"intent is outside the {contract_version} calendar contract")
     # note_add.params.text is opaque user-authored text and may contain any
     # punctuation that the user wants preserved verbatim.
     # In the current contract, presentation rules apply to reply only. Keep
     # legacy validation reproducible without imposing its style on new inputs.
-    styled_text = response["reply"] if contract_version in {"v12.5", "v12.56"} else response
+    styled_text = response["reply"] if contract_version in {"v12.5", "v12.56", "v12.57"} else response
     if intent != "note_add" and _contains_forbidden_text_punctuation(styled_text):
         _fail(location, "must not contain forbidden text punctuation")
     reply = _require_string(response["reply"], f"{location}.reply", non_empty=True)
@@ -257,7 +257,7 @@ def _validate_add(
     params: dict[str, Any], reply: str, location: str, *, contract_version: str | None = None,
 ) -> None:
     allowed = {"title", "starts_at", "date", "time", "duration_min", "value"}
-    if contract_version == "v12.56":
+    if contract_version in {"v12.56", "v12.57"}:
         allowed.add("ends_at")
     if not set(params).issubset(allowed):
         _fail(f"{location}.params", "contains an unsupported calendar_add field")
@@ -303,7 +303,7 @@ def _validate_add(
         expected_reply = v12_1_creation_reply(params)
         if reply != expected_reply:
             _fail(f"{location}.reply", "v12.1 calendar_add reply must contain only the title")
-    elif contract_version in {"v12.5", "v12.56"}:
+    elif contract_version in {"v12.5", "v12.56", "v12.57"}:
         # Known time may be described in reply. A model extraction is not a
         # database receipt, even when all calendar parameters are present.
         _reject_action_reply_prefix(reply, location, "an unexecuted calendar_add")
@@ -469,7 +469,7 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
     if not set(record).issubset(allowed) or not {"category", "messages"}.issubset(record):
         _fail(location, "row needs category and messages, with optional case_id and contract_version")
     contract_version = record.get("contract_version")
-    if "contract_version" in record and contract_version not in {"v12.1", "v12.5", "v12.56"}:
+    if "contract_version" in record and contract_version not in {"v12.1", "v12.5", "v12.56", "v12.57"}:
         _fail(location, "explicit contract_version must be v12.1, v12.5 or v12.56")
     category = _require_string(record["category"], f"{location}.category", non_empty=True)
     messages = record["messages"]
@@ -503,12 +503,12 @@ def normalize_record(record: Any, location: str) -> dict[str, Any]:
             content = json.dumps(assistant_response, ensure_ascii=False, separators=(",", ":"))
         elif role != "user":
             _fail(f"{location}.messages[{index}].role", "middle roles must be user")
-        elif contract_version not in {"v12.5", "v12.56"} and not is_note_add and FORBIDDEN_TEXT_PUNCTUATION_RE.search(content):
+        elif contract_version not in {"v12.5", "v12.56", "v12.57"} and not is_note_add and FORBIDDEN_TEXT_PUNCTUATION_RE.search(content):
             _fail(
                 f"{location}.messages[{index}].content",
                 "must not contain forbidden text punctuation",
             )
-        elif contract_version not in {"v12.5", "v12.56"} and not is_note_add and CLOCK_RE.search(content):
+        elif contract_version not in {"v12.5", "v12.56", "v12.57"} and not is_note_add and CLOCK_RE.search(content):
             _fail(
                 f"{location}.messages[{index}].content",
                 "must spell clock times in words",

@@ -3,6 +3,7 @@ package com.example.aiassistent1.domain.interfaces
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
+import com.example.aiassistent1.domain.model.CalendarViewState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,9 @@ interface SettingsRepository {
 
     val floatingControlPositions: Flow<FloatingControlPositions>
     suspend fun setFloatingControlPositions(positions: FloatingControlPositions)
+
+    val calendarViewState: Flow<CalendarViewState>
+    suspend fun setCalendarViewState(state: CalendarViewState)
 
     val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()

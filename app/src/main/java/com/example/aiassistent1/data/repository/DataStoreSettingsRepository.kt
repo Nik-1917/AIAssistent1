@@ -13,6 +13,7 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
+import com.example.aiassistent1.domain.model.CalendarViewState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
@@ -26,6 +27,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.YearMonth
 
 val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -50,6 +53,8 @@ class DataStoreSettingsRepository(
     private val speechCardYdpKey = floatPreferencesKey("speech_card_y_dp")
     private val calendarButtonXdpKey = floatPreferencesKey("calendar_button_x_dp")
     private val calendarButtonYdpKey = floatPreferencesKey("calendar_button_y_dp")
+    private val calendarVisibleMonthKey = stringPreferencesKey("calendar_visible_month")
+    private val calendarSelectedDateKey = stringPreferencesKey("calendar_selected_date")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -165,6 +170,14 @@ class DataStoreSettingsRepository(
             preferences[isFirstRunKey] ?: true
         }
 
+    override val calendarViewState: kotlinx.coroutines.flow.Flow<CalendarViewState> = dataStore.data
+        .map { preferences ->
+            CalendarViewState(
+                visibleMonth = preferences[calendarVisibleMonthKey]?.let { runCatching { YearMonth.parse(it) }.getOrNull() },
+                selectedDate = preferences[calendarSelectedDateKey]?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
+            )
+        }
+
     override suspend fun setSelectedModel(modelName: String) {
         dataStore.edit { preferences ->
             preferences[selectedModelKey] = modelName
@@ -179,7 +192,7 @@ class DataStoreSettingsRepository(
                         contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 512,
                         maxTokens = preferences[intPreferencesKey("${modelName}_maxTokens")] ?: 512,
                         temperature = preferences[floatPreferencesKey("${modelName}_temperature")] ?: 0.35f,
-                        topP = preferences[floatPreferencesKey("${modelName}_topP")] ?: 0.8f,
+                        topP = preferences[floatPreferencesKey("${modelName}_topP")] ?: 0.9f,
                         topK = preferences[intPreferencesKey("${modelName}_topK")] ?: 20,
                         repeatPenalty = preferences[floatPreferencesKey("${modelName}_repeatPenalty")] ?: 1.15f,
                         gpuLayers = preferences[intPreferencesKey("${modelName}_gpuLayers")] ?: 0,
@@ -192,7 +205,7 @@ class DataStoreSettingsRepository(
                         contextSize = 512,
                         maxTokens = 512,
                         temperature = 0.35f,
-                        topP = 0.8f,
+                        topP = 0.9f,
                         repeatPenalty = 1.15f
                     )
                 )
@@ -275,6 +288,13 @@ class DataStoreSettingsRepository(
     override suspend fun setFirstRunCompleted() {
         dataStore.edit { preferences ->
             preferences[isFirstRunKey] = false
+        }
+    }
+
+    override suspend fun setCalendarViewState(state: CalendarViewState) {
+        dataStore.edit { preferences ->
+            state.visibleMonth?.let { preferences[calendarVisibleMonthKey] = it.toString() }
+            state.selectedDate?.let { preferences[calendarSelectedDateKey] = it.toString() }
         }
     }
 }
