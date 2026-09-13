@@ -1,5 +1,18 @@
 # Calendar Assistant: training contract
 
+## Active single-request last-created clarification
+
+See [the last-created rules and manual examples](CALENDAR_ASSISTANT_LAST_EVENT.md).
+`Измени последнее событие` means `calendar_update` with
+`params.target.use_last_created: true`. The same applies to one request such
+as `найди последнее событие и измени в нём время`: emit one update JSON, not
+a separate search or an invented `calendar_last`. Use only the requested
+changes; when none are specified, keep `changes` empty for the editor.
+An explicitly named event, including one described as found, uses `target.query`
+instead. A found event must not silently become the last-created event.
+`use_last_match` and `use_last_referenced` are unsupported. This clarification
+does not add cross-message search memory or a last-created search operation.
+
 ## Active V12.56: half-hour defaults and event endpoints
 
 V12.56 adds the explicit [half-hour and interval rules](CALENDAR_ASSISTANT_V12_56_INTERVALS.md).

@@ -44,6 +44,16 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
+### Single-request last-created supplement to V12.56
+
+`prepare_last_event.py` appends 30 handwritten train, 6 validation and 6
+independent holdout examples to a separate `calendar_sft_v12_56_last_event`
+directory. It preserves all V12.56 source bytes. One request such as
+`найди последнее событие и измени в нём время` uses the existing
+`calendar_update` / `use_last_created` contract. Named events use `query`.
+It adds no cross-message search state and does not train weights.
+See [rules and scope](../../docs/CALENDAR_ASSISTANT_LAST_EVENT.md).
+
 ### Current V12.56 half-hour defaults and event intervals
 
 `prepare_v12_56.py` prepares 72 handwritten train examples, 12 validation

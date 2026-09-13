@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 124,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 169,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "a8e52b9875efd77e35d45e88725ed5cd6f9701ec007bda6d97ceb3c9f5563c3f"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 134,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "max_tokens": 176,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "70cabc159dd91a552a170677ea853b377790e3ea34f92c47f9e5ab8a9fa433ce"
+    },
+    "last_event_holdout.jsonl": {
+      "rows": 6,
+      "max_tokens": 179,
+      "new_rows": 6,
+      "new_max_tokens": 179,
+      "sha256": "a993f4d0297137972b9f9c8bac416b3812b21c61ec848add8f51d635433fb5d7"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 63,
+      "max_tokens": 178,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "train.jsonl": {
+      "rows": 2647,
+      "max_tokens": 256,
+      "new_rows": 30,
+      "new_max_tokens": 182,
+      "sha256": "3800dac66b9dcceeef63c54f613289eb81687da0c562d3fa2cd4519dd18cb65e"
+    },
+    "validation.jsonl": {
+      "rows": 762,
+      "max_tokens": 206,
+      "new_rows": 6,
+      "new_max_tokens": 185,
+      "sha256": "02d8a8d651ee66d7ec133afe231ece87614b7f3cb265829cb53d64e681f42083"
+    }
+  },
+  "total_rows": 3570,
+  "truncated_rows": 0,
+  "assistant_only_mask": "PASS",
+  "model_weights_loaded": false,
+  "training": "NOT_RUN"
+}
