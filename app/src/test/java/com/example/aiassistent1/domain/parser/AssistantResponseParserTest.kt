@@ -38,6 +38,21 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `uses default title when calendar add response has an empty title`() {
+        for (title in listOf("", "   ")) {
+            val response = parser.parseResult(
+                """{"intent":"calendar_add","reply":"x","params":{"title":"$title","starts_at":"2026-09-13T17:00","ends_at":"2026-09-13T20:00"}}""",
+            ).getOrThrow()
+
+            val params = response.params as CalendarAddParams
+            assertEquals("Событие", params.title)
+            assertEquals("2026-09-13T17:00", params.startsAt)
+            assertEquals(180, params.durationMin)
+        }
+        assertTrue(parser.parseResult("""{"intent":"calendar_add","reply":"x","params":{"title":null}}""").isFailure)
+    }
+
+    @Test
     fun `keeps a supplied event date when its time is absent`() {
         val response = parser.parse(
             """{"intent":"calendar_add","reply":"Уточните время","params":{"title":"Проверка отчёта","date":"2030-12-07","duration_min":120}}""",

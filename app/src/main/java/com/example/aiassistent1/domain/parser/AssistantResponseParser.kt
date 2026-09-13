@@ -15,7 +15,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
         val params: AssistantParams? = when (intent) {
             "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
-                val p = Fields(raw, "$.params", setOf("title", "starts_at", "ends_at", "date", "time", "duration_min", "value", "date_value", "notes"))
+                val p = Fields(raw, "$.params", setOf("title", "starts_at", "ends_at", "date", "time", "duration_min", "value", "date_value", "priority", "notes"))
                 val startValue = p.string("starts_at")
                 val start = startValue?.takeIf { p.isDateTime(it) }
                 val shorthandTime = startValue?.takeIf { !p.isDateTime(it) }?.also {
@@ -38,9 +38,9 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                 val localStart = fullStart
                     ?: if (date != null && time != null) CalendarTime.dateTime("${date}T$time") else null
                 val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
-                CalendarAddParams(p.string("title"), start, duration,
+                CalendarAddParams(p.string("title", allowEmpty = true)?.ifBlank { "Событие" }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
-                    p.eventValue(), p.notes(), end)
+                    p.eventValue("priority"), p.notes(), end)
             }
             "calendar_search", "calendar_sum" -> {
                 val p = Fields(raw, "$.params", setOf("query", "range_start", "range_end"))
@@ -106,13 +106,17 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         return value
     }
     /** Normalize the wire alias before mapping, validation and persistence. */
-    fun eventValue(): Long? {
+    fun eventValue(vararg aliases: String): Long? {
         val value = integer("value")
-        val alias = integer("date_value")
-        require(value == null || alias == null || value == alias) {
-            "$path: value и date_value должны совпадать"
+        val aliasesWithValue = listOf("date_value", *aliases)
+            .mapNotNull { key -> integer(key)?.let { key to it } }
+        require(aliasesWithValue.all { (_, aliasValue) -> value == null || value == aliasValue }) {
+            "$path: value и ${aliasesWithValue.first { (_, aliasValue) -> value != aliasValue }.first} должны совпадать"
         }
-        return value ?: alias
+        require(aliasesWithValue.map { (_, aliasValue) -> aliasValue }.distinct().size <= 1) {
+            "$path: псевдонимы value должны совпадать"
+        }
+        return value ?: aliasesWithValue.firstOrNull()?.second
     }
     fun duration(): Int? = integer("duration_min")?.also {
         require(it in 1..Int.MAX_VALUE.toLong()) { "$path.duration_min: число вне диапазона 1..${Int.MAX_VALUE}" }

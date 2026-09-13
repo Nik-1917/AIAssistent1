@@ -44,7 +44,27 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
-### Current V12.55 half-hour input coverage
+### Current V12.56 half-hour defaults and event intervals
+
+`prepare_v12_56.py` prepares 72 handwritten train examples, 12 validation
+examples and 12 independent holdout examples. Bare half-hour expressions
+default to 12:30–23:30; explicit dayparts override this default. Whole-hour
+and half-hour event intervals each cover all 24 start and end hours in train.
+The V12.56 contract permits `calendar_add.params.ends_at`; earlier contracts
+retain their existing allowed fields. Runtime code is unchanged.
+
+All V12.55 source files stay intact. Only six old ambiguous half-hour expected
+answers are relabelled in the new holdout copy; their inputs and split remain
+unchanged. The resulting dataset has 3528 rows: 2617 train, 756 validation and
+155 across five holdout files. Preparation does not train or evaluate weights.
+
+```powershell
+python -X utf8 -B tools/calendar_sft/prepare_v12_56.py --check-only
+```
+
+See [V12.56 rules and manual register](../../docs/CALENDAR_ASSISTANT_V12_56_INTERVALS.md).
+
+### Archived V12.55 half-hour input coverage
 
 `prepare_v12_55.py` appends 144 complete handwritten training conversations
 and 24 independent validation conversations to the frozen V12.54 bytes.

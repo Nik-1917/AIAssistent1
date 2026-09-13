@@ -472,7 +472,7 @@ class ChatViewModel(
                                     TAG,
                                     "PARSE_ERROR: ${parseOutcome.exceptionOrNull()?.message ?: "неизвестная ошибка"}",
                                 )
-                                finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте повторить запрос.")
+                                finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте изменить запрос.")
                             }
 
                             // Обновляем UI как для разобранного ответа, так и для фолбэка при ошибке парсинга

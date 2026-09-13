@@ -1,0 +1,63 @@
+{
+  "version": "v12.56",
+  "base_version": "v12.55",
+  "new_contract": "v12.56",
+  "manual_sha256": "f95429be00501a477e58828eb159a7c39cc33a1fcb055067cdf962a84e313408",
+  "source_sha256": {
+    "train": "1cb9bfcb69dbef2b0f174db31adc9b89b60169dbeee1a18aaba7c20b344dc46c",
+    "validation": "09c639b71310a25009f9734a43ae0aee379abf44406718020b485587c41fe99d",
+    "holdout": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+    "calendar_holdout_v12_2": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+    "regression_holdout": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34",
+    "half_hour_holdout": "fa9d19e273acad133b3c8a996221bfdd2cea7cc2902b03b08e0f7b6a766c5a9f"
+  },
+  "new_counts": {
+    "train": 72,
+    "validation": 12,
+    "interval_holdout": 12
+  },
+  "total_rows": {
+    "train": 2617,
+    "validation": 756,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63,
+    "half_hour_holdout": 36,
+    "interval_holdout": 12
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "3adabb319859a740cefbe2f3af3656af820550fa7f17414593604a46e1d77157"
+    },
+    "validation": {
+      "sha256": "8fa196491571ed500c3166659a474923be0d6f61a23014688120c5d1cd2658d4"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout": {
+      "sha256": "a8e52b9875efd77e35d45e88725ed5cd6f9701ec007bda6d97ceb3c9f5563c3f"
+    },
+    "interval_holdout": {
+      "sha256": "70cabc159dd91a552a170677ea853b377790e3ea34f92c47f9e5ab8a9fa433ce"
+    }
+  },
+  "relabelled_holdout_cases": [
+    "V1255HC01",
+    "V1255HC02",
+    "V1255HC03",
+    "V1255HC04",
+    "V1255HC05",
+    "V1255HC06"
+  ],
+  "other_inherited_bytes": "UNCHANGED",
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "gguf_conversion": "NOT_RUN"
+}

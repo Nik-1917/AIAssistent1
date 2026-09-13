@@ -1,6 +1,39 @@
 # Calendar Assistant: training contract
 
-## Active V12.54 reply addition to V12.53
+## Active V12.56: half-hour defaults and event endpoints
+
+V12.56 adds the explicit [half-hour and interval rules](CALENDAR_ASSISTANT_V12_56_INTERVALS.md).
+For `пол...` and `половина...` without an explicit daypart or resolving
+context, choose the second half of the day: `полдевятого` = `20:30`,
+`полпервого` = `12:30`, `полдвенадцатого` = `23:30`. Explicit dayparts
+override this default, including a daypart applying to an entire interval.
+This supersedes the V12.5/V12.55 requirement to omit ambiguous half-hour times.
+It does not change defaults for ordinary cardinal hours or other clock forms.
+
+An event statement such as `с пяти до семи я в бане` is `calendar_add`
+even without an imperative verb. Extract the event title and both exact
+endpoints. New `contract_version: "v12.56"` records may provide `starts_at`
+and `ends_at` as local `YYYY-MM-DDTHH:MM` timestamps. `ends_at` must be
+later than the resolved start; when an ordered clock interval crosses midnight,
+the end date is the following day. Never output `24:00`. Equal endpoints do
+not imply a full day without explicit context. A supplied duration must agree
+with the endpoints. When endpoints are given, duration can be computed by the
+application and need not be repeated in model JSON. Missing value stays absent.
+
+Resolve both clock meanings first, then the start date under existing explicit
+and implicit date rules, then the end date. The date of an interval belongs to
+its start. A phrase applying to the whole interval applies to both endpoints;
+an endpoint-specific daypart takes precedence over a whole-interval daypart.
+For example, `с полдвенадцатого до полпервого ночи` explicitly ends at `00:30`
+on the following date. With both halves bare, `с полдвенадцатого до полпервого`
+means `23:30` to `12:30` the following day, not an invented `00:30` end.
+
+The prior six intents, reply-only presentation scope, and other extraction
+rules remain. Archived datasets and contract versions remain reproducible.
+The sections below describing the V12.54 addition and historical V14 are not
+permission to introduce removed intents or overwrite the V12.56 exceptions.
+
+## Inherited V12.54 reply addition to V12.53
 
 For the V12.54 dataset, the supported intents remain
 `chat`, `calendar_add`, `calendar_search`, `calendar_update`,
@@ -141,7 +174,11 @@ events; it is not a placeholder for an unknown query.
 ### calendar_add
 
 - Allowed parameters are only `title`, `starts_at`, `date`, `time`,
-  `duration_min`, and `value`.
+  `duration_min`, and `value`. V12.56 additionally allows `ends_at` for an
+  explicitly supplied event endpoint, with a complete start and a strictly
+  later local end timestamp. Prefer `starts_at` plus `ends_at` for intervals;
+  Android derives their duration. If `duration_min` is also supplied, it must
+  agree with both endpoints.
 - `title` is the complete semantic event name. Keep every event-specific
   action, object, person, place, topic, and qualifier that belongs to the
   event itself. Remove only calendar command words and data represented by

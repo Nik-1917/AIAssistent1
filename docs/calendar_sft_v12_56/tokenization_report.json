@@ -1,0 +1,64 @@
+{
+  "dataset": "v12.56",
+  "status": "PASS",
+  "max_seq_length": 256,
+  "weights_loaded": false,
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "truncated_rows": 0,
+  "assistant_loss_mask": "PASS",
+  "tokenizer_path": "build\\calendar_sft_models\\Qwen3-4B-Instruct-2507\\cdbee75f17c01a7cc42f958dc650907174af0554",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "train.jsonl": {
+      "rows": 2617,
+      "max_tokens": 256,
+      "new_or_relabelled_rows": 72,
+      "new_or_relabelled_max_tokens": 188,
+      "sha256": "3adabb319859a740cefbe2f3af3656af820550fa7f17414593604a46e1d77157"
+    },
+    "validation.jsonl": {
+      "rows": 756,
+      "max_tokens": 206,
+      "new_or_relabelled_rows": 12,
+      "new_or_relabelled_max_tokens": 172,
+      "sha256": "8fa196491571ed500c3166659a474923be0d6f61a23014688120c5d1cd2658d4"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 134,
+      "new_or_relabelled_rows": 0,
+      "new_or_relabelled_max_tokens": null,
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 124,
+      "new_or_relabelled_rows": 0,
+      "new_or_relabelled_max_tokens": null,
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 63,
+      "max_tokens": 178,
+      "new_or_relabelled_rows": 0,
+      "new_or_relabelled_max_tokens": null,
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 169,
+      "new_or_relabelled_rows": 6,
+      "new_or_relabelled_max_tokens": 159,
+      "sha256": "a8e52b9875efd77e35d45e88725ed5cd6f9701ec007bda6d97ceb3c9f5563c3f"
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "max_tokens": 176,
+      "new_or_relabelled_rows": 12,
+      "new_or_relabelled_max_tokens": 176,
+      "sha256": "70cabc159dd91a552a170677ea853b377790e3ea34f92c47f9e5ab8a9fa433ce"
+    }
+  },
+  "total_rows": 3528
+}

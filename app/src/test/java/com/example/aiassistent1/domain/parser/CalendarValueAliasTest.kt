@@ -27,6 +27,15 @@ class CalendarValueAliasTest {
         assertEquals(30, command.durationMinutes)
     }
 
+    @Test fun `priority is accepted as a calendar add value alias`() {
+        for (fields in listOf("\"priority\":15", "\"value\":15,\"priority\":15", "\"date_value\":15,\"priority\":15")) {
+            assertEquals(15L, (add(fields).getOrThrow().params as CalendarAddParams).value)
+        }
+        assertTrue(add("\"value\":15,\"priority\":14").isFailure)
+        assertTrue(add("\"date_value\":15,\"priority\":14").isFailure)
+        assertTrue(update("\"priority\":15").isFailure)
+    }
+
     @Test fun `either spelling and matching pairs preserve integer bounds and zero`() {
         for (value in listOf(0L, 4L, -7L, Long.MIN_VALUE, Long.MAX_VALUE)) {
             for (fields in listOf("\"value\":$value", "\"date_value\":$value", "\"value\":$value,\"date_value\":$value")) {
