@@ -1,5 +1,24 @@
 # Calendar Assistant: training contract
 
+## Active input-order and single-event rules
+
+**Input parameters may appear in any order and in any supported combination.**
+Their semantic role, not their position, determines JSON fields. Event title,
+date, start, end, duration and value can precede, follow or separate one
+another. In particular, `завтра с пяти баня до семи вечера` has the same
+parameters as `баня завтра с пяти до семи вечера`. A list of demonstrated
+orders is coverage evidence, not a restriction on accepted input.
+The same principle applies to update targets and requested changes.
+Preserve existing date/time inference and omit other unspecified parameters.
+
+Emit one object and one command. For multiple explicitly independent event
+creations, use the first mentioned event only, keep its parameters separate
+from later events, and explain in `reply` that the others were not processed.
+Do not split a single event merely because its title contains `и`.
+Explicit self-corrections replace the corrected value; they are not another
+event. Presentation rules still apply only to `reply`.
+See [the complete order, field-count and first-event rules](CALENDAR_ASSISTANT_ORDER_COVERAGE.md).
+
 ## Active single-request last-created clarification
 
 See [the last-created rules and manual examples](CALENDAR_ASSISTANT_LAST_EVENT.md).

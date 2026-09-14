@@ -44,6 +44,22 @@ plus byte sizes for every required file; verification fails on any mismatch.
 
 ## Local, no-cost preparation
 
+### Current order/field-count and first-event supplement
+
+`prepare_order_coverage.py` serializes four handwritten registers into
+`docs/calendar_sft_order_coverage`, preserving every V12.57 source byte.
+The final training counts for twelve complete interval orders are 20 each,
+including inherited cases. New duration/value and target/change grids are
+balanced within their own categories. Partial inputs, first-event selection,
+conjunctions and corrections have separate controls. All variants in a
+semantic family remain in one split. Runtime code and prompt are unchanged.
+
+`audit_order_coverage.py` records bounded source findings and the manual
+48-interval audit. `check_order_tokenization.py` performs offline tokenization.
+`evaluate_order_predictions.py` scores later saved holdout predictions by
+order, fields and family; it does not generate predictions or train weights.
+See [rules, coverage and verification](../../docs/CALENDAR_ASSISTANT_ORDER_COVERAGE.md).
+
 ### Single-request last-created supplement to V12.56
 
 `prepare_last_event.py` appends 30 handwritten train, 6 validation and 6

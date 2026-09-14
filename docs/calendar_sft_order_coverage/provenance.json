@@ -1,0 +1,49 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-order-coverage-v12.57-supplement",
+  "review": {
+    "reviewed_by": "Codex under project owner instructions",
+    "reviewed_on": "2026-09-14",
+    "decision_evidence": "Owner approved manual order/field coverage, balancing and first-event-only rules; training remains a separate step."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "2a7ee2cb7a0a1eaef8b4dd1f8a814918264686772c88c46fb9adddc2464db763"
+    },
+    "validation": {
+      "sha256": "c5ddd75e29d8c8991f3c26cd5c5ad2aaf7498e8104a06e295daa74a8cbc9e0b9"
+    },
+    "holdout": {
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "calendar_holdout_v12_2": {
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "regression_holdout": {
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34"
+    },
+    "half_hour_holdout": {
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c"
+    },
+    "interval_holdout": {
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1"
+    },
+    "last_event_holdout": {
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53"
+    },
+    "order_holdout": {
+      "sha256": "6a28655f44e9024bc527e13d8a45f100a06c3e8ff3df19439888b33ce8d4f2ea"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_57/provenance.json; four docs/calendar_order_*_manual.json registers",
+      "rights_evidence": "Approved frozen project data plus individually handwritten fictional conversations. No external datasets, private records or model predictions.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

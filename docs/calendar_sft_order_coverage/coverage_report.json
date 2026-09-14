@@ -1,0 +1,693 @@
+{
+  "interval_train_before": {
+    "DIE": 10,
+    "EDI": 7,
+    "SDFE": 2,
+    "EID": 7,
+    "DEI": 9,
+    "SDEF": 3,
+    "IDE": 8,
+    "IED": 1
+  },
+  "interval_train_after": {
+    "DIE": 20,
+    "EDI": 20,
+    "SDFE": 20,
+    "EID": 20,
+    "DEI": 20,
+    "SDEF": 20,
+    "IDE": 20,
+    "IED": 20,
+    "DSEF": 20,
+    "ESDF": 20,
+    "SEDF": 20,
+    "SEFD": 20
+  },
+  "new_counts": {
+    "train": 291,
+    "validation": 41,
+    "order_holdout": 43
+  },
+  "total_rows": {
+    "train": 2938,
+    "validation": 803,
+    "holdout": 36,
+    "calendar_holdout_v12_2": 8,
+    "regression_holdout": 63,
+    "half_hour_holdout": 36,
+    "interval_holdout": 12,
+    "last_event_holdout": 6,
+    "order_holdout": 43
+  },
+  "new_order_counts": [
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "KLV",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "KVL",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "LKV",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "LVK",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "VKL",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "duration_value",
+      "order": "VLK",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "first_event",
+      "order": "EI",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "first_event",
+      "order": "IE",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "DEI",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "DIE",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "DSEF",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "EDI",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "EID",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "ESDF",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "IDE",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "IED",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "SDEF",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "SDFE",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "SEDF",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "interval",
+      "order": "SEFD",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "partial",
+      "order": "DVSEF",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "partial",
+      "order": "EV",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "partial",
+      "order": "EVID",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "partial",
+      "order": "I",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "partial",
+      "order": "VE",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "single_event_control",
+      "order": "EI",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "single_event_control",
+      "order": "IE",
+      "count": 1
+    },
+    {
+      "split": "order_holdout",
+      "category": "update_order",
+      "order": "CU",
+      "count": 2
+    },
+    {
+      "split": "order_holdout",
+      "category": "update_order",
+      "order": "UC",
+      "count": 2
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "KLV",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "KVL",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "LKV",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "LVK",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "VKL",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "duration_value",
+      "order": "VLK",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "first_event",
+      "order": "EI",
+      "count": 9
+    },
+    {
+      "split": "train",
+      "category": "first_event",
+      "order": "EL",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "first_event",
+      "order": "IE",
+      "count": 9
+    },
+    {
+      "split": "train",
+      "category": "first_event",
+      "order": "LE",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "DEI",
+      "count": 11
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "DIE",
+      "count": 10
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "DSEF",
+      "count": 20
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "EDI",
+      "count": 13
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "EID",
+      "count": 13
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "ESDF",
+      "count": 20
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "IDE",
+      "count": 12
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "IED",
+      "count": 19
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "SDEF",
+      "count": 17
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "SDFE",
+      "count": 18
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "SEDF",
+      "count": 20
+    },
+    {
+      "split": "train",
+      "category": "interval",
+      "order": "SEFD",
+      "count": 20
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "D",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "DE",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "DI",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "DIEV",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "DT",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "E",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "ED",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "EI",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "EL",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "I",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "ID",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "IE",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "IV",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "L",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "LDVET",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "LE",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "SDEVFL",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "T",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "TD",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "TLV",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "V",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "VEID",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "VI",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "VLDEI",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "VLT",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "partial",
+      "order": "VTDLE",
+      "count": 1
+    },
+    {
+      "split": "train",
+      "category": "single_event_control",
+      "order": "EI",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "single_event_control",
+      "order": "IE",
+      "count": 4
+    },
+    {
+      "split": "train",
+      "category": "update_order",
+      "order": "CU",
+      "count": 10
+    },
+    {
+      "split": "train",
+      "category": "update_order",
+      "order": "UC",
+      "count": 10
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "KLV",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "KVL",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "LKV",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "LVK",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "VKL",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "duration_value",
+      "order": "VLK",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "first_event",
+      "order": "EI",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "first_event",
+      "order": "IE",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "DEI",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "DIE",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "DSEF",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "EDI",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "EID",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "ESDF",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "IDE",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "IED",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "SDEF",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "SDFE",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "SEDF",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "interval",
+      "order": "SEFD",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "partial",
+      "order": "DL",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "partial",
+      "order": "LD",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "partial",
+      "order": "T",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "single_event_control",
+      "order": "EI",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "single_event_control",
+      "order": "IE",
+      "count": 1
+    },
+    {
+      "split": "validation",
+      "category": "update_order",
+      "order": "CU",
+      "count": 2
+    },
+    {
+      "split": "validation",
+      "category": "update_order",
+      "order": "UC",
+      "count": 2
+    }
+  ],
+  "scope": "Final train balance is proved for all twelve E/D/S/F orders with S preceding F. Other new grids are balanced within their category; inherited non-interval corpus distributions are preserved, not globally equalized."
+}

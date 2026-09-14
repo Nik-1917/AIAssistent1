@@ -1,0 +1,225 @@
+{
+  "source": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\docs\\calendar_sft_v12_57",
+  "method": "Exact normalized title + today/tomorrow + bounded clock expressions; unresolved rows stay unclassified. Counts are corpus coverage, not model accuracy.",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade",
+      "intents": {
+        "calendar_add": 8
+      },
+      "parameter_sets": {
+        "calendar_add:starts_at,title": 4,
+        "calendar_add:date,title": 4
+      },
+      "recognized_interval_orders": {},
+      "manually_reviewed_interval_orders": {},
+      "v1255_half_hour_orders": {}
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c",
+      "intents": {
+        "calendar_add": 36
+      },
+      "parameter_sets": {
+        "calendar_add:duration_min,starts_at,title": 36
+      },
+      "recognized_interval_orders": {},
+      "manually_reviewed_interval_orders": {},
+      "v1255_half_hour_orders": {}
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19",
+      "intents": {
+        "calendar_add": 36
+      },
+      "parameter_sets": {
+        "calendar_add:starts_at,title": 36
+      },
+      "recognized_interval_orders": {},
+      "manually_reviewed_interval_orders": {},
+      "v1255_half_hour_orders": {}
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1",
+      "intents": {
+        "calendar_add": 11,
+        "calendar_search": 1
+      },
+      "parameter_sets": {
+        "calendar_add:duration_min,starts_at,title": 6,
+        "calendar_add:ends_at,starts_at,title": 5,
+        "calendar_search:query,range_end,range_start": 1
+      },
+      "recognized_interval_orders": {
+        "IDE": 1,
+        "unclassified": 2,
+        "DEI": 2
+      },
+      "manually_reviewed_interval_orders": {
+        "not_manually_reviewed": 5
+      },
+      "v1255_half_hour_orders": {}
+    },
+    "last_event_holdout.jsonl": {
+      "rows": 6,
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53",
+      "intents": {
+        "calendar_update": 6
+      },
+      "parameter_sets": {
+        "calendar_update:changes,target": 6
+      },
+      "recognized_interval_orders": {},
+      "manually_reviewed_interval_orders": {},
+      "v1255_half_hour_orders": {}
+    },
+    "regression_holdout.jsonl": {
+      "rows": 63,
+      "sha256": "b2a7bdbc93a6f59769f0ab0a9108dc707e1bc7a494d00cbd5c8bb2fbfa7d1e34",
+      "intents": {
+        "calendar_add": 25,
+        "calendar_search": 13,
+        "calendar_update": 15,
+        "calendar_delete": 5,
+        "chat": 1,
+        "calendar_sum": 4
+      },
+      "parameter_sets": {
+        "calendar_add:duration_min,starts_at,title": 10,
+        "calendar_search:query,range_end,range_start": 13,
+        "calendar_update:changes,target": 15,
+        "calendar_delete:target": 5,
+        "chat:": 1,
+        "calendar_add:date,title": 5,
+        "calendar_add:starts_at,title": 4,
+        "calendar_add:date,duration_min,title": 1,
+        "calendar_add:duration_min,starts_at": 1,
+        "calendar_add:duration_min,starts_at,title,value": 2,
+        "calendar_add:date,value": 1,
+        "calendar_sum:range_end,range_start": 1,
+        "calendar_sum:query,range_end,range_start": 2,
+        "calendar_sum:query": 1,
+        "calendar_add:date,duration_min": 1
+      },
+      "recognized_interval_orders": {},
+      "manually_reviewed_interval_orders": {},
+      "v1255_half_hour_orders": {}
+    },
+    "train.jsonl": {
+      "rows": 2647,
+      "sha256": "59752b049ae427561b0bcaf4f56161bd6df2f353bdcc8ff1234778bbc1cdfc57",
+      "intents": {
+        "calendar_add": 1458,
+        "calendar_search": 323,
+        "calendar_delete": 127,
+        "calendar_update": 436,
+        "chat": 216,
+        "calendar_sum": 87
+      },
+      "parameter_sets": {
+        "calendar_add:duration_min,starts_at,title": 991,
+        "calendar_search:query,range_end,range_start": 319,
+        "calendar_delete:target": 127,
+        "calendar_update:changes,target": 436,
+        "chat:": 216,
+        "calendar_add:date,title": 53,
+        "calendar_add:date,duration_min,title": 99,
+        "calendar_add:starts_at,title": 195,
+        "calendar_add:duration_min,starts_at": 2,
+        "calendar_add:date,duration_min": 11,
+        "calendar_add:duration_min,starts_at,title,value": 7,
+        "calendar_add:date,title,value": 15,
+        "calendar_add:date,value": 9,
+        "calendar_search:query": 4,
+        "calendar_sum:range_end,range_start": 19,
+        "calendar_sum:query,range_end,range_start": 55,
+        "calendar_sum:query": 9,
+        "calendar_add:starts_at": 18,
+        "calendar_add:date": 8,
+        "calendar_sum:": 4,
+        "calendar_add:starts_at,value": 1,
+        "calendar_add:starts_at,title,value": 1,
+        "calendar_add:ends_at,starts_at,title": 48
+      },
+      "recognized_interval_orders": {
+        "unclassified": 20,
+        "EDI": 4,
+        "IDE": 4,
+        "EID": 7,
+        "DEI": 8,
+        "SDEF": 3,
+        "DIE": 2
+      },
+      "manually_reviewed_interval_orders": {
+        "DIE": 10,
+        "EDI": 7,
+        "SDFE": 2,
+        "EID": 7,
+        "DEI": 9,
+        "IE": 1,
+        "SDEF": 3,
+        "IDE": 8,
+        "IED": 1
+      },
+      "v1255_half_hour_orders": {
+        "EDT": 24,
+        "ETD": 24,
+        "DET": 24,
+        "DTE": 24,
+        "TED": 24,
+        "TDE": 24
+      }
+    },
+    "validation.jsonl": {
+      "rows": 762,
+      "sha256": "3a43ef66df99d5e7d51c5fd54e74bf8e5cca2d5efa0d2e8757e93da72cb70549",
+      "intents": {
+        "calendar_add": 416,
+        "calendar_search": 97,
+        "chat": 61,
+        "calendar_update": 124,
+        "calendar_delete": 32,
+        "calendar_sum": 32
+      },
+      "parameter_sets": {
+        "calendar_add:duration_min,starts_at,title": 271,
+        "calendar_search:query,range_end,range_start": 96,
+        "chat:": 61,
+        "calendar_update:changes,target": 124,
+        "calendar_delete:target": 32,
+        "calendar_add:date,title": 16,
+        "calendar_add:date,duration_min,title": 17,
+        "calendar_add:starts_at,title": 91,
+        "calendar_add:duration_min,starts_at,title,value": 2,
+        "calendar_sum:query,range_end,range_start": 22,
+        "calendar_sum:range_end,range_start": 7,
+        "calendar_sum:query": 2,
+        "calendar_add:starts_at": 4,
+        "calendar_add:date,duration_min": 3,
+        "calendar_add:duration_min,starts_at": 1,
+        "calendar_add:date,value": 2,
+        "calendar_add:date,title,value": 2,
+        "calendar_sum:": 1,
+        "calendar_search:query": 1,
+        "calendar_add:date": 1,
+        "calendar_add:ends_at,starts_at,title": 6
+      },
+      "recognized_interval_orders": {
+        "DIE": 2,
+        "EID": 1,
+        "unclassified": 3
+      },
+      "manually_reviewed_interval_orders": {
+        "not_manually_reviewed": 6
+      },
+      "v1255_half_hour_orders": {}
+    }
+  },
+  "same_context_parameter_conflicts": [],
+  "interval_clock_mismatches": [],
+  "invalid_rows": []
+}

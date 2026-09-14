@@ -1,0 +1,3168 @@
+{
+  "OI01-ESDF": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SEDF": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SEFD": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-ESDF_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SEDF_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SEFD_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-EDI": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-DSEF": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-DEI": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-IDE": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-DIE": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-IED": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-EID": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SDEF": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SDFE": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SDEF_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-SDFE_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-DSEF_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-IED_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-EDI_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-EID_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-DEI_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI01-IDE_2": {
+    "family": "OI01",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-ESDF": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SEDF": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SEFD": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-ESDF_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SEDF_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SEFD_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-EDI": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-DSEF": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-DEI": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-IDE": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-DIE": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-IED": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-EID": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SDEF": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SDFE": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SDEF_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-SDFE_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-DSEF_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-IED_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-EDI_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-EID_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI02-IDE_2": {
+    "family": "OI02",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-ESDF": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SEDF": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SEFD": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-ESDF_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SEDF_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SEFD_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-EDI": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-DSEF": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-DEI": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-IDE": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-DIE": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-IED": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-EID": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SDEF": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SDFE": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SDEF_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-SDFE_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-DSEF_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-IED_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-EDI_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI03-EID_2": {
+    "family": "OI03",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-ESDF": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SEDF": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SEFD": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-ESDF_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SEDF_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SEFD_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-EDI": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-DSEF": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-DEI": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-IDE": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-DIE": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-IED": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-EID": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SDEF": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SDFE": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SDEF_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-SDFE_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-DSEF_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI04-IED_2": {
+    "family": "OI04",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-ESDF": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SEDF": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SEFD": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-ESDF_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SEDF_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SEFD_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-EDI": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-DSEF": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-DEI": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-IDE": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-DIE": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-IED": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-EID": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SDEF": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SDFE": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SDEF_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-SDFE_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-DSEF_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI05-IED_2": {
+    "family": "OI05",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-ESDF": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SEDF": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SEFD": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-ESDF_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SEDF_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SEFD_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-EDI": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-DSEF": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-DEI": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-IDE": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-DIE": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-IED": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-EID": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SDEF": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SDFE": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SDEF_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-SDFE_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-DSEF_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI06-IED_2": {
+    "family": "OI06",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-ESDF": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SEDF": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SEFD": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-ESDF_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SEDF_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SEFD_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-EDI": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-DSEF": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-DEI": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-IDE": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-DIE": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-IED": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-EID": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SDEF": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SDFE": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SDEF_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-SDFE_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-DSEF_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI07-IED_2": {
+    "family": "OI07",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-ESDF": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SEDF": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SEFD": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-ESDF_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SEDF_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SEFD_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-EDI": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-DSEF": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-DEI": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-IDE": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-DIE": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-IED": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-EID": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SDEF": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SDFE": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-SDFE_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-DSEF_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI08-IED_2": {
+    "family": "OI08",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-ESDF": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SEDF": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SEFD": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-ESDF_2": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SEDF_2": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SEFD_2": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-EDI": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-DSEF": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-DEI": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-IDE": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-DIE": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-IED": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-EID": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SDEF": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-SDFE": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-DSEF_2": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI09-IED_2": {
+    "family": "OI09",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-ESDF": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SEDF": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SEFD": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-ESDF_2": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SEDF_2": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SEFD_2": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-EDI": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-DSEF": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-DEI": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-IDE": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-DIE": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-IED": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-EID": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SDEF": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-SDFE": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OI10-DSEF_2": {
+    "family": "OI10",
+    "split": "train",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-ESDF": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-SEDF": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-SEFD": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-EDI": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-DSEF": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-DEI": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-IDE": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-DIE": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-IED": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-EID": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-SDEF": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV01-SDFE": {
+    "family": "OIV01",
+    "split": "validation",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-ESDF": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-SEDF": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-SEFD": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-EDI": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-DSEF": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-DEI": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-IDE": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-DIE": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-IED": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-EID": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-SDEF": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIV02-SDFE": {
+    "family": "OIV02",
+    "split": "validation",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-ESDF": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-SEDF": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-SEFD": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-EDI": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-DSEF": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-DEI": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-IDE": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-DIE": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-IED": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-EID": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-SDEF": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH01-SDFE": {
+    "family": "OIH01",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-ESDF": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "ESDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-SEDF": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SEDF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-SEFD": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SEFD",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-EDI": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "EDI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-DSEF": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DSEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-DEI": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DEI",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-IDE": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "IDE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-DIE": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "DIE",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-IED": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "IED",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-EID": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "EID",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-SDEF": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SDEF",
+    "provided": null,
+    "ignored": []
+  },
+  "OIH02-SDFE": {
+    "family": "OIH02",
+    "split": "order_holdout",
+    "category": "interval",
+    "order": "SDFE",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-KLV": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-KVL": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-LKV": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-LVK": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-VKL": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF01-VLK": {
+    "family": "OF01",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-KLV": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-KVL": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-LKV": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-LVK": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-VKL": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF02-VLK": {
+    "family": "OF02",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-KLV": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-KVL": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-LKV": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-LVK": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-VKL": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF03-VLK": {
+    "family": "OF03",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-KLV": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-KVL": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-LKV": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-LVK": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-VKL": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OF04-VLK": {
+    "family": "OF04",
+    "split": "train",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-KLV": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-KVL": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-LKV": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-LVK": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-VKL": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OFV01-VLK": {
+    "family": "OFV01",
+    "split": "validation",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-KLV": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "KLV",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-KVL": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "KVL",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-LKV": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "LKV",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-LVK": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "LVK",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-VKL": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "VKL",
+    "provided": null,
+    "ignored": []
+  },
+  "OFH01-VLK": {
+    "family": "OFH01",
+    "split": "order_holdout",
+    "category": "duration_value",
+    "order": "VLK",
+    "provided": null,
+    "ignored": []
+  },
+  "OP01-E": {
+    "family": "OP01",
+    "split": "train",
+    "category": "partial",
+    "order": "E",
+    "provided": [
+      "title"
+    ],
+    "ignored": []
+  },
+  "OP02-D": {
+    "family": "OP02",
+    "split": "train",
+    "category": "partial",
+    "order": "D",
+    "provided": [
+      "date"
+    ],
+    "ignored": []
+  },
+  "OP03-T": {
+    "family": "OP03",
+    "split": "train",
+    "category": "partial",
+    "order": "T",
+    "provided": [
+      "time"
+    ],
+    "ignored": []
+  },
+  "OP04-I": {
+    "family": "OP04",
+    "split": "train",
+    "category": "partial",
+    "order": "I",
+    "provided": [
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OP05-L": {
+    "family": "OP05",
+    "split": "train",
+    "category": "partial",
+    "order": "L",
+    "provided": [
+      "duration"
+    ],
+    "ignored": []
+  },
+  "OP06-V": {
+    "family": "OP06",
+    "split": "train",
+    "category": "partial",
+    "order": "V",
+    "provided": [
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP07-ED": {
+    "family": "OP07",
+    "split": "train",
+    "category": "partial",
+    "order": "ED",
+    "provided": [
+      "title",
+      "date"
+    ],
+    "ignored": []
+  },
+  "OP07-DE": {
+    "family": "OP07",
+    "split": "train",
+    "category": "partial",
+    "order": "DE",
+    "provided": [
+      "title",
+      "date"
+    ],
+    "ignored": []
+  },
+  "OP08-EI": {
+    "family": "OP08",
+    "split": "train",
+    "category": "partial",
+    "order": "EI",
+    "provided": [
+      "title",
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OP08-IE": {
+    "family": "OP08",
+    "split": "train",
+    "category": "partial",
+    "order": "IE",
+    "provided": [
+      "title",
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OP09-EL": {
+    "family": "OP09",
+    "split": "train",
+    "category": "partial",
+    "order": "EL",
+    "provided": [
+      "title",
+      "duration"
+    ],
+    "ignored": []
+  },
+  "OP09-LE": {
+    "family": "OP09",
+    "split": "train",
+    "category": "partial",
+    "order": "LE",
+    "provided": [
+      "title",
+      "duration"
+    ],
+    "ignored": []
+  },
+  "OP10-DT": {
+    "family": "OP10",
+    "split": "train",
+    "category": "partial",
+    "order": "DT",
+    "provided": [
+      "date",
+      "time"
+    ],
+    "ignored": []
+  },
+  "OP10-TD": {
+    "family": "OP10",
+    "split": "train",
+    "category": "partial",
+    "order": "TD",
+    "provided": [
+      "date",
+      "time"
+    ],
+    "ignored": []
+  },
+  "OP11-DI": {
+    "family": "OP11",
+    "split": "train",
+    "category": "partial",
+    "order": "DI",
+    "provided": [
+      "date",
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OP11-ID": {
+    "family": "OP11",
+    "split": "train",
+    "category": "partial",
+    "order": "ID",
+    "provided": [
+      "date",
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OP12-TLV": {
+    "family": "OP12",
+    "split": "train",
+    "category": "partial",
+    "order": "TLV",
+    "provided": [
+      "time",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP12-VLT": {
+    "family": "OP12",
+    "split": "train",
+    "category": "partial",
+    "order": "VLT",
+    "provided": [
+      "time",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP13-DIEV": {
+    "family": "OP13",
+    "split": "train",
+    "category": "partial",
+    "order": "DIEV",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP13-VEID": {
+    "family": "OP13",
+    "split": "train",
+    "category": "partial",
+    "order": "VEID",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP14-IV": {
+    "family": "OP14",
+    "split": "train",
+    "category": "partial",
+    "order": "IV",
+    "provided": [
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP14-VI": {
+    "family": "OP14",
+    "split": "train",
+    "category": "partial",
+    "order": "VI",
+    "provided": [
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP15-VTDLE": {
+    "family": "OP15",
+    "split": "train",
+    "category": "partial",
+    "order": "VTDLE",
+    "provided": [
+      "title",
+      "date",
+      "time",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP15-LDVET": {
+    "family": "OP15",
+    "split": "train",
+    "category": "partial",
+    "order": "LDVET",
+    "provided": [
+      "title",
+      "date",
+      "time",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP16-VLDEI": {
+    "family": "OP16",
+    "split": "train",
+    "category": "partial",
+    "order": "VLDEI",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OP16-SDEVFL": {
+    "family": "OP16",
+    "split": "train",
+    "category": "partial",
+    "order": "SDEVFL",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "duration",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OPV01-T": {
+    "family": "OPV01",
+    "split": "validation",
+    "category": "partial",
+    "order": "T",
+    "provided": [
+      "time"
+    ],
+    "ignored": []
+  },
+  "OPV02-DL": {
+    "family": "OPV02",
+    "split": "validation",
+    "category": "partial",
+    "order": "DL",
+    "provided": [
+      "date",
+      "duration"
+    ],
+    "ignored": []
+  },
+  "OPV02-LD": {
+    "family": "OPV02",
+    "split": "validation",
+    "category": "partial",
+    "order": "LD",
+    "provided": [
+      "date",
+      "duration"
+    ],
+    "ignored": []
+  },
+  "OPH01-I": {
+    "family": "OPH01",
+    "split": "order_holdout",
+    "category": "partial",
+    "order": "I",
+    "provided": [
+      "interval"
+    ],
+    "ignored": []
+  },
+  "OPH02-EV": {
+    "family": "OPH02",
+    "split": "order_holdout",
+    "category": "partial",
+    "order": "EV",
+    "provided": [
+      "title",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OPH02-VE": {
+    "family": "OPH02",
+    "split": "order_holdout",
+    "category": "partial",
+    "order": "VE",
+    "provided": [
+      "title",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OPH03-DVSEF": {
+    "family": "OPH03",
+    "split": "order_holdout",
+    "category": "partial",
+    "order": "DVSEF",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OPH03-EVID": {
+    "family": "OPH03",
+    "split": "order_holdout",
+    "category": "partial",
+    "order": "EVID",
+    "provided": [
+      "title",
+      "date",
+      "interval",
+      "value"
+    ],
+    "ignored": []
+  },
+  "OU01-UC": {
+    "family": "OU01",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU01-CU": {
+    "family": "OU01",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU02-UC": {
+    "family": "OU02",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU02-CU": {
+    "family": "OU02",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU03-UC": {
+    "family": "OU03",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU03-CU": {
+    "family": "OU03",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU04-UC": {
+    "family": "OU04",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU04-CU": {
+    "family": "OU04",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU05-UC": {
+    "family": "OU05",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU05-CU": {
+    "family": "OU05",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU06-UC": {
+    "family": "OU06",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU06-CU": {
+    "family": "OU06",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU07-UC": {
+    "family": "OU07",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU07-CU": {
+    "family": "OU07",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU08-UC": {
+    "family": "OU08",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU08-CU": {
+    "family": "OU08",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU09-UC": {
+    "family": "OU09",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU09-CU": {
+    "family": "OU09",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OU10-UC": {
+    "family": "OU10",
+    "split": "train",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OU10-CU": {
+    "family": "OU10",
+    "split": "train",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OUV01-UC": {
+    "family": "OUV01",
+    "split": "validation",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OUV01-CU": {
+    "family": "OUV01",
+    "split": "validation",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OUV02-UC": {
+    "family": "OUV02",
+    "split": "validation",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OUV02-CU": {
+    "family": "OUV02",
+    "split": "validation",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OUH01-UC": {
+    "family": "OUH01",
+    "split": "order_holdout",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OUH01-CU": {
+    "family": "OUH01",
+    "split": "order_holdout",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OUH02-UC": {
+    "family": "OUH02",
+    "split": "order_holdout",
+    "category": "update_order",
+    "order": "UC",
+    "provided": null,
+    "ignored": []
+  },
+  "OUH02-CU": {
+    "family": "OUH02",
+    "split": "order_holdout",
+    "category": "update_order",
+    "order": "CU",
+    "provided": null,
+    "ignored": []
+  },
+  "OM01-EI": {
+    "family": "OM01",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Магазин"
+    ]
+  },
+  "OM01-IE": {
+    "family": "OM01",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Магазин"
+    ]
+  },
+  "OM02-EI": {
+    "family": "OM02",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Баня"
+    ]
+  },
+  "OM02-IE": {
+    "family": "OM02",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Баня"
+    ]
+  },
+  "OM03-EI": {
+    "family": "OM03",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Тренировка"
+    ]
+  },
+  "OM03-IE": {
+    "family": "OM03",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Тренировка"
+    ]
+  },
+  "OM04-EI": {
+    "family": "OM04",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Плавание"
+    ]
+  },
+  "OM04-IE": {
+    "family": "OM04",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Плавание"
+    ]
+  },
+  "OM05-EI": {
+    "family": "OM05",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Ужин"
+    ]
+  },
+  "OM05-IE": {
+    "family": "OM05",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Ужин"
+    ]
+  },
+  "OM06-EI": {
+    "family": "OM06",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Чтение"
+    ]
+  },
+  "OM06-IE": {
+    "family": "OM06",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Чтение"
+    ]
+  },
+  "OM07-EI": {
+    "family": "OM07",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Обед",
+      "Кино"
+    ]
+  },
+  "OM07-IE": {
+    "family": "OM07",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Обед",
+      "Кино"
+    ]
+  },
+  "OM08-EI": {
+    "family": "OM08",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Репетиция"
+    ]
+  },
+  "OM08-IE": {
+    "family": "OM08",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Репетиция"
+    ]
+  },
+  "OM09-EI": {
+    "family": "OM09",
+    "split": "train",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Ремонт двери"
+    ]
+  },
+  "OM09-IE": {
+    "family": "OM09",
+    "split": "train",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Ремонт двери"
+    ]
+  },
+  "OM10-EL": {
+    "family": "OM10",
+    "split": "train",
+    "category": "first_event",
+    "order": "EL",
+    "provided": null,
+    "ignored": [
+      "Сборка шкафа"
+    ]
+  },
+  "OM10-LE": {
+    "family": "OM10",
+    "split": "train",
+    "category": "first_event",
+    "order": "LE",
+    "provided": null,
+    "ignored": [
+      "Сборка шкафа"
+    ]
+  },
+  "OC01-EI": {
+    "family": "OC01",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OC01-IE": {
+    "family": "OC01",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  },
+  "OC02-EI": {
+    "family": "OC02",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OC02-IE": {
+    "family": "OC02",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  },
+  "OC03-EI": {
+    "family": "OC03",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OC03-IE": {
+    "family": "OC03",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  },
+  "OC04-EI": {
+    "family": "OC04",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OC04-IE": {
+    "family": "OC04",
+    "split": "train",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  },
+  "OMV01-EI": {
+    "family": "OMV01",
+    "split": "validation",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Осмотр витрины"
+    ]
+  },
+  "OMV01-IE": {
+    "family": "OMV01",
+    "split": "validation",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Осмотр витрины"
+    ]
+  },
+  "OCV01-EI": {
+    "family": "OCV01",
+    "split": "validation",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OCV01-IE": {
+    "family": "OCV01",
+    "split": "validation",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  },
+  "OMH01-EI": {
+    "family": "OMH01",
+    "split": "order_holdout",
+    "category": "first_event",
+    "order": "EI",
+    "provided": null,
+    "ignored": [
+      "Проверка инструмента"
+    ]
+  },
+  "OMH01-IE": {
+    "family": "OMH01",
+    "split": "order_holdout",
+    "category": "first_event",
+    "order": "IE",
+    "provided": null,
+    "ignored": [
+      "Проверка инструмента"
+    ]
+  },
+  "OCH01-EI": {
+    "family": "OCH01",
+    "split": "order_holdout",
+    "category": "single_event_control",
+    "order": "EI",
+    "provided": null,
+    "ignored": []
+  },
+  "OCH01-IE": {
+    "family": "OCH01",
+    "split": "order_holdout",
+    "category": "single_event_control",
+    "order": "IE",
+    "provided": null,
+    "ignored": []
+  }
+}
