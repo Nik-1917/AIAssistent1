@@ -155,6 +155,20 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `normalizes use last only for calendar update targets`() {
+        for (target in listOf("{\"use_last\":true}", "{\"use_last_created\":true,\"use_last\":true}")) {
+            val response = parser.parseResult(
+                """{"intent":"calendar_update","reply":"Готово","params":{"target":$target,"changes":{"value":12500}}}""",
+            ).getOrThrow()
+            assertTrue((response.params as CalendarUpdateParams).target.useLastCreated)
+        }
+        for (value in listOf("false", "\"true\"", "1", "null", "[]", "{}")) {
+            assertTrue(parser.parseResult("""{"intent":"calendar_update","reply":"x","params":{"target":{"use_last":$value},"changes":{}}}""").isFailure)
+        }
+        assertTrue(parser.parseResult("""{"intent":"calendar_delete","reply":"x","params":{"target":{"use_last":true}}}""").isFailure)
+    }
+
+    @Test
     fun `parses immediate calendar delete target`() {
         val response = parser.parse(
             """{"intent":"calendar_delete","reply":"Событие удалено","params":{"target":{"query":"стоматолог","range_start":"2026-08-25T00:00","range_end":"2026-08-26T00:00"}}}""",

@@ -51,7 +51,7 @@ class LastEventManualExamplesTest {
     @Test
     fun `invented last command and target aliases remain rejected`() {
         assertTrue(parser.parseResult("""{"intent":"calendar_last","reply":"Последнее событие.","params":{}}""").isFailure)
-        for (key in listOf("use_last_match", "use_last_referenced", "use_last_in_range")) {
+        for (key in listOf("use_last_match", "use_last_referenced")) {
             assertTrue(parser.parseResult("""{"intent":"calendar_update","reply":"Изменение.","params":{"target":{"$key":true},"changes":{"time":"16:30"}}}""").isFailure)
         }
         assertTrue(parser.parseResult("""{"intent":"calendar_update","reply":"Изменение.","params":{"target":{"query":"Репетиция","use_last_created":true},"changes":{"time":"16:30"}}}""").isFailure)

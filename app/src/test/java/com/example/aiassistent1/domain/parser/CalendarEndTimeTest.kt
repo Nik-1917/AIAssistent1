@@ -38,6 +38,20 @@ class CalendarEndTimeTest {
         assertEquals("14:30", params.time)
     }
 
+    @Test fun `date with shorthand endpoints derives duration and normalizes end`() {
+        val params = parse(""""title":"","date":"2026-09-15","starts_at":"14:15","ends_at":"18:19","value":18""").getOrThrow().params as CalendarAddParams
+        assertEquals("Событие", params.title)
+        assertEquals("14:15", params.time)
+        assertEquals("2026-09-15T18:19", params.endsAt)
+        assertEquals(244, params.durationMin)
+    }
+
+    @Test fun `shorthand end before start rolls over to the following day`() {
+        val params = parse(""""date":"2026-09-11","starts_at":"23:40","ends_at":"00:20","value":0""").getOrThrow().params as CalendarAddParams
+        assertEquals("2026-09-12T00:20", params.endsAt)
+        assertEquals(40, params.durationMin)
+    }
+
     @Test fun `incomplete start retains end until time is filled without asking duration`() {
         val params = parse(""""date":"2026-09-11","ends_at":"2026-09-11T15:00"""").getOrThrow().params as CalendarAddParams
         assertNull(params.durationMin)

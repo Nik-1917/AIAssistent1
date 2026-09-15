@@ -34,9 +34,20 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                 require(fullStart == null || time == null || CalendarTime.time(time) == fullStart.toLocalTime()) {
                     "$.params: time не совпадает со временем starts_at"
                 }
-                val end = p.dateTime("ends_at")
                 val localStart = fullStart
                     ?: if (date != null && time != null) CalendarTime.dateTime("${date}T$time") else null
+                val endValue = p.string("ends_at")
+                val fullEnd = endValue?.takeIf { p.isDateTime(it) }
+                val shorthandEnd = endValue?.takeIf { !p.isDateTime(it) }?.also {
+                    require(p.isTime(it)) { "$.params.ends_at: требуется дата-время или время HH:MM" }
+                }
+                val end = fullEnd ?: shorthandEnd?.let { endTime ->
+                    val endDate = localStart?.toLocalDate() ?: date?.let(CalendarTime::date)
+                    require(endDate != null) { "$.params.ends_at: время HH:MM требует дату" }
+                    val candidate = java.time.LocalDateTime.of(endDate, CalendarTime.time(endTime))
+                    val resolved = if (localStart != null && candidate.isBefore(localStart)) candidate.plusDays(1) else candidate
+                    resolved.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
+                }
                 val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
                 CalendarAddParams(p.string("title", allowEmpty = true)?.ifBlank { "Событие" }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
@@ -51,11 +62,18 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
             }
             "calendar_update" -> {
                 val p = Fields(raw, "$.params", setOf("target", "changes"))
-                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created"))
+                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last", "use_last_in_range"))
                 val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "date_value", "clear_value", "notes"))
                 val query = t.string("query")
-                val last = t.flag("use_last_created")
+                // Validate every supplied spelling before combining the flags.
+                val lastCreated = t.flag("use_last_created")
+                val lastAlias = t.flag("use_last")
+                val lastInRangeAlias = t.flag("use_last_in_range")
+                val last = lastCreated || lastAlias || lastInRangeAlias
                 val (start, end) = t.range()
+                require(!lastInRangeAlias || (query == null && start == null && end == null)) {
+                    "$.params.target: use_last_in_range для обновления допустим только без query и периода"
+                }
                 require(!(query != null && last)) { "$.params.target: конфликт способов выбора события" }
                 require(start == null || query != null) { "$.params.target: период требует query" }
                 val value = c.eventValue()
@@ -67,12 +85,15 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                 )
             }
             "calendar_delete" -> {
-                val p = Fields(raw, "$.params", setOf("target"))
-                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last_in_range"))
+                val p = Fields(raw, "$.params", setOf("target", "changes"))
+                if ("changes" in raw) {
+                    require(p.objectValue("changes").isEmpty()) { "$.params.changes: для удаления допустим только пустой объект" }
+                }
+                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last_in_range", "time_min", "time_max"))
                 val query = t.string("query")
                 val last = t.flag("use_last_created")
                 val inRange = t.flag("use_last_in_range")
-                val (start, end) = t.range()
+                val (start, end) = t.deleteRange()
                 require(listOf(query != null, last, inRange).count { it } <= 1) { "$.params.target: конфликт способов выбора события" }
                 require(start == null || query != null || inRange) { "$.params.target: период требует query или use_last_in_range" }
                 require(!inRange || start != null) { "$.params.target: use_last_in_range требует период" }
@@ -142,6 +163,26 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         require((start == null) == (end == null)) { "$path: обе границы периода должны быть указаны вместе" }
         require(start == null || start < end!!) { "$path: начало периода должно предшествовать концу" }
         return start to end
+    }
+    /** Optional whole-hour bounds narrow a single full day for delete targets only. */
+    fun deleteRange(): Pair<String?, String?> {
+        val original = range()
+        if ("time_min" !in values && "time_max" !in values) return original
+        val minHour = integer("time_min")
+        val maxHour = integer("time_max")
+        require(minHour != null && maxHour != null) { "$path: time_min и time_max должны быть указаны вместе" }
+        require(minHour in 0L..23L && maxHour in 1L..24L && minHour < maxHour) {
+            "$path: требуются целые часы 0 <= time_min < time_max <= 24"
+        }
+        val (start, end) = original
+        require(start != null && end != null) { "$path: time_min/time_max требуют обе границы дня" }
+        val dayStart = CalendarTime.dateTime(start)
+        val dayEnd = CalendarTime.dateTime(end)
+        require(dayStart.toLocalTime() == java.time.LocalTime.MIDNIGHT && dayEnd == dayStart.plusDays(1)) {
+            "$path: time_min/time_max допустимы только для одного полного дня от 00:00 до 00:00"
+        }
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+        return dayStart.plusHours(minHour).format(formatter) to dayStart.plusHours(maxHour).format(formatter)
     }
     /** A lone start is an exact-moment search, represented as a one-minute interval. */
     fun searchRange(): Pair<String?, String?> {
