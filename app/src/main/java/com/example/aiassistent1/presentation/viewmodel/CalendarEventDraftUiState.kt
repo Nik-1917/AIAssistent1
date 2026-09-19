@@ -1,8 +1,12 @@
 package com.example.aiassistent1.presentation.viewmodel
 
+import com.example.aiassistent1.calendar.core.domain.CalendarTime
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 enum class CalendarEventField(val label: String) {
     Title("Название события"),
@@ -33,6 +37,23 @@ data class CalendarEventDraftUiState(
     val isComplete: Boolean
         get() = !title.isNullOrBlank() && !date.isNullOrBlank() && !time.isNullOrBlank() &&
             durationMinutes != null && value != null
+
+    // Display-only: keep the model's explicit endpoint separate from a derived end.
+    // Use elapsed minutes, matching CalendarCommandExecutor when saving the event.
+    internal fun endDisplayText(zoneId: ZoneId = ZoneId.systemDefault()): String? = runCatching {
+        val end = endsAt?.let(CalendarTime::dateTime) ?: run {
+            val start = startsAt?.let(CalendarTime::dateTime) ?: return@runCatching null
+            val duration = durationMinutes?.takeIf { it > 0 } ?: return@runCatching null
+            val endMillis = Math.addExact(
+                CalendarTime.toEpochMillis(start, zoneId),
+                Math.multiplyExact(duration.toLong(), 60_000L),
+            )
+            Instant.ofEpochMilli(endMillis).atZone(zoneId).toLocalDateTime()
+        }
+        val endTime = end.format(DateTimeFormatter.ofPattern("HH:mm"))
+        if (end.toLocalDate().toString() == date) endTime
+        else "$endTime (${end.format(DateTimeFormatter.ofPattern("dd.MM.uuuu"))})"
+    }.getOrNull()
 }
 
 val CalendarEventField.modelName: String
