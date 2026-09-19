@@ -1336,7 +1336,9 @@ private fun CalendarDeleteTargetSelectionDialog(
                     Text("Период: ${formatCalendarDialogDateTime(range.start)} — ${formatCalendarDialogDateTime(range.end)}",
                         style = MaterialTheme.typography.bodySmall)
                 }
-                if (selection.candidates.isEmpty()) Text("События не найдены.")
+                if (selection.candidates.isEmpty()) {
+                    Text(if (selection.deletedCount > 0) "Все события из списка удалены." else "События не найдены.")
+                }
                 selection.candidates.forEach { event ->
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -1346,8 +1348,9 @@ private fun CalendarDeleteTargetSelectionDialog(
                             CalendarNotesText(event.notes)
                             TextButton(
                                 onClick = { onDelete(event.id) },
+                                enabled = selection.deletingEventId == null,
                                 modifier = Modifier.align(Alignment.End),
-                            ) { Text("Удалить") }
+                            ) { Text(if (selection.deletingEventId == event.id) "Удаление…" else "Удалить") }
                         }
                     }
                 }

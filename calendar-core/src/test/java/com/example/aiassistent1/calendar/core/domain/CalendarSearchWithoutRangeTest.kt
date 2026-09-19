@@ -27,20 +27,44 @@ class CalendarSearchWithoutRangeTest {
         assertEquals(200L, repository.end)
     }
 
-    @Test fun `missing query still requires clarification`() = runTest {
+    @Test fun `period without a title returns the list and uses no title filter`() = runTest {
+        val events = listOf(
+            CalendarEvent("one", "Работа", 100, 150, 0, 0),
+            CalendarEvent("two", "Встреча", 150, 200, 0, 0),
+        )
+        for (query in listOf(null, "")) {
+            val repository = RecordingSearchRepository(events)
+            val result = CalendarCommandExecutor(repository).execute(
+                CalendarCommand.Search(query, CalendarRange(100, 200)), "search",
+            ).getOrThrow() as CalendarCommandResult.Found
+            assertEquals(events, result.events)
+            assertEquals("", repository.query)
+            assertEquals(100L, repository.start)
+            assertEquals(200L, repository.end)
+        }
+    }
+
+    @Test fun `empty period returns an empty list instead of requesting a title`() = runTest {
+        val result = CalendarCommandExecutor(RecordingSearchRepository()).execute(
+            CalendarCommand.Search(null, CalendarRange(100, 200)), "search",
+        ).getOrThrow() as CalendarCommandResult.Found
+        assertTrue(result.events.isEmpty())
+    }
+
+    @Test fun `missing query and period still require clarification`() = runTest {
         val result = CalendarCommandExecutor(RecordingSearchRepository()).execute(
             CalendarCommand.Search(null, null), "search",
         ).getOrThrow() as CalendarCommandResult.NeedsFields
         assertEquals(listOf(MissingCalendarField.QUERY), result.fields)
     }
 
-    private class RecordingSearchRepository : CalendarEventRepository {
+    private class RecordingSearchRepository(private val events: List<CalendarEvent> = emptyList()) : CalendarEventRepository {
         var query: String? = null
         var start: Long? = null
         var end: Long? = null
         override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<List<CalendarEvent>> {
             this.query = query; start = rangeStartEpochMillis; end = rangeEndEpochMillis
-            return Result.success(emptyList())
+            return Result.success(events)
         }
         override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> = error("Not used")
         override suspend fun getById(id: String): Result<CalendarEvent?> = error("Not used")

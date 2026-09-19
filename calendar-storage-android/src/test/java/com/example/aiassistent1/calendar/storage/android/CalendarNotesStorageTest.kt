@@ -36,6 +36,25 @@ class CalendarNotesStorageTest {
         .build().also { databases.add(it) }
     private fun repository(database: CalendarDatabase) = RoomCalendarEventRepository(database.calendarEventDao())
 
+    @Test fun searchPeriodWithoutTitleReturnsAllMatchesWithoutChangingEvents() = runTest {
+        val repo = repository(open(newName()))
+        val before = repo.create(CalendarEventDraft("До периода", 60_000, 120_000)).getOrThrow()
+        val overlap = repo.create(CalendarEventDraft("Работа", 60_000, 180_000)).getOrThrow()
+        val inside = repo.create(CalendarEventDraft("Встреча", 180_000, 240_000)).getOrThrow()
+        val after = repo.create(CalendarEventDraft("После периода", 240_000, 300_000)).getOrThrow()
+        val executor = CalendarCommandExecutor(repo)
+        val range = CalendarRange(120_000, 240_000)
+        val results = executor.execute(CalendarCommand.Search(null, range), "range-search")
+            .getOrThrow() as CalendarCommandResult.Found
+        assertEquals(listOf(overlap, inside), results.events)
+        val named = executor.execute(CalendarCommand.Search("Работа", range), "named-search")
+            .getOrThrow() as CalendarCommandResult.Found
+        assertEquals(listOf(overlap), named.events)
+        for (event in listOf(before, overlap, inside, after)) {
+            assertEquals(event, repo.getById(event.id).getOrThrow())
+        }
+    }
+
     @Test fun explicitEndPersists() = runTest {
         val name = newName()
         val database = open(name)

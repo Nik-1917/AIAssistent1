@@ -84,10 +84,23 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                     CalendarUpdateChangesParams(c.string("title"), c.date("date"), c.time("time"), c.duration(), value, clear, c.notes()),
                 )
             }
+            "calendar_delete_range" -> {
+                val p = Fields(raw, "$.params", setOf("start", "end"))
+                val start = requireNotNull(p.deleteRangeBoundary("start")) { "$.params.start: укажите начало периода" }
+                val end = requireNotNull(p.deleteRangeBoundary("end")) { "$.params.end: укажите конец периода" }
+                require(start < end) { "$.params: начало периода должно предшествовать концу" }
+                CalendarDeleteParams(CalendarDeleteTargetParams(rangeStart = start, rangeEnd = end))
+            }
             "calendar_delete" -> {
-                val p = Fields(raw, "$.params", setOf("target", "changes"))
+                val p = Fields(raw, "$.params", setOf("target", "changes", "range_start", "range_end"))
                 if ("changes" in raw) {
                     require(p.objectValue("changes").isEmpty()) { "$.params.changes: для удаления допустим только пустой объект" }
+                }
+                if ("range_start" in raw || "range_end" in raw) {
+                    require("target" !in raw) { "$.params: нельзя смешивать target и диапазон в params" }
+                    val (start, end) = p.range()
+                    return@runCatching AssistantResponse(intent, reply,
+                        CalendarDeleteParams(CalendarDeleteTargetParams(rangeStart = start, rangeEnd = end)))
                 }
                 val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last_in_range", "time_min", "time_max"))
                 val query = t.string("query")
@@ -155,6 +168,10 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
     fun date(key: String) = temporal(key, CalendarTime::date)
     fun time(key: String) = temporal(key, CalendarTime::time)
     fun dateTime(key: String) = temporal(key, CalendarTime::dateTime)
+    /** Only calendar_delete_range accepts a date as midnight; end remains exclusive. */
+    fun deleteRangeBoundary(key: String): String? = temporal(key) {
+        if (it.length == 10) CalendarTime.date(it) else CalendarTime.dateTime(it)
+    }?.let { if (it.length == 10) "${it}T00:00" else it }
     fun isDateTime(value: String): Boolean = runCatching { CalendarTime.dateTime(value) }.isSuccess
     fun isTime(value: String): Boolean = runCatching { CalendarTime.time(value) }.isSuccess
     fun range(): Pair<String?, String?> {

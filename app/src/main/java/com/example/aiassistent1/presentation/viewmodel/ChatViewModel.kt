@@ -885,6 +885,12 @@ class ChatViewModel(
     fun selectCalendarDeleteTarget(eventId: String) {
         val selection = uiState.value.calendarDeleteTargetSelection ?: return
         val event = selection.candidates.firstOrNull { it.id == eventId } ?: return
+        if (selection.allowsMultipleDeletes) {
+            val pending = selection.beginDelete(eventId) ?: return
+            mutableUiState.update { it.copy(calendarDeleteTargetSelection = pending) }
+            viewModelScope.launch { deleteCalendarPeriodSelection(pending, event) }
+            return
+        }
         // Clear before launching so repeated taps cannot submit another selection.
         cancelCalendarDeleteTargetSelection()
         viewModelScope.launch {
@@ -894,6 +900,36 @@ class ChatViewModel(
 
     fun cancelCalendarDeleteTargetSelection() {
         mutableUiState.update { it.copy(calendarDeleteTargetSelection = null) }
+    }
+
+    private suspend fun deleteCalendarPeriodSelection(selection: CalendarDeleteTargetSelectionUiState,
+        event: CalendarEvent) {
+        var succeeded = false
+        try {
+            val outcome = calendarCommandExecutor.execute(
+                selection.command,
+                requestId = selection.deletionRequestId(event.id),
+                confirmed = true,
+                selectedEvent = event,
+            ).getOrThrow()
+            check(outcome is CalendarCommandResult.Completed && outcome.receipt.eventId == event.id) {
+                "Не удалось удалить выбранное событие."
+            }
+            succeeded = true
+            replaceAssistantReply(selection.requestId,
+                "Событие удалено: ${outcome.receipt.title}.".withCalendarNotes(outcome.receipt.notes))
+            mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            mutableUiState.update { it.copy(error = error.userMessage()) }
+        } finally {
+            mutableUiState.update { state ->
+                val current = state.calendarDeleteTargetSelection
+                // Do not reopen a dismissed card or replace the selection of another request.
+                if (current == null || current.requestId != selection.requestId) state
+                else state.copy(calendarDeleteTargetSelection = current.finishDelete(event.id, succeeded))
+            }
+        }
     }
 
     private suspend fun executeCalendarDelete(command: CalendarCommand.Delete, messageId: String,
