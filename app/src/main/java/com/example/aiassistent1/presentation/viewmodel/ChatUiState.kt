@@ -29,6 +29,7 @@ data class ChatUiState(
     val calendarEventDraft: CalendarEventDraftUiState? = null,
     val calendarUpdateDraft: CalendarUpdateDraftUiState? = null,
     val calendarUpdateTargetSelection: CalendarUpdateTargetSelectionUiState? = null,
+    val calendarDeleteTargetSelection: CalendarDeleteTargetSelectionUiState? = null,
     val calendarChatPrompt: CalendarChatPromptUiState? = null,
     val isProcessing: Boolean = false,
     val isVoiceMode: Boolean = false,

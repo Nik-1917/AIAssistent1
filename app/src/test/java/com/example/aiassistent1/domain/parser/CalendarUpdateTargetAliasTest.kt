@@ -70,7 +70,7 @@ class CalendarUpdateTargetAliasTest {
         assertTrue(params.target.useLastInRange)
         assertFalse(params.target.useLastCreated)
         val command = CalendarCommandMapper().map(params).getOrThrow() as CalendarCommand.Delete
-        assertEquals(CalendarTargetMode.LAST_IN_RANGE, command.target!!.mode)
+        assertTrue(command.target.useLastInRange)
         for (intent in listOf("calendar_add", "calendar_search", "calendar_sum", "chat")) {
             assertTrue(parser.parseResult(
                 """{"intent":"$intent","reply":"x","params":{"use_last_in_range":true}}""",

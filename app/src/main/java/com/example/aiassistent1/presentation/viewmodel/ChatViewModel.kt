@@ -18,6 +18,8 @@ import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTarget
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandExecutor
+import com.example.aiassistent1.calendar.core.domain.CalendarCommand
+import com.example.aiassistent1.calendar.core.domain.CalendarCommandResult
 import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
@@ -716,6 +718,7 @@ class ChatViewModel(
     }
 
     fun clearChat() {
+        cancelCalendarDeleteTargetSelection()
         val activeGeneration = generationJob
         val state = mutableUiState.value
         val voiceDraft = state.voiceDraft
@@ -868,26 +871,57 @@ class ChatViewModel(
     }
 
     private fun handleCalendarDelete(params: CalendarDeleteParams, messageId: String) {
+        cancelCalendarDeleteTargetSelection()
         viewModelScope.launch {
             val command = calendarCommandMapper.map(params).getOrElse { error ->
                 replaceAssistantReply(messageId, "Уточните, какое событие удалить.")
                 mutableUiState.update { it.copy(error = error.userMessage()) }
                 return@launch
             }
-            calendarCommandExecutor.execute(command, requestId = messageId)
+            executeCalendarDelete(command as CalendarCommand.Delete, messageId)
+        }
+    }
+
+    fun selectCalendarDeleteTarget(eventId: String) {
+        val selection = uiState.value.calendarDeleteTargetSelection ?: return
+        val event = selection.candidates.firstOrNull { it.id == eventId } ?: return
+        // Clear before launching so repeated taps cannot submit another selection.
+        cancelCalendarDeleteTargetSelection()
+        viewModelScope.launch {
+            executeCalendarDelete(selection.command, selection.requestId, event)
+        }
+    }
+
+    fun cancelCalendarDeleteTargetSelection() {
+        mutableUiState.update { it.copy(calendarDeleteTargetSelection = null) }
+    }
+
+    private suspend fun executeCalendarDelete(command: CalendarCommand.Delete, messageId: String,
+        selectedEvent: CalendarEvent? = null) {
+            calendarCommandExecutor.execute(command, requestId = messageId,
+                confirmed = selectedEvent != null, selectedEvent = selectedEvent)
                 .onSuccess { outcome ->
                     when (outcome) {
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Completed -> {
+                        is CalendarCommandResult.Completed -> {
                             replaceAssistantReply(messageId, "Событие удалено: ${outcome.receipt.title}.".withCalendarNotes(outcome.receipt.notes))
                             mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
                         }
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Selection -> {
-                            replaceAssistantReply(messageId, "Найдено несколько событий для удаления. Уточните название или период.")
+                        is CalendarCommandResult.Selection -> {
+                            replaceAssistantReply(messageId, if (outcome.candidates.isEmpty())
+                                "События для удаления за выбранный период не найдены."
+                            else "Выберите событие для удаления в карточке.")
+                            mutableUiState.update { state ->
+                                state.copy(calendarDeleteTargetSelection = CalendarDeleteTargetSelectionUiState(
+                                    candidates = outcome.candidates,
+                                    command = outcome.command as CalendarCommand.Delete,
+                                    requestId = messageId,
+                                ))
+                            }
                         }
-                        com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NotFound -> {
+                        CalendarCommandResult.NotFound -> {
                             replaceAssistantReply(messageId, "Событие для удаления не найдено.")
                         }
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields -> {
+                        is CalendarCommandResult.NeedsFields -> {
                             replaceAssistantReply(messageId, "Уточните, какое событие удалить.")
                         }
                         else -> replaceAssistantReply(messageId, "Не удалось удалить событие.")
@@ -897,7 +931,6 @@ class ChatViewModel(
                     replaceAssistantReply(messageId, "Не удалось удалить событие.")
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                 }
-        }
     }
 
     private fun handleCalendarUpdate(params: CalendarUpdateParams, requestId: String) {
@@ -1635,6 +1668,8 @@ class ChatViewModel(
                             navigationState = session.navigation,
                             systemPromptEnabled = session.navigation.isCalendarMode,
                             activeChatId = session.navigation.chatId,
+                            calendarDeleteTargetSelection = state.calendarDeleteTargetSelection
+                                .takeIf { state.activeChatId == session.navigation.chatId },
                             messages = session.messages + pendingMessages,
                             isHistoryLoaded = true,
                             chatScrollPosition = session.scrollPosition,

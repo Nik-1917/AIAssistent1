@@ -1,7 +1,7 @@
 package com.example.aiassistent1.domain.parser
 
 import com.example.aiassistent1.calendar.core.domain.CalendarCommand
-import com.example.aiassistent1.calendar.core.domain.CalendarTargetMode
+import com.example.aiassistent1.calendar.core.domain.CalendarDeleteTarget
 import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
 import com.example.aiassistent1.domain.model.CalendarDeleteParams
 import org.junit.Assert.*
@@ -33,9 +33,9 @@ class CalendarDeleteHourRangeTest {
         assertNull(named.target.rangeEnd)
         val last = params(""""use_last_created":true""")
         assertTrue(last.target.useLastCreated)
-        assertEquals(CalendarTargetMode.LAST_CREATED,
-            (mapper.map(last).getOrThrow() as CalendarCommand.Delete).target!!.mode)
-        assertNull(mapper.map(params("")).getOrThrow().let { (it as CalendarCommand.Delete).target })
+        assertTrue((mapper.map(last).getOrThrow() as CalendarCommand.Delete).target.useLastCreated)
+        assertEquals(CalendarDeleteTarget(),
+            mapper.map(params("")).getOrThrow().let { (it as CalendarCommand.Delete).target })
         for ((start, end) in listOf(
             "2026-09-16T00:00" to "2026-09-17T00:00",
             "2026-09-16T11:15" to "2026-09-16T12:45",
@@ -72,8 +72,7 @@ class CalendarDeleteHourRangeTest {
         assertTrue(parsed.target.useLastInRange)
         assertEquals("2026-09-16T11:00", parsed.target.rangeStart)
         assertEquals("2026-09-16T12:00", parsed.target.rangeEnd)
-        assertEquals(CalendarTargetMode.LAST_IN_RANGE,
-            (mapper.map(parsed).getOrThrow() as CalendarCommand.Delete).target!!.mode)
+        assertTrue((mapper.map(parsed).getOrThrow() as CalendarCommand.Delete).target.useLastInRange)
     }
 
     @Test fun `partial invalid and conflicting hour bounds never fall back to a full day`() {
@@ -105,7 +104,7 @@ class CalendarDeleteHourRangeTest {
 
     @Test fun `existing selector checks and other intent schemas remain strict`() {
         for (selector in listOf(
-            "", """"use_last_created":true,""",
+            """"use_last_created":true,""",
             """"query":"Прогулка","use_last_in_range":true,""",
         )) {
             assertTrue(selector, parse("""$selector$day,"time_min":11,"time_max":12""").isFailure)
@@ -121,5 +120,13 @@ class CalendarDeleteHourRangeTest {
         assertTrue(parser.parseResult(
             """{"intent":"calendar_delete","reply":"x","params":{"target":{"query":"Прогулка",$day},"changes":{"value":5}}}""",
         ).isFailure)
+    }
+
+    @Test fun `period without a query supports selection and optional hour narrowing`() {
+        for (hours in listOf("", ""","time_min":11,"time_max":12""")) {
+            val parsed = params("$day$hours")
+            assertNull(parsed.target.query)
+            assertTrue(mapper.map(parsed).isSuccess)
+        }
     }
 }

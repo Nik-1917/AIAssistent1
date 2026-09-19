@@ -57,7 +57,7 @@ data class CalendarUpdateChangesParams(
     val notes: String? = null,
 )
 
-/** JSON transport model for an immediate local-calendar deletion. */
+/** JSON transport model for exact deletion or selection from a period. */
 data class CalendarDeleteParams(
     val target: CalendarDeleteTargetParams = CalendarDeleteTargetParams(),
 ) : AssistantParams

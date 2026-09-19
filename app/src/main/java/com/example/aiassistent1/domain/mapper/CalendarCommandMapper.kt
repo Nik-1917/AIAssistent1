@@ -38,7 +38,12 @@ class CalendarCommandMapper(private val zoneId: ZoneId = ZoneId.systemDefault())
                         }, notes = c.notes))
             }
             is CalendarDeleteParams -> params.target.let { t ->
-                CalendarCommand.Delete(target(t.query, t.rangeStart, t.rangeEnd, t.useLastCreated, t.useLastInRange))
+                CalendarCommand.Delete(CalendarDeleteTarget(
+                    query = t.query,
+                    range = range(t.rangeStart, t.rangeEnd),
+                    useLastCreated = t.useLastCreated,
+                    useLastInRange = t.useLastInRange,
+                ))
             }
         }
     }

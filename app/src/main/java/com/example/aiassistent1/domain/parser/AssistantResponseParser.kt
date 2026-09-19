@@ -95,7 +95,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                 val inRange = t.flag("use_last_in_range")
                 val (start, end) = t.deleteRange()
                 require(listOf(query != null, last, inRange).count { it } <= 1) { "$.params.target: конфликт способов выбора события" }
-                require(start == null || query != null || inRange) { "$.params.target: период требует query или use_last_in_range" }
+                require(!last || start == null) { "$.params.target: use_last_created не допускает период" }
                 require(!inRange || start != null) { "$.params.target: use_last_in_range требует период" }
                 CalendarDeleteParams(CalendarDeleteTargetParams(query, start, end, last, inRange))
             }

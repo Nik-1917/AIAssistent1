@@ -151,6 +151,7 @@ import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
+import com.example.aiassistent1.presentation.viewmodel.CalendarDeleteTargetSelectionUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateField
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateTargetSelectionUiState
@@ -1121,6 +1122,14 @@ fun ChatScreen(
         )
     }
 
+    uiState.calendarDeleteTargetSelection?.let { selection ->
+        CalendarDeleteTargetSelectionDialog(
+            selection = selection,
+            onDelete = viewModel::selectCalendarDeleteTarget,
+            onDismiss = viewModel::cancelCalendarDeleteTargetSelection,
+        )
+    }
+
     uiState.calendarUpdateTargetSelection?.let { selection ->
         CalendarUpdateTargetSelectionDialog(
             selection = selection,
@@ -1306,6 +1315,46 @@ private fun CalendarEventDraftDialog(
                 Text("Отмена")
             }
         },
+    )
+}
+
+@Composable
+private fun CalendarDeleteTargetSelectionDialog(
+    selection: CalendarDeleteTargetSelectionUiState,
+    onDelete: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Выберите событие для удаления") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                selection.command.target.range?.let { range ->
+                    Text("Период: ${formatCalendarDialogDateTime(range.start)} — ${formatCalendarDialogDateTime(range.end)}",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                if (selection.candidates.isEmpty()) Text("События не найдены.")
+                selection.candidates.forEach { event ->
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
+                            Text(formatCalendarDialogDateTime(event.startsAtEpochMillis),
+                                style = MaterialTheme.typography.bodySmall)
+                            CalendarNotesText(event.notes)
+                            TextButton(
+                                onClick = { onDelete(event.id) },
+                                modifier = Modifier.align(Alignment.End),
+                            ) { Text("Удалить") }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
     )
 }
 
