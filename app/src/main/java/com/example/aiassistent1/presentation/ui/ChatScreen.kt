@@ -63,6 +63,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -1101,14 +1103,11 @@ fun ChatScreen(
             autoPlaybackEnabled = uiState.autoPlaybackEnabled,
             speechRate = uiState.speechRate,
             onDismiss = { showSettingsDialog = false },
-            onSave = { updatedParams, smoothResponseEnabled, dialogueModeEnabled, autoPlaybackEnabled, speechRate ->
-                viewModel.updateModelParams(updatedParams)
-                viewModel.setSmoothResponseEnabled(smoothResponseEnabled)
-                viewModel.setDialogueModeEnabled(dialogueModeEnabled)
-                viewModel.setAutoPlaybackEnabled(autoPlaybackEnabled)
-                viewModel.setSpeechRate(speechRate)
-                showSettingsDialog = false
-            }
+            onParamsChange = viewModel::updateModelParams,
+            onSmoothResponseChange = viewModel::setSmoothResponseEnabled,
+            onDialogueModeChange = viewModel::setDialogueModeEnabled,
+            onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
+            onSpeechRateChange = viewModel::setSpeechRate,
         )
     }
 
@@ -2150,7 +2149,11 @@ fun ModelSettingsDialog(
     autoPlaybackEnabled: Boolean,
     speechRate: Float,
     onDismiss: () -> Unit,
-    onSave: (GenerationParams, Boolean, Boolean, Boolean, Float) -> Unit,
+    onParamsChange: (GenerationParams) -> Unit,
+    onSmoothResponseChange: (Boolean) -> Unit,
+    onDialogueModeChange: (Boolean) -> Unit,
+    onAutoPlaybackChange: (Boolean) -> Unit,
+    onSpeechRateChange: (Float) -> Unit,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -2161,6 +2164,18 @@ fun ModelSettingsDialog(
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
+
+    fun saveModelParams() {
+        onParamsChange(
+            params.copy(
+                temperature = temperature,
+                contextSize = contextSize.toInt(),
+                maxTokens = maxTokens.toInt(),
+                topP = topP,
+                repeatPenalty = repeatPenalty,
+            )
+        )
+    }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -2175,165 +2190,178 @@ fun ModelSettingsDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Модель",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                SettingsSection(title = "Модель") {
+                    SettingSlider(
+                        label = "Temperature: ${String.format("%.2f", temperature)}",
+                        value = temperature,
+                        onValueChange = {
+                            temperature = it
+                            saveModelParams()
+                        },
+                        valueRange = 0f..2f
+                    )
 
-                SettingSlider(
-                    label = "Temperature: ${String.format("%.2f", temperature)}",
-                    value = temperature,
-                    onValueChange = { temperature = it },
-                    valueRange = 0f..2f
-                )
+                    SettingSlider(
+                        label = "Context Size: ${contextSize.toInt()}",
+                        value = contextSize,
+                        onValueChange = {
+                            contextSize = it
+                            saveModelParams()
+                        },
+                        valueRange = 512f..8192f,
+                        steps = 15
+                    )
 
-                SettingSlider(
-                    label = "Context Size: ${contextSize.toInt()}",
-                    value = contextSize,
-                    onValueChange = { contextSize = it },
-                    valueRange = 512f..8192f,
-                    steps = 15
-                )
+                    SettingSlider(
+                        label = "Max Tokens: ${maxTokens.toInt()}",
+                        value = maxTokens,
+                        onValueChange = {
+                            maxTokens = it
+                            saveModelParams()
+                        },
+                        valueRange = 64f..2048f,
+                        steps = 30
+                    )
 
-                SettingSlider(
-                    label = "Max Tokens: ${maxTokens.toInt()}",
-                    value = maxTokens,
-                    onValueChange = { maxTokens = it },
-                    valueRange = 64f..2048f,
-                    steps = 30
-                )
+                    SettingSlider(
+                        label = "Top P: ${String.format("%.2f", topP)}",
+                        value = topP,
+                        onValueChange = {
+                            topP = it
+                            saveModelParams()
+                        },
+                        valueRange = 0f..1f
+                    )
 
-                SettingSlider(
-                    label = "Top P: ${String.format("%.2f", topP)}",
-                    value = topP,
-                    onValueChange = { topP = it },
-                    valueRange = 0f..1f
-                )
-
-                SettingSlider(
-                    label = "Repeat Penalty: ${String.format("%.2f", repeatPenalty)}",
-                    value = repeatPenalty,
-                    onValueChange = { repeatPenalty = it },
-                    valueRange = 1f..2f
-                )
-
-                Text("Чат", style = MaterialTheme.typography.titleMedium)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Мягкое появление ответа")
-                        Text(
-                            "Показывать ответ словами с плавной анимацией",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = smoothResponse,
-                        onCheckedChange = { smoothResponse = it },
+                    SettingSlider(
+                        label = "Repeat Penalty: ${String.format("%.2f", repeatPenalty)}",
+                        value = repeatPenalty,
+                        onValueChange = {
+                            repeatPenalty = it
+                            saveModelParams()
+                        },
+                        valueRange = 1f..2f
                     )
                 }
 
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Режим диалога")
-                        Text(
-                            "После озвучивания автоматически включать микрофон для следующей реплики",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = dialogueMode,
-                        onCheckedChange = { dialogueMode = it },
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Автовоспроизведение")
-                        Text(
-                            "Автоматически озвучивать каждый ответ ассистента",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = autoPlayback,
-                        onCheckedChange = { autoPlayback = it },
-                    )
-                }
-
-                SettingSlider(
-                    label = "Скорость речи: ${String.format("%.2f", selectedSpeechRate)}",
-                    value = selectedSpeechRate,
-                    onValueChange = { selectedSpeechRate = SpeechRate.normalize(it) },
-                    valueRange = SpeechRate.MINIMUM..SpeechRate.MAXIMUM,
-                    steps = 9,
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            val default = GenerationParams()
-                            temperature = default.temperature
-                            contextSize = default.contextSize.toFloat()
-                            maxTokens = default.maxTokens.toFloat()
-                            topP = default.topP
-                            repeatPenalty = default.repeatPenalty
+                SettingsSection(title = "Чат") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Мягкое появление ответа")
+                            Text(
+                                "Показывать ответ словами с плавной анимацией",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .background(Color(0xFF2196F3), CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "сброс настроек по умолчанию",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Switch(
+                            checked = smoothResponse,
+                            onCheckedChange = {
+                                smoothResponse = it
+                                onSmoothResponseChange(it)
+                            },
+                        )
+                    }
+                }
+
+                SettingsSection(title = "Голос") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Режим диалога")
+                            Text(
+                                "После озвучивания автоматически включать микрофон для следующей реплики",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = dialogueMode,
+                            onCheckedChange = {
+                                dialogueMode = it
+                                onDialogueModeChange(it)
+                            },
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Автовоспроизведение")
+                            Text(
+                                "Автоматически озвучивать каждый ответ ассистента",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = autoPlayback,
+                            onCheckedChange = {
+                                autoPlayback = it
+                                onAutoPlaybackChange(it)
+                            },
+                        )
+                    }
+
+                    SettingSlider(
+                        label = "Скорость речи: ${String.format("%.2f", selectedSpeechRate)}",
+                        value = selectedSpeechRate,
+                        onValueChange = {
+                            selectedSpeechRate = SpeechRate.normalize(it)
+                            onSpeechRateChange(selectedSpeechRate)
+                        },
+                        valueRange = SpeechRate.MINIMUM..SpeechRate.MAXIMUM,
+                        steps = 9,
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Отмена")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        onSave(
-                            params.copy(
-                                temperature = temperature,
-                                contextSize = contextSize.toInt(),
-                                maxTokens = maxTokens.toInt(),
-                                topP = topP,
-                                repeatPenalty = repeatPenalty,
-                            ),
-                            smoothResponse,
-                            dialogueMode,
-                            autoPlayback,
-                            selectedSpeechRate,
-                        )
-                    }) {
-                        Text("Сохранить")
-                    }
-                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = if (expanded) "Свернуть" else "Развернуть",
+                ) { expanded = !expanded },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "Раздел раскрыт" else "Раздел свёрнут",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier.padding(top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                content()
             }
         }
     }
