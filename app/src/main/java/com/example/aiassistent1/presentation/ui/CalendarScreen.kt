@@ -4,6 +4,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +13,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -64,10 +63,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
@@ -95,6 +96,9 @@ fun CalendarScreen(
     var eventToDelete by remember { mutableStateOf<CalendarEvent?>(null) }
     var isCreatingEvent by remember { mutableStateOf(false) }
     val selectedDayEvents = uiState.events.filter { it.localDate() == uiState.selectedDate }
+    val eventCounts = remember(uiState.events) {
+        uiState.events.groupingBy { it.localDate() }.eachCount()
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { message ->
@@ -179,7 +183,7 @@ fun CalendarScreen(
                     MonthGrid(
                         month = uiState.visibleMonth,
                         selectedDate = uiState.selectedDate,
-                        eventDates = uiState.events.mapTo(mutableSetOf()) { it.localDate() },
+                        eventCounts = eventCounts,
                         onDateSelected = viewModel::selectDate,
                     )
                 }
@@ -285,39 +289,53 @@ private fun MonthNavigation(
 private fun MonthGrid(
     month: YearMonth,
     selectedDate: LocalDate,
-    eventDates: Set<LocalDate>,
+    eventCounts: Map<LocalDate, Int>,
     onDateSelected: (LocalDate) -> Unit,
 ) {
+    val density = LocalDensity.current
+    val dayLineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+    val countLineHeight = MaterialTheme.typography.labelSmall.lineHeight
+    val dayHeight = with(density) { maxOf(36.dp, dayLineHeight.toDp() + 4.dp) }
+    val countHeight = with(density) { maxOf(18.dp, countLineHeight.toDp() + 2.dp) }
+    // Reserve the same space even on days without events.
+    val cellHeight = dayHeight + 2.dp + countHeight + 6.dp
+    val leadingDays = firstDayOffset(month)
+    val weekCount = (leadingDays + month.lengthOfMonth() + 6) / 7
     Card(
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                userScrollEnabled = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(330.dp),
-            ) {
-                items(WEEKDAY_LABELS.size) { index ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                WEEKDAY_LABELS.forEach { label ->
                     Text(
-                        text = WEEKDAY_LABELS[index],
-                        modifier = Modifier.padding(vertical = 6.dp),
+                        text = label,
+                        modifier = Modifier.weight(1f).padding(vertical = 6.dp),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                items(firstDayOffset(month)) {
-                    Spacer(modifier = Modifier.aspectRatio(1f))
+            }
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(7),
+                userScrollEnabled = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(cellHeight * weekCount),
+            ) {
+                items(leadingDays) {
+                    Spacer(modifier = Modifier.height(cellHeight))
                 }
                 items(month.lengthOfMonth()) { index ->
                     val date = month.atDay(index + 1)
                     MonthDayCell(
                         date = date,
                         isSelected = date == selectedDate,
-                        hasEvents = date in eventDates,
+                        eventCount = eventCounts[date] ?: 0,
+                        dayHeight = dayHeight,
+                        countHeight = countHeight,
+                        cellHeight = cellHeight,
                         onClick = { onDateSelected(date) },
                     )
                 }
@@ -330,15 +348,19 @@ private fun MonthGrid(
 private fun MonthDayCell(
     date: LocalDate,
     isSelected: Boolean,
-    hasEvents: Boolean,
+    eventCount: Int,
+    dayHeight: Dp,
+    countHeight: Dp,
+    cellHeight: Dp,
     onClick: () -> Unit,
 ) {
     val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val countColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
     Column(
         modifier = Modifier
-            .aspectRatio(1f)
-            .clip(CircleShape)
+            .height(cellHeight)
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(3.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -346,7 +368,8 @@ private fun MonthDayCell(
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .width(36.dp)
+                .height(dayHeight)
                 .clip(CircleShape)
                 .background(containerColor),
             contentAlignment = Alignment.Center,
@@ -357,13 +380,25 @@ private fun MonthDayCell(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        Spacer(modifier = Modifier.height(2.dp))
         Box(
-            modifier = Modifier
-                .padding(top = 1.dp)
-                .size(if (hasEvents) 5.dp else 0.dp)
-                .clip(CircleShape)
-                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary),
-        )
+            modifier = Modifier.fillMaxWidth().height(countHeight),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (eventCount > 0) {
+                Text(
+                    text = eventCount.toString(),
+                    modifier = Modifier
+                        .border(1.dp, countColor, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                    color = countColor,
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        }
     }
 }
 
