@@ -185,7 +185,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
     var showClearChatDialog by remember { mutableStateOf(false) }
 
@@ -2190,6 +2190,12 @@ fun ModelSettingsDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Text(
+                    text = "Настройки",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
                 SettingsSection(title = "Модель") {
                     SettingSlider(
                         label = "Temperature: ${String.format("%.2f", temperature)}",
