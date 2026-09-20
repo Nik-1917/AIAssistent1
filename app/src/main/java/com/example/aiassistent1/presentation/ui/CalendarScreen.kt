@@ -297,8 +297,8 @@ private fun MonthGrid(
     val countLineHeight = MaterialTheme.typography.labelSmall.lineHeight
     val dayHeight = with(density) { maxOf(36.dp, dayLineHeight.toDp() + 4.dp) }
     val countHeight = with(density) { maxOf(18.dp, countLineHeight.toDp() + 2.dp) }
-    // Reserve the same space even on days without events.
-    val cellHeight = dayHeight + 2.dp + countHeight + 6.dp
+    // Reserve space for day circle and the overlapping badge.
+    val cellHeight = dayHeight + countHeight - 4.dp
     val leadingDays = firstDayOffset(month)
     val weekCount = (leadingDays + month.lengthOfMonth() + 6) / 7
     Card(
@@ -357,14 +357,15 @@ private fun MonthDayCell(
     val containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     val countColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-    Column(
+    val surfaceColor = MaterialTheme.colorScheme.surfaceContainerLow
+    val badgeBgColor = if (isSelected) surfaceColor else MaterialTheme.colorScheme.surface
+    Box(
         modifier = Modifier
             .height(cellHeight)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(3.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.TopCenter,
     ) {
         Box(
             modifier = Modifier
@@ -380,15 +381,17 @@ private fun MonthDayCell(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        Spacer(modifier = Modifier.height(2.dp))
-        Box(
-            modifier = Modifier.fillMaxWidth().height(countHeight),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (eventCount > 0) {
+        if (eventCount > 0) {
+            Box(
+                modifier = Modifier
+                    .padding(top = dayHeight - 8.dp)
+                    .height(countHeight),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
                     text = eventCount.toString(),
                     modifier = Modifier
+                        .background(badgeBgColor, RoundedCornerShape(6.dp))
                         .border(1.dp, countColor, RoundedCornerShape(6.dp))
                         .padding(horizontal = 4.dp, vertical = 1.dp),
                     color = countColor,
