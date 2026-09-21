@@ -102,6 +102,8 @@ class ChatViewModel(
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
+    private var voiceStartJob: Job? = null
+    private var voiceBackgroundSession: GenerationForegroundService.Session? = null
     private var paramsJob: Job? = null
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
@@ -116,6 +118,7 @@ class ChatViewModel(
         observeVoiceInput()
         observeVoiceInputErrors()
         observeSpeechPlayback()
+        observeVoiceBackgroundSession()
         restoreVoiceDraft()
         updateAvailableModels()
     }
@@ -403,20 +406,21 @@ class ChatViewModel(
             )
         }
 
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                chatRepository.saveMessage(userMessage)
-            }
-            startGenerationFlow(state.copy(messages = state.messages + userMessage))
-        }
+        startGenerationFlow(state.copy(messages = state.messages + userMessage), userMessage)
         return true
     }
 
-    private fun startGenerationFlow(requestState: ChatUiState = mutableUiState.value) {
-        GenerationForegroundService.start(context)
+    private fun startGenerationFlow(
+        requestState: ChatUiState = mutableUiState.value,
+        newUserMessage: ChatMessage? = null,
+    ) {
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
+            var backgroundSession: GenerationForegroundService.Session? = null
             try {
+                backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                backgroundSession.awaitReady()
+                if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
                 val currentState = requestState
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 val responseFlowResult = sendMessage(
@@ -554,7 +558,7 @@ class ChatViewModel(
                     }
                 }
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
-                GenerationForegroundService.stop(context)
+                backgroundSession?.close()
             }
         }
     }
@@ -677,20 +681,8 @@ class ChatViewModel(
         clearPersistedVoiceDraft()
     }
 
-    fun stopVoiceCaptureForBackground(isChangingConfigurations: Boolean) {
-        if (isChangingConfigurations) return
-        val state = mutableUiState.value
-        speechPlaybackController?.stop(SpeechStopReason.Background)
-        if (!state.isVoiceMode && !state.voiceDraft.isRecording) return
-
-        stopVoiceInput()
-        mutableUiState.update {
-            it.copy(
-                isVoiceMode = false,
-                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
-            )
-        }
-        persistVoiceDraft(state.voiceDraft.text)
+    fun onAppBackgrounded(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) persistVoiceDraft(mutableUiState.value.voiceDraft.text)
     }
 
     fun setVoiceMode(enabled: Boolean) {
@@ -722,8 +714,7 @@ class ChatViewModel(
         activeGeneration?.cancel()
         // Возвращаем немедленный сброс флага обработки, как было раньше
         mutableUiState.update { it.copy(isProcessing = false) }
-        // Останавливаем сервис переднего плана
-        GenerationForegroundService.stop(context)
+        // The generation coroutine releases its own session in finally.
         if (resumeDialogue) {
             viewModelScope.launch {
                 activeGeneration?.join()
@@ -741,7 +732,6 @@ class ChatViewModel(
         stopVoiceInput()
         speechPlaybackController?.stop(SpeechStopReason.User)
         activeGeneration?.cancel()
-        GenerationForegroundService.stop(context)
         persistVoiceDraft(voiceDraft.text)
 
         viewModelScope.launch {
@@ -1316,13 +1306,14 @@ class ChatViewModel(
         val draft = uiState.value.calendarEventDraft ?: return
         if (draft.activeField == null || draft.isFormatting) return
         stopVoiceInput()
-        val result = runCatching { voiceInput?.start() ?: error("Голосовой ввод недоступен.") }
-        result.onSuccess { sessionId ->
-            activeVoiceInputSessionId = sessionId
-            mutableUiState.update { state ->
-                state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isVoiceInputActive = true, error = null))
-            }
-        }.onFailure { error -> setCalendarDraftError(error.userMessage()) }
+        if (voiceInput == null) {
+            setCalendarDraftError("Голосовой ввод недоступен.")
+            return
+        }
+        mutableUiState.update { state ->
+            state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isVoiceInputActive = true, error = null))
+        }
+        startVoiceInput()
     }
 
     private fun stopCalendarDraftVoiceInput() {
@@ -1397,14 +1388,25 @@ class ChatViewModel(
             state.copy(calendarEventDraft = state.calendarEventDraft?.copy(isFormatting = true, error = null))
         }
         viewModelScope.launch {
-            formatCalendarField(
-                modelName = field.modelName,
-                expectedFormat = field.expectedFormat,
-                rawValue = rawValue
-            ).mapCatching { value ->
-                validateCalendarField(field, value).getOrThrow()
-            }.onSuccess { value -> applyCalendarDraftField(field, value) }
-                .onFailure { error -> setCalendarDraftError(error.userMessage()) }
+            var background: GenerationForegroundService.Session? = null
+            try {
+                background = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                background.awaitReady()
+                formatCalendarField(
+                    modelName = field.modelName,
+                    expectedFormat = field.expectedFormat,
+                    rawValue = rawValue
+                ).mapCatching { value ->
+                    validateCalendarField(field, value).getOrThrow()
+                }.onSuccess { value -> applyCalendarDraftField(field, value) }
+                    .onFailure { error -> setCalendarDraftError(error.userMessage()) }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                setCalendarDraftError(error.userMessage())
+            } finally {
+                background?.close()
+            }
         }
     }
 
@@ -1454,6 +1456,8 @@ class ChatViewModel(
         stopGeneration(resumeDialogue = false)
         stopVoiceInput()
         (voiceInput as? AutoCloseable)?.close()
+        voiceBackgroundSession?.close()
+        voiceBackgroundSession = null
         speechPlaybackController?.close()
         llmEngine.close()
     }
@@ -1537,22 +1541,45 @@ class ChatViewModel(
         }
     }
 
-    private fun startVoiceInput(continuous: Boolean = false) {
-        val session = runCatching {
-            if (continuous) voiceInput?.startContinuous()
-            else voiceInput?.start()
+    private fun observeVoiceBackgroundSession() {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                if (!state.isVoiceMode && !state.voiceDraft.isRecording &&
+                    state.calendarEventDraft?.isVoiceInputActive != true
+                ) {
+                    voiceBackgroundSession?.close()
+                    voiceBackgroundSession = null
+                }
+            }
         }
-        session.onSuccess { sessionId -> activeVoiceInputSessionId = sessionId }
-            .onFailure { error ->
+    }
+
+    private fun startVoiceInput(continuous: Boolean = false) {
+        if (voiceInput == null) return
+        voiceStartJob?.cancel()
+        voiceStartJob = viewModelScope.launch {
+            try {
+                val background = voiceBackgroundSession ?: GenerationForegroundService.acquire(
+                    context, GenerationForegroundService.Kind.Microphone,
+                ).also { voiceBackgroundSession = it }
+                background.awaitReady()
+                activeVoiceInputSessionId = if (continuous) voiceInput.startContinuous() else voiceInput.start()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
                 activeVoiceInputSessionId = null
+                voiceBackgroundSession?.close()
+                voiceBackgroundSession = null
                 mutableUiState.update {
                     it.copy(
                         error = error.userMessage(),
                         isVoiceMode = false,
                         voiceDraft = it.voiceDraft.copy(isRecording = false),
+                        calendarEventDraft = it.calendarEventDraft?.copy(isVoiceInputActive = false),
                     )
                 }
             }
+        }
     }
 
     private fun observeVoiceInputErrors() {
@@ -1595,6 +1622,8 @@ class ChatViewModel(
     }
 
     private fun stopVoiceInput() {
+        voiceStartJob?.cancel()
+        voiceStartJob = null
         activeVoiceInputSessionId = null
         voiceInput?.stop()
     }

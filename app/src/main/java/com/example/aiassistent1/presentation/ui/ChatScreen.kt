@@ -337,7 +337,7 @@ fun ChatScreen(
                     )
                 }
                 val isChangingConfigurations = (context as? android.app.Activity)?.isChangingConfigurations ?: false
-                viewModel.stopVoiceCaptureForBackground(isChangingConfigurations)
+                viewModel.onAppBackgrounded(isChangingConfigurations)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -2306,6 +2306,7 @@ fun ModelSettingsDialog(
                 }
 
                 SettingsSection(title = "Голос") {
+                    BackgroundPowerSettings()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

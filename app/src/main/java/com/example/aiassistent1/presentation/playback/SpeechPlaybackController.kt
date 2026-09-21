@@ -10,6 +10,7 @@ import android.media.AudioManager
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.domain.formatter.SpeechTextNormalizer
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
+import com.example.aiassistent1.service.GenerationForegroundService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +67,7 @@ class SpeechPlaybackController(
     }
 
     private var playbackJob: Job? = null
+    private var backgroundSession: GenerationForegroundService.Session? = null
     private var sessionId = 0L
     private var isClosed = false
 
@@ -85,31 +87,36 @@ class SpeechPlaybackController(
         val normalizedText = SpeechTextNormalizer.normalize(text)
         if (normalizedText.isBlank()) return false
         stopActivePlayback()
-        if (audioManager.requestAudioFocus(audioFocusRequest) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            mutableState.value = SpeechPlaybackState.Error("Не удалось получить доступ к аудиовыводу")
-            return false
-        }
-
         val activeSessionId = ++sessionId
         mutableState.value = SpeechPlaybackState.Generating
         playbackJob = scope.launch {
-            val result = speechPlayback.speak(normalizedText) {
-                if (activeSessionId == sessionId) {
-                    mutableState.value = SpeechPlaybackState.Playing
+            var session: GenerationForegroundService.Session? = null
+            try {
+                session = GenerationForegroundService.acquire(appContext, GenerationForegroundService.Kind.Speech)
+                backgroundSession = session
+                session.awaitReady()
+                check(audioManager.requestAudioFocus(audioFocusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                    "Не удалось получить доступ к аудиовыводу"
                 }
-            }
-            if (!isActive || activeSessionId != sessionId) return@launch
-
-            result.onSuccess {
+                val result = speechPlayback.speak(normalizedText) {
+                    if (activeSessionId == sessionId) mutableState.value = SpeechPlaybackState.Playing
+                }
+                if (!isActive || activeSessionId != sessionId) return@launch
+                result.getOrThrow()
                 mutableState.value = SpeechPlaybackState.Idle
-            }.onFailure { error ->
-                if (error !is CancellationException) {
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (activeSessionId == sessionId) {
                     mutableState.value = SpeechPlaybackState.Error(
                         error.message ?: "Не удалось воспроизвести голосовой ответ",
                     )
                 }
+            } finally {
+                if (activeSessionId == sessionId) abandonAudioFocus()
+                session?.close()
+                if (backgroundSession === session) backgroundSession = null
             }
-            abandonAudioFocus()
         }
         return true
     }
@@ -143,6 +150,8 @@ class SpeechPlaybackController(
         playbackJob = null
         speechPlayback.stop()
         abandonAudioFocus()
+        backgroundSession?.close()
+        backgroundSession = null
     }
 
     private fun onAudioFocusChanged(focusChange: Int) {
