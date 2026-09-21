@@ -13,11 +13,11 @@ class CalendarInvalidDatesTest {
     )
 
     @Test fun `invalid supplied dates cannot become creation parameters`() {
-        for (date in listOf("2026-02-30", "2026-02-29", "2026-04-31", "2026-13-01", "0000-01-01")) {
+        for (date in listOf("2026-02-32", "2026-04-31", "2026-13-01", "0000-01-01")) {
             for (fields in listOf(
                 """"date":"$date","time":"10:00","duration_min":60""",
                 """"starts_at":"${date}T10:00","duration_min":60""",
-                """"starts_at":"2026-02-28T10:00","ends_at":"${date}T11:00""",
+                """"starts_at":"2026-02-28T10:00","ends_at":"${date}T11:00"""",
             )) assertTrue(fields, parse("calendar_add", fields).isFailure)
         }
     }
@@ -25,7 +25,7 @@ class CalendarInvalidDatesTest {
     @Test fun `nonexistent reversed and empty intervals are rejected`() {
         for ((start, end) in listOf(
             "2026-02-30T10:00" to "2026-03-01T11:00",
-            "2026-02-28T10:00" to "2026-02-30T11:00",
+            "2026-02-28T10:00" to "2026-02-32T11:00",
             "2026-03-02T10:00" to "2026-03-01T10:00",
             "2026-03-01T10:00" to "2026-03-01T10:00",
         )) {

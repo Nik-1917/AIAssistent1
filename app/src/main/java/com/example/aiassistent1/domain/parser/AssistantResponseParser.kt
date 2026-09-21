@@ -7,8 +7,12 @@ import com.example.aiassistent1.calendar.core.domain.CalendarTime
 class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()) {
     fun parse(text: String): AssistantResponse? = parseResult(text).getOrNull()
 
-    fun parseResult(text: String): Result<AssistantResponse> = runCatching {
-        val json = Fields(StrictCommandJson.read(text), "$", setOf("intent", "reply", "params"))
+    fun parseResult(
+        text: String,
+        dateContext: CalendarDateContext = CalendarDateContext(today = java.time.LocalDate.now(zoneId)),
+    ): Result<AssistantResponse> = runCatching {
+        val normalized = CalendarFebruaryNormalizer.normalize(StrictCommandJson.read(text), dateContext)
+        val json = Fields(normalized, "$", setOf("intent", "reply", "params"))
         val intent = json.string("intent", required = true)!!
         val reply = json.string("reply", required = true)!!
         val raw = json.objectValue("params")

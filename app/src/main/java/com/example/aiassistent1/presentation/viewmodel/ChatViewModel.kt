@@ -460,7 +460,18 @@ class ChatViewModel(
                     if (finalMessage.content.isNotBlank()) {
                         // Обычный чат живёт по своей логике: JSON-контракт парсится только в режиме календаря
                         if (currentState.isCalendarMode) {
-                            val parseOutcome = assistantResponseParser.parseResult(finalMessage.content)
+                            val parseOutcome = assistantResponseParser.parseResult(
+                                finalMessage.content,
+                                com.example.aiassistent1.domain.parser.CalendarDateContext(
+                                    today = LocalDate.now(ZoneId.systemDefault()),
+                                    userMessagesNewestFirst = currentState.messages.asReversed()
+                                        .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.USER }
+                                        .map { it.content },
+                                    assistantMessagesNewestFirst = currentState.messages.asReversed()
+                                        .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.ASSISTANT }
+                                        .map { it.content },
+                                ),
+                            )
                             val parsed = parseOutcome.getOrNull()
                                 ?.resolveImplicitCalendarAddDate(
                                     LocalDateTime.now(ZoneId.systemDefault()),

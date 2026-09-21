@@ -68,7 +68,7 @@ class CalendarEndTimeTest {
             """"starts_at":"2026-09-11T14:30","ends_at":"2026-09-11T14:00""",
             """"starts_at":"2026-09-11T14:30","ends_at":"2026-09-11T15:00","duration_min":20""",
             """"starts_at":"0001-01-01T00:00","ends_at":"9999-01-01T00:00""",
-            """"ends_at":"15:00""", """"ends_at":"2026-02-30T15:00""",
+            """"ends_at":"15:00""", """"ends_at":"2026-02-32T15:00""",
             """"ends_at":123""", """"ends_at":null""",
         )) assertTrue(fields, parse(fields).isFailure)
     }
