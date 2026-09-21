@@ -53,38 +53,40 @@ fun AIAssistantApp(
         return
     }
 
-    AnimatedContent(
-        targetState = navigation.destination,
-        modifier = modifier,
-        transitionSpec = {
-            if (targetState == AppDestination.CALENDAR) {
-                (slideInHorizontally(animationSpec = tween(360)) { fullWidth -> fullWidth } + fadeIn())
-                    .togetherWith(
-                        slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> -fullWidth / 5 } + fadeOut(),
-                    )
-            } else {
-                (slideInHorizontally(animationSpec = tween(360)) { fullWidth -> -fullWidth } + fadeIn())
-                    .togetherWith(
-                        slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth / 5 } + fadeOut(),
-                    )
-            }
-        },
-        label = "ChatCalendarNavigation",
-    ) { currentDestination ->
-        when (currentDestination) {
-            AppDestination.CHAT -> ChatScreen(
-                viewModel = chatViewModel,
-                onOpenCalendar = chatViewModel::openCalendar,
-            )
+    UserDateTimeProvider(compact = uiState.compactDatesEnabled) {
+        AnimatedContent(
+            targetState = navigation.destination,
+            modifier = modifier,
+            transitionSpec = {
+                if (targetState == AppDestination.CALENDAR) {
+                    (slideInHorizontally(animationSpec = tween(360)) { fullWidth -> fullWidth } + fadeIn())
+                        .togetherWith(
+                            slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> -fullWidth / 5 } + fadeOut(),
+                        )
+                } else {
+                    (slideInHorizontally(animationSpec = tween(360)) { fullWidth -> -fullWidth } + fadeIn())
+                        .togetherWith(
+                            slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth / 5 } + fadeOut(),
+                        )
+                }
+            },
+            label = "ChatCalendarNavigation",
+        ) { currentDestination ->
+            when (currentDestination) {
+                AppDestination.CHAT -> ChatScreen(
+                    viewModel = chatViewModel,
+                    onOpenCalendar = chatViewModel::openCalendar,
+                )
 
-            AppDestination.CALENDAR -> CalendarScreen(
-                viewModel = calendarViewModel,
-                onNavigateBack = {
-                    chatViewModel.setChatMode(true)
-                    chatViewModel.returnToConversation()
-                },
-                onOpenChat = { chatViewModel.setChatMode(false) },
-            )
+                AppDestination.CALENDAR -> CalendarScreen(
+                    viewModel = calendarViewModel,
+                    onNavigateBack = {
+                        chatViewModel.setChatMode(true)
+                        chatViewModel.returnToConversation()
+                    },
+                    onOpenChat = { chatViewModel.setChatMode(false) },
+                )
+            }
         }
     }
     SideEffect(onContentReady)

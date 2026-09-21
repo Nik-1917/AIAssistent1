@@ -1098,6 +1098,8 @@ fun ChatScreen(
     if (showSettingsDialog) {
         ModelSettingsDialog(
             params = uiState.modelParams,
+            compactDatesEnabled = uiState.compactDatesEnabled,
+            onCompactDatesChange = viewModel::setCompactDatesEnabled,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
             dialogueModeEnabled = uiState.dialogueModeEnabled,
             autoPlaybackEnabled = uiState.autoPlaybackEnabled,
@@ -1254,15 +1256,24 @@ private fun CalendarEventDraftDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (draft.isComplete) "Создать событие?" else "Заполните данные события") },
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(if (draft.isComplete) "Создать событие?" else "Заполните данные события")
+                Text(
+                    LocalUserDateTimeFormatter.current.todayLabel(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text("Сохранённые поля", style = MaterialTheme.typography.labelLarge)
+                Text("Создаём новое событие", style = MaterialTheme.typography.labelLarge)
                 Text("Название: ${draft.title ?: "не указано"}")
-                Text("Дата: ${draft.date ?: "не указана"}")
+                Text("Дата: ${draft.date?.let(LocalUserDateTimeFormatter.current::value) ?: "не указана"}")
                 Text("Время: ${draft.time ?: "не указано"}")
                 Text("Длительность: ${draft.durationMinutes?.let { "$it мин" } ?: "не указана"}")
-                Text("Окончание события: ${draft.endDisplayText() ?: "не указано"}")
+                Text("Окончание события: ${draft.endDisplayText()?.let(LocalUserDateTimeFormatter.current::value) ?: "не указано"}")
                 Text("Ценность: ${draft.value ?: "не указана"}")
                 CalendarNotesText(draft.notes)
 
@@ -1420,7 +1431,7 @@ private fun CalendarUpdateDraftDialog(
                 Text("Будет", style = MaterialTheme.typography.labelLarge)
                 Text("Название: ${draft.previewTitle}")
                 CalendarNotesText(draft.previewNotes)
-                Text("Дата и время: ${draft.previewStartsAt}")
+                Text("Дата и время: ${LocalUserDateTimeFormatter.current.value(draft.previewStartsAt)}")
                 Text("Длительность: ${draft.previewDurationMinutes} мин")
 
                 if (draft.isSelectingField) {
@@ -1480,11 +1491,9 @@ private fun CalendarChatPromptDialog(
     )
 }
 
+@Composable
 private fun formatCalendarDialogDateTime(epochMillis: Long): String =
-    java.time.Instant.ofEpochMilli(epochMillis)
-        .atZone(java.time.ZoneId.systemDefault())
-        .toLocalDateTime()
-        .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    LocalUserDateTimeFormatter.current.dateTime(epochMillis)
 
 private fun calendarDialogDurationMinutes(startEpochMillis: Long, endEpochMillis: Long): Long =
     (endEpochMillis - startEpochMillis) / 60_000L
@@ -1678,6 +1687,10 @@ private fun MessageBubble(
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.USER
+    val dateTimeFormatter = LocalUserDateTimeFormatter.current
+    val displayContent = remember(message.content, message.role, message.chatId, dateTimeFormatter) {
+        dateTimeFormatter.messageText(message)
+    }
     val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     val bubbleShape = RoundedCornerShape(12.dp)
     val containerColor = if (isUser) {
@@ -1695,14 +1708,14 @@ private fun MessageBubble(
                     shape = bubbleShape
                     clip = true
                 }
-                .pointerInput(Unit) {
+                .pointerInput(message.content, displayContent) {
                     detectTapGestures(
                         onDoubleTap = {
                             onSpeak(message.content)
                         },
                         onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onCopy(message.content)
+                            onCopy(displayContent)
                         }
                     )
                 }
@@ -1721,11 +1734,11 @@ private fun MessageBubble(
                     val messageText = if (message.content.isBlank()) {
                         if (isStopping) "Остановка..." else "Думаю..."
                     } else {
-                        message.content
+                        displayContent
                     }
                     if (smoothResponseEnabled) {
                         StreamingMessageText(
-                            text = message.content,
+                            text = displayContent,
                             isStreaming = isStreaming,
                             placeholderText = when {
                                 isStreaming -> "Думаю..."
@@ -1803,7 +1816,7 @@ private fun StreamingMessageText(
     val scrollState = rememberScrollState()
     val textColor = MaterialTheme.colorScheme.onSurface
 
-    LaunchedEffect(isStreaming) {
+    LaunchedEffect(isStreaming, if (isStreaming) null else text) {
         if (!isStreaming) {
             settledText = latestText
             enteringText = ""
@@ -2144,6 +2157,8 @@ private fun VoiceMicrophoneButton(
 @Composable
 fun ModelSettingsDialog(
     params: GenerationParams,
+    compactDatesEnabled: Boolean,
+    onCompactDatesChange: (Boolean) -> Unit,
     smoothResponseEnabled: Boolean,
     dialogueModeEnabled: Boolean,
     autoPlaybackEnabled: Boolean,
@@ -2248,6 +2263,23 @@ fun ModelSettingsDialog(
                         },
                         valueRange = 1f..2f
                     )
+                }
+
+                SettingsSection(title = "Даты и время") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Краткие даты и время")
+                            Text(
+                                "Скрывать текущий месяц и год. Выключено — полная дата с днём недели. Время — ЧЧ:ММ.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = compactDatesEnabled, onCheckedChange = onCompactDatesChange)
+                    }
                 }
 
                 SettingsSection(title = "Чат") {

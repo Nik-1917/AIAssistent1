@@ -105,4 +105,38 @@ class DataStoreSettingsRepositoryTest {
             assertEquals(state, reader.navigationState.first())
         }
     }
+    @Test
+    fun `compact date mode defaults to compact and persists both switch positions`() = runTest {
+        val store = TestPreferencesDataStore()
+        val writer = DataStoreSettingsRepository(store, backgroundScope)
+        runCurrent()
+        assertEquals(true, writer.compactDatesEnabled.value)
+        for (enabled in listOf(true, false)) {
+            writer.setCompactDatesEnabled(enabled)
+            runCurrent()
+            assertEquals(enabled, writer.compactDatesEnabled.value)
+            assertEquals(enabled, store.data.first()[booleanPreferencesKey("compact_dates_enabled")])
+            val reader = DataStoreSettingsRepository(store, backgroundScope)
+            runCurrent()
+            assertEquals(enabled, reader.compactDatesEnabled.value)
+        }
+    }
+
+    @Test
+    fun `compact date mode restores both values from reopened preferences files`() = runTest {
+        for (enabled in listOf(true, false)) {
+            val file = File(temporaryFolder.newFolder(), "date-settings.preferences_pb")
+            val writerJob = Job(backgroundScope.coroutineContext[Job])
+            val writerScope = CoroutineScope(backgroundScope.coroutineContext + writerJob)
+            val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
+            // Single disk transaction, as in the navigation persistence test above.
+            writerStore.edit { it[booleanPreferencesKey("compact_dates_enabled")] = enabled }
+            writerJob.cancelAndJoin()
+            val readerStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+            val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
+            readerStore.data.first()
+            runCurrent()
+            assertEquals(enabled, reader.compactDatesEnabled.value)
+        }
+    }
 }

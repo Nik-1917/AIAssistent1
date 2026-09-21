@@ -42,6 +42,7 @@ class DataStoreSettingsRepository(
     private val selectedModelKey = stringPreferencesKey("selected_model")
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
+    private val compactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
@@ -106,6 +107,14 @@ class DataStoreSettingsRepository(
             started = SharingStarted.Eagerly,
             initialValue = true
         )
+
+    override val compactDatesEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[compactDatesEnabledKey] ?: true }
+        .stateIn(scope, SharingStarted.Eagerly, true)
+
+    override suspend fun setCompactDatesEnabled(enabled: Boolean) {
+        dataStore.edit { it[compactDatesEnabledKey] = enabled }
+    }
 
     override val smoothResponseEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[smoothResponseEnabledKey] ?: false }

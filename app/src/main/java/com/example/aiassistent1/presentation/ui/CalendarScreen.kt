@@ -438,7 +438,7 @@ private fun CalendarEventCard(
                 CalendarNotesText(event.notes)
                 AssistChip(
                     onClick = onEdit,
-                    label = { Text(event.timeRange()) },
+                    label = { Text(LocalUserDateTimeFormatter.current.range(event.startsAtEpochMillis, event.endsAtEpochMillis)) },
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
@@ -473,7 +473,7 @@ private fun CalendarEventEditorDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Дата: ${date.format(selectedDateFormatter())}")
+                Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
                 CalendarNotesText(event?.notes)
                 OutlinedTextField(
                     value = title,
@@ -564,13 +564,6 @@ private fun CalendarEvent.localStartTimeText(): String =
 
 private fun CalendarEvent.localEndTimeText(): String =
     Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
-
-private fun CalendarEvent.timeRange(): String {
-    val end = Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault())
-    val endText = if (end.toLocalDate() == localDate()) end.format(TIME_FORMATTER)
-        else end.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
-    return "${localStartTimeText()}–$endText"
-}
 
 private fun CalendarEvent.durationMinutes(): Long = (endsAtEpochMillis - startsAtEpochMillis) / 60_000L
 

@@ -25,6 +25,9 @@ interface SettingsRepository {
     val showClearChatConfirmation: StateFlow<Boolean>
     suspend fun setShowClearChatConfirmation(show: Boolean)
 
+    val compactDatesEnabled: StateFlow<Boolean>
+    suspend fun setCompactDatesEnabled(enabled: Boolean)
+
     val smoothResponseEnabled: StateFlow<Boolean>
     suspend fun setSmoothResponseEnabled(enabled: Boolean)
 

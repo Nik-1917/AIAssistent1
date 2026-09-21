@@ -75,6 +75,12 @@ val CalendarEventField.expectedFormat: String
     }
 
 fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
+    // Supplied invalid values must fail, never turn into missing fields or corrected dates.
+    date?.let(CalendarTime::date)
+    time?.let(CalendarTime::time)
+    durationMinutes?.let { require(it > 0) { "Длительность должна быть больше нуля." } }
+    startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), ZoneId.systemDefault()) }
+
     val resolvedDuration = if (endsAt == null) durationMinutes else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
         startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
         endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),

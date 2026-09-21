@@ -27,7 +27,6 @@ import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
-import com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatter
 import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapper
 import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
@@ -137,6 +136,11 @@ class ChatViewModel(
         viewModelScope.launch {
             settingsRepository.showClearChatConfirmation.collect { show ->
                 mutableUiState.update { it.copy(showClearChatConfirmation = show) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.compactDatesEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(compactDatesEnabled = enabled) }
             }
         }
         viewModelScope.launch {
@@ -467,7 +471,7 @@ class ChatViewModel(
                                     is CalendarUpdateParams -> params.changes.notes
                                     else -> null
                                 }
-                                finalMessage.copy(content = (parsed.calendarReplyOrNull() ?: parsed.reply).withCalendarNotes(notes))
+                                finalMessage.copy(content = parsed.reply.withCalendarNotes(notes))
                             } else {
                                 val rawModelJson = finalMessage.content.take(MAX_LOGCAT_PAYLOAD_LENGTH)
                                 Log.e(TAG, "RAW_MODEL_JSON: $rawModelJson")
@@ -1179,6 +1183,10 @@ class ChatViewModel(
         mutableUiState.update { it.copy(calendarUpdateDraft = null) }
     }
 
+    fun setCompactDatesEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setCompactDatesEnabled(enabled) }
+    }
+
     fun setSmoothResponseEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSmoothResponseEnabled(enabled)
@@ -1242,58 +1250,23 @@ class ChatViewModel(
         }
         return copy(
             params = resolvedParams,
-            reply = resolvedParams.defaultDatePartialReplyOrNull() ?: reply,
         )
-    }
-
-    private fun CalendarAddParams.defaultDatePartialReplyOrNull(): String? {
-        val title = title?.trim().takeUnless { it.isNullOrEmpty() }
-            ?: return "Уточните название события."
-        val hasStart = startsAt?.let { isCalendarDateTime(it) } == true ||
-            (date?.let { isCalendarDate(it) } == true && time?.let { isCalendarTime(it) } == true)
-        val hasDuration = durationMin?.let { it > 0 } == true || endsAt != null
-        return when {
-            hasStart && hasDuration -> null
-            hasStart -> "Уточните длительность для события $title."
-            hasDuration -> "Уточните точное время для события $title."
-            else -> "Уточните время и длительность для события $title."
-        }
-    }
-
-    private fun com.example.aiassistent1.domain.model.AssistantResponse.calendarReplyOrNull(): String? {
-        val params = params as? CalendarAddParams ?: return null
-        val title = params.title ?: return null
-        val startsAt = params.startsAt ?: params.date?.let { date ->
-            params.time?.let { time -> "$date" + "T" + "$time" }
-        } ?: return null
-        params.endsAt?.let { end ->
-            return "Событие «$title»: начало $startsAt, окончание $end."
-        }
-        val duration = params.durationMin ?: return null
-        return runCatching {
-            CalendarReplyTimeFormatter.formatCreationReply(title, startsAt, duration)
-        }.getOrNull()
     }
 
     private fun startCalendarEventDraft(params: CalendarAddParams, requestId: String = "") {
-        val completeStartsAt = params.startsAt?.takeIf { isCalendarDateTime(it) }
-        val parsedStartsAt = completeStartsAt?.let {
-            LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        }
-        val draft = CalendarEventDraftUiState(
-            title = params.title,
-            date = parsedStartsAt?.toLocalDate()?.toString()
-                ?: params.date?.takeIf { isCalendarDate(it) },
-            time = parsedStartsAt?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
-                ?: params.time?.takeIf { isCalendarTime(it) },
-            durationMinutes = params.durationMin,
-            value = params.value,
-            notes = params.notes,
-            endsAt = params.endsAt,
-            requestId = requestId,
-        )
-        runCatching { draft.withNextField() }
-            .onSuccess { resolved -> mutableUiState.update { it.copy(calendarEventDraft = resolved) } }
+        runCatching {
+            val parsedStartsAt = params.startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime)
+            CalendarEventDraftUiState(
+                title = params.title,
+                date = parsedStartsAt?.toLocalDate()?.toString() ?: params.date,
+                time = parsedStartsAt?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: params.time,
+                durationMinutes = params.durationMin,
+                value = params.value,
+                notes = params.notes,
+                endsAt = params.endsAt,
+                requestId = requestId,
+            ).withNextField()
+        }.onSuccess { resolved -> mutableUiState.update { it.copy(calendarEventDraft = resolved) } }
             .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
     }
 

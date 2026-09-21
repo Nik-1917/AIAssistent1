@@ -40,6 +40,7 @@ data class ChatUiState(
     val isStopping: Boolean = false,
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,
+    val compactDatesEnabled: Boolean = true,
     val smoothResponseEnabled: Boolean = false,
     val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,
