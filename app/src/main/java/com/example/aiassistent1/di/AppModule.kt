@@ -289,6 +289,6 @@ object AppModule {
 			context.applicationContext,
 			ConferenceDatabase::class.java,
 			"conference.db",
-		).addMigrations(ConferenceDatabase.MIGRATION_1_2).build().also { conferenceDatabase = it }
+		).addMigrations(ConferenceDatabase.MIGRATION_1_2, ConferenceDatabase.MIGRATION_2_3).build().also { conferenceDatabase = it }
 	}
 }

@@ -12,7 +12,7 @@ class ConferenceRepositoryImpl(private val database: ConferenceDatabase) {
     fun getAllConferences() = dao.getAllConferences()
     fun conferencesPaging(query: String) = dao.conferencesPaging(escape(query))
     fun getTranscriptLinesPaging(id: Long, query: String = ""): androidx.paging.PagingSource<Int, TranscriptLineEntity> {
-        val terms = Regex("[\\p{L}\\p{N}]+").findAll(query.take(200)).map { "\"${it.value}\"*" }.toList()
+        val terms = Regex("[\\p{L}\\p{N}]+").findAll(query.take(200)).map { "\"${it.value}*\"" }.toList()
         return if (terms.isEmpty()) dao.transcriptPaging(id, "") else dao.searchPaging(id, terms.joinToString(" AND "))
     }
     suspend fun readPage(id: Long, afterId: Long, limit: Int = 32) = dao.readPage(id, afterId, limit)

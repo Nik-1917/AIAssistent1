@@ -65,7 +65,7 @@ class ConferenceStorageTest {
                 old.version = 1
             }
             val migrated = Room.databaseBuilder(context, ConferenceDatabase::class.java, name)
-                .addMigrations(ConferenceDatabase.MIGRATION_1_2).build()
+                .addMigrations(ConferenceDatabase.MIGRATION_1_2, ConferenceDatabase.MIGRATION_2_3).build()
             try {
                 assertEquals(12L, migrated.conferenceDao().textBytes(1))
                 val r = ConferenceRepositoryImpl(migrated)
