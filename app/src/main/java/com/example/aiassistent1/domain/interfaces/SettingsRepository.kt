@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 interface SettingsRepository {
+    val audioPreferences: Flow<com.example.aiassistent1.domain.model.AudioPreferences>
+    suspend fun readAudioPreferences(): com.example.aiassistent1.domain.model.AudioPreferences
+    suspend fun completeVoiceEnrollment(revision: Long): Boolean
+    suspend fun setWakeWordEnabled(enabled: Boolean)
+    suspend fun setRecordingDirectory(uri: String?)
     val navigationState: Flow<AppNavigationState>
     suspend fun setAppDestination(destination: AppDestination)
 
@@ -54,4 +59,28 @@ interface SettingsRepository {
 
     val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()
+
+    val voiceIdEnabled: StateFlow<Boolean>
+    suspend fun setVoiceIdEnabled(enabled: Boolean)
+
+    val voiceIdNeedsEnrollment: StateFlow<Boolean>
+    suspend fun setVoiceIdNeedsEnrollment(needsEnrollment: Boolean)
+
+    val customWakeWord: StateFlow<String>
+    suspend fun setCustomWakeWord(word: String)
+
+    val autoSummaryEnabled: StateFlow<Boolean>
+    suspend fun setAutoSummaryEnabled(enabled: Boolean)
+
+    val conferenceModeEffectsEnabled: StateFlow<Boolean>
+    suspend fun setConferenceModeEffectsEnabled(enabled: Boolean)
+
+    val bargeInEnabled: StateFlow<Boolean>
+    suspend fun setBargeInEnabled(enabled: Boolean)
+
+    val activationSoundUri: StateFlow<String?>
+    suspend fun setActivationSoundUri(uri: String?)
+
+    val hapticFeedbackEnabled: StateFlow<Boolean>
+    suspend fun setHapticFeedbackEnabled(enabled: Boolean)
 }

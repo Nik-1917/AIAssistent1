@@ -21,28 +21,15 @@ import com.example.aiassistent1.data.engine.LlamatikEngine
 import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.data.local.ChatDatabase
 import com.example.aiassistent1.data.local.NoteDatabase
-import com.example.aiassistent1.data.provider.DebugModelProvider
-import com.example.aiassistent1.data.provider.BundledVoiceModelProvider
-import com.example.aiassistent1.data.provider.SherpaOnnxSpeechPlayback
-import com.example.aiassistent1.data.provider.SherpaOnnxSpeechRecognizer
-import com.example.aiassistent1.data.provider.SherpaOnnxSpeechSynthesizer
-import com.example.aiassistent1.data.provider.SherpaOnnxVoiceInputProvider
-import com.example.aiassistent1.data.provider.SherpaOnnxVoiceActivityDetector
+import com.example.aiassistent1.data.local.ConferenceDatabase
+import com.example.aiassistent1.data.provider.*
 import com.example.aiassistent1.data.repository.*
-import com.example.aiassistent1.domain.interfaces.ChatRepository
-import com.example.aiassistent1.domain.interfaces.LLMEngine
-import com.example.aiassistent1.domain.interfaces.ModelProvider
-import com.example.aiassistent1.domain.interfaces.NoteRepository
-import com.example.aiassistent1.domain.interfaces.SettingsRepository
-import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
-import com.example.aiassistent1.domain.interfaces.SpeechPlayback
-import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
-import com.example.aiassistent1.domain.interfaces.InputProvider
-import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
-import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
-import com.example.aiassistent1.domain.interfaces.VoiceModelProvider
+import com.example.aiassistent1.domain.interfaces.*
+import com.example.aiassistent1.domain.parser.AssistantResponseParser
+import com.example.aiassistent1.domain.provider.SystemPromptProvider
 import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
+import com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -71,6 +58,30 @@ object AppModule {
 
 	@Volatile
 	private var voiceModelProvider: VoiceModelProvider? = null
+
+	@Volatile
+	private var audioFeedbackManager: AudioFeedbackManager? = null
+
+	@Volatile
+	private var audioProcessingManager: AudioProcessingManager? = null
+
+	@Volatile
+	private var keywordSpotter: KeywordSpotter? = null
+
+	@Volatile
+	private var speakerIdentifier: SpeakerIdentifier? = null
+
+	@Volatile
+	private var voiceProfileManager: VoiceProfileManager? = null
+
+	@Volatile
+	private var conferenceDatabase: ConferenceDatabase? = null
+
+	@Volatile
+	private var conferenceRepository: ConferenceRepositoryImpl? = null
+
+	@Volatile
+	private var conferenceManager: ConferenceManager? = null
 
 	fun provideSettingsRepository(context: Context): SettingsRepository = settingsRepository ?: synchronized(this) {
 		settingsRepository ?: DataStoreSettingsRepository(
@@ -110,23 +121,64 @@ object AppModule {
 		provideVoiceModelProvider(context),
 	)
 
+	fun provideKeywordSpotter(context: Context): KeywordSpotter = keywordSpotter ?: synchronized(this) {
+		keywordSpotter ?: SherpaOnnxKeywordSpotter(
+			context.applicationContext,
+			provideVoiceModelProvider(context),
+			provideSettingsRepository(context)
+		).also { keywordSpotter = it }
+	}
+
+	fun provideSpeakerIdentifier(context: Context): SpeakerIdentifier = speakerIdentifier ?: synchronized(this) {
+		speakerIdentifier ?: SherpaOnnxSpeakerIdentifier(
+			context.applicationContext,
+			provideVoiceModelProvider(context)
+		).also { speakerIdentifier = it }
+	}
+
+	fun provideVoiceProfileManager(context: Context): VoiceProfileManager = voiceProfileManager ?: synchronized(this) {
+		voiceProfileManager ?: VoiceProfileManager(
+			context.applicationContext,
+			provideSpeakerIdentifier(context),
+			provideSettingsRepository(context)
+		).also { voiceProfileManager = it }
+	}
+
 	fun provideVoiceInputProvider(context: Context): InputProvider = SherpaOnnxVoiceInputProvider(
 		context.applicationContext,
 		provideSpeechRecognizer(context),
 		provideVoiceActivityDetector(context),
+		provideKeywordSpotter(context),
+		provideAudioFeedbackManager(context),
+		provideVoiceProfileManager(context),
+		provideSettingsRepository(context),
+		provideAudioProcessingManager(context),
 	)
 
 	fun provideSpeechPlayback(context: Context): SpeechPlayback = SherpaOnnxSpeechPlayback(
 		provideSpeechSynthesizer(context),
+		provideAudioProcessingManager(context),
+		provideAudioFeedbackManager(context),
 	)
 
-	fun provideSystemPromptProvider(): com.example.aiassistent1.domain.provider.SystemPromptProvider = 
-        com.example.aiassistent1.domain.provider.SystemPromptProvider()
+	fun provideAudioFeedbackManager(context: Context): AudioFeedbackManager = audioFeedbackManager ?: synchronized(this) {
+		audioFeedbackManager ?: AudioFeedbackManager(
+			context.applicationContext,
+			provideSettingsRepository(context)
+		).also { audioFeedbackManager = it }
+	}
+
+	fun provideAudioProcessingManager(context: Context): AudioProcessingManager = audioProcessingManager ?: synchronized(this) {
+		audioProcessingManager ?: AudioProcessingManager().also { audioProcessingManager = it }
+	}
+
+	fun provideSystemPromptProvider(): SystemPromptProvider =
+        SystemPromptProvider()
 
 	fun provideModelContextBuilder(): ModelContextBuilder = ModelContextBuilder()
 
-    fun provideAssistantResponseParser(): com.example.aiassistent1.domain.parser.AssistantResponseParser = 
-        com.example.aiassistent1.domain.parser.AssistantResponseParser()
+    fun provideAssistantResponseParser(): AssistantResponseParser =
+        AssistantResponseParser()
 
 	fun provideSendMessageUseCase(llmEngine: LLMEngine): SendMessageUseCase = SendMessageUseCase(
 		llmEngine,
@@ -191,6 +243,23 @@ object AppModule {
 		).also { voiceDraftRepository = it }
 	}
 
+	fun provideConferenceRepository(context: Context): ConferenceRepositoryImpl = conferenceRepository ?: synchronized(this) {
+		conferenceRepository ?: ConferenceRepositoryImpl(
+			provideConferenceDatabase(context)
+		).also { conferenceRepository = it }
+	}
+
+	fun provideConferenceManager(context: Context): ConferenceManager = conferenceManager ?: synchronized(this) {
+		conferenceManager ?: ConferenceManager(
+			context.applicationContext,
+			provideConferenceRepository(context),
+			provideSpeechRecognizer(context),
+			provideVoiceActivityDetector(context),
+			provideSettingsRepository(context),
+			provideAudioProcessingManager(context),
+		).also { conferenceManager = it }
+	}
+
 	private fun provideChatDatabase(context: Context): ChatDatabase = chatDatabase ?: synchronized(this) {
 		chatDatabase ?: Room.databaseBuilder(
 			context.applicationContext,
@@ -213,5 +282,13 @@ object AppModule {
 			CalendarDatabase::class.java,
 			"calendar_core.db",
 		).addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3).build().also { calendarDatabase = it }
+	}
+
+	private fun provideConferenceDatabase(context: Context): ConferenceDatabase = conferenceDatabase ?: synchronized(this) {
+		conferenceDatabase ?: Room.databaseBuilder(
+			context.applicationContext,
+			ConferenceDatabase::class.java,
+			"conference.db",
+		).addMigrations(ConferenceDatabase.MIGRATION_1_2).build().also { conferenceDatabase = it }
 	}
 }

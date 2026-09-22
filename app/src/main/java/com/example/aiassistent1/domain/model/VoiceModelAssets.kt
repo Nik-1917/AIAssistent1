@@ -9,4 +9,5 @@ data class VoiceModelAssets(
     val ttsTokens: String,
     val ttsDataDirectory: String,
     val vadModel: String,
+    val speakerModel: String? = null,
 )

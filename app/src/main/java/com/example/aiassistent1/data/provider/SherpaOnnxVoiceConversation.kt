@@ -2,36 +2,15 @@ package com.example.aiassistent1.data.provider
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.AudioTrack
-import android.media.MediaRecorder
-import android.media.audiofx.AudioEffect
-import android.media.audiofx.NoiseSuppressor
+import android.media.*
 import android.os.SystemClock
-import android.util.Log
-import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import androidx.core.content.ContextCompat
-import com.example.aiassistent1.domain.interfaces.InputProvider
-import com.example.aiassistent1.domain.interfaces.SpeechPlayback
-import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
-import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
-import com.example.aiassistent1.domain.interfaces.VoiceActivityDetector
-import com.example.aiassistent1.domain.model.VoiceInputError
-import com.example.aiassistent1.domain.model.VoiceInputEvent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import com.example.aiassistent1.domain.formatter.SpeechTextChunker
+import com.example.aiassistent1.domain.interfaces.*
+import com.example.aiassistent1.domain.model.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,292 +19,253 @@ class SherpaOnnxVoiceInputProvider(
     private val context: Context,
     private val recognizer: SpeechRecognizer,
     private val vad: VoiceActivityDetector,
+    private val keywordSpotter: KeywordSpotter,
+    private val feedbackManager: AudioFeedbackManager,
+    private val voiceProfileManager: VoiceProfileManager,
+    private val settingsRepository: SettingsRepository,
+    private val processing: AudioProcessingManager,
 ) : InputProvider, AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 1)
-    private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 1)
+    private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
+    private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
+    private val activity = MutableStateFlow(AudioSessionState.Idle)
+    private val speechStarts = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     private val lock = Any()
     private var recordingJob: Job? = null
-    private var warmUpJob: Job? = null
     private var activeSessionId: Long? = null
     private var nextSessionId = 0L
+    private var captureWake = false
+    private val warmUpJob = scope.launch {
+        try { vad.prepare(); recognizer.prepare() }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { /* Lazy initialization will report errors through the input session. */ }
+    }
+    override fun observeInput() = input
+    override fun observeErrors() = errors
+    override fun observeActivity() = activity
+    override fun observeSpeechStart() = speechStarts
+    override fun start() = startCapture(false)
+    override fun startContinuous() = startCapture(false)
+    override fun startWakeWord() = startCapture(true)
+    override fun startBargeIn() = startCapture(false)
 
-    init {
-        warmUpJob = scope.launch {
-            val startedAt = SystemClock.elapsedRealtime()
-            try {
-                // Keep initialization sequential to avoid a CPU/RAM spike on weaker devices.
-                vad.prepare()
-                recognizer.prepare()
-                Log.d(
-                    TAG,
-                    "Voice model warm-up completed in " +
-                        "${SystemClock.elapsedRealtime() - startedAt} ms",
-                )
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                // Capture keeps its existing lazy-init fallback if preparation fails.
-                Log.w(TAG, "Voice model warm-up failed; lazy initialization will be used", error)
+    private fun startCapture(wake: Boolean): Long = synchronized(lock) {
+        activeSessionId?.let {
+            if (recordingJob?.isActive == true && (captureWake == wake || vad.isSpeechDetected())) return@synchronized it
+        }
+        check(ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED) { "Нет разрешения на запись аудио" }
+        val previous = recordingJob
+        previous?.cancel()
+        captureWake = wake
+        val id = ++nextSessionId
+        activeSessionId = id
+        recordingJob = scope.launch {
+            previous?.join()
+            warmUpJob.join()
+            try { capture(id, wake) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { if (isCurrent(id)) errors.emit(VoiceInputError(id, error)) }
+            catch (error: LinkageError) { if (isCurrent(id)) errors.emit(VoiceInputError(id, IllegalStateException("Не удалось загрузить аудиобиблиотеку", error))) }
+            finally {
+                synchronized(lock) { if (activeSessionId == id) { activeSessionId = null; activity.value = AudioSessionState.Idle } }
             }
         }
+        id
     }
-
-    override fun observeInput(): Flow<VoiceInputEvent> = input
-
-    override fun observeErrors(): Flow<VoiceInputError> = errors
-
-    override fun start(): Long = startCapture()
-
-    override fun startContinuous(): Long = startCapture()
-
-    private fun startCapture(): Long {
-        synchronized(lock) {
-            activeSessionId?.let { sessionId ->
-                if (recordingJob?.isActive == true) return sessionId
-            }
-            check(
-                ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
-                    PackageManager.PERMISSION_GRANTED,
-            ) { "Нет разрешения на запись аудио" }
-            val previousRecordingJob = recordingJob
-            val sessionId = ++nextSessionId
-            activeSessionId = sessionId
-            recordingJob = scope.launch {
-                previousRecordingJob?.join()
-                try {
-                    captureSpeech(sessionId)
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Exception) {
-                    Log.e(TAG, "Voice capture failed", error)
-                    if (isCurrentSession(sessionId)) errors.emit(VoiceInputError(sessionId, error))
-                }
-            }
-            return sessionId
-        }
+    override fun stop() = synchronized(lock) {
+        activeSessionId = null
+        recordingJob?.cancel()
+        activity.value = AudioSessionState.Idle
     }
-
-    override fun stop() {
-        synchronized(lock) {
-            activeSessionId = null
-            recordingJob?.cancel()
-        }
-    }
-
+    private fun isCurrent(id: Long) = synchronized(lock) { activeSessionId == id }
     override fun close() {
-        stop()
-        warmUpJob?.cancel()
-        scope.cancel()
-        recognizer.close()
-        vad.close()
+        stop(); warmUpJob.cancel()
+        scope.launch {
+            recordingJob?.join(); warmUpJob.join()
+            recognizer.close(); vad.close(); keywordSpotter.close()
+            scope.cancel()
+        }
     }
 
-    private suspend fun captureSpeech(sessionId: Long) {
-        val recorder = createRecorder()
-        val noiseSuppressor = createNoiseSuppressor(recorder)
-        val pcm = ShortArray(FRAME_SIZE)
+    private suspend fun capture(id: Long, wake: Boolean) = coroutineScope {
+        val token = Any()
+        MicrophoneCoordinator.acquire(token)
+        var recorder: AudioRecord? = null
+        var processor: AudioProcessingManager.Session? = null
         try {
+            val minBuffer = AudioRecord.getMinBufferSize(16_000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            check(minBuffer > 0) { "Запись 16 кГц недоступна" }
+            recorder = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, 16_000,
+                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuffer, 8192))
+            check(recorder.state == AudioRecord.STATE_INITIALIZED) { "Не удалось открыть микрофон" }
+            processor = processing.open(recorder, true, true)
+            val initial = settingsRepository.readAudioPreferences()
+            val useKws = wake && keywordSpotter.isAvailable()
+            if (useKws) keywordSpotter.prepare()
+            val segments = Channel<Pair<FloatArray, Boolean>>(4)
+            val feedbackPlaying = AtomicBoolean(false)
+            activity.value = if (wake || initial.needsEnrollment && initial.voiceIdEnabled) AudioSessionState.Waiting else AudioSessionState.Listening
+            val recognition = launch {
+                var activatedUntil = 0L
+                var activeWord = initial.wakeWord
+                for ((segment, detected) in segments) {
+                    val prefs = settingsRepository.readAudioPreferences()
+                    if (prefs.wakeWord != activeWord) { activatedUntil = 0; activeWord = prefs.wakeWord }
+                    val enrollment = voiceProfileManager.needsEnrollment()
+                    val requireName = (wake && SystemClock.elapsedRealtime() > activatedUntil) || enrollment
+                    if (requireName && useKws && !detected) continue
+                    var text: String? = null
+                    if (requireName && !useKws) {
+                        val transcript = recognizer.recognize(segment).getOrThrow()
+                        text = WakeWordTokens.removePrefix(transcript, prefs.wakeWord) ?: continue
+                    }
+                    if (enrollment) {
+                        activity.value = AudioSessionState.Enrolling
+                        if (!voiceProfileManager.enroll(segment)) {
+                            activity.value = AudioSessionState.Rejected
+                            continue
+                        }
+                    } else if (!voiceProfileManager.verify(segment)) {
+                        activity.value = AudioSessionState.Rejected
+                        continue
+                    }
+                    if (prefs.voiceIdEnabled && prefs.bargeIn) speechStarts.emit(id)
+                    if (requireName) {
+                        activity.value = AudioSessionState.Listening
+                        feedbackPlaying.set(true)
+                        try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
+                        finally { feedbackPlaying.set(false) }
+                        activatedUntil = SystemClock.elapsedRealtime() + 10_000
+                    }
+                    val transcript = text ?: recognizer.recognize(segment).getOrThrow().let {
+                        if (detected) WakeWordTokens.removePrefix(it, prefs.wakeWord) ?: it else it
+                    }
+                    if (transcript.isNotBlank() && isCurrent(id)) {
+                        input.emit(VoiceInputEvent(id, transcript))
+                        activatedUntil = 0
+                        activity.value = if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
+                    }
+                }
+            }
             recorder.startRecording()
-            check(recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                "Не удалось запустить запись с микрофона"
+            check(recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING)
+            val pcm = ShortArray(512)
+            var keywordDetected = false
+            var wasSpeech = false
+            while (currentCoroutineContext().isActive) {
+                val read = withContext(Dispatchers.IO) { recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING) }
+                check(read >= 0) { "Ошибка микрофона: $read" }
+                if (read == 0 || feedbackPlaying.get()) continue
+                val samples = processor.process(FloatArray(read) { pcm[it] / 32768f })
+                if (samples.isEmpty()) continue
+                if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
+                val completed = vad.accept(samples)
+                val speech = vad.isSpeechDetected()
+                if (speech && !wasSpeech) {
+                    val preferences = settingsRepository.readAudioPreferences()
+                    if (preferences.bargeIn && !preferences.voiceIdEnabled) speechStarts.tryEmit(id)
+                }
+                wasSpeech = speech
+                for (segment in completed) {
+                    check(segments.trySend(segment to keywordDetected).isSuccess) { "Распознавание не успевает за речью. Повторите запрос." }
+                    keywordDetected = false
+                }
             }
-            Log.d(TAG, "Voice capture started")
-            captureSegmentedSpeech(recorder, pcm, sessionId)
+            segments.close()
+            recognition.join()
         } finally {
-            if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) recorder.stop()
-            noiseSuppressor?.release()
-            recorder.release()
-            vad.reset()
-            synchronized(lock) {
-                if (activeSessionId == sessionId) activeSessionId = null
-            }
-            Log.d(TAG, "Voice capture stopped")
+            recorder?.let { runCatching { it.stop() }; it.release() }
+            processor?.let(processing::close)
+            vad.reset(); keywordSpotter.reset()
+            MicrophoneCoordinator.release(token)
         }
     }
-
-    private suspend fun captureSegmentedSpeech(
-        recorder: AudioRecord,
-        pcm: ShortArray,
-        sessionId: Long,
-    ) {
-        while (currentCoroutineContext().isActive) {
-            val count = recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING)
-            check(count >= 0) { "Ошибка чтения данных микрофона: $count" }
-            if (count == 0) continue
-            val samples = FloatArray(count) { index -> pcm[index] / SHORT_SCALE }
-            val segments = vad.accept(samples)
-            if (segments.isNotEmpty()) Log.d(TAG, "Voice segment completed")
-            segments.forEach { segment ->
-                val recognition = recognizer.recognize(segment)
-                recognition.exceptionOrNull()?.let { error ->
-                    Log.e(TAG, "Speech recognition failed", error)
-                }
-                val transcript = recognition.getOrNull()
-                    ?.takeIf(String::isNotBlank)
-                if (transcript != null && currentCoroutineContext().isActive && isCurrentSession(sessionId)) {
-                    Log.d(TAG, "Speech recognized, length=${transcript.length}")
-                    input.emit(VoiceInputEvent(sessionId, transcript))
-                }
-            }
-        }
-    }
-
-    private fun createRecorder(): AudioRecord {
-        check(
-            ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED,
-        ) { "Нет разрешения на запись аудио" }
-        val minimumBufferSize = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-        )
-        check(minimumBufferSize > 0) { "Микрофон не поддерживает PCM ${SAMPLE_RATE} Hz" }
-        val recorder = AudioRecord.Builder()
-            .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-            .setAudioFormat(
-                AudioFormat.Builder()
-                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                    .setSampleRate(SAMPLE_RATE)
-                    .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                    .build(),
-            )
-            .setBufferSizeInBytes(maxOf(minimumBufferSize, FRAME_SIZE * Short.SIZE_BYTES))
-            .build()
-        check(recorder.state == AudioRecord.STATE_INITIALIZED) {
-            "Не удалось инициализировать микрофон"
-        }
-        return recorder
-    }
-
-    private fun createNoiseSuppressor(recorder: AudioRecord): NoiseSuppressor? {
-        if (!NoiseSuppressor.isAvailable()) {
-            Log.i(TAG, "System noise suppression is unavailable")
-            return null
-        }
-        return runCatching {
-            val suppressor = NoiseSuppressor.create(recorder.audioSessionId)
-            if (suppressor == null) {
-                Log.i(TAG, "System noise suppressor could not be created")
-                return@runCatching null
-            }
-            if (suppressor.setEnabled(true) != AudioEffect.SUCCESS) {
-                suppressor.release()
-                Log.w(TAG, "System noise suppressor could not be enabled")
-                return@runCatching null
-            }
-            Log.d(TAG, "System noise suppression enabled")
-            suppressor
-        }.getOrElse { error ->
-            Log.w(TAG, "System noise suppressor failed", error)
-            null
-        }
-    }
-
-    private fun isCurrentSession(sessionId: Long): Boolean = synchronized(lock) {
-        activeSessionId == sessionId
-    }
-
-    private companion object {
-        const val SAMPLE_RATE = 16_000
-        const val FRAME_SIZE = 512
-        const val SHORT_SCALE = 32_768f
-        const val TAG = "VoiceInput"
-    }
-
 }
 
 class SherpaOnnxSpeechPlayback(
     private val synthesizer: SpeechSynthesizer,
+    private val processing: AudioProcessingManager = AudioProcessingManager(),
+    private val feedback: AudioFeedbackManager? = null,
 ) : SpeechPlayback {
     private val mutex = Mutex()
-    private val playbackStopped = AtomicBoolean(false)
+    private val closed = AtomicBoolean(false)
+    private val resourcesReleased = AtomicBoolean(false)
+    private val stopped = AtomicBoolean(false)
+    private val trackLock = Any()
     private var track: AudioTrack? = null
 
-    override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> = runCatching {
-        mutex.withLock {
-            playbackStopped.set(false)
-            var playbackStarted = false
-            SpeechTextChunker.split(text).forEach { chunk ->
-                check(!playbackStopped.get()) { "Воспроизведение остановлено" }
-                val speech = synthesizer.synthesize(chunk).getOrThrow()
-                check(!playbackStopped.get()) { "Воспроизведение остановлено" }
-                val activeTrack = createTrack(speech.sampleRate, speech.samples.size).also { track = it }
-                try {
-                    activeTrack.play()
-                    if (!playbackStarted) {
-                        playbackStarted = true
-                        onPlaybackStarted()
+    override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> {
+        return try {
+            mutex.withLock {
+                check(!closed.get()) { "Воспроизведение закрыто" }
+                stopped.set(false)
+                var started = false
+                for (chunk in SpeechTextChunker.split(text)) {
+                    currentCoroutineContext().ensureActive()
+                    if (stopped.get()) break
+                    val speech = synthesizer.synthesize(chunk).getOrThrow()
+                    val samples = PcmResampler.to16k(speech.samples, speech.sampleRate)
+                    if (stopped.get()) break
+                    withContext(Dispatchers.IO) {
+                        val minimum = AudioTrack.getMinBufferSize(16_000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
+                        check(minimum > 0)
+                        val active = AudioTrack.Builder()
+                            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                            .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                                .setSampleRate(16_000).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
+                            .setBufferSizeInBytes(maxOf(minimum, 2560))
+                            .setTransferMode(AudioTrack.MODE_STREAM).build()
+                        synchronized(trackLock) { track = active }
+                        try {
+                            if (!started) {
+                                feedback?.triggerVibration()
+                                started = true
+                                onPlaybackStarted()
+                            }
+                            active.play()
+                            var offset = 0
+                            while (offset < samples.size && !stopped.get()) {
+                                currentCoroutineContext().ensureActive()
+                                val count = minOf(160, samples.size - offset)
+                                val frame = samples.copyOfRange(offset, offset + count)
+                                val queued = (offset.toLong() - (active.playbackHeadPosition.toLong() and 0xffffffffL)).coerceAtLeast(0)
+                                processing.onOutputSamples(frame, 16_000, (queued * 1000 / 16_000 + 30).toInt())
+                                var done = 0
+                                while (done < count && !stopped.get()) {
+                                    val written = active.write(frame, done, count - done, AudioTrack.WRITE_BLOCKING)
+                                    check(written > 0 || stopped.get()) { "Ошибка воспроизведения: $written" }
+                                    done += written.coerceAtLeast(0)
+                                }
+                                offset += done
+                            }
+                            val deadline = SystemClock.elapsedRealtime() + 1500
+                            while (!stopped.get() && active.playbackHeadPosition < offset && SystemClock.elapsedRealtime() < deadline) delay(10)
+                        } finally {
+                            synchronized(trackLock) {
+                                if (track === active) track = null
+                                runCatching { active.stop() }
+                                active.release()
+                            }
+                        }
                     }
-                    val writtenSamples = activeTrack.write(
-                        speech.samples,
-                        0,
-                        speech.samples.size,
-                        AudioTrack.WRITE_BLOCKING,
-                    )
-                    check(writtenSamples == speech.samples.size) {
-                        "Не удалось полностью записать аудиобуфер: $writtenSamples/${speech.samples.size}"
-                    }
-                    awaitPlaybackCompletion(activeTrack, speech.samples.size, speech.sampleRate)
-                    if (!playbackStopped.get()) activeTrack.stop()
-                } finally {
-                    activeTrack.release()
-                    if (track === activeTrack) track = null
                 }
             }
-        }
+            Result.success(Unit)
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { Result.failure(error) }
+        finally { releaseIfClosed() }
     }
-
     override fun stop() {
-        playbackStopped.set(true)
-        track?.pause()
-        track?.flush()
+        stopped.set(true)
+        synchronized(trackLock) { track?.let { runCatching { it.pause(); it.flush() } } }
     }
-
-    override fun close() {
-        stop()
-        track?.release()
-        track = null
-        synthesizer.close()
-    }
-
-    private suspend fun awaitPlaybackCompletion(
-        activeTrack: AudioTrack,
-        sampleCount: Int,
-        sampleRate: Int,
-    ) {
-        val timeoutMillis = ((sampleCount.toLong() * MILLIS_PER_SECOND) / sampleRate) + PLAYBACK_TIMEOUT_MARGIN_MILLIS
-        var elapsedMillis = 0L
-        while (!playbackStopped.get() && activeTrack.playbackHeadPosition < sampleCount) {
-            check(elapsedMillis <= timeoutMillis) { "Превышено время ожидания воспроизведения речи" }
-            delay(PLAYBACK_POLL_INTERVAL_MILLIS)
-            elapsedMillis += PLAYBACK_POLL_INTERVAL_MILLIS
+    override fun close() { closed.set(true); stop(); releaseIfClosed() }
+    private fun releaseIfClosed() {
+        if (closed.get() && mutex.tryLock()) {
+            try { if (resourcesReleased.compareAndSet(false, true)) synthesizer.close() }
+            finally { mutex.unlock() }
         }
-    }
-
-    private fun createTrack(sampleRate: Int, sampleCount: Int): AudioTrack = AudioTrack.Builder()
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build(),
-        )
-        .setAudioFormat(
-            AudioFormat.Builder()
-                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                .setSampleRate(sampleRate)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                .build(),
-        )
-        .setBufferSizeInBytes(maxOf(sampleCount * Float.SIZE_BYTES, MINIMUM_BUFFER_BYTES))
-        .setTransferMode(AudioTrack.MODE_STREAM)
-        .build()
-
-    private companion object {
-        const val MINIMUM_BUFFER_BYTES = 8_192
-        const val PLAYBACK_POLL_INTERVAL_MILLIS = 10L
-        const val PLAYBACK_TIMEOUT_MARGIN_MILLIS = 1_000L
-        const val MILLIS_PER_SECOND = 1_000L
     }
 }

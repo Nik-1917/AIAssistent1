@@ -108,6 +108,12 @@ class ChatViewModel(
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
     private var isManualMessagePlayback = false
+    private val mutableAudioActivity = MutableStateFlow(com.example.aiassistent1.domain.model.AudioSessionState.Idle)
+    val audioActivity = mutableAudioActivity.asStateFlow()
+    private val mutableSummaryState = MutableStateFlow<String?>(null)
+    val summaryState = mutableSummaryState.asStateFlow()
+    private var summarizing = false
+    private var wakeWordEnabled = false
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
 
@@ -121,6 +127,65 @@ class ChatViewModel(
         observeVoiceBackgroundSession()
         restoreVoiceDraft()
         updateAvailableModels()
+        viewModelScope.launch { settingsRepository.audioPreferences.collect { wakeWordEnabled = it.wakeWordEnabled } }
+        viewModelScope.launch { voiceInput?.observeActivity()?.collect { mutableAudioActivity.value = it } }
+        viewModelScope.launch {
+            voiceInput?.observeSpeechStart()?.collect { sessionId ->
+                if (sessionId == activeVoiceInputSessionId && uiState.value.isVoiceMode &&
+                    settingsRepository.bargeInEnabled.value &&
+                    (uiState.value.speechPlaybackState is SpeechPlaybackState.Playing ||
+                        uiState.value.speechPlaybackState is SpeechPlaybackState.Generating)) {
+                    speechPlaybackController?.stop(SpeechStopReason.NewMessage)
+                }
+            }
+        }
+        viewModelScope.launch {
+            val manager = com.example.aiassistent1.di.AppModule.provideConferenceManager(context)
+            kotlinx.coroutines.flow.combine(manager.summaryRequest, uiState) { id, state -> id to state.isProcessing }
+                .collect { (id, busy) ->
+                    if (id != null && !busy) {
+                        manager.summaryHandled(id)
+                        summarizeConference(id)
+                    }
+                }
+        }
+    }
+
+    fun prepareForConference() {
+        setVoiceMode(false)
+        stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.User)
+    }
+
+    fun summarizeConference(id: Long) {
+        if (uiState.value.isProcessing) { mutableSummaryState.value = "Дождитесь завершения текущего ответа"; return }
+        prepareForConference()
+        summarizing = true
+        mutableUiState.update { it.copy(isProcessing = true) }
+        mutableSummaryState.value = "Создание выжимки…"
+        generationJob = viewModelScope.launch {
+            var session: GenerationForegroundService.Session? = null
+            try {
+                session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                session.awaitReady()
+                // Reserve a bounded context for sequential transcript chunks; restore chat settings in finally.
+                llmEngine.close()
+                llmEngine.updateParams(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
+                val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
+                    com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
+                mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
+            } catch (cancelled: CancellationException) {
+                mutableSummaryState.value = "Создание выжимки остановлено"
+                throw cancelled
+            } catch (error: Exception) { mutableSummaryState.value = error.message ?: "Ошибка выжимки" }
+            finally {
+                summarizing = false
+                llmEngine.close()
+                llmEngine.updateParams(uiState.value.modelParams)
+                mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                session?.close()
+            }
+        }
     }
 
     private fun observeSettings() {
@@ -183,7 +248,7 @@ class ChatViewModel(
         paramsJob = viewModelScope.launch {
             settingsRepository.getParamsForModel(modelName).collect { params ->
                 mutableUiState.update { it.copy(modelParams = params) }
-                llmEngine.updateParams(params)
+                if (!summarizing) llmEngine.updateParams(params)
             }
         }
     }
@@ -566,8 +631,10 @@ class ChatViewModel(
     fun selectModel(modelName: String) {
         viewModelScope.launch {
             if (uiState.value.selectedModel == modelName) return@launch
+            val previousGeneration = generationJob
             
             stopGeneration(resumeDialogue = false)
+            previousGeneration?.join()
             llmEngine.close()
             // Принудительно сбрасываем флаги при смене модели
             mutableUiState.update { it.copy(isStopping = false, isProcessing = false) }
@@ -1467,11 +1534,13 @@ class ChatViewModel(
         viewModelScope.launch {
             controller.state.collect { playbackState ->
                 mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
+                if ((playbackState is SpeechPlaybackState.Playing || playbackState is SpeechPlaybackState.Generating) && uiState.value.isVoiceMode &&
+                    settingsRepository.bargeInEnabled.value) startVoiceInput(bargeIn = true)
                 if (isManualMessagePlayback &&
                     (playbackState is SpeechPlaybackState.Idle || playbackState is SpeechPlaybackState.Error)
                 ) {
                     isManualMessagePlayback = false
-                    if (uiState.value.dialogueModeEnabled && uiState.value.isVoiceMode &&
+                    if ((uiState.value.dialogueModeEnabled || wakeWordEnabled) && uiState.value.isVoiceMode &&
                         !uiState.value.isProcessing
                     ) {
                         startVoiceInput()
@@ -1481,7 +1550,7 @@ class ChatViewModel(
                 } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
                     playbackState is SpeechPlaybackState.Idle
                 ) {
-                    if (uiState.value.dialogueModeEnabled && uiState.value.isVoiceMode &&
+                    if ((uiState.value.dialogueModeEnabled || wakeWordEnabled) && uiState.value.isVoiceMode &&
                         !uiState.value.isProcessing
                     ) {
                         startVoiceInput()
@@ -1513,7 +1582,7 @@ class ChatViewModel(
 
     private fun resumeDialogueVoiceInput() {
         val state = uiState.value
-        if (!state.dialogueModeEnabled || !state.isVoiceMode || state.isProcessing) return
+        if ((!state.dialogueModeEnabled && !wakeWordEnabled) || !state.isVoiceMode || state.isProcessing) return
 
         cancelPendingVoiceModeShutdown()
         startVoiceInput()
@@ -1534,7 +1603,7 @@ class ChatViewModel(
                         appendVoiceDraftTranscript(event.transcript)
                     }
                     state.isVoiceMode && !state.isProcessing -> {
-                        sendMessageInternal(event.transcript, preserveVoiceMode = state.dialogueModeEnabled)
+                        sendMessageInternal(event.transcript, preserveVoiceMode = state.dialogueModeEnabled || wakeWordEnabled)
                     }
                 }
             }
@@ -1554,7 +1623,7 @@ class ChatViewModel(
         }
     }
 
-    private fun startVoiceInput(continuous: Boolean = false) {
+    private fun startVoiceInput(continuous: Boolean = false, bargeIn: Boolean = false) {
         if (voiceInput == null) return
         voiceStartJob?.cancel()
         voiceStartJob = viewModelScope.launch {
@@ -1563,7 +1632,13 @@ class ChatViewModel(
                     context, GenerationForegroundService.Kind.Microphone,
                 ).also { voiceBackgroundSession = it }
                 background.awaitReady()
-                activeVoiceInputSessionId = if (continuous) voiceInput.startContinuous() else voiceInput.start()
+                val prefs = settingsRepository.readAudioPreferences()
+                activeVoiceInputSessionId = when {
+                    bargeIn -> voiceInput.startBargeIn()
+                    continuous -> voiceInput.startContinuous()
+                    uiState.value.isVoiceMode && prefs.wakeWordEnabled -> voiceInput.startWakeWord()
+                    else -> voiceInput.start()
+                }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

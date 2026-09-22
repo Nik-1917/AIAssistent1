@@ -186,6 +186,8 @@ fun ChatScreen(
     val lastMessage = uiState.messages.lastOrNull()
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    var showConferences by rememberSaveable { mutableStateOf(false) }
+    val audioActivity by viewModel.audioActivity.collectAsStateWithLifecycle()
     var messageToDelete by remember { mutableStateOf<ChatMessage?>(null) }
     var showClearChatDialog by remember { mutableStateOf(false) }
 
@@ -477,6 +479,8 @@ fun ChatScreen(
                 onLoadModel = { filePickerLauncher.launch("*/*") },
                 onSelectModel = viewModel::selectModel,
                 onOpenSettings = { showSettingsDialog = true },
+                onOpenConferences = { viewModel.prepareForConference(); showConferences = true },
+                audioStatus = audioActivity.takeUnless { it == com.example.aiassistent1.domain.model.AudioSessionState.Idle }?.label,
                 isCalendarMode = uiState.isCalendarMode,
                 onModeToggle = { viewModel.setChatMode(it) },
             )
@@ -1095,6 +1099,8 @@ fun ChatScreen(
         }
     }
 
+    if (showConferences) ConferenceScreen(viewModel, onClose = { showConferences = false })
+
     if (showSettingsDialog) {
         ModelSettingsDialog(
             params = uiState.modelParams,
@@ -1533,6 +1539,8 @@ private fun ChatTopBar(
     onLoadModel: () -> Unit,
     onSelectModel: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenConferences: () -> Unit,
+    audioStatus: String?,
     isCalendarMode: Boolean,
     onModeToggle: (Boolean) -> Unit,
 ) {
@@ -1570,7 +1578,7 @@ private fun ChatTopBar(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = when (modelAvailability) {
+                        text = audioStatus ?: when (modelAvailability) {
                             ModelAvailability.Checking -> "Проверка модели"
                             ModelAvailability.Missing -> "Модель не найдена"
                             ModelAvailability.Available -> modelState.label()
@@ -1603,6 +1611,9 @@ private fun ChatTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onOpenConferences) {
+                Icon(Icons.Default.Mic, contentDescription = "Конференции и записи")
+            }
             if (modelAvailability == ModelAvailability.Missing && modelState !is ModelState.Importing) {
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
@@ -2307,6 +2318,7 @@ fun ModelSettingsDialog(
 
                 SettingsSection(title = "Голос") {
                     BackgroundPowerSettings()
+                    AudioSettingsSection()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

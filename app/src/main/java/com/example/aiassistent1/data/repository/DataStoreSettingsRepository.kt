@@ -35,8 +35,10 @@ val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name =
 class DataStoreSettingsRepository(
     private val dataStore: DataStore<Preferences>,
     private val scope: CoroutineScope,
+    private val profileFile: java.io.File? = null,
 ) : SettingsRepository {
-    constructor(context: Context, scope: CoroutineScope) : this(context.settingsStore, scope)
+    constructor(context: Context, scope: CoroutineScope) : this(context.settingsStore, scope,
+        java.io.File(context.noBackupFilesDir, "voice_profile.bin"))
 
     private val appDestinationKey = stringPreferencesKey("last_app_destination")
     private val selectedModelKey = stringPreferencesKey("selected_model")
@@ -57,6 +59,54 @@ class DataStoreSettingsRepository(
     private val calendarVisibleMonthKey = stringPreferencesKey("calendar_visible_month")
     private val calendarSelectedDateKey = stringPreferencesKey("calendar_selected_date")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
+
+    private val voiceIdEnabledKey = booleanPreferencesKey("voice_id_enabled")
+    private val voiceRevisionKey = androidx.datastore.preferences.core.longPreferencesKey("voice_id_revision")
+    private val wakeWordEnabledKey = booleanPreferencesKey("wake_word_enabled")
+    private val recordingDirectoryKey = stringPreferencesKey("conference_recording_directory")
+    override suspend fun setRecordingDirectory(uri: String?) {
+        dataStore.edit { if (uri == null) it.remove(recordingDirectoryKey) else it[recordingDirectoryKey] = uri }
+    }
+    override val audioPreferences = dataStore.data.map { p ->
+        com.example.aiassistent1.domain.model.AudioPreferences(
+            voiceIdEnabled = p[voiceIdEnabledKey] ?: false,
+            needsEnrollment = p[voiceIdNeedsEnrollmentKey] ?: false,
+            revision = p[voiceRevisionKey] ?: 0L,
+            wakeWord = p[customWakeWordKey] ?: "Ассистент",
+            wakeWordEnabled = p[wakeWordEnabledKey] ?: false,
+            bargeIn = p[bargeInEnabledKey] ?: true,
+            autoSummary = p[autoSummaryEnabledKey] ?: false,
+            conferenceEffects = p[conferenceModeEffectsEnabledKey] ?: false,
+            soundUri = p[activationSoundUriKey], haptics = p[hapticFeedbackEnabledKey] ?: true,
+            recordingDirectory = p[recordingDirectoryKey],
+        )
+    }
+    override suspend fun readAudioPreferences() = audioPreferences.first()
+    override suspend fun setWakeWordEnabled(enabled: Boolean) {
+        dataStore.edit { it[wakeWordEnabledKey] = enabled }
+    }
+    override suspend fun completeVoiceEnrollment(revision: Long): Boolean {
+        var accepted = false
+        dataStore.edit {
+            if (it[voiceIdEnabledKey] == true && (it[voiceRevisionKey] ?: 0L) == revision) {
+                it[voiceIdNeedsEnrollmentKey] = false
+                accepted = true
+            }
+        }
+        return accepted
+    }
+    private fun invalidateProfile(p: androidx.datastore.preferences.core.MutablePreferences) {
+        p[voiceRevisionKey] = (p[voiceRevisionKey] ?: 0L) + 1L
+        p[voiceIdNeedsEnrollmentKey] = true
+        profileFile?.let { android.util.AtomicFile(it).delete() }
+    }
+    private val voiceIdNeedsEnrollmentKey = booleanPreferencesKey("voice_id_needs_enrollment")
+    private val customWakeWordKey = stringPreferencesKey("custom_wake_word")
+    private val autoSummaryEnabledKey = booleanPreferencesKey("auto_summary_enabled")
+    private val conferenceModeEffectsEnabledKey = booleanPreferencesKey("conference_mode_effects_enabled")
+    private val bargeInEnabledKey = booleanPreferencesKey("barge_in_enabled")
+    private val activationSoundUriKey = stringPreferencesKey("activation_sound_uri")
+    private val hapticFeedbackEnabledKey = booleanPreferencesKey("haptic_feedback_enabled")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
     private val paramsFlows = mutableMapOf<String, StateFlow<GenerationParams>>()
@@ -305,5 +355,90 @@ class DataStoreSettingsRepository(
             state.visibleMonth?.let { preferences[calendarVisibleMonthKey] = it.toString() }
             state.selectedDate?.let { preferences[calendarSelectedDateKey] = it.toString() }
         }
+    }
+
+    override val voiceIdEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[voiceIdEnabledKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override suspend fun setVoiceIdEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            val oldEnabled = preferences[voiceIdEnabledKey] ?: false
+            preferences[voiceIdEnabledKey] = enabled
+            if (enabled && !oldEnabled) {
+                invalidateProfile(preferences)
+            }
+        }
+    }
+
+    override val voiceIdNeedsEnrollment: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[voiceIdNeedsEnrollmentKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override suspend fun setVoiceIdNeedsEnrollment(needsEnrollment: Boolean) {
+        dataStore.edit { if (needsEnrollment) invalidateProfile(it) else it[voiceIdNeedsEnrollmentKey] = false }
+    }
+
+    override val customWakeWord: StateFlow<String> = dataStore.data
+        .map { preferences -> preferences[customWakeWordKey] ?: "Ассистент" }
+        .stateIn(scope, SharingStarted.Eagerly, "Ассистент")
+
+    override suspend fun setCustomWakeWord(word: String) {
+        val normalized = word.trim().replace(Regex("\\s+"), " ")
+        require(normalized.length in 2..40 && normalized.all { it.isLetter() || it == ' ' || it == '-' }) {
+            "Имя должно содержать от 2 до 40 букв, пробелов или дефисов"
+        }
+        dataStore.edit { preferences ->
+            val oldWord = preferences[customWakeWordKey] ?: "Ассистент"
+            if (oldWord != normalized) {
+                preferences[customWakeWordKey] = normalized
+                if (preferences[voiceIdEnabledKey] == true) {
+                    invalidateProfile(preferences)
+                }
+            }
+        }
+    }
+
+    override val autoSummaryEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[autoSummaryEnabledKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override suspend fun setAutoSummaryEnabled(enabled: Boolean) {
+        dataStore.edit { it[autoSummaryEnabledKey] = enabled }
+    }
+
+    override val conferenceModeEffectsEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[conferenceModeEffectsEnabledKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override suspend fun setConferenceModeEffectsEnabled(enabled: Boolean) {
+        dataStore.edit { it[conferenceModeEffectsEnabledKey] = enabled }
+    }
+
+    override val bargeInEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[bargeInEnabledKey] ?: true }
+        .stateIn(scope, SharingStarted.Eagerly, true)
+
+    override suspend fun setBargeInEnabled(enabled: Boolean) {
+        dataStore.edit { it[bargeInEnabledKey] = enabled }
+    }
+
+    override val activationSoundUri: StateFlow<String?> = dataStore.data
+        .map { preferences -> preferences[activationSoundUriKey] }
+        .stateIn(scope, SharingStarted.Eagerly, null)
+
+    override suspend fun setActivationSoundUri(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri == null) preferences.remove(activationSoundUriKey)
+            else preferences[activationSoundUriKey] = uri
+        }
+    }
+
+    override val hapticFeedbackEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[hapticFeedbackEnabledKey] ?: true }
+        .stateIn(scope, SharingStarted.Eagerly, true)
+
+    override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
+        dataStore.edit { it[hapticFeedbackEnabledKey] = enabled }
     }
 }

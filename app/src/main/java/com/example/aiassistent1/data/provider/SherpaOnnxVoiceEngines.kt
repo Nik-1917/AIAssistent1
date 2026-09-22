@@ -1,6 +1,8 @@
 package com.example.aiassistent1.data.provider
 
 import android.content.Context
+import com.example.aiassistent1.domain.interfaces.KeywordSpotter as IKeywordSpotter
+import com.example.aiassistent1.domain.interfaces.SpeakerIdentifier
 import com.example.aiassistent1.domain.interfaces.SpeechRecognizer
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
@@ -18,6 +20,13 @@ import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
+import com.k2fsa.sherpa.onnx.KeywordSpotter
+import com.k2fsa.sherpa.onnx.KeywordSpotterConfig
+import com.k2fsa.sherpa.onnx.OnlineModelConfig
+import com.k2fsa.sherpa.onnx.OnlineTransducerModelConfig
+import com.k2fsa.sherpa.onnx.SpeakerEmbeddingExtractor
+import com.k2fsa.sherpa.onnx.SpeakerEmbeddingExtractorConfig
+import com.k2fsa.sherpa.onnx.SpeakerEmbeddingManager
 import com.k2fsa.sherpa.onnx.SileroVadModelConfig
 import com.k2fsa.sherpa.onnx.Vad
 import com.k2fsa.sherpa.onnx.VadModelConfig
@@ -155,17 +164,30 @@ class SherpaOnnxVoiceActivityDetector(
         }
     }
 
-    override suspend fun accept(samples: FloatArray): List<FloatArray> {
+    override suspend fun accept(samples: FloatArray): List<FloatArray> = acceptTimed(samples).map { it.samples }
+
+    override fun isSpeechDetected(): Boolean = vad?.isSpeechDetected() == true
+
+    override suspend fun flushTimed(): List<com.example.aiassistent1.domain.interfaces.TimedVoiceSegment> = mutex.withLock {
+        val activeVad = vad ?: return@withLock emptyList()
+        activeVad.flush()
+        drain(activeVad)
+    }
+
+    private fun drain(activeVad: Vad) = buildList {
+        while (!activeVad.empty()) {
+            val segment = activeVad.front()
+            add(com.example.aiassistent1.domain.interfaces.TimedVoiceSegment(segment.start.toLong(), segment.samples))
+            activeVad.pop()
+        }
+    }
+
+    override suspend fun acceptTimed(samples: FloatArray): List<com.example.aiassistent1.domain.interfaces.TimedVoiceSegment> {
         require(samples.isNotEmpty()) { "Аудиофрагмент пуст" }
         return mutex.withLock {
             val activeVad = vad ?: createVad(modelProvider.getAssets().getOrThrow()).also { vad = it }
             activeVad.acceptWaveform(samples)
-            buildList {
-                while (!activeVad.empty()) {
-                    add(activeVad.front().samples)
-                    activeVad.pop()
-                }
-            }
+            drain(activeVad)
         }
     }
 
@@ -203,4 +225,104 @@ class SherpaOnnxVoiceActivityDetector(
         const val MAX_SPEECH_DURATION_SECONDS = 30f
         const val WINDOW_SIZE = 512
     }
+}
+
+class SherpaOnnxKeywordSpotter(
+    private val context: Context,
+    private val modelProvider: VoiceModelProvider,
+    private val settingsRepository: SettingsRepository,
+) : IKeywordSpotter {
+    private val mutex = Mutex()
+    private var kws: KeywordSpotter? = null
+    private var stream: com.k2fsa.sherpa.onnx.OnlineStream? = null
+    private var configuredWord: String? = null
+
+    private val available by lazy { listOf("encoder.onnx", "decoder.onnx", "joiner.onnx", "tokens.txt")
+        .all { name -> runCatching { context.assets.open("voice/kws/$name").use { it.read() >= 0 } }.getOrDefault(false) }
+    }
+    override fun isAvailable(): Boolean = available
+
+    override suspend fun prepare() = withContext(Dispatchers.Default) {
+        val word = settingsRepository.readAudioPreferences().wakeWord
+        mutex.withLock { ensureStream(word) }
+    }
+
+    override suspend fun accept(samples: FloatArray): String? = withContext(Dispatchers.Default) {
+        val word = settingsRepository.readAudioPreferences().wakeWord
+        mutex.withLock {
+            ensureStream(word)
+            val engine = checkNotNull(kws)
+            val activeStream = checkNotNull(stream)
+            activeStream.acceptWaveform(samples, 16_000)
+            while (engine.isReady(activeStream)) engine.decode(activeStream)
+            engine.getResult(activeStream).keyword.takeIf(String::isNotBlank)?.also { engine.reset(activeStream) }
+        }
+    }
+
+    private fun ensureStream(word: String) {
+        check(isAvailable()) { "Совместимая KWS-модель не установлена" }
+        if (kws == null) {
+            // Never load the bundled offline GigaAM as a streaming model.
+            kws = KeywordSpotter(context.assets, KeywordSpotterConfig(
+                featConfig = FeatureConfig(sampleRate = 16_000, featureDim = 80, dither = 0f),
+                modelConfig = OnlineModelConfig(
+                    transducer = OnlineTransducerModelConfig(encoder = "voice/kws/encoder.onnx",
+                        decoder = "voice/kws/decoder.onnx", joiner = "voice/kws/joiner.onnx"),
+                    tokens = "voice/kws/tokens.txt", modelType = "zipformer2", numThreads = 1),
+                keywordsFile = "",
+            ))
+        }
+        if (stream == null || configuredWord != word) {
+            val tokens = context.assets.open("voice/kws/tokens.txt").bufferedReader().useLines { lines ->
+                lines.map { it.substringBeforeLast(' ') }.filter { it.isNotBlank() && !it.startsWith("<") }.toList()
+            }
+            val encoded = com.example.aiassistent1.domain.model.WakeWordTokens.encode(word, tokens)
+            stream?.release()
+            stream = kws!!.createStream("$encoded @$word")
+            configuredWord = word
+        }
+    }
+    override fun reset() { stream?.let { kws?.reset(it) } }
+    override fun close() {
+        stream?.release(); stream = null
+        kws?.release(); kws = null; configuredWord = null
+    }
+}
+
+class SherpaOnnxSpeakerIdentifier(
+    private val context: Context,
+    private val modelProvider: VoiceModelProvider,
+) : SpeakerIdentifier {
+    private val mutex = Mutex()
+    private var extractor: SpeakerEmbeddingExtractor? = null
+    override suspend fun prepare() = withContext(Dispatchers.Default) {
+        mutex.withLock { getExtractor() }
+        Unit
+    }
+    private suspend fun getExtractor(): SpeakerEmbeddingExtractor =
+        extractor ?: run {
+            val path = modelProvider.getAssets().getOrThrow().speakerModel
+                ?: error("Модель Voice ID не установлена")
+            context.assets.open(path).use { check(it.read() != -1) }
+            SpeakerEmbeddingExtractor(context.assets,
+                SpeakerEmbeddingExtractorConfig(model = path, numThreads = 1, debug = false, provider = "cpu"))
+                .also { extractor = it }
+        }
+
+    override suspend fun computeEmbedding(samples: FloatArray): FloatArray? = withContext(Dispatchers.Default) {
+        if (samples.size < 8_000 || samples.any { !it.isFinite() }) return@withContext null
+        mutex.withLock {
+            val active = getExtractor()
+            val stream = active.createStream()
+            try {
+                stream.acceptWaveform(samples, 16_000)
+                stream.inputFinished()
+                if (!active.isReady(stream)) null
+                else active.compute(stream).takeIf(com.example.aiassistent1.domain.model.VoiceEmbedding::isValid)
+            } finally { stream.release() }
+        }
+    }
+    override fun verify(embedding1: FloatArray, embedding2: FloatArray, threshold: Float) =
+        com.example.aiassistent1.domain.model.VoiceEmbedding.matches(embedding1, embedding2, threshold)
+    override fun close() { extractor?.release(); extractor = null }
 }

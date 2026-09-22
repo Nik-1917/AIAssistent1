@@ -29,6 +29,7 @@ class BundledVoiceModelProvider(
                     ttsTokens = TTS_TOKENS,
                     ttsDataDirectory = copyTtsDataDirectory().absolutePath,
                     vadModel = VAD_MODEL,
+                    speakerModel = "voice/speaker/model.onnx",
                 )
             }.also { cachedAssets = it }
         }

@@ -20,7 +20,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild { cmake { arguments += "-DANDROID_STL=c++_shared" } }
     }
+    ndkVersion = "28.2.13676358"
+    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
 
     buildTypes {
         release {
@@ -50,7 +53,10 @@ dependencies {
     implementation(files("libs/sherpa-onnx-1.13.4.aar"))
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
     ksp(libs.androidx.room.compiler)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

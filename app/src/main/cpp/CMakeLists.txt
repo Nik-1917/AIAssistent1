@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(assistant_audio LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(LAME ${CMAKE_CURRENT_SOURCE_DIR}/third_party/lame)
+file(GLOB LAME_SRC ${LAME}/libmp3lame/*.c)
+add_library(mp3lame SHARED ${LAME_SRC})
+target_include_directories(mp3lame PRIVATE ${LAME}/include ${LAME}/libmp3lame)
+target_compile_definitions(mp3lame PRIVATE STDC_HEADERS=1 HAVE_STDINT_H=1 HAVE_ERRNO_H=1 HAVE_FCNTL_H=1 ieee754_float32_t=float ieee754_float64_t=double)
+target_link_libraries(mp3lame m)
+set(WEBRTC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/webrtc)
+file(GLOB AEC_SRC ${WEBRTC}/webrtc/modules/audio_processing/aec/*.c)
+file(GLOB NS_SRC ${WEBRTC}/webrtc/modules/audio_processing/ns/*.c)
+file(GLOB SPL_SRC ${WEBRTC}/webrtc/common_audio/signal_processing/*.c)
+list(FILTER AEC_SRC EXCLUDE REGEX "_(neon|mips|sse2)\\.c$")
+list(FILTER NS_SRC EXCLUDE REGEX "(nsx|suppression_x|_neon|_mips)")
+list(FILTER SPL_SRC EXCLUDE REGEX "(_neon|_mips|_unittest)")
+set(WEBRTC_SRC ${AEC_SRC} ${NS_SRC} ${SPL_SRC}
+    ${WEBRTC}/webrtc/common_audio/fft4g.c ${WEBRTC}/webrtc/common_audio/ring_buffer.c
+    ${WEBRTC}/webrtc/modules/audio_processing/utility/delay_estimator.c
+    ${WEBRTC}/webrtc/modules/audio_processing/utility/delay_estimator_wrapper.c)
+if(ANDROID_ABI MATCHES "x86")
+    list(APPEND WEBRTC_SRC ${WEBRTC}/webrtc/modules/audio_processing/aec/aec_core_sse2.c
+        ${WEBRTC}/webrtc/modules/audio_processing/aec/aec_rdft_sse2.c
+        ${WEBRTC}/webrtc/system_wrappers/source/cpu_features.cc)
+endif()
+add_library(assistant_audio SHARED audio_jni.cpp ${WEBRTC_SRC})
+target_include_directories(assistant_audio PRIVATE ${WEBRTC} ${LAME}/include)
+target_compile_definitions(assistant_audio PRIVATE WEBRTC_POSIX=1)
+target_link_libraries(assistant_audio mp3lame log m)
