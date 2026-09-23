@@ -19,7 +19,11 @@ class ConferenceService : Service() {
     private val manager by lazy { AppModule.provideConferenceManager(this) }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == STOP) { manager.stopConference(); return START_NOT_STICKY }
+        if (intent?.action == STOP) {
+            manager.stopConference()
+            if (observer?.isActive != true) stopSelf()
+            return START_NOT_STICKY
+        }
         try {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel(CHANNEL, "Запись конференций", NotificationManager.IMPORTANCE_LOW))
@@ -39,7 +43,10 @@ class ConferenceService : Service() {
                     }
                 }
             }
-        } catch (_: Exception) { manager.stopConference(); stopSelf() }
+        } catch (error: Exception) {
+            manager.reportServiceFailure(error.message ?: "Не удалось запустить службу записи")
+            stopSelf()
+        }
         return START_NOT_STICKY
     }
     private fun notification(text: String): Notification = NotificationCompat.Builder(this, CHANNEL)

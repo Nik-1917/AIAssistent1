@@ -9,6 +9,7 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 .kotlin/errors/
+.kotlin/sessions/
 /build
 **/build/
 /captures

@@ -15,7 +15,6 @@ room = "2.7.2"
 dataStore = "1.1.7"
 ksp = "2.3.6"
 paging = "3.5.1"
-webrtc = "114.5735.10"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,7 +46,6 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime-ktx", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
-webrtc = { group = "io.github.webrtc-sdk", name = "android", version.ref = "webrtc" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 
 [plugins]

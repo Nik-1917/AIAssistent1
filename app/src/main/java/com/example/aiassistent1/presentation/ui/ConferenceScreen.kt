@@ -3,7 +3,6 @@ package com.example.aiassistent1.presentation.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
@@ -103,8 +102,6 @@ fun ConferenceScreen(chatViewModel: ChatViewModel, onClose: () -> Unit) {
         player.stop()
         chatViewModel.prepareForConference()
         scope.launch {
-            // The previous voice session owns microphone shutdown; allow it to finish before service capture.
-            delay(150)
             try { ConferenceService.start(context, title.ifBlank { "Конференция" }); error = null }
             catch (e: Exception) { error = e.message ?: "Не удалось начать запись" }
         }
@@ -181,53 +178,59 @@ fun ConferenceScreen(chatViewModel: ChatViewModel, onClose: () -> Unit) {
                         if (item == null) {
                             Text("Загрузка записи…")
                         } else {
-                            Text(item.title, style = MaterialTheme.typography.titleLarge)
-                            Text(formatConferenceTime(item.duration), style = MaterialTheme.typography.bodySmall)
-                            item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            if (item.transcriptEvicted) Text("Транскрипт удалён при очистке кэша. Аудиозапись сохранена.")
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilledTonalIconButton(enabled = item.status != "recording" && !recording.recording && !recording.finishing,
-                                    onClick = { player.toggle(item.filePath) }) {
-                                    Icon(if (playerState.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        if (playerState.playing) "Пауза" else "Воспроизвести")
-                                }
-                                Text(formatConferenceTime(playerState.positionMs))
-                                Spacer(Modifier.weight(1f))
-                                IconButton(enabled = item.status != "recording" && !busy, onClick = {
-                                    exportSource = item; exportPicker.launch("conference_${item.id}.mp3")
-                                }) { Icon(Icons.Default.SaveAlt, "Экспортировать MP3") }
-                                IconButton(enabled = item.status != "recording" && !busy, onClick = { deleting = item }) {
-                                    Icon(Icons.Default.DeleteOutline, "Удалить запись")
-                                }
-                            }
-                            playerState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            if (item.duration > 0) Slider(value = playerState.positionMs.toFloat().coerceIn(0f, item.duration.toFloat()),
-                                onValueChange = { player.seek(item.filePath, it.toLong(), play = false) },
-                                valueRange = 0f..item.duration.toFloat(),
-                                enabled = item.status != "recording" && !recording.recording)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(enabled = item.status != "recording" && !chatState.isProcessing && !item.transcriptEvicted,
-                                    onClick = { chatViewModel.summarizeConference(id) }) { Text("Создать выжимку") }
-                                if (chatState.isProcessing) TextButton(onClick = { chatViewModel.stopGeneration(false) }) { Text("Остановить") }
-                            }
-                            summaryState?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                            item.summary?.let { summary ->
-                                var expanded by rememberSaveable(id) { mutableStateOf(false) }
-                                Card(onClick = { expanded = !expanded }) {
-                                    Column(Modifier.padding(12.dp)) {
-                                        Text("Выжимка", style = MaterialTheme.typography.titleSmall)
-                                        Text(summary, maxLines = if (expanded) Int.MAX_VALUE else 4, style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                            }
-                            OutlinedTextField(search, { search = it.take(200) }, label = { Text("Поиск по словам транскрипта") },
-                                leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                             val flow = remember(id, debouncedSearch) {
                                 Pager(PagingConfig(40, enablePlaceholders = false)) { repository.getTranscriptLinesPaging(id, debouncedSearch) }.flow
                             }
                             val lines = flow.collectAsLazyPagingItems()
-                            PagingStatus(lines.loadState.refresh, lines.itemCount == 0, "Фразы не найдены", lines::retry)
                             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
+                                item(key = "details") {
+                                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        Text(item.title, style = MaterialTheme.typography.titleLarge)
+                                        Text(formatConferenceTime(item.duration), style = MaterialTheme.typography.bodySmall)
+                                        item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                                        if (item.transcriptEvicted) Text("Транскрипт удалён при очистке кэша. Аудиозапись сохранена.")
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            FilledTonalIconButton(enabled = item.status != "recording" && !recording.recording && !recording.finishing,
+                                                onClick = { player.toggle(item.filePath) }) {
+                                                Icon(if (playerState.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                    if (playerState.playing) "Пауза" else "Воспроизвести")
+                                            }
+                                            Text(formatConferenceTime(playerState.positionMs))
+                                            Spacer(Modifier.weight(1f))
+                                            IconButton(enabled = item.status != "recording" && !busy, onClick = {
+                                                exportSource = item; exportPicker.launch("conference_${item.id}.mp3")
+                                            }) { Icon(Icons.Default.SaveAlt, "Экспортировать MP3") }
+                                            IconButton(enabled = item.status != "recording" && !busy, onClick = { deleting = item }) {
+                                                Icon(Icons.Default.DeleteOutline, "Удалить запись")
+                                            }
+                                        }
+                                        playerState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                                        if (item.duration > 0) Slider(value = playerState.positionMs.toFloat().coerceIn(0f, item.duration.toFloat()),
+                                            onValueChange = { player.seek(item.filePath, it.toLong(), play = false) },
+                                            valueRange = 0f..item.duration.toFloat(),
+                                            enabled = item.status != "recording" && !recording.recording)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            OutlinedButton(enabled = item.status != "recording" && !chatState.isProcessing && !item.transcriptEvicted,
+                                                onClick = { chatViewModel.summarizeConference(id) }) { Text("Создать выжимку") }
+                                            if (chatState.isProcessing) TextButton(onClick = { chatViewModel.stopGeneration(false) }) { Text("Остановить") }
+                                        }
+                                        summaryState?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                                        item.summary?.let { summary ->
+                                            var expanded by rememberSaveable(id) { mutableStateOf(false) }
+                                            Card(onClick = { expanded = !expanded }) {
+                                                Column(Modifier.padding(12.dp)) {
+                                                    Text("Выжимка", style = MaterialTheme.typography.titleSmall)
+                                                    Text(summary, maxLines = if (expanded) Int.MAX_VALUE else 4, style = MaterialTheme.typography.bodySmall)
+                                                }
+                                            }
+                                        }
+                                        OutlinedTextField(search, { search = it.take(200) }, label = { Text("Поиск по словам транскрипта") },
+                                            leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                    }
+                                }
+                                item(key = "transcript-status") {
+                                    PagingStatus(lines.loadState.refresh, lines.itemCount == 0, "Фразы не найдены", lines::retry)
+                                }
                                 items(lines.itemCount, key = lines.itemKey { it.id }) { index ->
                                     lines[index]?.let { line ->
                                         Column(Modifier.fillMaxWidth().clickable(enabled = item.status != "recording" && !recording.recording) {

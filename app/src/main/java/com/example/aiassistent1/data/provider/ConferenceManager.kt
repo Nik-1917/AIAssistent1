@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.data.local.*
 import com.example.aiassistent1.data.repository.ConferenceRepositoryImpl
@@ -49,6 +48,10 @@ class ConferenceManager(
         job = scope.launch { record(title.trim().ifBlank { "Конференция" }.take(160)) }
     }
     fun stopConference() { stopRequested.set(true) }
+    fun reportServiceFailure(message: String) {
+        stopConference()
+        mutableState.update { it.copy(error = message) }
+    }
 
     private suspend fun record(title: String) {
         val token = Any()
@@ -189,13 +192,23 @@ class ConferenceManager(
         catch (error: LinkageError) { failure = "Не удалось загрузить аудиобиблиотеку: ${error.message}" }
         finally {
             withContext(NonCancellable) {
-                recorder?.let { runCatching { it.stop() }; it.release() }
-                processor?.let(processing::close)
+                failure = failure ?: mutableState.value.error
+                fun cleanup(action: () -> Unit) {
+                    runCatching(action).onFailure { error ->
+                        if (failure == null) failure = error.message ?: "Ошибка завершения записи"
+                    }
+                }
+                recorder?.let { runCatching { it.stop() }; cleanup { it.release() } }
+                processor?.let { cleanup { processing.close(it) } }
                 if (ownsMicrophone) MicrophoneCoordinator.release(token)
                 id?.let {
                     runCatching { repository.finish(it, if (samplesWritten == 0L) "failed" else "complete",
-                        samplesWritten * 1000 / 16_000, failure) }
-                    if (samplesWritten > 0 && settings.readAudioPreferences().autoSummary) pendingSummary.value = it
+                        samplesWritten * 1000 / 16_000, failure) }.onFailure { error ->
+                        failure = failure ?: error.message ?: "Не удалось сохранить сведения о записи"
+                    }
+                    if (samplesWritten > 0 && runCatching { settings.readAudioPreferences().autoSummary }.getOrDefault(false)) {
+                        pendingSummary.value = it
+                    }
                 }
                 mutableState.update { it.copy(recording = false, finishing = false, error = failure) }
             }

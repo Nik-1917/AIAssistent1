@@ -153,6 +153,7 @@ class SherpaOnnxVoiceActivityDetector(
 ) : VoiceActivityDetector {
     private val mutex = Mutex()
     private var vad: Vad? = null
+    @Volatile private var speechDetected = false
 
     override suspend fun prepare() {
         withContext(Dispatchers.Default) {
@@ -166,11 +167,12 @@ class SherpaOnnxVoiceActivityDetector(
 
     override suspend fun accept(samples: FloatArray): List<FloatArray> = acceptTimed(samples).map { it.samples }
 
-    override fun isSpeechDetected(): Boolean = vad?.isSpeechDetected() == true
+    override fun isSpeechDetected(): Boolean = speechDetected
 
     override suspend fun flushTimed(): List<com.example.aiassistent1.domain.interfaces.TimedVoiceSegment> = mutex.withLock {
         val activeVad = vad ?: return@withLock emptyList()
         activeVad.flush()
+        speechDetected = activeVad.isSpeechDetected()
         drain(activeVad)
     }
 
@@ -187,15 +189,19 @@ class SherpaOnnxVoiceActivityDetector(
         return mutex.withLock {
             val activeVad = vad ?: createVad(modelProvider.getAssets().getOrThrow()).also { vad = it }
             activeVad.acceptWaveform(samples)
+            // The UI reads the cached flag without entering the native capture engine.
+            speechDetected = activeVad.isSpeechDetected()
             drain(activeVad)
         }
     }
 
     override fun reset() {
+        speechDetected = false
         vad?.reset()
     }
 
     override fun close() {
+        speechDetected = false
         vad?.release()
         vad = null
     }
