@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "blocked",
+  "upstream_commit": "b26b3dffa3ab19255963329eab9e733e441d7486",
+  "architecture": "ResNet15",
+  "weights_sha256": null,
+  "weights_license_evidence": null,
+  "training_data_evidence": null,
+  "model_version": null,
+  "n_maps": null,
+  "embedding_size": null,
+  "preprocessing": null,
+  "russian_validation": null,
+  "onnx_parity": null,
+  "android_validation": null,
+  "keyword_threshold": null,
+  "blockers": [
+    "No artifact-specific weights licensing and training provenance confirmation",
+    "Checkpoint configuration not verified; upstream CLI defaults are not checkpoint metadata",
+    "No consented human Russian evaluation corpus available in this task",
+    "No physical-phone or Android encoder validation; stage-2 emulator DSP/storage tests do not clear this gate"
+  ]
+}

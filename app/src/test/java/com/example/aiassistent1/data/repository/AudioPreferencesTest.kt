@@ -6,6 +6,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AudioPreferencesTest {
+    @Test fun legacyDefaultAndUnknownFutureEngineAreSafe() = runTest {
+        val legacy = com.example.aiassistent1.domain.model.WakeWordEngine.LEGACY_ASR
+        val fresh = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
+        assertEquals(legacy, fresh.readAudioPreferences().wakeWordEngine)
+        val unknown = DataStoreSettingsRepository(TestPreferencesDataStore(preferencesOf(
+            stringPreferencesKey("wake_word_engine") to "future-engine")), backgroundScope)
+        assertEquals(legacy, unknown.readAudioPreferences().wakeWordEngine)
+    }
+
+    @Test fun engineSettingDoesNotEnableVoiceIdOrInvalidateOwner() = runTest {
+        val repository = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
+        val before = repository.readAudioPreferences()
+        repository.setWakeWordEngine(com.example.aiassistent1.domain.model.WakeWordEngine.METRIC_KWS_SHADOW)
+        val after = repository.readAudioPreferences()
+        assertEquals(before, after.copy(wakeWordEngine = before.wakeWordEngine))
+        assertEquals(com.example.aiassistent1.domain.model.WakeWordEngine.METRIC_KWS_SHADOW, after.wakeWordEngine)
+    }
     @Test fun enrollmentRequiresActualEnableTransition() = runTest {
         val r = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
         assertFalse(r.readAudioPreferences().voiceIdEnabled)

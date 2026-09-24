@@ -39,6 +39,12 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets {
+        getByName("test").kotlin.directories.add("src/sharedTest/java")
+        getByName("androidTest").kotlin.directories.add("src/sharedTest/java")
+        // Analytic DSP fixtures belong only to test APKs, never the application assets.
+        getByName("androidTest").assets.directories.add("src/test/resources/metric_kws")
+    }
 }
 
 ksp {

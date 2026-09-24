@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import com.example.aiassistent1.domain.interfaces.*
 import com.example.aiassistent1.domain.model.*
+import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -24,6 +25,7 @@ class SherpaOnnxVoiceInputProvider(
     private val voiceProfileManager: VoiceProfileManager,
     private val settingsRepository: SettingsRepository,
     private val processing: AudioProcessingManager,
+    private val personalKeyword: PersonalKeywordActivation? = null,
 ) : InputProvider, AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
@@ -35,6 +37,7 @@ class SherpaOnnxVoiceInputProvider(
     private var activeSessionId: Long? = null
     private var nextSessionId = 0L
     private var captureWake = false
+    private var captureEnrollment = false
     private val warmUpJob = scope.launch {
         try { vad.prepare(); recognizer.prepare() }
         catch (cancelled: CancellationException) { throw cancelled }
@@ -49,7 +52,34 @@ class SherpaOnnxVoiceInputProvider(
     override fun startWakeWord() = startCapture(true)
     override fun startBargeIn() = startCapture(false)
 
-    private fun startCapture(wake: Boolean): Long = synchronized(lock) {
+    override suspend fun captureEnrollmentSegment(): FloatArray {
+        val segment = CompletableDeferred<FloatArray>()
+        var enrollmentJob: Job? = null
+        var session: com.example.aiassistent1.service.GenerationForegroundService.Session? = null
+        try {
+            return withTimeout(12_000) {
+                withContext(Dispatchers.Main.immediate) {
+                    session = com.example.aiassistent1.service.GenerationForegroundService.acquire(
+                        context, com.example.aiassistent1.service.GenerationForegroundService.Kind.Microphone)
+                }
+                session?.awaitReady()
+                synchronized(lock) {
+                    check(recordingJob?.isActive != true) { "Сначала остановите голосовой ввод" }
+                    startCapture(false, segment)
+                    enrollmentJob = recordingJob
+                }
+                segment.await()
+            }
+        } finally {
+            withContext(NonCancellable) {
+                enrollmentJob?.cancelAndJoin()
+                withContext(Dispatchers.Main.immediate) { session?.close() }
+            }
+        }
+    }
+
+    private fun startCapture(wake: Boolean, enrollment: CompletableDeferred<FloatArray>? = null): Long = synchronized(lock) {
+        check(!captureEnrollment || recordingJob?.isActive != true) { "Дождитесь завершения записи ключевой фразы" }
         activeSessionId?.let {
             if (recordingJob?.isActive == true && (captureWake == wake || vad.isSpeechDetected())) return@synchronized it
         }
@@ -58,17 +88,27 @@ class SherpaOnnxVoiceInputProvider(
         val previous = recordingJob
         previous?.cancel()
         captureWake = wake
+        captureEnrollment = enrollment != null
         val id = ++nextSessionId
         activeSessionId = id
         recordingJob = scope.launch {
-            previous?.join()
-            warmUpJob.join()
-            try { capture(id, wake) }
-            catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { if (isCurrent(id)) errors.emit(VoiceInputError(id, error)) }
-            catch (error: LinkageError) { if (isCurrent(id)) errors.emit(VoiceInputError(id, IllegalStateException("Не удалось загрузить аудиобиблиотеку", error))) }
+            try {
+                previous?.join()
+                warmUpJob.join()
+                capture(id, wake, enrollment)
+            }
+            catch (cancelled: CancellationException) { enrollment?.cancel(cancelled); throw cancelled }
+            catch (error: Exception) {
+                if (enrollment != null) enrollment.completeExceptionally(error)
+                else if (isCurrent(id)) errors.emit(VoiceInputError(id, error))
+            }
+            catch (error: LinkageError) {
+                val wrapped = IllegalStateException("Не удалось загрузить аудиобиблиотеку", error)
+                if (enrollment != null) enrollment.completeExceptionally(wrapped)
+                else if (isCurrent(id)) errors.emit(VoiceInputError(id, wrapped))
+            }
             finally {
-                synchronized(lock) { if (activeSessionId == id) { activeSessionId = null; activity.value = AudioSessionState.Idle } }
+                synchronized(lock) { if (activeSessionId == id) { activeSessionId = null; captureEnrollment = false; activity.value = AudioSessionState.Idle } }
             }
         }
         id
@@ -82,18 +122,28 @@ class SherpaOnnxVoiceInputProvider(
     override fun close() {
         stop(); warmUpJob.cancel()
         scope.launch {
-            recordingJob?.join(); warmUpJob.join()
-            recognizer.close(); vad.close(); keywordSpotter.close()
-            scope.cancel()
+            try {
+                recordingJob?.join(); warmUpJob.join()
+                try { personalKeyword?.close() }
+                finally {
+                    try { recognizer.close() }
+                    finally {
+                        try { vad.close() }
+                        finally { keywordSpotter.close() }
+                    }
+                }
+            } finally { scope.cancel() }
         }
     }
 
-    private suspend fun capture(id: Long, wake: Boolean) = coroutineScope {
+    private suspend fun capture(id: Long, wake: Boolean, enrollment: CompletableDeferred<FloatArray>? = null) = coroutineScope {
         val token = Any()
         MicrophoneCoordinator.acquire(token)
         var recorder: AudioRecord? = null
         var processor: AudioProcessingManager.Session? = null
         try {
+            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED) throw SecurityException("Нет разрешения на запись аудио")
             val minBuffer = AudioRecord.getMinBufferSize(16_000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
             check(minBuffer > 0) { "Запись 16 кГц недоступна" }
             recorder = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, 16_000,
@@ -104,13 +154,30 @@ class SherpaOnnxVoiceInputProvider(
             val useKws = wake && keywordSpotter.isAvailable()
             if (useKws) keywordSpotter.prepare()
             val segments = Channel<Pair<FloatArray, Boolean>>(4)
+            // A bounded observer of the SAME processed VAD utterance. It never controls activation.
+            // No encoder is shipped until weights licensing and Russian/parity checks are complete.
+            val shadowSegments = if (wake && personalKeyword?.available == true)
+                Channel<FloatArray>(Channel.CONFLATED, onUndeliveredElement = { it.fill(0f) }) else null
+            val shadowJob = shadowSegments?.let { queue ->
+                launch {
+                    for (segment in queue) {
+                        try {
+                            personalKeyword?.evaluate(segment, WakeWordEngine.METRIC_KWS_SHADOW)
+                        } finally { segment.fill(0f) }
+                    }
+                }
+            }
             val feedbackPlaying = AtomicBoolean(false)
-            activity.value = if (wake || initial.needsEnrollment && initial.voiceIdEnabled) AudioSessionState.Waiting else AudioSessionState.Listening
+            activity.value = if (enrollment != null) AudioSessionState.Enrolling
+                else if (wake || initial.needsEnrollment && initial.voiceIdEnabled) AudioSessionState.Waiting else AudioSessionState.Listening
             val recognition = launch {
                 var activatedUntil = 0L
                 var activeWord = initial.wakeWord
                 for ((segment, detected) in segments) {
                     val prefs = settingsRepository.readAudioPreferences()
+                    if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
+                        shadowSegments?.trySend(segment.copyOf())
+                    }
                     if (prefs.wakeWord != activeWord) { activatedUntil = 0; activeWord = prefs.wakeWord }
                     val enrollment = voiceProfileManager.needsEnrollment()
                     val requireName = (wake && SystemClock.elapsedRealtime() > activatedUntil) || enrollment
@@ -162,23 +229,39 @@ class SherpaOnnxVoiceInputProvider(
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
                 val completed = vad.accept(samples)
                 val speech = vad.isSpeechDetected()
-                if (speech && !wasSpeech) {
+                if (speech && !wasSpeech && enrollment == null) {
                     val preferences = settingsRepository.readAudioPreferences()
                     if (preferences.bargeIn && !preferences.voiceIdEnabled) speechStarts.tryEmit(id)
                 }
                 wasSpeech = speech
                 for (segment in completed) {
+                    if (enrollment != null) {
+                        segments.close()
+                        recognition.join()
+                        enrollment.complete(segment)
+                        return@coroutineScope
+                    }
                     check(segments.trySend(segment to keywordDetected).isSuccess) { "Распознавание не успевает за речью. Повторите запрос." }
                     keywordDetected = false
                 }
             }
             segments.close()
             recognition.join()
+            shadowSegments?.close()
+            shadowJob?.cancelAndJoin()
         } finally {
-            recorder?.let { runCatching { it.stop() }; it.release() }
-            processor?.let(processing::close)
-            vad.reset(); keywordSpotter.reset()
-            MicrophoneCoordinator.release(token)
+            try {
+                recorder?.let { runCatching { it.stop() }; it.release() }
+            } finally {
+                try { processor?.let(processing::close) }
+                finally {
+                    try { vad.reset() }
+                    finally {
+                        try { keywordSpotter.reset() }
+                        finally { MicrophoneCoordinator.release(token) }
+                    }
+                }
+            }
         }
     }
 }

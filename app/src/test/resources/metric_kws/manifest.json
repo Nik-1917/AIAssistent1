@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "feature_version": "metric-cli-mfcc40-1s-v1",
+  "status": "dsp_reference_only_not_checkpoint_validation",
+  "upstream_commit": "b26b3dffa3ab19255963329eab9e733e441d7486",
+  "source": "Locally authored analytic signals; no speech, personal recording or training data",
+  "reference": {
+    "python": "3.13.7",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "torch": "2.8.0+cpu",
+    "torchaudio": "2.8.0+cpu",
+    "numpy": "2.5.1",
+    "dtype": "float32",
+    "threads": 1,
+    "device": "cpu"
+  },
+  "recipe": {
+    "sample_rate": 16000,
+    "input_bounds": [
+      8000,
+      128000
+    ],
+    "audio_policy": "upstream_loadWAV_center_one_second",
+    "n_mfcc": 40,
+    "dct_type": 2,
+    "norm": "ortho",
+    "log_mels": false,
+    "melkwargs": {
+      "n_fft": 480,
+      "win_length": 480,
+      "hop_length": 160,
+      "f_min": 0.0,
+      "f_max": 8000.0,
+      "pad": 0,
+      "n_mels": 40,
+      "power": 2.0,
+      "normalized": false,
+      "center": true,
+      "pad_mode": "reflect",
+      "norm": null,
+      "mel_scale": "htk"
+    },
+    "window": "periodic_hann",
+    "db_amin": 1e-10,
+    "db_reference": 1.0,
+    "top_db": 80.0
+  },
+  "feature_shape": [
+    101,
+    40
+  ],
+  "max_absolute_error_limit": 0.002,
+  "cases": [
+    {
+      "name": "silence",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "d0e3bdcfa5889593f1650c27c3b55118d2aafbf6c654dda29ec0b3cff4ca21da"
+    },
+    {
+      "name": "edge_impulses",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "36388e2a867e7f99d4b5747c88d59de769566afc186e47ce82c0e544cff7778f"
+    },
+    {
+      "name": "tone_440",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "6dfc7fc73a0ff5c87665efc1f5fd285f15c2d0defb4e8282aeaa19ac9550793b"
+    },
+    {
+      "name": "chirp",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "e614cb77c0f5c7b4e7ed46912f87257b39e68c18135410ef53829cdaf8a5f88e"
+    },
+    {
+      "name": "mixed_tones",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "96651203d1c2b3a86e3ccb989d9d4cdeca1d4bcc8531b6664a0506226decb00d"
+    },
+    {
+      "name": "noise",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "bbf8ae2da1f7e9a4c00df392c6bf7dea3671ff3f096de69d5d4a8ebe03dad274"
+    },
+    {
+      "name": "quiet_noise",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "ca33dc09b5f7942cad3e3af09476549b8faffdcdada4a5edbe951ff46f57867e"
+    },
+    {
+      "name": "dc",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "9f10ca5048fd91779e6904170d0c59e165739a724ebe331c72d5a97703568e31"
+    },
+    {
+      "name": "nyquist",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "4b8b00137b02bd55dc1e36245296a631056b1ae1a83fe635b132f7d63b730593"
+    },
+    {
+      "name": "global_db_floor",
+      "samples": 16000,
+      "bytes": 80172,
+      "sha256": "1578d36cb78a4019400993d15fce9534f971156d713551dd260319620e17305d"
+    },
+    {
+      "name": "length_8000",
+      "samples": 8000,
+      "bytes": 48172,
+      "sha256": "2da5b407e42fb1f6a31e79687a555927b9ad02399c3a9d994323a2dcf94ad8b6"
+    },
+    {
+      "name": "length_8001",
+      "samples": 8001,
+      "bytes": 48176,
+      "sha256": "55cc68dc1427e49ec9b44e320f2883ff31f7ed57b1802461a56c567c93602310"
+    },
+    {
+      "name": "length_15999",
+      "samples": 15999,
+      "bytes": 80168,
+      "sha256": "97523ffd54918edfcd4e9ed16daefa668c600b8d26ba2ca4ff69910db1951f18"
+    },
+    {
+      "name": "length_16001",
+      "samples": 16001,
+      "bytes": 80176,
+      "sha256": "897174f52ec738b888a808b317681efad9136edee238a81363a5e6ae348fd197"
+    },
+    {
+      "name": "length_16002",
+      "samples": 16002,
+      "bytes": 80180,
+      "sha256": "38480e2375fa4783a19040d55fc980d018e5450bba3f3efc43614df8dd52ef23"
+    },
+    {
+      "name": "length_32001",
+      "samples": 32001,
+      "bytes": 144176,
+      "sha256": "85fd144684afae2e289478c7f548b072c28a455b36eba23115a7a4ee7eef4e14"
+    },
+    {
+      "name": "length_128000",
+      "samples": 128000,
+      "bytes": 528172,
+      "sha256": "05d0856946a01ea291f09fd2363d03c43384943015243b13238d98788087f0a8"
+    }
+  ]
+}

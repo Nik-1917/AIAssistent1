@@ -19,6 +19,8 @@ interface InputProvider {
     fun startContinuous() = start()
     fun startWakeWord() = start()
     fun startBargeIn() = start()
+    /** One VAD utterance; implementations must share their existing capture ownership. */
+    suspend fun captureEnrollmentSegment(): FloatArray = error("Запись ключевой фразы недоступна")
     fun stop()
 }
 

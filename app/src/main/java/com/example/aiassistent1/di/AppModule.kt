@@ -30,6 +30,7 @@ import com.example.aiassistent1.domain.provider.SystemPromptProvider
 import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase
+import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,6 +74,22 @@ object AppModule {
 
 	@Volatile
 	private var voiceProfileManager: VoiceProfileManager? = null
+
+	@Volatile
+	private var metricKwsProfiles: MetricKwsProfileManager? = null
+
+	fun provideMetricKwsProfiles(context: Context): MetricKwsProfileManager = metricKwsProfiles ?: synchronized(this) {
+		metricKwsProfiles ?: MetricKwsProfileManager(context.applicationContext).also { metricKwsProfiles = it }
+	}
+
+	/** Each consumer owns its encoder lifecycle; profile storage is shared and serialized. */
+	fun providePersonalKeywordActivation(context: Context): PersonalKeywordActivation = PersonalKeywordActivation(
+		UnavailableMetricKwsEngine(),
+		provideMetricKwsProfiles(context),
+		{ provideSettingsRepository(context).readAudioPreferences() },
+		{ provideVoiceProfileManager(context).verify(it) },
+		selectLegacy = { provideSettingsRepository(context).setWakeWordEngine(com.example.aiassistent1.domain.model.WakeWordEngine.LEGACY_ASR) },
+	)
 
 	@Volatile
 	private var conferenceDatabase: ConferenceDatabase? = null
@@ -153,6 +170,7 @@ object AppModule {
 		provideVoiceProfileManager(context),
 		provideSettingsRepository(context),
 		provideAudioProcessingManager(context),
+		providePersonalKeywordActivation(context),
 	)
 
 	fun provideSpeechPlayback(context: Context): SpeechPlayback = SherpaOnnxSpeechPlayback(

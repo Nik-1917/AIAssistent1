@@ -79,9 +79,14 @@ class DataStoreSettingsRepository(
             conferenceEffects = p[conferenceModeEffectsEnabledKey] ?: false,
             soundUri = p[activationSoundUriKey], haptics = p[hapticFeedbackEnabledKey] ?: true,
             recordingDirectory = p[recordingDirectoryKey],
+            wakeWordEngine = com.example.aiassistent1.domain.model.WakeWordEngine.fromStored(p[wakeWordEngineKey]),
         )
     }
     override suspend fun readAudioPreferences() = audioPreferences.first()
+    private val wakeWordEngineKey = stringPreferencesKey("wake_word_engine")
+    override suspend fun setWakeWordEngine(engine: com.example.aiassistent1.domain.model.WakeWordEngine) {
+        dataStore.edit { it[wakeWordEngineKey] = engine.name }
+    }
     override suspend fun setWakeWordEnabled(enabled: Boolean) {
         dataStore.edit { it[wakeWordEnabledKey] = enabled }
     }

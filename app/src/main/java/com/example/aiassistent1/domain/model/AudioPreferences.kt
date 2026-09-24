@@ -12,4 +12,5 @@ data class AudioPreferences(
     val soundUri: String? = null,
     val haptics: Boolean = true,
     val recordingDirectory: String? = null,
+    val wakeWordEngine: WakeWordEngine = WakeWordEngine.LEGACY_ASR,
 )

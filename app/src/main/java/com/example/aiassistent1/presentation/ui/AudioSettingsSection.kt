@@ -66,6 +66,12 @@ fun AudioSettingsSection() {
         if (current.voiceIdEnabled) Text(
             if (current.needsEnrollment) "Ожидается первое обращение по имени для запоминания голоса"
             else "Проверка голоса включена", style = MaterialTheme.typography.bodySmall)
+        // Intentionally unavailable until an audited Russian encoder passes reference/device validation.
+        // Do not collect a biometric recording when it cannot be enrolled.
+        Text("Персональная ключевая фраза", style = MaterialTheme.typography.titleSmall)
+        Text("Пока недоступна: модель ещё не прошла проверку лицензии и русской речи. Доступна прежняя активация по имени.",
+            style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = {}, enabled = false) { Text("Записать ключевую фразу") }
         AudioToggle("Прерывать ответ голосом", "Микрофон остаётся активным во время ответа в голосовом режиме",
             current.bargeIn, !saving) { save { settings.setBargeInEnabled(it) } }
         AudioToggle("Вибрация перед ответом", "", current.haptics, !saving) { save { settings.setHapticFeedbackEnabled(it) } }

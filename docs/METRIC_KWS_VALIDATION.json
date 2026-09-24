@@ -1,0 +1,359 @@
+{
+  "date": "2026-09-24",
+  "status": "infrastructure_and_experimental_dsp_validated_model_blocked",
+  "baseline": {
+    "unit_tests": 271,
+    "apk_bytes": 720598327
+  },
+  "android_unit_tests": {
+    "tests": 321,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_android_unit_tests": 50,
+  "python_safety_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0
+  },
+  "gradle_tasks": [
+    ":app:testDebugUnitTest",
+    ":app:assembleDebug",
+    ":app:assembleDebugAndroidTest",
+    ":app:lintDebug"
+  ],
+  "gradle_result": "BUILD SUCCESSFUL",
+  "lint": {
+    "Error": 0,
+    "Warning": 56,
+    "Hint": 7
+  },
+  "apk": {
+    "path": "app\\build\\outputs\\apk\\debug\\app-debug.apk",
+    "bytes": 721577713,
+    "delta_bytes": 979386,
+    "sha256": "e7c3a9d0213e634d20cb444165ed9157c4e3372d82f902d504eb343b670ede61"
+  },
+  "instrumented_tests": {
+    "executed": 3,
+    "failures": 0,
+    "emulator": true,
+    "physical_device": false,
+    "api": 34,
+    "abi": "x86_64",
+    "device": "emulator-5580",
+    "fingerprint": "google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.036.A4/12096271:user/release-keys",
+    "classes": [
+      "MetricKwsFeatureExtractorTest",
+      "MetricKwsStorageTest",
+      "VoiceEnrollmentTest"
+    ],
+    "test_apk_sha256": "66cd70cca79baa9c049305532ee2b80ae9c1edd0b20fd7a17a38a7cb19283ee0"
+  },
+  "models_added": [],
+  "android_dependencies_added": [],
+  "reference_inference_executed": false,
+  "onnx_parity_executed": false,
+  "russian_human_fixtures_evaluated": 0,
+  "latency_ms": null,
+  "ram_bytes": null,
+  "cpu_measurement": null,
+  "battery_comparison": null,
+  "live_metric_activation_enabled": false,
+  "one_shot_hardware_verified": false,
+  "diff_check": "passed",
+  "stage": 2,
+  "previous_stage": {
+    "android_unit_tests": {
+      "tests": 301,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "apk": {
+      "path": "app\\build\\outputs\\apk\\debug\\app-debug.apk",
+      "bytes": 721577626,
+      "delta_bytes": 979299,
+      "sha256": "cb0004bb6517b6c454013f468ee9b7299f3c5c6122d9f3b9dde36ed3c32df685"
+    },
+    "instrumented_tests": {
+      "added_storage_tests": 1,
+      "executed": 0,
+      "reason": "adb devices returned no connected devices"
+    }
+  },
+  "new_android_unit_tests_this_stage": 20,
+  "reference_dsp_executed": true,
+  "android_feature_parity_executed": true,
+  "dsp": {
+    "feature_version": "metric-cli-mfcc40-1s-v1",
+    "reference": {
+      "python": "3.13.7",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "torch": "2.8.0+cpu",
+      "torchaudio": "2.8.0+cpu",
+      "numpy": "2.5.1",
+      "dtype": "float32",
+      "threads": 1,
+      "device": "cpu"
+    },
+    "fixture_manifest_sha256": "632654b2c4065a3879a2e9333bb2955483325f39d333ea98862b941100e80edc",
+    "cases_per_platform": 17,
+    "compared_values_per_platform": 68680,
+    "absolute_error_limit": 0.002,
+    "maximum_absolute_error": 0.00040531158447265625,
+    "fixtures_in_app_apk": false,
+    "fixtures_in_test_apk": true,
+    "shared_test_helper_in_app_apk": false,
+    "notices_in_app_apk": true,
+    "jvm": [
+      {
+        "case": "silence",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00030517578125,
+        "rmse": 4.8490264930629414e-05
+      },
+      {
+        "case": "edge_impulses",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 9.1552734375e-05,
+        "rmse": 1.58288118532198e-05
+      },
+      {
+        "case": "tone_440",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00018215179443359375,
+        "rmse": 5.4443034173775646e-05
+      },
+      {
+        "case": "chirp",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00040531158447265625,
+        "rmse": 3.538801531518343e-05
+      },
+      {
+        "case": "mixed_tones",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.000339508056640625,
+        "rmse": 8.060208101635748e-05
+      },
+      {
+        "case": "noise",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.2592494192258388e-06
+      },
+      {
+        "case": "quiet_noise",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00030517578125,
+        "rmse": 4.8490264930629414e-05
+      },
+      {
+        "case": "dc",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 3.4449731557782964e-06
+      },
+      {
+        "case": "nyquist",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 6.103515625e-05,
+        "rmse": 1.0829230645168728e-05
+      },
+      {
+        "case": "global_db_floor",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00018310546875,
+        "rmse": 2.0390780032086394e-05
+      },
+      {
+        "case": "length_8000",
+        "samples": 8000,
+        "features": 4040,
+        "max_absolute_error": 0.000152587890625,
+        "rmse": 1.6825519153399075e-05
+      },
+      {
+        "case": "length_8001",
+        "samples": 8001,
+        "features": 4040,
+        "max_absolute_error": 0.000152587890625,
+        "rmse": 1.682179538744292e-05
+      },
+      {
+        "case": "length_15999",
+        "samples": 15999,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.2620610972208045e-06
+      },
+      {
+        "case": "length_16001",
+        "samples": 16001,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.2592494192258388e-06
+      },
+      {
+        "case": "length_16002",
+        "samples": 16002,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.238768285242789e-06
+      },
+      {
+        "case": "length_32001",
+        "samples": 32001,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.1909284801598373e-06
+      },
+      {
+        "case": "length_128000",
+        "samples": 128000,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.3171395669078258e-06
+      }
+    ],
+    "android_x86_64": [
+      {
+        "case": "silence",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00030517578125,
+        "rmse": 4.8490264930629414e-05
+      },
+      {
+        "case": "edge_impulses",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 9.1552734375e-05,
+        "rmse": 1.58288118532198e-05
+      },
+      {
+        "case": "tone_440",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00018215179443359375,
+        "rmse": 5.4443034173775646e-05
+      },
+      {
+        "case": "chirp",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00040531158447265625,
+        "rmse": 3.538801531518343e-05
+      },
+      {
+        "case": "mixed_tones",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.000339508056640625,
+        "rmse": 8.060208101635748e-05
+      },
+      {
+        "case": "noise",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.2592494192258388e-06
+      },
+      {
+        "case": "quiet_noise",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00030517578125,
+        "rmse": 4.8490264930629414e-05
+      },
+      {
+        "case": "dc",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 3.4449731557782964e-06
+      },
+      {
+        "case": "nyquist",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 6.103515625e-05,
+        "rmse": 1.0829230645168728e-05
+      },
+      {
+        "case": "global_db_floor",
+        "samples": 16000,
+        "features": 4040,
+        "max_absolute_error": 0.00018310546875,
+        "rmse": 2.0390780032086394e-05
+      },
+      {
+        "case": "length_8000",
+        "samples": 8000,
+        "features": 4040,
+        "max_absolute_error": 0.000152587890625,
+        "rmse": 1.6825519153399075e-05
+      },
+      {
+        "case": "length_8001",
+        "samples": 8001,
+        "features": 4040,
+        "max_absolute_error": 0.000152587890625,
+        "rmse": 1.682179538744292e-05
+      },
+      {
+        "case": "length_15999",
+        "samples": 15999,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.2620610972208045e-06
+      },
+      {
+        "case": "length_16001",
+        "samples": 16001,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.2592494192258388e-06
+      },
+      {
+        "case": "length_16002",
+        "samples": 16002,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.238768285242789e-06
+      },
+      {
+        "case": "length_32001",
+        "samples": 32001,
+        "features": 4040,
+        "max_absolute_error": 1.1444091796875e-05,
+        "rmse": 1.1909284801598373e-06
+      },
+      {
+        "case": "length_128000",
+        "samples": 128000,
+        "features": 4040,
+        "max_absolute_error": 1.52587890625e-05,
+        "rmse": 1.3171395669078258e-06
+      }
+    ],
+    "checkpoint_preprocessing_validated": false,
+    "arm_device_parity_executed": false
+  },
+  "host_reference_packages_added": [
+    "torch==2.8.0+cpu",
+    "torchaudio==2.8.0+cpu"
+  ]
+}

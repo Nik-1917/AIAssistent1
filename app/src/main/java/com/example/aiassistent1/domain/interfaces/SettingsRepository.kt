@@ -14,6 +14,7 @@ interface SettingsRepository {
     suspend fun readAudioPreferences(): com.example.aiassistent1.domain.model.AudioPreferences
     suspend fun completeVoiceEnrollment(revision: Long): Boolean
     suspend fun setWakeWordEnabled(enabled: Boolean)
+    suspend fun setWakeWordEngine(engine: com.example.aiassistent1.domain.model.WakeWordEngine)
     suspend fun setRecordingDirectory(uri: String?)
     val navigationState: Flow<AppNavigationState>
     suspend fun setAppDestination(destination: AppDestination)

@@ -1,0 +1,74 @@
+{
+  "python": "3.13.7",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "environment": "Project-local venv with system-site-packages; only torch/torchaudio installed by task",
+  "installed_by_task": [
+    "torch==2.8.0+cpu",
+    "torchaudio==2.8.0+cpu"
+  ],
+  "wheel_source": "https://download.pytorch.org/whl/cpu",
+  "reference_dependency_versions": {
+    "filelock": {
+      "version": "3.32.2",
+      "requires": []
+    },
+    "fsspec": {
+      "version": "2026.7.0",
+      "requires": []
+    },
+    "jinja2": {
+      "version": "3.1.6",
+      "requires": [
+        "MarkupSafe>=2.0"
+      ]
+    },
+    "markupsafe": {
+      "version": "3.0.3",
+      "requires": []
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "requires": []
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "requires": []
+    },
+    "numpy": {
+      "version": "2.5.1",
+      "requires": []
+    },
+    "setuptools": {
+      "version": "83.0.0",
+      "requires": []
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "requires": [
+        "mpmath<1.4,>=1.1.0"
+      ]
+    },
+    "torch": {
+      "version": "2.8.0+cpu",
+      "requires": [
+        "filelock",
+        "typing-extensions>=4.10.0",
+        "sympy>=1.13.3",
+        "networkx",
+        "jinja2",
+        "fsspec",
+        "setuptools; python_version >= \"3.12\""
+      ]
+    },
+    "torchaudio": {
+      "version": "2.8.0+cpu",
+      "requires": [
+        "torch==2.8.0"
+      ]
+    },
+    "typing-extensions": {
+      "version": "4.16.0",
+      "requires": []
+    }
+  }
+}
