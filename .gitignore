@@ -21,5 +21,10 @@ soft/*.gguf
 # Local voice runtime binaries
 *.aar
 *.onnx
+!app/src/androidTest/assets/metric_kws_ru/encoder.onnx
+!app/src/androidTest/assets/metric_kws_ru/invalid_shape.onnx
+!app/src/androidTest/assets/metric_kws_ru_v2/encoder.onnx
+!app/src/androidTest/assets/metric_kws_ru_v2/invalid_shape.onnx
+!tools/metric_ud_kws/experiments/ru-mswc-v2/encoder.onnx
 *.wav
 app/src/main/assets/voice/tts

@@ -1,0 +1,261 @@
+{
+  "date": "2026-09-26",
+  "stage": 3,
+  "status": "encoder_parity_passed_acoustic_quality_failed_production_gate",
+  "production_activation_enabled": false,
+  "app_module_engine": "UnavailableMetricKwsEngine",
+  "model": {
+    "version": "ru-mswc-resnet15-experiment-v1",
+    "initialization": "random; no pretrained weights",
+    "license": "CC-BY-4.0",
+    "weights_sha256": "dbe2422f38bf0206a50c538a8f64b2b5c49c02ca6636c73e1f82bf728aa7a5df",
+    "onnx_sha256": "a2e04582ad137513be95cf3f0e36210b3f0a84e356ac6a7a16a9583b8941b39b",
+    "onnx_bytes": 293104,
+    "included_in_application_apk": false
+  },
+  "unchanged_frontend": "metric-cli-mfcc40-1s-v1",
+  "dataset": {
+    "train": {
+      "clips": 10240,
+      "words": 160,
+      "pseudonymous_speakers": 507,
+      "source_recordings": 9265,
+      "duration_adjusted_clips": 1
+    },
+    "dev": {
+      "clips": 480,
+      "words": 24,
+      "pseudonymous_speakers": 45,
+      "source_recordings": 458,
+      "duration_adjusted_clips": 0
+    },
+    "test": {
+      "clips": 480,
+      "words": 24,
+      "pseudonymous_speakers": 53,
+      "source_recordings": 459,
+      "duration_adjusted_clips": 0
+    }
+  },
+  "russian_quality": {
+    "threshold": 0.9215666055679321,
+    "words": 24,
+    "enrollment_clips": 24,
+    "positive_trials": 456,
+    "negative_trials": 10488,
+    "false_accepts": 71,
+    "false_rejects": 356,
+    "false_accept_rate": 0.006769641495041953,
+    "false_reject_rate": 0.7807017543859649,
+    "top1_accuracy": 0.5504385964912281,
+    "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+    "includes_other_speakers": true,
+    "measures_voice_id": false,
+    "noise_or_continuous_audio": false
+  },
+  "python_onnx_parity": {
+    "cases": 960,
+    "max_absolute_error": 1.430511474609375e-06,
+    "min_cosine": 0.999999999993701,
+    "max_absolute_error_limit": 0.0001,
+    "min_cosine_limit": 0.9999,
+    "onnxruntime": "1.22.1",
+    "elapsed_s": 48.27655049995519,
+    "provider": "CPUExecutionProvider"
+  },
+  "android_parity": {
+    "cases": 41,
+    "real_russian_clips": 24,
+    "analytic_signals": 17,
+    "max_absolute_error": 1.0728836e-06,
+    "min_cosine_float32": 1.0,
+    "existing_ort_version": "1.27.0",
+    "c_api_version": 22,
+    "max_absolute_error_limit": 0.0001,
+    "min_cosine_limit": 0.9999,
+    "score_decision_pairs": 144
+  },
+  "android_instrumentation": {
+    "total_tests": 7,
+    "runs": [
+      {
+        "group": "encoder",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "existingSherpaModelsAndMetricSessionCoexist",
+            "classname": "com.example.aiassistent1.audio.MetricKwsEncoderTest",
+            "time": "15.504"
+          },
+          {
+            "name": "russianAndAnalyticPcmMatchPythonEmbeddings",
+            "classname": "com.example.aiassistent1.audio.MetricKwsEncoderTest",
+            "time": "5.914"
+          },
+          {
+            "name": "corruptModelsShapesInputsAndClosedSessionsAreRejected",
+            "classname": "com.example.aiassistent1.audio.MetricKwsEncoderTest",
+            "time": "0.280"
+          },
+          {
+            "name": "parallelCallsReopenAndIdempotentClose",
+            "classname": "com.example.aiassistent1.audio.MetricKwsEncoderTest",
+            "time": "1.482"
+          }
+        ],
+        "timestamp": "2026-09-26T18:03:09",
+        "xml_sha256": "e3c0ab80d17726fcadaa1af99f12c809df81a917f533adc5dee830d5fa2d6c74"
+      },
+      {
+        "group": "voice",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "renameDeletesOldProfileAndFailedEnrollmentCannotAuthorize",
+            "classname": "com.example.aiassistent1.audio.VoiceEnrollmentTest",
+            "time": "0.767"
+          }
+        ],
+        "timestamp": "2026-09-26T18:00:36",
+        "xml_sha256": "c873a342fe0afde2228955453c8402bea804283b91f1377bf5ad7bcaa2ae7dea",
+        "test_apk_note": "Voice regression ran before adding the coexistence test method; application/Voice ID code unchanged.",
+        "test_apk_sha256": "5dbf60c8638b4a2c842ccb850aacc66f7d3c9c5a79b7d55b0dc724aee76ae14f"
+      },
+      {
+        "group": "mfcc",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "allAnalyticFixturesMatchPinnedTorchaudioReference",
+            "classname": "com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest",
+            "time": "3.205"
+          }
+        ],
+        "timestamp": "2026-09-26T18:04:34",
+        "xml_sha256": "de1ed8915fdb06cfaaf8c5d2bdebcac729c184a323a2d90375c45bcd6293e03b"
+      },
+      {
+        "group": "storage",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "atomicRecoveryInvalidReplacementAndSeparateSpeakerStorage",
+            "classname": "com.example.aiassistent1.audio.MetricKwsStorageTest",
+            "time": "0.157"
+          }
+        ],
+        "timestamp": "2026-09-26T18:06:34",
+        "xml_sha256": "1fb4761582388c29e0f324b147c15185a375240906a0429f2d06d13445e9ef88"
+      }
+    ],
+    "api": 34,
+    "abi": "x86_64",
+    "emulator": true,
+    "physical_phone": false,
+    "fingerprint": "google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.036.A4/12096271:user/release-keys",
+    "note": "Each class run separately: Gradle multi-class argument selected only the first class. Final encoder run also tests live Sherpa runtime coexistence.",
+    "emulator_stopped_after_tests": true
+  },
+  "unit_tests": {
+    "tests": 321,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "host_contract_tests": {
+    "tests": 11,
+    "failures": 0,
+    "errors": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 49,
+    "hints": 7
+  },
+  "gradle": {
+    "compile_kotlin": "passed",
+    "native_build_abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "unit_tests": "passed",
+    "lint": "passed",
+    "assemble": "passed",
+    "instrumentation": "passed"
+  },
+  "runtime_integrity": [
+    {
+      "abi": "arm64-v8a",
+      "aar_sha256": "994848008526a934dfb579ac773b00e5867929234852b061005d45aacaee9533",
+      "apk_sha256": "f9aefe58b331128fd33366f8c81218fe6dd5da5028a54438e5b301b23cb2f6ad",
+      "merged_equals_existing_aar": true,
+      "apk_equals_ndk_stripped_existing_aar": true,
+      "packaged_runtime_count": 1
+    },
+    {
+      "abi": "armeabi-v7a",
+      "aar_sha256": "d3699d357f763d31829e4b4bbb4fcb70ee4893f798e5b7f6070fb6ca9543eda9",
+      "apk_sha256": "5fca5ed7990314660af6b05f801bb5546a73ae2515765e89b2df18bc8f2e1e91",
+      "merged_equals_existing_aar": true,
+      "apk_equals_ndk_stripped_existing_aar": true,
+      "packaged_runtime_count": 1
+    },
+    {
+      "abi": "x86",
+      "aar_sha256": "eb674341f058a40b99173c32af13811c2d7cb212a33fa29cb24b2fe7217b02e6",
+      "apk_sha256": "27f768e984eaa2acb09f0131deb889ed0c9d5de6698d00175855a0e9d8b7f60c",
+      "merged_equals_existing_aar": true,
+      "apk_equals_ndk_stripped_existing_aar": true,
+      "packaged_runtime_count": 1
+    },
+    {
+      "abi": "x86_64",
+      "aar_sha256": "7144a2015ce495677420b287cef908eb3d379e09913b5e715aa48826b2080f2d",
+      "apk_sha256": "7dfc01a375a38f972c44f9edede2355633b2e6b596051808ee2b107486063279",
+      "merged_equals_existing_aar": true,
+      "apk_equals_ndk_stripped_existing_aar": true,
+      "packaged_runtime_count": 1
+    }
+  ],
+  "apk": {
+    "application": {
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 721578050,
+      "sha256": "9ed6145c6788c6e007652d45c38a8a00732846248440e8a8c7951357c5521a85",
+      "russian_test_assets": 0
+    },
+    "test": {
+      "path": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 5300917,
+      "sha256": "349058b9aa1c6bdcfecb637f8e9a03c24d57d018134e3b6e405a7ef541f653b0",
+      "russian_test_assets": 30
+    }
+  },
+  "no_new_android_dependencies": true,
+  "physical_microphone_enrollment_verified": false,
+  "arm_inference_verified": false,
+  "phrase_duration_verified": false,
+  "continuous_false_activations_per_hour": null,
+  "battery_comparison": null,
+  "prior_stage_record": "METRIC_KWS_VALIDATION.json",
+  "source_evidence_sha256": {
+    "tools/metric_ud_kws/experiments/ru-mswc-v1/corpus.json.gz": "26cd4b8c8e10dc4c06425b7046d6dc9a248cf081657114264187418419a57f44",
+    "tools/metric_ud_kws/experiments/ru-mswc-v1/training.json": "1de209a8585b545588edca2c3ba6d8f6332a6ff05a10f6bcd363e4a97db4f020",
+    "app/src/main/cpp/third_party/onnxruntime/onnxruntime_c_api.h": "d683537d0fdc29e977b5520f7f15d87a0ac212ae6d94fa9be8893a52655621ae",
+    "app/src/main/java/com/example/aiassistent1/data/provider/MetricKwsFeatureExtractor.kt": "57c455fa4c0e4d285afc7cc3ef53272e0e1eefc7376c59d8955a2d516c2c7031"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "train": {
+    "clips": 10240,
+    "words": 160,
+    "pseudonymous_speakers": 507,
+    "source_recordings": 9265,
+    "duration_adjusted_clips": 1
+  },
+  "dev": {
+    "clips": 480,
+    "words": 24,
+    "pseudonymous_speakers": 45,
+    "source_recordings": 458,
+    "duration_adjusted_clips": 0
+  },
+  "test": {
+    "clips": 480,
+    "words": 24,
+    "pseudonymous_speakers": 53,
+    "source_recordings": 459,
+    "duration_adjusted_clips": 0
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "train": {
+    "words": 800,
+    "clips": 51200,
+    "speakers": 682,
+    "source_sentences": 30766,
+    "rms_percentiles": [
+      0.00048482286774173837,
+      0.006690119763704979,
+      0.06428085778334364,
+      0.18722690514944773,
+      0.4541145276457901
+    ],
+    "clipped_fraction_max": 0.0038125
+  },
+  "dev": {
+    "words": 32,
+    "clips": 768,
+    "speakers": 28,
+    "source_sentences": 708,
+    "rms_percentiles": [
+      0.0023540712591731483,
+      0.005752686672990191,
+      0.06367204566220927,
+      0.16461435496829382,
+      0.19765294820749177
+    ],
+    "clipped_fraction_max": 0.0,
+    "trials": {
+      "positive": 546,
+      "negative": 17365,
+      "cross_speaker": 4422,
+      "supports": 216
+    }
+  },
+  "test": {
+    "words": 32,
+    "clips": 768,
+    "speakers": 31,
+    "source_sentences": 672,
+    "rms_percentiles": [
+      0.0012981252032313892,
+      0.010165909821752164,
+      0.07270388844035727,
+      0.22489648409510243,
+      0.4260770604240619
+    ],
+    "clipped_fraction_max": 0.001375,
+    "trials": {
+      "positive": 563,
+      "negative": 17774,
+      "cross_speaker": 3968,
+      "supports": 197
+    }
+  },
+  "reservation_checks": "passed: fresh dev/test words exclude all v1 words; v2 train excludes v1 dev/test"
+}

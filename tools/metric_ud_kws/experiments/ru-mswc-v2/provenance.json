@@ -1,0 +1,15 @@
+{
+  "training_sources": {
+    "prepare_russian.py": "0e6b54ad695863daa9c894e526e751f378a7f6d2e0b32df225365b298831710c",
+    "ru_model_v2.py": "a872c44d460a7b312a19c9b59e1a38b19e22d9016c1e64cb2ce75b7ceac4d9ac",
+    "train_russian_v2.py": "fbfa75d4a1e17fd170345b5a9e51773cfe5ef14b0b409aab3bb875e141979ca0",
+    "evaluate_personal.py": "3bd37c999f4a34bc3f3847c6fc5c6cea2116515b4d242647762c36fd10ab4f48",
+    "finalize_russian_v2.py": "7fdb513b7dec7cf6e741d1907cd36721c0a40c97168923836e989815b6f888a9",
+    "export_russian.py": "3a4087b8a97f68c67f82aa9078db826bbf289a8c32491ca88adb4e296bb3e94e",
+    "package_russian_v2.py": "01f2625ad3e3df99493db55848cdfd1767118e36258b1ff81a1e3bd39d496f13",
+    "ru_model.py": "f710d75d2054db9c553779aeeeb87e303d93c673bf994d465a385f2a803487e2",
+    "train_russian.py": "6150d8a184e928e19a031d17838ba5ff59751291215a82927433360c906f4d7a"
+  },
+  "corpus_sha256": "27351548bec3dc78722b85ba393880916bb79df9ee5f9314a8a337b46968c590",
+  "initialization": "random; no pretrained weights"
+}

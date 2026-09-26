@@ -1,5 +1,8 @@
 # Metric KWS stage 2: numeric feature reference
 
+Historical stage-2 record. Stage 3 keeps this Kotlin recipe unchanged and trains a separate
+Russian test encoder against it; see `METRIC_KWS_RU_EXPERIMENT.md` for model/parity evidence.
+
 This stage adds a Kotlin MFCC extractor and analytic parity fixtures. **It does not add a
 trained encoder or enable Metric activation.** `AppModule` still supplies the unavailable
 engine. The extractor is internal and has no production caller; it opens no microphone,

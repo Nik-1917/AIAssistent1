@@ -1,0 +1,366 @@
+{
+  "date": "2026-09-27",
+  "status": "retrained_exported_and_parity_verified; activation_unvalidated",
+  "model_sha256": "21eda065e55135bac590edd9dace1bb6752dc450125a4baf07603d3baf5f514e",
+  "weights_sha256": "81661fab73b3473b5a3ae0c5b41df35b9689c180d26441fc01b3ccadc7311650",
+  "activation_enabled": false,
+  "app_engine": "UnavailableMetricKwsEngine",
+  "fresh_comparison": {
+    "v1": {
+      "dev": {
+        "positive_trials": 546,
+        "negative_trials": 17365,
+        "cross_speaker_trials": 4422,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.9424614310264587,
+            "false_rejects": 397,
+            "false_accepts": 173,
+            "false_reject_rate": 0.7271062271062271,
+            "false_accept_rate": 0.009962568384681831,
+            "cross_speaker_false_reject_rate": 0.8554952510176391
+          },
+          "0.025": {
+            "threshold": 0.9043615460395813,
+            "false_rejects": 282,
+            "false_accepts": 434,
+            "false_reject_rate": 0.5164835164835165,
+            "false_accept_rate": 0.024992801612438813,
+            "cross_speaker_false_reject_rate": 0.7026232473993668
+          },
+          "0.05": {
+            "threshold": 0.8526096343994141,
+            "false_rejects": 177,
+            "false_accepts": 868,
+            "false_reject_rate": 0.3241758241758242,
+            "false_accept_rate": 0.04998560322487763,
+            "cross_speaker_false_reject_rate": 0.5137946630483944
+          },
+          "0.1": {
+            "threshold": 0.770318865776062,
+            "false_rejects": 79,
+            "false_accepts": 1736,
+            "false_reject_rate": 0.1446886446886447,
+            "false_accept_rate": 0.09997120644975525,
+            "cross_speaker_false_reject_rate": 0.2933061962912709
+          }
+        },
+        "threshold": 0.9424614310264587
+      },
+      "test": {
+        "positive_trials": 563,
+        "negative_trials": 17774,
+        "cross_speaker_trials": 3968,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.9424614310264587,
+            "false_rejects": 335,
+            "false_accepts": 268,
+            "false_reject_rate": 0.5950266429840142,
+            "false_accept_rate": 0.015078204118375155,
+            "cross_speaker_false_reject_rate": 0.8429939516129032
+          },
+          "0.025": {
+            "threshold": 0.9043615460395813,
+            "false_rejects": 216,
+            "false_accepts": 664,
+            "false_reject_rate": 0.3836589698046181,
+            "false_accept_rate": 0.037357938561944415,
+            "cross_speaker_false_reject_rate": 0.6801915322580645
+          },
+          "0.05": {
+            "threshold": 0.8526096343994141,
+            "false_rejects": 135,
+            "false_accepts": 1347,
+            "false_reject_rate": 0.23978685612788633,
+            "false_accept_rate": 0.07578485428153482,
+            "cross_speaker_false_reject_rate": 0.4994959677419355
+          },
+          "0.1": {
+            "threshold": 0.770318865776062,
+            "false_rejects": 64,
+            "false_accepts": 2566,
+            "false_reject_rate": 0.11367673179396093,
+            "false_accept_rate": 0.14436817823787554,
+            "cross_speaker_false_reject_rate": 0.29057459677419356
+          }
+        },
+        "threshold": 0.9424614310264587
+      },
+      "cross_speaker_closed_set_dev": {
+        "threshold": 0.9386383295059204,
+        "words": 32,
+        "enrollment_clips": 32,
+        "positive_trials": 736,
+        "negative_trials": 22816,
+        "false_accepts": 228,
+        "false_rejects": 583,
+        "false_accept_rate": 0.009992987377279102,
+        "false_reject_rate": 0.7921195652173914,
+        "top1_accuracy": 0.4578804347826087,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      },
+      "cross_speaker_closed_set_test": {
+        "threshold": 0.9386383295059204,
+        "words": 32,
+        "enrollment_clips": 32,
+        "positive_trials": 736,
+        "negative_trials": 22816,
+        "false_accepts": 364,
+        "false_rejects": 574,
+        "false_accept_rate": 0.015953716690042075,
+        "false_reject_rate": 0.779891304347826,
+        "top1_accuracy": 0.4483695652173913,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      }
+    },
+    "v2": {
+      "dev": {
+        "positive_trials": 546,
+        "negative_trials": 17365,
+        "cross_speaker_trials": 4422,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.598879337310791,
+            "false_rejects": 123,
+            "false_accepts": 173,
+            "false_reject_rate": 0.22527472527472528,
+            "false_accept_rate": 0.009962568384681831,
+            "cross_speaker_false_reject_rate": 0.43487109905020355
+          },
+          "0.025": {
+            "threshold": 0.47782671451568604,
+            "false_rejects": 56,
+            "false_accepts": 434,
+            "false_reject_rate": 0.10256410256410256,
+            "false_accept_rate": 0.024992801612438813,
+            "cross_speaker_false_reject_rate": 0.2261420171867933
+          },
+          "0.05": {
+            "threshold": 0.3878084421157837,
+            "false_rejects": 31,
+            "false_accepts": 868,
+            "false_reject_rate": 0.056776556776556776,
+            "false_accept_rate": 0.04998560322487763,
+            "cross_speaker_false_reject_rate": 0.12415196743554953
+          },
+          "0.1": {
+            "threshold": 0.2939204275608063,
+            "false_rejects": 17,
+            "false_accepts": 1736,
+            "false_reject_rate": 0.031135531135531136,
+            "false_accept_rate": 0.09997120644975525,
+            "cross_speaker_false_reject_rate": 0.06558118498417007
+          }
+        },
+        "threshold": 0.598879337310791
+      },
+      "test": {
+        "positive_trials": 563,
+        "negative_trials": 17774,
+        "cross_speaker_trials": 3968,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.598879337310791,
+            "false_rejects": 109,
+            "false_accepts": 128,
+            "false_reject_rate": 0.1936056838365897,
+            "false_accept_rate": 0.007201530325194104,
+            "cross_speaker_false_reject_rate": 0.46068548387096775
+          },
+          "0.025": {
+            "threshold": 0.47782671451568604,
+            "false_rejects": 50,
+            "false_accepts": 418,
+            "false_reject_rate": 0.08880994671403197,
+            "false_accept_rate": 0.023517497468211995,
+            "cross_speaker_false_reject_rate": 0.2517641129032258
+          },
+          "0.05": {
+            "threshold": 0.3878084421157837,
+            "false_rejects": 29,
+            "false_accepts": 923,
+            "false_reject_rate": 0.05150976909413854,
+            "false_accept_rate": 0.051929785079329355,
+            "cross_speaker_false_reject_rate": 0.16078629032258066
+          },
+          "0.1": {
+            "threshold": 0.2939204275608063,
+            "false_rejects": 15,
+            "false_accepts": 1890,
+            "false_reject_rate": 0.02664298401420959,
+            "false_accept_rate": 0.1063350962079442,
+            "cross_speaker_false_reject_rate": 0.08341733870967742
+          }
+        },
+        "threshold": 0.598879337310791
+      },
+      "cross_speaker_closed_set_dev": {
+        "threshold": 0.5583927631378174,
+        "words": 32,
+        "enrollment_clips": 32,
+        "positive_trials": 736,
+        "negative_trials": 22816,
+        "false_accepts": 228,
+        "false_rejects": 239,
+        "false_accept_rate": 0.009992987377279102,
+        "false_reject_rate": 0.32472826086956524,
+        "top1_accuracy": 0.7567934782608695,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      },
+      "cross_speaker_closed_set_test": {
+        "threshold": 0.5583927631378174,
+        "words": 32,
+        "enrollment_clips": 32,
+        "positive_trials": 736,
+        "negative_trials": 22816,
+        "false_accepts": 215,
+        "false_rejects": 206,
+        "false_accept_rate": 0.009423211781206172,
+        "false_reject_rate": 0.2798913043478261,
+        "top1_accuracy": 0.7717391304347826,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      }
+    }
+  },
+  "dataset": {
+    "train": {
+      "words": 800,
+      "clips": 51200,
+      "speakers": 682,
+      "source_sentences": 30766,
+      "rms_percentiles": [
+        0.00048482286774173837,
+        0.006690119763704979,
+        0.06428085778334364,
+        0.18722690514944773,
+        0.4541145276457901
+      ],
+      "clipped_fraction_max": 0.0038125
+    },
+    "dev": {
+      "words": 32,
+      "clips": 768,
+      "speakers": 28,
+      "source_sentences": 708,
+      "rms_percentiles": [
+        0.0023540712591731483,
+        0.005752686672990191,
+        0.06367204566220927,
+        0.16461435496829382,
+        0.19765294820749177
+      ],
+      "clipped_fraction_max": 0.0,
+      "trials": {
+        "positive": 546,
+        "negative": 17365,
+        "cross_speaker": 4422,
+        "supports": 216
+      }
+    },
+    "test": {
+      "words": 32,
+      "clips": 768,
+      "speakers": 31,
+      "source_sentences": 672,
+      "rms_percentiles": [
+        0.0012981252032313892,
+        0.010165909821752164,
+        0.07270388844035727,
+        0.22489648409510243,
+        0.4260770604240619
+      ],
+      "clipped_fraction_max": 0.001375,
+      "trials": {
+        "positive": 563,
+        "negative": 17774,
+        "cross_speaker": 3968,
+        "supports": 197
+      }
+    },
+    "reservation_checks": "passed: fresh dev/test words exclude all v1 words; v2 train excludes v1 dev/test"
+  },
+  "python_onnx_parity": {
+    "cases": 1536,
+    "max_absolute_error": 4.6193599700927734e-07,
+    "min_cosine": 0.99999999999887,
+    "max_absolute_error_limit": 0.0001,
+    "min_cosine_limit": 0.9999,
+    "onnxruntime": "1.22.1",
+    "elapsed_s": 10.829148299992085,
+    "provider": "CPUExecutionProvider"
+  },
+  "android_emulator": {
+    "api": 34,
+    "abi": "x86_64",
+    "instrumentation_tests": 4,
+    "failures": 0,
+    "pcm_cases": 41,
+    "score_decision_pairs": 144,
+    "maximum_error": 2.935296e-06,
+    "minimum_float32_cosine": 1.0,
+    "runtime": "1.27.0"
+  },
+  "physical_phone": {
+    "cases": 41,
+    "max_absolute_error": 2.9390212148427963e-06,
+    "minimum_cosine": 0.9999999999525839,
+    "ort": "1.27.0",
+    "pipeline_ms_median": 15.321458,
+    "pipeline_ms_max": 55.833177,
+    "scope": "Physical ARM ART shell, exact app DEX/JNI; public PCM, no microphone/app lifecycle test",
+    "api": 33,
+    "abi": "arm64-v8a",
+    "installed_app_updated": false,
+    "microphone_used": false,
+    "installed_apk_sha_before_and_after": "2203806c4b542f5c1fd6f3f8ab278d5329243b6282a15b09342fe79ab216e022"
+  },
+  "host_tests": {
+    "python_contract_tests": 16,
+    "python_failures": 0,
+    "jvm_existing_tests": 321,
+    "jvm_task_status": "UP-TO-DATE; existing results verified",
+    "jvm_failures": 0,
+    "lint_severity_counts": {
+      "Warning": 49,
+      "Hint": 7
+    }
+  },
+  "artifacts": {
+    "app_apk": {
+      "bytes": 721578050,
+      "sha256": "9ed6145c6788c6e007652d45c38a8a00732846248440e8a8c7951357c5521a85"
+    },
+    "test_apk": {
+      "bytes": 7155386,
+      "sha256": "786193a4a4560a2ea895355bfeaafbc2f25c4b532f8774ca9cb4d2994cd61b67"
+    },
+    "model_zip": {
+      "bytes": 1883978,
+      "sha256": "662b463d2d90435889419165accc2cd82967fd4c779989a85ccfef10a2fe1316"
+    }
+  },
+  "v1_hashes_preserved": true,
+  "model_absent_from_application_apk": true,
+  "test_apk_license_present": true,
+  "package_checksums_verified": true,
+  "limitations": [
+    "Isolated public-corpus words, not full wake phrases",
+    "FAR is per selected negative pair, not false activations per hour",
+    "No physical phone, far-field, live VAD, owner-verifier or battery evidence",
+    "Synthetic training noise is not a real environmental-noise acceptance test",
+    "New encoder architecture; not a reproduction of published Metric-UD-KWS"
+  ]
+}

@@ -1,8 +1,33 @@
-# Metric UD-KWS: blocked reference and validation tools
+# Metric UD-KWS: reference tools and separate Russian experiment
 
-Status: **no approved checkpoint, no model in APK, no Russian quality or ONNX parity claim**.
-The tools are an offline harness for the next evidence-gated stage, not a reproduced model result.
+Status: **upstream weights remain blocked; the separate local Russian experiment is test-only**.
+`prepare_russian.py`, `train_russian.py`, `export_russian.py` and `ru_model.py` implement
+the from-scratch Russian path. Records and checkpoint: `experiments/ru-mswc-v1/`.
+The unchanged upstream harness is not a reproduced published-model result.
 No tool downloads weights, recordings, dependencies or uploads user data.
+
+The completed **v2** model is in `experiments/ru-mswc-v2/ru-mswc-personal-v2.zip`.
+It keeps the MFCC interface but uses an own residual encoder, expanded Russian
+data and owner-focused metric episodes. See `docs/METRIC_KWS_RU_V2.md` for the
+fresh comparison, physical ARM parity and explicit activation limitations.
+
+## Reproduce v2
+
+Use fresh output directories. The original v1 corpus is retained as a reservation
+manifest; never include its inspected dev/test words in new training. These
+commands use the same already-audited archives and pinned CPU environment.
+
+```powershell
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/prepare_russian.py --splits build/metric_kws_ru/data/ru-splits.tar.gz --audio build/metric_kws_ru/data/ru-audio.tar.gz --output build/metric_kws_ru/corpus-expanded-new --train-words 800 --eval-words 32 --train-clips 64 --eval-clips 24 --reserved-manifest build/metric_kws_ru/corpus-v2/corpus.json --balanced
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/train_russian_v2.py --corpus build/metric_kws_ru/corpus-expanded-new --output build/metric_kws_ru/run-expanded-new --steps 16000 --validate-every 1000 --threads 8
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/finalize_russian_v2.py --run build/metric_kws_ru/run-expanded-new --corpus build/metric_kws_ru/corpus-expanded-new
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/export_russian.py --run build/metric_kws_ru/run-expanded-new --corpus build/metric_kws_ru/corpus-expanded-new --output build/metric_kws_ru/export-expanded-new --asset-prefix metric_kws_ru_v2
+```
+
+`finalize_russian_v2.py` refuses incomplete training and repeated finalization.
+Train/threshold/checkpoint selection uses dev only. The already reported v2 test
+is now inspected: a subsequent new model acceptance claim needs a newly reserved
+test set. Replay of the same recipe is a reproducibility check, not fresh evidence.
 
 ## Reproducibility and prerequisites
 
@@ -12,8 +37,9 @@ The original requirements specify Python 3.8, PyTorch 1.10.1, torchaudio 0.10.1,
 and additional unpinned scientific packages. Stage 2 created a separate project-local venv
 with CPU torch/torchaudio 2.8.0+cpu for numeric DSP tests only. It inherits existing host
 dependencies; `dsp_environment.json` records the active reference dependency versions.
-ONNX and ONNX Runtime were not installed. This is **not** a reproduced original
-training/evaluation environment. Never install the upstream requirements blindly.
+Stage 3 added pinned host export/decoder packages recorded in
+`experiments/ru-mswc-v1/environment.json` and `host_wheels.json`. This is **not** a
+reproduced original training/evaluation environment. Never install upstream requirements blindly.
 
 `model_manifest.json` intentionally contains null artifact-specific fields. Complete them only
 from verified checkpoint provenance/configuration. License evidence strings must reference
@@ -24,8 +50,29 @@ Upstream `loadWAV` pads or centrally crops to **one second**. This harness calls
 function rather than guessing a different duration policy. It therefore does not establish
 recognition of arbitrary multiword phrases. A fixed, experimental Android MFCC implementation
 now has numeric parity tests against the 2.8.0 DSP reference (see `docs/METRIC_KWS_DSP.md`).
-It is not connected to a checkpoint or to activation. Encoder/runtime integration still
-requires a suitable licensed checkpoint, phrase-duration policy and model reference.
+The separate Russian encoder uses that exact frontend. Activation and multiword support
+remain unvalidated; one-second numeric parity does not establish phrase recognition.
+
+## Reproduce the Russian experiment
+
+The official MSWC source/terms and exact archive SHA-256 are in `prepare_russian.py` and
+`experiments/ru-mswc-v1/corpus.json.gz`. Obtain those two archives explicitly from MLCommons;
+the scripts have no network/download side effects. The selected words/speakers/source clips
+must remain disjoint. A failed preparation leaves an incomplete directory; use a new output.
+
+```powershell
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/prepare_russian.py --splits build/metric_kws_ru/data/ru-splits.tar.gz --audio build/metric_kws_ru/data/ru-audio.tar.gz --output build/metric_kws_ru/corpus-new
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/train_russian.py --corpus build/metric_kws_ru/corpus-new --output build/metric_kws_ru/run-new --steps 1500 --threads 8
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/export_russian.py --run build/metric_kws_ru/run-new --corpus build/metric_kws_ru/corpus-new --output build/metric_kws_ru/export-new
+& build/metric_kws_reference/venv/Scripts/python.exe -B -m unittest discover -s tools/metric_ud_kws -p 'test_*contract.py'
+```
+
+The committed ONNX and licensed speech fixtures are under `app/src/androidTest/assets/metric_kws_ru`.
+They are excluded from the application APK by the Android source set, with narrow gitignore
+exceptions for these two test ONNX files. AppModule continues to supply the unavailable engine.
+`OnnxMetricKwsEngine.createForExperiment` admits only the fixed frontend/dimensions and matching
+SHA, serializes inference/close, normalizes embeddings, and always reports activation unvalidated.
+Full evaluation, test/phone distinctions and license audit: `docs/METRIC_KWS_RU_EXPERIMENT.md`.
 
 ## Numeric DSP stage (no weights required)
 
@@ -56,7 +103,8 @@ Export uses CPU encoder only, opset 17; compatibility still requires testing wit
 runtime. Strict state-dict loading prevents silently running random/unmatched parameters.
 Parity gate: maximum absolute error of normalized embeddings <= 1e-4 AND cosine >= 0.9999.
 Run multiple fixtures, durations and amplitudes; one passed fixture does not establish parity
-for an Android feature extractor. The present tools have not performed any model inference.
+for an Android feature extractor. These upstream tools remain unexecuted against uncleared
+weights; the separate Russian path has its own trained-model and parity evidence.
 
 ## Russian cases
 

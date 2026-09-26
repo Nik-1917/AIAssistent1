@@ -1,9 +1,14 @@
 # Personal Metric UD-KWS: staged implementation, activation blocked
 
-Date: 2026-09-24. **This is infrastructure for a gated experiment, not a completed KWS product.**
-There is no trained Metric encoder, new ONNX runtime or Russian quality result in this change.
-Stage 2 adds an experimental Kotlin MFCC extractor with JVM/Android numeric parity checks;
-it has no production caller (see `METRIC_KWS_DSP.md`). The settings screen explains why recording is unavailable; it does not collect
+Date: 2026-09-27. **This is a gated experiment, not a completed KWS product.**
+The v2 retraining and ready model package are described in `METRIC_KWS_RU_V2.md`:
+fresh owner-word FRR 19.36% at 0.720% pair FAR, with emulator and physical ARM
+numerical parity. This does not enable production activation or full phrases.
+Stage 3 adds a project-trained Russian ResNet15 encoder, ONNX export and an experimental
+Android JNI engine reusing the ORT already in Sherpa. The unchanged stage-2 Kotlin MFCC
+is its frontend. Model/speech fixtures are test-only; no new ONNX runtime is packaged.
+See `METRIC_KWS_RU_EXPERIMENT.md` for provenance, evaluation and remaining quality limits.
+The settings screen explains why recording is unavailable; it does not collect
 a voice sample that cannot be enrolled. The existing activation algorithm remains in control.
 
 ## Current pipeline and ownership
@@ -79,17 +84,23 @@ forces fallback. Enrollment record/delete/ready UI and active opt-in selection r
 
 ## Exact blockers and completion criteria
 
-1. Checkpoint licensing/provenance is not cleared; see `METRIC_KWS_LICENSES.md`.
+1. Upstream checkpoints remain uncleared. A separately trained Russian experiment now has
+   recorded data/tool/model provenance; its measured recall is insufficient for activation.
+   See `METRIC_KWS_LICENSES.md` and `METRIC_KWS_RU_EXPERIMENT.md`.
 2. Upstream `loadWAV` centrally crops/pads to one second. Arbitrary multiword Russian wake phrases
    and wake-word-plus-command need a validated duration/localization policy, not guessed MFCC.
-3. No consented human Russian fixtures supplied; synthetic-only evaluation is insufficient.
-4. No trained reference run, ONNX export/parity or Android encoder exists yet. Reference harness
-   refuses the deliberately incomplete model manifest. ResNet15/26/ConvMixer were not benchmarked.
-5. Existing Sherpa AAR already packages libonnxruntime.so for four ABIs; additional runtime
-   packaging must be proven safe before adding a Maven dependency.
+3. Public licensed Russian MSWC speech now supplies initial isolated-word evidence. It does
+   not cover user-recorded multiword phrases, distance, environmental noise or continuous audio.
+4. The original upstream reference harness still refuses its incomplete model manifest.
+   The separate Russian experiment is trained/exported, with its own records and no inherited
+   published quality claim. Only this ResNet15 configuration was evaluated.
+5. Existing Sherpa AAR packages libonnxruntime.so for four ABIs. The new bridge requests C API
+   22 from that library and checks fixed names, shapes and float32 types. No Maven runtime,
+   binary replacement or pickFirst workaround is added.
 6. Stage 2 ran DSP/storage/Voice ID regression tests on a separately created Android 14 x86_64
    emulator. There is no physical-phone evidence: one-shot recording, false activations,
    foreground/screen-off, TTS/barge-in/conferences and battery measurements remain unverified.
+   Stage-3 encoder evidence is recorded separately in `METRIC_KWS_RU_VALIDATION.json`.
 
 To complete: admit a legal checkpoint (or train outside Android using audited data), reproduce
 reference, validate real Russian one-shot cases, export and establish parity, confirm/adapt

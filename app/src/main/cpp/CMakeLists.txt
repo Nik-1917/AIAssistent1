@@ -28,3 +28,7 @@ add_library(assistant_audio SHARED audio_jni.cpp ${WEBRTC_SRC})
 target_include_directories(assistant_audio PRIVATE ${WEBRTC} ${LAME}/include)
 target_compile_definitions(assistant_audio PRIVATE WEBRTC_POSIX=1)
 target_link_libraries(assistant_audio mp3lame log m)
+
+# Reuse the ORT shared object already inside Sherpa; never package a second ORT AAR.
+add_library(assistant_metric_kws SHARED metric_kws_jni.cpp)
+target_link_libraries(assistant_metric_kws dl)

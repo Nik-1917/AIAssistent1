@@ -1,0 +1,30 @@
+{
+  "coloredlogs-15.0.1-py2.py3-none-any.whl": {
+    "sha256": "612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934",
+    "bytes": 46018
+  },
+  "humanfriendly-10.0-py2.py3-none-any.whl": {
+    "sha256": "1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477",
+    "bytes": 86794
+  },
+  "ml_dtypes-0.5.3-cp313-cp313-win_amd64.whl": {
+    "sha256": "d0f730a17cf4f343b2c7ad50cee3bd19e969e793d2be6ed911f43086460096e4",
+    "bytes": 208187
+  },
+  "onnx-1.19.0-cp313-cp313-win_amd64.whl": {
+    "sha256": "1715b51eb0ab65272e34ef51cb34696160204b003566cd8aced2ad20a8f95cb8",
+    "bytes": 16453836
+  },
+  "onnxruntime-1.22.1-cp313-cp313-win_amd64.whl": {
+    "sha256": "70980d729145a36a05f74b573435531f55ef9503bcda81fc6c3d6b9306199982",
+    "bytes": 12690841
+  },
+  "pyreadline3-3.5.4-py3-none-any.whl": {
+    "sha256": "eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6",
+    "bytes": 83178
+  },
+  "soundfile-0.13.1-py2.py3-none-win_amd64.whl": {
+    "sha256": "1e70a05a0626524a69e9f0f4dd2ec174b4e9567f4d8b6c11d38b5c289be36ee9",
+    "bytes": 1019162
+  }
+}

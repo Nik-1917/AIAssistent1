@@ -1,0 +1,208 @@
+{
+  "default_threshold": 0.598879337310791,
+  "false_rejects_by_word": [
+    {
+      "word": "этим",
+      "misses": 12,
+      "trials": 16
+    },
+    {
+      "word": "будут",
+      "misses": 11,
+      "trials": 20
+    },
+    {
+      "word": "роль",
+      "misses": 9,
+      "trials": 19
+    },
+    {
+      "word": "только",
+      "misses": 9,
+      "trials": 19
+    },
+    {
+      "word": "было",
+      "misses": 7,
+      "trials": 17
+    },
+    {
+      "word": "быть",
+      "misses": 7,
+      "trials": 17
+    },
+    {
+      "word": "имеет",
+      "misses": 7,
+      "trials": 18
+    },
+    {
+      "word": "который",
+      "misses": 5,
+      "trials": 20
+    },
+    {
+      "word": "будет",
+      "misses": 5,
+      "trials": 14
+    },
+    {
+      "word": "этой",
+      "misses": 4,
+      "trials": 11
+    },
+    {
+      "word": "должно",
+      "misses": 3,
+      "trials": 18
+    },
+    {
+      "word": "лишь",
+      "misses": 3,
+      "trials": 20
+    },
+    {
+      "word": "этом",
+      "misses": 3,
+      "trials": 9
+    },
+    {
+      "word": "стран",
+      "misses": 3,
+      "trials": 19
+    },
+    {
+      "word": "проблемы",
+      "misses": 3,
+      "trials": 17
+    },
+    {
+      "word": "слово",
+      "misses": 3,
+      "trials": 15
+    },
+    {
+      "word": "поэтому",
+      "misses": 2,
+      "trials": 15
+    },
+    {
+      "word": "представитель",
+      "misses": 2,
+      "trials": 19
+    },
+    {
+      "word": "работы",
+      "misses": 2,
+      "trials": 19
+    },
+    {
+      "word": "мира",
+      "misses": 2,
+      "trials": 19
+    },
+    {
+      "word": "всех",
+      "misses": 2,
+      "trials": 17
+    },
+    {
+      "word": "поддержку",
+      "misses": 2,
+      "trials": 16
+    },
+    {
+      "word": "позвольте",
+      "misses": 1,
+      "trials": 20
+    },
+    {
+      "word": "сделать",
+      "misses": 1,
+      "trials": 19
+    },
+    {
+      "word": "делегация",
+      "misses": 1,
+      "trials": 20
+    }
+  ],
+  "frequent_wrong_word_pairs": [
+    {
+      "enrollment_word": "страны",
+      "query_word": "стран",
+      "false_accepts": 13
+    },
+    {
+      "enrollment_word": "стран",
+      "query_word": "страны",
+      "false_accepts": 12
+    },
+    {
+      "enrollment_word": "будет",
+      "query_word": "роль",
+      "false_accepts": 7
+    },
+    {
+      "enrollment_word": "имеет",
+      "query_word": "мира",
+      "false_accepts": 7
+    },
+    {
+      "enrollment_word": "мира",
+      "query_word": "имеет",
+      "false_accepts": 5
+    },
+    {
+      "enrollment_word": "мира",
+      "query_word": "лишь",
+      "false_accepts": 5
+    },
+    {
+      "enrollment_word": "будет",
+      "query_word": "быть",
+      "false_accepts": 5
+    },
+    {
+      "enrollment_word": "этом",
+      "query_word": "который",
+      "false_accepts": 4
+    },
+    {
+      "enrollment_word": "этим",
+      "query_word": "быть",
+      "false_accepts": 4
+    },
+    {
+      "enrollment_word": "роль",
+      "query_word": "будет",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "только",
+      "query_word": "который",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "представитель",
+      "query_word": "республики",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "республики",
+      "query_word": "представитель",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "быть",
+      "query_word": "роль",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "поэтому",
+      "query_word": "должно",
+      "false_accepts": 2
+    }
+  ],
+  "note": "Descriptive errors after final evaluation; no subsequent threshold or checkpoint tuning."
+}

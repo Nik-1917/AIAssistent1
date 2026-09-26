@@ -17,7 +17,7 @@
   "blockers": [
     "No artifact-specific weights licensing and training provenance confirmation",
     "Checkpoint configuration not verified; upstream CLI defaults are not checkpoint metadata",
-    "No consented human Russian evaluation corpus available in this task",
-    "No physical-phone or Android encoder validation; stage-2 emulator DSP/storage tests do not clear this gate"
+    "No Russian evaluation of these upstream checkpoints; the separate MSWC-trained experiment does not admit them",
+    "No Android/physical-phone validation of these upstream checkpoints; see the separate Russian experiment evidence"
   ]
 }
