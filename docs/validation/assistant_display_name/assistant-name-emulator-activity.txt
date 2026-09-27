@@ -1,0 +1,2 @@
+    topResumedActivity=ActivityRecord{b051072 u0 com.example.aiassistent1/.MainActivity t61}
+app_process_id: 6402

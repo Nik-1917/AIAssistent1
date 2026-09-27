@@ -12,6 +12,7 @@ class PersonalKeywordWakeSessionTest {
     private var now = 1000L
     private var decision: MetricKwsDecision = MetricKwsDecision.Accept
     private var owner = true
+    private var ready = true
     private var keywordCalls = 0
     private var speakerCalls = 0
     private var asrCalls = 0
@@ -25,17 +26,17 @@ class PersonalKeywordWakeSessionTest {
         preferences = { prefs }, evaluate = { keywordCalls++; decision },
         verifySpeaker = { speakerCalls++; duringSpeaker(); owner },
         recognize = { asrCalls++; duringAsr(); text },
-        onActivation = { sounds++; now += 100; duringFeedback() }, clock = { now },
+        onActivation = { sounds++; now += 100; duringFeedback() }, clock = { now }, speakerReady = { ready },
     )
 
     @Test fun wakeIsConsumedAndNextCommandIsVerifiedSeparately() = runBlocking {
         val session = session()
         assertEquals(PersonalWakeResult.Activated, session.handle(audio, now))
         assertEquals(0, asrCalls)
-        assertEquals(0, speakerCalls) // Keyword evaluator already applies its own owner gate.
+        assertEquals(1, speakerCalls)
         now += 200
         assertEquals(PersonalWakeResult.Command(text), session.handle(audio, now))
-        assertEquals(1, speakerCalls)
+        assertEquals(2, speakerCalls)
         assertEquals(1, asrCalls)
         assertEquals(1, sounds)
         now += 200
@@ -67,7 +68,7 @@ class PersonalKeywordWakeSessionTest {
         session.handle(audio, oldStart)
         now += 500
         assertEquals(PersonalWakeResult.Rejected, session.handle(audio, oldStart))
-        assertEquals(0, asrCalls); assertEquals(0, speakerCalls)
+        assertEquals(0, asrCalls); assertEquals(1, speakerCalls)
     }
 
     @Test fun timeoutRequiresANewKeyword() = runBlocking {
@@ -81,7 +82,7 @@ class PersonalKeywordWakeSessionTest {
 
     @Test fun revisionNameAndModeChangesInvalidateActivation() = runBlocking {
         for (change in listOf<(AudioPreferences) -> AudioPreferences>(
-            { it.copy(revision = it.revision + 1) }, { it.copy(wakeWord = "Другое") },
+            { it.copy(revision = it.revision + 1) }, { it.copy(policyRevision = it.policyRevision + 1) },
             { it.copy(wakeWordEngine = WakeWordEngine.LEGACY_ASR) }, { it.copy(voiceIdEnabled = false) },
             { it.copy(needsEnrollment = true) }, { it.copy(wakeWordEnabled = false) })) {
             prefs = AudioPreferences(voiceIdEnabled = true, wakeWordEnabled = true, wakeWordEngine = WakeWordEngine.METRIC_KWS)
@@ -90,7 +91,7 @@ class PersonalKeywordWakeSessionTest {
             session.handle(audio, now)
             now += 200; prefs = change(prefs); decision = MetricKwsDecision.Reject
             val result = session.handle(audio, now)
-            assertTrue(result is PersonalWakeResult.Legacy || result == PersonalWakeResult.Rejected)
+            assertTrue(result is PersonalWakeResult.Legacy || result is PersonalWakeResult.Unavailable || result == PersonalWakeResult.Rejected)
             assertEquals(0, asrCalls)
         }
     }
@@ -112,7 +113,8 @@ class PersonalKeywordWakeSessionTest {
         duringFeedback = { prefs = prefs.copy(voiceIdEnabled = false) }
         assertEquals(PersonalWakeResult.Rejected, session.handle(audio, now))
         now += 200
-        assertTrue(session.handle(audio, now) is PersonalWakeResult.Legacy)
+        decision = MetricKwsDecision.Reject
+        assertEquals(PersonalWakeResult.Rejected, session.handle(audio, now))
         assertEquals(0, asrCalls)
     }
 
@@ -125,8 +127,8 @@ class PersonalKeywordWakeSessionTest {
     }
 
     @Test fun technicalFallbackIsDistinctFromAKeywordRejection() = runBlocking {
-        decision = MetricKwsDecision.Legacy("model_unavailable")
-        assertEquals(PersonalWakeResult.Legacy("model_unavailable"), session().handle(audio, now))
+        decision = MetricKwsDecision.Unavailable("model_unavailable")
+        assertEquals(PersonalWakeResult.Unavailable("model_unavailable"), session().handle(audio, now))
         assertEquals(0, asrCalls); assertEquals(0, sounds)
     }
 
@@ -137,5 +139,44 @@ class PersonalKeywordWakeSessionTest {
         duringAsr = { throw CancellationException("stop") }
         try { session.handle(audio, now); fail("Cancellation swallowed") }
         catch (_: CancellationException) { }
+    }
+
+    @Test fun standaloneV3NeverQueriesSpeakerReadinessOrVerification() = runBlocking {
+        prefs = prefs.copy(voiceIdEnabled = false, needsEnrollment = true)
+        ready = false; owner = false
+        val session = PersonalKeywordWakeSession({ prefs }, { decision },
+            { error("Voice ID must not run") }, { "команда" }, {}, clock = { now },
+            speakerReady = { error("Voice ID status must not be queried") })
+        assertEquals(PersonalWakeResult.Activated, session.handle(audio, now))
+        now += 100
+        assertEquals(PersonalWakeResult.Command("команда"), session.handle(audio, now))
+    }
+
+    @Test fun combinedTruthTableKeepsIndependentVetoesAndMismatchShortCircuit() = runBlocking {
+        for (voiceId in listOf(false, true)) for (keyword in listOf(false, true)) for (speaker in listOf(false, true)) {
+            prefs = prefs.copy(voiceIdEnabled = voiceId)
+            decision = if (keyword) MetricKwsDecision.Accept else MetricKwsDecision.Reject
+            owner = speaker; speakerCalls = 0; sounds = 0
+            val result = session().handle(audio, now)
+            assertEquals(if (keyword && (!voiceId || speaker)) PersonalWakeResult.Activated else PersonalWakeResult.Rejected, result)
+            assertEquals(if (keyword && voiceId) 1 else 0, speakerCalls)
+            assertEquals(if (result == PersonalWakeResult.Activated) 1 else 0, sounds)
+        }
+    }
+
+    @Test fun missingEnabledVoiceIdBlocksWithoutFallingBackOrRunningKeyword() = runBlocking {
+        ready = false
+        assertEquals(PersonalWakeResult.Unavailable("voice_id_required"), session().handle(audio, now))
+        assertEquals(0, keywordCalls); assertEquals(0, asrCalls); assertEquals(0, sounds)
+    }
+
+    @Test fun wordAndOwnerProfileChangesCloseAlreadyOpenedWindow() = runBlocking {
+        val session = session()
+        session.handle(audio, now)
+        now += 100
+        prefs = prefs.copy(policyRevision = prefs.policyRevision + 1)
+        decision = MetricKwsDecision.Reject
+        assertEquals(PersonalWakeResult.Rejected, session.handle(audio, now))
+        assertEquals(0, asrCalls)
     }
 }

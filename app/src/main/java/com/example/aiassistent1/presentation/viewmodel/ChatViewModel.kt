@@ -112,12 +112,15 @@ class ChatViewModel(
     val audioActivity = mutableAudioActivity.asStateFlow()
     val personalKeywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls?
         get() = voiceInput as? com.example.aiassistent1.domain.interfaces.PersonalKeywordControls
+    val voiceProfileControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls?
+        get() = voiceInput as? com.example.aiassistent1.domain.interfaces.VoiceProfileControls
     private val mutableSummaryState = MutableStateFlow<String?>(null)
     val summaryState = mutableSummaryState.asStateFlow()
     private var summarizing = false
     private var wakeWordEnabled = false
 
     val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
+    val assistantDisplayName = settingsRepository.assistantDisplayName
 
     init {
         observeAppSession()
@@ -129,7 +132,23 @@ class ChatViewModel(
         observeVoiceBackgroundSession()
         restoreVoiceDraft()
         updateAvailableModels()
-        viewModelScope.launch { settingsRepository.audioPreferences.collect { wakeWordEnabled = it.wakeWordEnabled } }
+        viewModelScope.launch {
+            var previous: com.example.aiassistent1.domain.model.VoiceInputPolicy? = null
+            settingsRepository.audioPreferences.collect { prefs ->
+                wakeWordEnabled = prefs.wakeWordEnabled
+                val policy = prefs.inputPolicy()
+                val changed = previous != null && previous != policy
+                previous = policy
+                if (changed && uiState.value.isVoiceMode) {
+                    stopVoiceInput()
+                    val state = uiState.value
+                    val speaking = state.speechPlaybackState is SpeechPlaybackState.Playing ||
+                        state.speechPlaybackState is SpeechPlaybackState.Generating
+                    if ((state.isProcessing || speaking) && prefs.bargeIn) startVoiceInput(bargeIn = true)
+                    else if (!state.isProcessing && !speaking) startVoiceInput()
+                }
+            }
+        }
         viewModelScope.launch { voiceInput?.observeActivity()?.collect { mutableAudioActivity.value = it } }
         viewModelScope.launch {
             voiceInput?.observeSpeechStart()?.collect { sessionId ->

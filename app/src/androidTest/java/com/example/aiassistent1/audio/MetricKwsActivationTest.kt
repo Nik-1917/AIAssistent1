@@ -52,12 +52,12 @@ class MetricKwsActivationTest {
         val context = object : ContextWrapper(base) { override fun getNoBackupFilesDir() = directory }
         val speakerFile = File(directory, "voice_profile.bin").apply { writeBytes(byteArrayOf(7, 8, 9)) }
         val store = MetricKwsProfileManager(context)
-        var prefs = AudioPreferences(voiceIdEnabled = true, wakeWordEnabled = true, revision = 11,
+        var prefs = AudioPreferences(voiceIdEnabled = false, wakeWordEnabled = true, revision = 11,
             wakeWordEngine = WakeWordEngine.METRIC_KWS)
         var owner = true
         var ownerCalls = 0
-        fun service() = PersonalKeywordActivation(BundledMetricKwsEngine.fromAssets(base), store, { prefs },
-            { ownerCalls++; owner }, selectLegacy = { prefs = prefs.copy(wakeWordEngine = WakeWordEngine.LEGACY_ASR) })
+        fun service() = PersonalKeywordActivation(BundledMetricKwsEngine.fromAssets(base), store,
+            onProfileChanged = { prefs = prefs.copy(policyRevision = prefs.policyRevision + 1) })
         var activation = service()
         try {
             val support = pcm("ru_00_0")
@@ -68,11 +68,8 @@ class MetricKwsActivationTest {
             assertEquals(1, captures); assertTrue(support.all { it == 0f })
             assertTrue(activation.status().canActivate)
             val before = File(directory, "metric_kws_profile.bin").readBytes()
-            owner = false
-            assertTrue(runCatching { activation.enrollFrom { pcm("ru_00_1") } }.isFailure)
+            assertTrue(runCatching { activation.enrollFrom { FloatArray(16_000) } }.isFailure)
             assertArrayEquals(before, File(directory, "metric_kws_profile.bin").readBytes())
-            assertEquals(MetricKwsDecision.Reject, activation.evaluate(query, WakeWordEngine.METRIC_KWS))
-            owner = true
             assertEquals(MetricKwsDecision.Accept, activation.evaluate(query, WakeWordEngine.METRIC_KWS))
             val calls = ownerCalls
             assertEquals(MetricKwsDecision.Reject, activation.evaluate(pcm("ru_02_1"), WakeWordEngine.METRIC_KWS))
@@ -83,17 +80,31 @@ class MetricKwsActivationTest {
             var asrCalls = 0
             var signals = 0
             val session = PersonalKeywordWakeSession({ prefs }, { activation.evaluate(it, WakeWordEngine.METRIC_KWS) },
-                { owner }, { asrCalls++; "команда" }, { signals++ }, clock = { now })
+                { ownerCalls++; owner }, { asrCalls++; "команда" }, { signals++ }, clock = { now })
             assertEquals(PersonalWakeResult.Activated, session.handle(query, now))
             assertEquals(0, asrCalls); assertEquals(1, signals)
             now += 1000
             assertEquals(PersonalWakeResult.Command("команда"), session.handle(pcm("ru_02_1"), now))
             assertEquals(1, asrCalls)
+            assertEquals(0, ownerCalls)
+            prefs = prefs.copy(voiceIdEnabled = true)
+            owner = false
+            assertEquals(PersonalWakeResult.Rejected, session.handle(query, now))
+            assertEquals(1, signals)
+            owner = true
+            assertEquals(PersonalWakeResult.Activated, session.handle(query, now))
+            now += 100
+            owner = false
+            assertEquals(PersonalWakeResult.Rejected, session.handle(pcm("ru_02_1"), now))
+            assertEquals(1, asrCalls)
+            owner = true
+            assertEquals(PersonalWakeResult.Command("команда"), session.handle(pcm("ru_02_1"), now))
             prefs = prefs.copy(revision = 12)
-            assertFalse(activation.status().canActivate)
-            assertEquals(MetricKwsDecision.Legacy("reenrollment_required"), activation.evaluate(query, WakeWordEngine.METRIC_KWS))
+            assertTrue(activation.status().canActivate)
+            assertEquals(MetricKwsDecision.Accept, activation.evaluate(query, WakeWordEngine.METRIC_KWS))
             activation.delete()
-            assertEquals(WakeWordEngine.LEGACY_ASR, prefs.wakeWordEngine)
+            assertEquals(WakeWordEngine.METRIC_KWS, prefs.wakeWordEngine)
+            assertEquals(MetricKwsDecision.Unavailable("profile_missing_or_corrupt"), activation.evaluate(query, WakeWordEngine.METRIC_KWS))
             assertNull(store.load()); assertArrayEquals(byteArrayOf(7, 8, 9), speakerFile.readBytes())
         } finally { activation.close(); directory.deleteRecursively() }
     }

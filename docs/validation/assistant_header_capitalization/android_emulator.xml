@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-09-27T20:27:00" hostname="localhost">
+  <testsuite name="com.example.aiassistent1.audio.AssistantNameSettingsTest" tests="1" failures="0" errors="0" skipped="0" time="33.925" timestamp="2026-09-27T20:27:00" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="recordedNameAppearsInFieldAndHeaderAndEditingLeavesAudioUntouched" classname="com.example.aiassistent1.audio.AssistantNameSettingsTest" time="33.925" />
+  </testsuite>
+</testsuites>

@@ -15,6 +15,8 @@ interface SettingsRepository {
     suspend fun completeVoiceEnrollment(revision: Long): Boolean
     suspend fun setWakeWordEnabled(enabled: Boolean)
     suspend fun setWakeWordEngine(engine: com.example.aiassistent1.domain.model.WakeWordEngine)
+    suspend fun setVoiceActivationMode(mode: com.example.aiassistent1.domain.model.VoiceActivationMode)
+    suspend fun invalidateAudioSession()
     suspend fun setRecordingDirectory(uri: String?)
     val navigationState: Flow<AppNavigationState>
     suspend fun setAppDestination(destination: AppDestination)
@@ -69,6 +71,10 @@ interface SettingsRepository {
 
     val customWakeWord: StateFlow<String>
     suspend fun setCustomWakeWord(word: String)
+
+    /** Header/settings label only; changing it must not invalidate an audio session. */
+    val assistantDisplayName: Flow<String>
+    suspend fun setAssistantDisplayName(name: String)
 
     val autoSummaryEnabled: StateFlow<Boolean>
     suspend fun setAutoSummaryEnabled(enabled: Boolean)

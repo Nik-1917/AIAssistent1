@@ -28,7 +28,7 @@ class SherpaOnnxVoiceInputProvider(
     private val settingsRepository: SettingsRepository,
     private val processing: AudioProcessingManager,
     private val personalKeyword: PersonalKeywordActivation? = null,
-) : InputProvider, PersonalKeywordControls, AutoCloseable {
+) : InputProvider, PersonalKeywordControls, VoiceProfileControls, AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
@@ -40,30 +40,52 @@ class SherpaOnnxVoiceInputProvider(
     private var nextSessionId = 0L
     private var captureWake = false
     private var captureEnrollment = false
-    private val keywordFallback = MutableStateFlow<String?>(null)
-    override fun observeKeywordFallback() = keywordFallback.asStateFlow()
+    private val activationIssue = MutableStateFlow<String?>(null)
+    override fun observeActivationIssue() = activationIssue.asStateFlow()
     override fun observeKeywordRecording() = activity.map { it == AudioSessionState.Enrolling }.distinctUntilChanged()
-    override suspend fun keywordStatus() = personalKeyword?.status()
+    override fun observeVoiceRecording() = observeKeywordRecording()
+    override suspend fun voiceProfileStatus() = voiceProfileManager.status()
+    override suspend fun enrollVoice() {
+        val samples = try { captureEnrollmentSegment() }
+        catch (timeout: TimeoutCancellationException) {
+            throw IllegalStateException("За 12 секунд голос не записан. Произнесите короткую фразу и сделайте паузу.", timeout)
+        }
+        try { check(voiceProfileManager.enroll(samples)) { "Не удалось записать голос. Повторите запись обычным голосом." } }
+        finally { samples.fill(0f) }
+        activationIssue.value = null
+    }
+    override suspend fun deleteVoice() { voiceProfileManager.delete(); activationIssue.value = null }
+    override suspend fun selectVoiceId(enabled: Boolean) {
+        settingsRepository.setVoiceIdEnabled(enabled)
+        activationIssue.value = null
+    }
+    override suspend fun keywordStatus() = personalKeyword?.status(prepareModel = false)
         ?: PersonalKeywordStatus(false, false, false, "Персональная модель недоступна")
     override suspend fun enrollKeyword() {
         val service = checkNotNull(personalKeyword) { "Персональная модель недоступна" }
-        try { service.enrollFrom(::captureEnrollmentSegment) }
+        try {
+            service.enrollNamedFrom(
+                capture = ::captureEnrollmentSegment,
+                recognize = { recognizer.recognize(it).getOrThrow() },
+                saveDisplayName = settingsRepository::setAssistantDisplayName,
+            )
+        }
         catch (timeout: TimeoutCancellationException) {
             throw IllegalStateException("За 12 секунд слово не записано. Повторите запись и сделайте паузу после слова.", timeout)
         }
-        keywordFallback.value = null
+        activationIssue.value = null
     }
     override suspend fun deleteKeyword() {
         checkNotNull(personalKeyword).delete()
-        keywordFallback.value = null
+        activationIssue.value = null
     }
-    override suspend fun selectKeywordMode(enabled: Boolean) {
-        if (enabled) {
-            val status = keywordStatus()
+    override suspend fun selectActivationMode(mode: VoiceActivationMode) {
+        if (mode == VoiceActivationMode.PERSONAL_WORD) {
+            val status = checkNotNull(personalKeyword).status(prepareModel = true)
             check(status.canActivate) { status.message }
         }
-        settingsRepository.setWakeWordEngine(if (enabled) WakeWordEngine.METRIC_KWS else WakeWordEngine.LEGACY_ASR)
-        keywordFallback.value = null
+        settingsRepository.setVoiceActivationMode(mode)
+        activationIssue.value = null
     }
     private val warmUpJob = scope.launch {
         try { vad.prepare(); recognizer.prepare() }
@@ -203,7 +225,7 @@ class SherpaOnnxVoiceInputProvider(
                 finally { feedbackPlaying.set(false) }
             }
             activity.value = if (enrollment != null) AudioSessionState.Enrolling
-                else if (wake || initial.needsEnrollment && initial.voiceIdEnabled) AudioSessionState.Waiting else AudioSessionState.Listening
+                else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
             val recognition = launch {
                 var activatedUntil = 0L
                 var activeWord = initial.wakeWord
@@ -211,30 +233,36 @@ class SherpaOnnxVoiceInputProvider(
                 val metricSession = PersonalKeywordWakeSession(
                     preferences = settingsRepository::readAudioPreferences,
                     evaluate = { personalKeyword?.evaluate(it, WakeWordEngine.METRIC_KWS)
-                        ?: MetricKwsDecision.Legacy("model_unavailable") },
+                        ?: MetricKwsDecision.Unavailable("model_unavailable") },
                     verifySpeaker = voiceProfileManager::verify,
                     recognize = { recognizer.recognize(it).getOrThrow() },
                     onActivation = { activationFeedback(); resetAfterMetricFeedback.set(true) },
                     onVerifiedSpeech = { if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id) },
                     clock = SystemClock::elapsedRealtime,
+                    speakerReady = { !voiceProfileManager.needsEnrollment() },
                 )
+                var activePolicy = initial.inputPolicy()
                 for ((segment, detected, speechStartedAt) in segments) {
                     val prefs = settingsRepository.readAudioPreferences()
+                    val policy = prefs.inputPolicy()
+                    if (activePolicy != policy) { activatedUntil = 0; activePolicy = policy }
                     if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
                         shadowSegments?.trySend(segment.copyOf())
                     }
                     if (prefs.wakeWord != activeWord || prefs.wakeWordEngine != activeEngine) {
                         activatedUntil = 0; activeWord = prefs.wakeWord; activeEngine = prefs.wakeWordEngine
                     }
-                    if (wake) {
+                    if (wake && prefs.wakeWordEnabled) {
                         when (val result = metricSession.handle(segment, speechStartedAt)) {
-                            is PersonalWakeResult.Legacy -> {
-                                keywordFallback.value = result.reason?.let {
-                                    "Персональная активация недоступна. Сейчас используется прежняя активация по имени; проверьте модель и профиль."
-                                }
+                            is PersonalWakeResult.Legacy -> Unit
+                            is PersonalWakeResult.Unavailable -> {
+                                activationIssue.value = if (result.reason == "voice_id_required") "Voice ID включён: сначала запишите голос в настройках."
+                                    else "Персональная активация недоступна: проверьте модель и запись слова или выберите другой способ активации."
+                                activity.value = AudioSessionState.Rejected
+                                continue
                             }
                             PersonalWakeResult.Rejected -> { activity.value = AudioSessionState.Rejected; continue }
-                            PersonalWakeResult.Activated -> { keywordFallback.value = null; continue }
+                            PersonalWakeResult.Activated -> { activationIssue.value = null; continue }
                             PersonalWakeResult.Waiting -> continue
                             is PersonalWakeResult.Command -> {
                                 if (isCurrent(id)) input.emit(VoiceInputEvent(id, result.text))
@@ -243,24 +271,23 @@ class SherpaOnnxVoiceInputProvider(
                             }
                         }
                     }
-                    val enrollment = voiceProfileManager.needsEnrollment()
-                    val requireName = (wake && SystemClock.elapsedRealtime() > activatedUntil) || enrollment
+                    if (prefs.voiceIdEnabled && voiceProfileManager.needsEnrollment()) {
+                        activationIssue.value = "Voice ID включён: сначала запишите голос в настройках."
+                        activity.value = AudioSessionState.Rejected
+                        continue
+                    }
+                    val requireName = wake && prefs.wakeWordEnabled && SystemClock.elapsedRealtime() > activatedUntil
                     if (requireName && useKws && !detected) continue
                     var text: String? = null
                     if (requireName && !useKws) {
                         val transcript = recognizer.recognize(segment).getOrThrow()
                         text = WakeWordTokens.removePrefix(transcript, prefs.wakeWord) ?: continue
                     }
-                    if (enrollment) {
-                        activity.value = AudioSessionState.Enrolling
-                        if (!voiceProfileManager.enroll(segment)) {
-                            activity.value = AudioSessionState.Rejected
-                            continue
-                        }
-                    } else if (!voiceProfileManager.verify(segment)) {
+                    if (prefs.voiceIdEnabled && !voiceProfileManager.verify(segment)) {
                         activity.value = AudioSessionState.Rejected
                         continue
                     }
+                    if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
                     if (prefs.voiceIdEnabled && prefs.bargeIn) speechStarts.emit(id)
                     if (requireName) {
                         activationFeedback()
@@ -269,7 +296,9 @@ class SherpaOnnxVoiceInputProvider(
                     val transcript = text ?: recognizer.recognize(segment).getOrThrow().let {
                         if (detected) WakeWordTokens.removePrefix(it, prefs.wakeWord) ?: it else it
                     }
+                    if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
                     if (transcript.isNotBlank() && isCurrent(id)) {
+                        activationIssue.value = null
                         input.emit(VoiceInputEvent(id, transcript))
                         activatedUntil = 0
                         activity.value = if (wake) AudioSessionState.Waiting else AudioSessionState.Listening

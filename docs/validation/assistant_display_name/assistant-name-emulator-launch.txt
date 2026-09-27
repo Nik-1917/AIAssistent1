@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.example.aiassistent1/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.example.aiassistent1/.MainActivity
+TotalTime: 5882
+WaitTime: 5888
+Complete

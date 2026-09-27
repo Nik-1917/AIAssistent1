@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="20" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-09-27T18:23:30" hostname="localhost">
+  <testsuite name="com.example.aiassistent1.audio.AudioModelIntegrationTest" tests="1" failures="0" errors="0" skipped="0" time="16.745" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="bundledModelsRecognizeSyntheticRussianNameAndExtractSpeakerEmbedding" classname="com.example.aiassistent1.audio.AudioModelIntegrationTest" time="16.745" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.AudioNativeTest" tests="3" failures="0" errors="0" skipped="0" time="53.968" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="mp3IsDecodableAndEncoderIsIsolatedPerSession" classname="com.example.aiassistent1.audio.AudioNativeTest" time="0.223" />
+    <testcase name="streamThreeHoursWithConstantPcmBuffer" classname="com.example.aiassistent1.audio.AudioNativeTest" time="53.504" />
+    <testcase name="webRtcProcessesCaptureAndRenderWithoutInvalidSamples" classname="com.example.aiassistent1.audio.AudioNativeTest" time="0.241" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.ConferenceStorageTest" tests="2" failures="0" errors="0" skipped="0" time="7.814" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="migrationPreservesPrototypeDataAndBuildsSearchIndex" classname="com.example.aiassistent1.audio.ConferenceStorageTest" time="0.565" />
+    <testcase name="limitsEvictOnlyOldTranscriptAndPagingNeverLoadsWholeCollection" classname="com.example.aiassistent1.audio.ConferenceStorageTest" time="7.249" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsActivationTest" tests="3" failures="0" errors="0" skipped="0" time="1.194" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="appBundleMetadataAndFactoryKeepExperimentSeparateFromValidation" classname="com.example.aiassistent1.audio.MetricKwsActivationTest" time="0.063" />
+    <testcase name="distinctRussianUtterancesEnrollActivateAndSurviveReopening" classname="com.example.aiassistent1.audio.MetricKwsActivationTest" time="1.111" />
+    <testcase name="corruptBundleIsRejectedBeforeCaptureAndDoesNotReloadRepeatedly" classname="com.example.aiassistent1.audio.MetricKwsActivationTest" time="0.020" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsEncoderTest" tests="4" failures="0" errors="0" skipped="0" time="18.749" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="existingSherpaModelsAndMetricSessionCoexist" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="13.594" />
+    <testcase name="russianAndAnalyticPcmMatchPythonEmbeddings" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="3.941" />
+    <testcase name="corruptModelsShapesInputsAndClosedSessionsAreRejected" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="0.293" />
+    <testcase name="parallelCallsReopenAndIdempotentClose" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="0.921" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest" tests="1" failures="0" errors="0" skipped="0" time="1.839" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="allAnalyticFixturesMatchPinnedTorchaudioReference" classname="com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest" time="1.839" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsSettingsTest" tests="4" failures="0" errors="0" skipped="0" time="15.298" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="standaloneWordEnrollmentAndDeletionNeverSelectAnotherMode" classname="com.example.aiassistent1.audio.MetricKwsSettingsTest" time="7.057" />
+    <testcase name="voiceEnrollmentCanBeCancelledWithoutTouchingWord" classname="com.example.aiassistent1.audio.MetricKwsSettingsTest" time="2.374" />
+    <testcase name="cancelAndDialogDisposalKeepThePreviousWord" classname="com.example.aiassistent1.audio.MetricKwsSettingsTest" time="2.303" />
+    <testcase name="allFourCombinationsAndNameModeKeepSeparateProfiles" classname="com.example.aiassistent1.audio.MetricKwsSettingsTest" time="3.564" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsStorageTest" tests="1" failures="0" errors="0" skipped="0" time="0.153" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="atomicRecoveryInvalidReplacementAndSeparateSpeakerStorage" classname="com.example.aiassistent1.audio.MetricKwsStorageTest" time="0.153" />
+  </testsuite>
+  <testsuite name="com.example.aiassistent1.audio.VoiceEnrollmentTest" tests="1" failures="0" errors="0" skipped="0" time="0.564" timestamp="2026-09-27T18:23:30" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="independentEnrollmentSurvivesTogglesRenameAndFailedReplacement" classname="com.example.aiassistent1.audio.VoiceEnrollmentTest" time="0.564" />
+  </testsuite>
+</testsuites>

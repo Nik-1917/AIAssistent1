@@ -210,6 +210,7 @@
     "Pair false accepts are not false activations per hour; Voice ID remains independent"
   ],
   "frontend": "Unchanged MetricKwsFeatureExtractor; MFCC normalization and C0 centering are inside ONNX; do not apply twice",
-  "decision": "Keyword threshold AND independently configured Voice ID; no blended score",
+  "decision": "Keyword threshold; optional independent Voice ID only when explicitly enabled; no blended score",
+  "application_policy": "independent_word_and_voice_id",
   "profile_compatibility": "Enroll again when encoder SHA changes; never compare embeddings from different models"
 }

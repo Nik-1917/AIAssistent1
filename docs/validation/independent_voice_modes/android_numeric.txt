@@ -1,0 +1,1 @@
+09-27 18:23:10.825  5360  5381 I MetricKwsEncoder: cases=41 maxAbs=4.5597553E-6 minCosine=1.0 ORT=1.27.0

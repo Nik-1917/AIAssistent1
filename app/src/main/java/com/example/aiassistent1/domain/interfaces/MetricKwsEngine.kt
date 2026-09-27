@@ -25,12 +25,22 @@ data class PersonalKeywordStatus(
 
 /** UI operations on the existing input provider; never creates another microphone. */
 interface PersonalKeywordControls {
-    fun observeKeywordFallback(): kotlinx.coroutines.flow.Flow<String?> = kotlinx.coroutines.flow.emptyFlow()
+    fun observeActivationIssue(): kotlinx.coroutines.flow.Flow<String?> = kotlinx.coroutines.flow.emptyFlow()
     fun observeKeywordRecording(): kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
     suspend fun keywordStatus(): PersonalKeywordStatus
     suspend fun enrollKeyword()
     suspend fun deleteKeyword()
-    suspend fun selectKeywordMode(enabled: Boolean)
+    suspend fun selectActivationMode(mode: com.example.aiassistent1.domain.model.VoiceActivationMode)
+}
+
+data class VoiceProfileStatus(val profileReady: Boolean, val message: String)
+
+interface VoiceProfileControls {
+    fun observeVoiceRecording(): kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    suspend fun voiceProfileStatus(): VoiceProfileStatus
+    suspend fun enrollVoice()
+    suspend fun deleteVoice()
+    suspend fun selectVoiceId(enabled: Boolean)
 }
 
 interface MetricKwsProfileStore {

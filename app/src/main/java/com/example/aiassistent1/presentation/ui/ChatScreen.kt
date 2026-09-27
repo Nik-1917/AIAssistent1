@@ -179,6 +179,8 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val assistantName by viewModel.assistantDisplayName.collectAsStateWithLifecycle(
+        initialValue = com.example.aiassistent1.domain.model.AssistantDisplayName.DEFAULT)
     val context = LocalContext.current
     val view = LocalView.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -462,6 +464,7 @@ fun ChatScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             ChatTopBar(
+                assistantName = assistantName,
                 modelState = uiState.modelState,
                 isProcessing = uiState.isProcessing,
                 hasMessages = uiState.messages.isNotEmpty(),
@@ -1117,6 +1120,7 @@ fun ChatScreen(
             onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
             onSpeechRateChange = viewModel::setSpeechRate,
             keywordControls = viewModel.personalKeywordControls,
+            voiceControls = viewModel.voiceProfileControls,
         )
     }
 
@@ -1528,7 +1532,8 @@ private fun ImportProgress(progress: Float) {
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ChatTopBar(
+internal fun ChatTopBar(
+    assistantName: String,
     modelState: ModelState,
     isProcessing: Boolean,
     hasMessages: Boolean,
@@ -1553,7 +1558,8 @@ private fun ChatTopBar(
                 modifier = Modifier.clickable { showMenu = true }
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "AI Assistant")
+                    Text(text = assistantName.replaceFirstChar { it.titlecase() }, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false))
                     if (modelAvailability == ModelAvailability.Available) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -2182,6 +2188,7 @@ fun ModelSettingsDialog(
     onAutoPlaybackChange: (Boolean) -> Unit,
     onSpeechRateChange: (Float) -> Unit,
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
+    voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -2320,7 +2327,7 @@ fun ModelSettingsDialog(
 
                 SettingsSection(title = "Голос") {
                     BackgroundPowerSettings()
-                    AudioSettingsSection(keywordControls)
+                    AudioSettingsSection(keywordControls, voiceControls)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

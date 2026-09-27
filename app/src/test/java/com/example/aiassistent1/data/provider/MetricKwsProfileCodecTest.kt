@@ -18,7 +18,7 @@ class MetricKwsProfileCodecTest {
     @Test fun roundTripAllMetadataAndEmbedding() {
         val read = MetricKwsProfileCodec.decode(MetricKwsProfileCodec.encode(profile))!!
         assertEquals(profile.config, read.config)
-        assertEquals(profile.voiceRevision, read.voiceRevision)
+        assertEquals(profile.profileRevision, read.profileRevision)
         assertEquals(profile.createdAt, read.createdAt)
         assertArrayEquals(profile.embedding, read.embedding, 0f)
     }
@@ -52,7 +52,20 @@ class MetricKwsProfileCodecTest {
         for (value in listOf(floatArrayOf(0f, 0f), floatArrayOf(Float.NaN, 1f), floatArrayOf(1f), floatArrayOf(4f, 3f))) {
             assertTrue(runCatching { MetricKwsProfileCodec.encode(profile.copy(embedding = value)) }.isFailure)
         }
-        assertTrue(runCatching { MetricKwsProfileCodec.encode(profile.copy(voiceRevision = -1)) }.isFailure)
+        assertTrue(runCatching { MetricKwsProfileCodec.encode(profile.copy(profileRevision = -1)) }.isFailure)
+    }
+
+    @Test fun legacySpeakerRevisionIsDiscardedWithoutChangingModelOrEmbedding() {
+        val legacy = MetricKwsProfileCodec.encode(profile)
+        ByteBuffer.wrap(legacy).putInt(4, 1)
+        val migrated = MetricKwsProfileCodec.decode(resign(legacy))!!
+        assertEquals(0L, migrated.profileRevision)
+        assertEquals(profile.config, migrated.config)
+        assertEquals(profile.createdAt, migrated.createdAt)
+        assertArrayEquals(profile.embedding, migrated.embedding, 0f)
+        val saved = MetricKwsProfileCodec.encode(migrated)
+        assertEquals(2, ByteBuffer.wrap(saved).getInt(4))
+        assertArrayEquals(profile.embedding, MetricKwsProfileCodec.decode(saved)!!.embedding, 0f)
     }
 
     @Test fun rejectsNonFinitePayloadEvenWithValidChecksum() {

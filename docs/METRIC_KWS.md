@@ -1,15 +1,18 @@
 # Personal Metric UD-KWS: experimental v3 activation
 
 Current integration (2026-09-27): the pinned v3 ONNX model is included in the
-application and can be explicitly selected after Voice ID and one-word enrollment.
-The live route is existing microphone/AEC/NS/VAD -> KWS -> independent Voice ID ->
-feedback -> separately verified command -> ASR. The wake utterance is consumed.
-Legacy ASR remains the default. Experimental permission is separate from
+application and can be explicitly selected after one-word enrollment. Voice ID
+is an independent optional setting; both profiles can be recorded separately.
+The live route is existing microphone/AEC/NS/VAD -> selected word gate -> optional
+Voice ID -> feedback -> command with optional Voice ID -> ASR. Direct input and
+legacy name activation are separate choices. Unavailable v3 never silently selects
+another mode. Experimental permission is separate from
 `activationValidated`, which remains false until physical microphone acceptance.
 
 Implementation, full phone test steps and evidence boundaries:
-`METRIC_KWS_V3_ACTIVATION.md`. Build/test evidence:
-`METRIC_KWS_V3_ACTIVATION_VALIDATION.json`. Training and quality comparison:
+`INDEPENDENT_VOICE_MODES.md`. Build/test evidence:
+`INDEPENDENT_VOICE_MODES_VALIDATION.json`. The former mandatory dual-gate integration
+is recorded in `METRIC_KWS_V3_ACTIVATION.md`. Training and quality comparison:
 `METRIC_KWS_RU_V3.md`. No encoder retraining or threshold change was part of activation.
 
 The following records the earlier infrastructure stage **before opt-in activation**;

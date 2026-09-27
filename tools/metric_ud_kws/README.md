@@ -1,7 +1,9 @@
 # Metric UD-KWS: reference tools and separate Russian experiment
 
 Status: **upstream weights remain blocked; our separate Russian v3 has explicit experimental app opt-in**.
-Current integration and phone test scenario: `docs/METRIC_KWS_V3_ACTIVATION.md`.
+Current integration and phone test scenario: `docs/INDEPENDENT_VOICE_MODES.md`.
+Word enrollment/activation and Voice ID are now independent optional functions;
+the model weights, frontend and threshold remain unchanged.
 `prepare_russian.py`, `train_russian.py`, `export_russian.py` and `ru_model.py` implement
 the from-scratch Russian path. Records and checkpoint: `experiments/ru-mswc-v1/`.
 The unchanged upstream harness is not a reproduced published-model result.

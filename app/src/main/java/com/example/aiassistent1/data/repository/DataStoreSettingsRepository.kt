@@ -17,6 +17,7 @@ import com.example.aiassistent1.domain.model.CalendarViewState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.AssistantDisplayName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,6 +63,7 @@ class DataStoreSettingsRepository(
 
     private val voiceIdEnabledKey = booleanPreferencesKey("voice_id_enabled")
     private val voiceRevisionKey = androidx.datastore.preferences.core.longPreferencesKey("voice_id_revision")
+    private val audioPolicyRevisionKey = androidx.datastore.preferences.core.longPreferencesKey("audio_policy_revision")
     private val wakeWordEnabledKey = booleanPreferencesKey("wake_word_enabled")
     private val recordingDirectoryKey = stringPreferencesKey("conference_recording_directory")
     override suspend fun setRecordingDirectory(uri: String?) {
@@ -72,6 +74,7 @@ class DataStoreSettingsRepository(
             voiceIdEnabled = p[voiceIdEnabledKey] ?: false,
             needsEnrollment = p[voiceIdNeedsEnrollmentKey] ?: false,
             revision = p[voiceRevisionKey] ?: 0L,
+            policyRevision = p[audioPolicyRevisionKey] ?: 0L,
             wakeWord = p[customWakeWordKey] ?: "Ассистент",
             wakeWordEnabled = p[wakeWordEnabledKey] ?: false,
             bargeIn = p[bargeInEnabledKey] ?: true,
@@ -85,16 +88,46 @@ class DataStoreSettingsRepository(
     override suspend fun readAudioPreferences() = audioPreferences.first()
     private val wakeWordEngineKey = stringPreferencesKey("wake_word_engine")
     override suspend fun setWakeWordEngine(engine: com.example.aiassistent1.domain.model.WakeWordEngine) {
-        dataStore.edit { it[wakeWordEngineKey] = engine.name }
+        dataStore.edit {
+            if (it[wakeWordEngineKey] != engine.name) {
+                it[wakeWordEngineKey] = engine.name
+                invalidateAudioPolicy(it)
+            }
+        }
     }
     override suspend fun setWakeWordEnabled(enabled: Boolean) {
-        dataStore.edit { it[wakeWordEnabledKey] = enabled }
+        dataStore.edit {
+            if ((it[wakeWordEnabledKey] ?: false) != enabled) {
+                it[wakeWordEnabledKey] = enabled
+                invalidateAudioPolicy(it)
+            }
+        }
     }
+    override suspend fun setVoiceActivationMode(mode: com.example.aiassistent1.domain.model.VoiceActivationMode) {
+        dataStore.edit {
+            val enabled = mode != com.example.aiassistent1.domain.model.VoiceActivationMode.DIRECT
+            val engine = when (mode) {
+                com.example.aiassistent1.domain.model.VoiceActivationMode.PERSONAL_WORD -> "METRIC_KWS"
+                com.example.aiassistent1.domain.model.VoiceActivationMode.NAME -> "LEGACY_ASR"
+                else -> it[wakeWordEngineKey] ?: "LEGACY_ASR"
+            }
+            if ((it[wakeWordEnabledKey] ?: false) != enabled || it[wakeWordEngineKey] != engine) {
+                it[wakeWordEnabledKey] = enabled
+                it[wakeWordEngineKey] = engine
+                invalidateAudioPolicy(it)
+            }
+        }
+    }
+    private fun invalidateAudioPolicy(p: androidx.datastore.preferences.core.MutablePreferences) {
+        p[audioPolicyRevisionKey] = (p[audioPolicyRevisionKey] ?: 0L) + 1L
+    }
+    override suspend fun invalidateAudioSession() { dataStore.edit { invalidateAudioPolicy(it) } }
     override suspend fun completeVoiceEnrollment(revision: Long): Boolean {
         var accepted = false
         dataStore.edit {
-            if (it[voiceIdEnabledKey] == true && (it[voiceRevisionKey] ?: 0L) == revision) {
+            if ((it[voiceRevisionKey] ?: 0L) == revision) {
                 it[voiceIdNeedsEnrollmentKey] = false
+                invalidateAudioPolicy(it)
                 accepted = true
             }
         }
@@ -103,10 +136,12 @@ class DataStoreSettingsRepository(
     private fun invalidateProfile(p: androidx.datastore.preferences.core.MutablePreferences) {
         p[voiceRevisionKey] = (p[voiceRevisionKey] ?: 0L) + 1L
         p[voiceIdNeedsEnrollmentKey] = true
+        invalidateAudioPolicy(p)
         profileFile?.let { android.util.AtomicFile(it).delete() }
     }
     private val voiceIdNeedsEnrollmentKey = booleanPreferencesKey("voice_id_needs_enrollment")
     private val customWakeWordKey = stringPreferencesKey("custom_wake_word")
+    private val assistantDisplayNameKey = stringPreferencesKey("assistant_display_name")
     private val autoSummaryEnabledKey = booleanPreferencesKey("auto_summary_enabled")
     private val conferenceModeEffectsEnabledKey = booleanPreferencesKey("conference_mode_effects_enabled")
     private val bargeInEnabledKey = booleanPreferencesKey("barge_in_enabled")
@@ -370,9 +405,7 @@ class DataStoreSettingsRepository(
         dataStore.edit { preferences ->
             val oldEnabled = preferences[voiceIdEnabledKey] ?: false
             preferences[voiceIdEnabledKey] = enabled
-            if (enabled && !oldEnabled) {
-                invalidateProfile(preferences)
-            }
+            if (enabled != oldEnabled) invalidateAudioPolicy(preferences)
         }
     }
 
@@ -397,11 +430,19 @@ class DataStoreSettingsRepository(
             val oldWord = preferences[customWakeWordKey] ?: "Ассистент"
             if (oldWord != normalized) {
                 preferences[customWakeWordKey] = normalized
-                if (preferences[voiceIdEnabledKey] == true) {
-                    invalidateProfile(preferences)
-                }
+                invalidateAudioPolicy(preferences)
             }
         }
+    }
+
+    override val assistantDisplayName = dataStore.data
+        .map { it[assistantDisplayNameKey] ?: AssistantDisplayName.DEFAULT }
+        .distinctUntilChanged()
+
+    override suspend fun setAssistantDisplayName(name: String) {
+        val normalized = AssistantDisplayName.normalize(name)
+        // Deliberately separate from customWakeWord, profile revisions and audio policy.
+        dataStore.edit { it[assistantDisplayNameKey] = normalized }
     }
 
     override val autoSummaryEnabled: StateFlow<Boolean> = dataStore.data

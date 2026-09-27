@@ -1,0 +1,77 @@
+{
+  "checked_at_utc": "2026-09-27T20:12:23.593152+00:00",
+  "status": "implemented_and_automatically_verified; physical_microphone_pending",
+  "default_display_name": "AI Assistant",
+  "display_preference": "assistant_display_name",
+  "display_edits_change_audio_preferences_or_profiles": false,
+  "named_enrollment": "same captured PCM -> local ASR for editable label and v3 for audio embedding",
+  "enrollment_ui_test": "real AudioSettingsSection and ChatTopBar, real ASR/v3/DataStore, prerecorded Russian corpus PCM replacing microphone capture",
+  "repeated_same_name_overwrites_unsaved_display_draft": true,
+  "model_sha256": "5d4828f3a8aea2eff1f677b1ab9c51acef0aa732c55f1c425d8d95da41d009a2",
+  "model_threshold": 0.5827946662902832,
+  "activation_validated": false,
+  "host_tests": {
+    "tests": 354,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android_emulator": {
+    "device": "emulator-5580",
+    "api": 34,
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": {
+      "com.example.aiassistent1.audio.AssistantNameSettingsTest": 1,
+      "com.example.aiassistent1.audio.AudioModelIntegrationTest": 1,
+      "com.example.aiassistent1.audio.AudioNativeTest": 3,
+      "com.example.aiassistent1.audio.ConferenceStorageTest": 2,
+      "com.example.aiassistent1.audio.MetricKwsActivationTest": 3,
+      "com.example.aiassistent1.audio.MetricKwsEncoderTest": 4,
+      "com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest": 1,
+      "com.example.aiassistent1.audio.MetricKwsSettingsTest": 4,
+      "com.example.aiassistent1.audio.MetricKwsStorageTest": 1,
+      "com.example.aiassistent1.audio.VoiceEnrollmentTest": 1
+    }
+  },
+  "lint": {
+    "Warning": 49,
+    "Hint": 7
+  },
+  "emulator_launch": {
+    "status": "ok",
+    "crash_buffer_empty": true
+  },
+  "artifacts": {
+    "app_apk": {
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 723336195,
+      "sha256": "be55431621a28f4d7323651528834e960d10823c0393095f89bcf8c252538929"
+    },
+    "test_apk": {
+      "path": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 9417289,
+      "sha256": "df379f20e59c94b08c86eacbaf4a33bcdf13c900aa311f5397cd63abec59fd6a"
+    }
+  },
+  "evidence": {
+    "docs/validation/assistant_display_name/android_emulator.xml": "e859c38f5a97b0f7ee778066b0fb7e57576a79d895a8021dbdb2e0cf4ca42156",
+    "docs/validation/assistant_display_name/assistant-name-emulator-activity.txt": "07c68c9281466a3168d50fff2891b670e22506bde8311c559dad4918bd3ac63f",
+    "docs/validation/assistant_display_name/assistant-name-emulator-crashes.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs/validation/assistant_display_name/assistant-name-emulator-launch.txt": "577d4ab15f9db2187202067e0d5a0651da62e5616844e345ea46a1968b00de21",
+    "docs/validation/assistant_display_name/assistant-name-final-build.txt": "983f1d9d59884a5c4b92e08bf67e67e81e3bc0816dcb96513c65449d60c12093",
+    "docs/validation/assistant_display_name/host_tests.xml": "7a18c7e649973045f53c768d50b7f47290687410157bde9d7122b9971d613862",
+    "docs/validation/assistant_display_name/source_hashes.json": "900d98ba564abc5c5798410084acb1babd3248d7ae895e2c4d395eb2204696d6"
+  },
+  "physical_phone": {
+    "new_apk_installed": false,
+    "microphone_tested": false
+  },
+  "limitations": [
+    "No live microphone or physical phone test",
+    "Speech recognition may spell names incorrectly; the label can be edited without changing the audio profile",
+    "DataStore and profile commits have error rollback, not a cross-file process-crash transaction"
+  ]
+}

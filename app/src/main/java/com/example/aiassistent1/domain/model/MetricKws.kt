@@ -30,15 +30,15 @@ data class MetricKwsConfig(
     }
 }
 
-/** Speaker data stays in voice_profile.bin; revision binds this record to that profile. */
+/** Word and speaker profiles have independent lifetimes and revisions. */
 data class MetricKwsProfile(
     val config: MetricKwsConfig,
-    val voiceRevision: Long,
+    val profileRevision: Long,
     val createdAt: Long,
     val embedding: FloatArray,
 ) {
     fun validate() {
-        require(voiceRevision >= 0 && createdAt >= 0)
+        require(profileRevision >= 0 && createdAt >= 0)
         require(embedding.size == config.embeddingSize)
         require(KeywordEmbedding.isValid(embedding))
         val norm = sqrt(embedding.sumOf { it.toDouble() * it })
@@ -88,6 +88,7 @@ object MetricKwsAudio {
 
 sealed interface MetricKwsDecision {
     data class Legacy(val reason: String) : MetricKwsDecision
+    data class Unavailable(val reason: String) : MetricKwsDecision
     data class Shadow(val keywordScore: Float, val keywordMatched: Boolean) : MetricKwsDecision
     data object Reject : MetricKwsDecision
     data object Accept : MetricKwsDecision

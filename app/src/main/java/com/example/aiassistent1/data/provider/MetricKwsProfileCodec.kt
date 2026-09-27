@@ -12,7 +12,7 @@ import java.security.MessageDigest
 object MetricKwsProfileCodec {
     const val MAX_BYTES = 20_000
     private const val MAGIC = 0x4D4B5731
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun encode(profile: MetricKwsProfile): ByteArray {
         profile.validate()
@@ -29,7 +29,7 @@ object MetricKwsProfileCodec {
                 out.writeInt(c.minSamples)
                 out.writeInt(c.maxSamples)
                 out.writeFloat(c.keywordThreshold)
-                out.writeLong(profile.voiceRevision)
+                out.writeLong(profile.profileRevision)
                 out.writeLong(profile.createdAt)
                 profile.embedding.forEach(out::writeFloat)
             }
@@ -43,7 +43,9 @@ object MetricKwsProfileCodec {
         if (!MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(payload), bytes.takeLast(32).toByteArray())) return null
         return try {
             DataInputStream(ByteArrayInputStream(payload)).use { input ->
-                if (input.readInt() != MAGIC || input.readInt() != VERSION) return null
+                if (input.readInt() != MAGIC) return null
+                val version = input.readInt()
+                if (version !in 1..VERSION) return null
                 val model = input.readUTF()
                 val hash = input.readUTF()
                 val feature = input.readUTF()
@@ -53,7 +55,11 @@ object MetricKwsProfileCodec {
                 val max = input.readInt()
                 val threshold = input.readFloat()
                 val config = MetricKwsConfig(model, hash, feature, size, threshold, rate, min, max)
-                val profile = MetricKwsProfile(config, input.readLong(), input.readLong(), FloatArray(size) { input.readFloat() })
+                val storedRevision = input.readLong()
+                if (storedRevision < 0) return null
+                // v1 used a speaker revision. Preserve its embedding but discard that coupling.
+                val profile = MetricKwsProfile(config, if (version == 1) 0 else storedRevision,
+                    input.readLong(), FloatArray(size) { input.readFloat() })
                 if (input.read() != -1) return null
                 profile.apply { validate() }
             }

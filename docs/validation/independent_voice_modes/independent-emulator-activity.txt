@@ -1,0 +1,10 @@
+    topResumedActivity=ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+    * Hist  #0: ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+      Intent { flg=0x10000000 cmp=com.example.aiassistent1/.MainActivity }
+      mActivityComponent=com.example.aiassistent1/.MainActivity
+    Resumed: ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+  ResumedActivity: ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+  deepestLastOrientationSource=ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+  mFocusedApp=ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+        * ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}
+    mSystemBarColorApps={ActivityRecord{36b5e93 u0 com.example.aiassistent1/.MainActivity t29}}

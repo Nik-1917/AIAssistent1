@@ -86,10 +86,7 @@ object AppModule {
 	fun providePersonalKeywordActivation(context: Context): PersonalKeywordActivation = PersonalKeywordActivation(
 		com.example.aiassistent1.data.provider.BundledMetricKwsEngine.fromAssets(context),
 		provideMetricKwsProfiles(context),
-		{ provideSettingsRepository(context).readAudioPreferences() },
-		{ provideVoiceProfileManager(context).verify(it) },
-		selectLegacy = { provideSettingsRepository(context).setWakeWordEngine(com.example.aiassistent1.domain.model.WakeWordEngine.LEGACY_ASR) },
-		ownerReady = { !provideVoiceProfileManager(context).needsEnrollment() },
+		onProfileChanged = { provideSettingsRepository(context).invalidateAudioSession() },
 	)
 
 	@Volatile

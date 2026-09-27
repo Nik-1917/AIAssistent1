@@ -1,0 +1,124 @@
+{
+  "date": "2026-09-27",
+  "status": "independent_modes_implemented_and_automatically_verified; physical_microphone_pending",
+  "base_commit": "ad4d95241cb764e2d4406b951f27b3c9dc631bba",
+  "modes": [
+    "direct input",
+    "legacy name",
+    "personal word v3"
+  ],
+  "voice_id": "independent optional setting for every mode",
+  "profiles": {
+    "word_format_written": 2,
+    "word_formats_read": [
+      1,
+      2
+    ],
+    "speaker_format_unchanged": true,
+    "enrollment_independent": true,
+    "toggle_and_name_change_preserve_profiles": true,
+    "deletion_does_not_switch_modes": true
+  },
+  "model": {
+    "sha256": "5d4828f3a8aea2eff1f677b1ab9c51acef0aa732c55f1c425d8d95da41d009a2",
+    "threshold": 0.5827946662902832,
+    "weights_unchanged": true,
+    "mfcc_unchanged": true,
+    "metadata_activation_validated": false,
+    "app_metadata_policy_changed": true,
+    "training_archive_unchanged": true
+  },
+  "host_tests": {
+    "tests": 344,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint_severity_counts": {
+    "Warning": 49,
+    "Hint": 7
+  },
+  "android_emulator": {
+    "device": "emulator-5580",
+    "api": 34,
+    "abi": "x86_64",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "test_classes": {
+      "com.example.aiassistent1.audio.AudioModelIntegrationTest": 1,
+      "com.example.aiassistent1.audio.AudioNativeTest": 3,
+      "com.example.aiassistent1.audio.ConferenceStorageTest": 2,
+      "com.example.aiassistent1.audio.MetricKwsActivationTest": 3,
+      "com.example.aiassistent1.audio.MetricKwsEncoderTest": 4,
+      "com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest": 1,
+      "com.example.aiassistent1.audio.MetricKwsSettingsTest": 4,
+      "com.example.aiassistent1.audio.MetricKwsStorageTest": 1,
+      "com.example.aiassistent1.audio.VoiceEnrollmentTest": 1
+    },
+    "pcm_cases": 41,
+    "score_decision_pairs": 144,
+    "max_absolute_error": 4.5597553e-06,
+    "min_float32_cosine": 1.0,
+    "ort": "1.27.0"
+  },
+  "emulator_application_start": {
+    "device": "emulator-5580",
+    "api": 34,
+    "abi": "x86_64",
+    "package": "com.example.aiassistent1",
+    "installed_on_emulator": true,
+    "installed_on_physical_phone": false,
+    "microphone_used": false,
+    "observed_utc": "2026-09-27T18:25:57.7516494Z",
+    "pid": "5771",
+    "main_activity_resumed": true,
+    "apk_sha256": "7e626644720e0be28cbada85d5922c4d3be01ca2a337432e1b22adef26babc87",
+    "crash_buffer_empty": true,
+    "scope": "MainActivity cold start and later resumed activity/process observation; no live microphone"
+  },
+  "artifacts": {
+    "app_apk": {
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 722677651,
+      "sha256": "7e626644720e0be28cbada85d5922c4d3be01ca2a337432e1b22adef26babc87"
+    },
+    "test_apk": {
+      "path": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 9371545,
+      "sha256": "deb7bb655ad3086b074ce7bf45a91cad324547c520de93f794634fdcb00ccd6b"
+    },
+    "unchanged_model_zip": {
+      "path": "tools/metric_ud_kws/experiments/ru-mswc-v3/ru-mswc-personal-v3.zip",
+      "bytes": 1898872,
+      "sha256": "200cd2e9e59e7921c65d1ba7b6a4fdac5458f09f291159805d08bbb60a62e345"
+    }
+  },
+  "evidence": {
+    "docs/validation/independent_voice_modes/android_emulator.xml": "828cc80dc479ed6c614180b5c68161da512af235cbb366a8040346bdd6a54126",
+    "docs/validation/independent_voice_modes/android_numeric.txt": "fc8b18f2ca4cd31b7e6fb06c3d75aeda74a8d0739ad184112183e2124622bbf7",
+    "docs/validation/independent_voice_modes/emulator_smoke.json": "a06706af6e417066553978703181c9af6c61f18d49fb8c03fe3f603f293ecd5a",
+    "docs/validation/independent_voice_modes/host_tests.xml": "43d415ee98d07edc0a8cc40f481245325c615304afd347a7b341cdf42b2c3516",
+    "docs/validation/independent_voice_modes/independent-emulator-activity.txt": "6d9a6625abfb26eafd9f1f2189b3daca1e7eb20895c9c86050c0f544f60cfc80",
+    "docs/validation/independent_voice_modes/independent-emulator-crash-logcat.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs/validation/independent_voice_modes/independent-emulator-launch.txt": "2d46e4a68eadef18edd00d47c9a18f7974da3b2028a2f7c742209d231095b3a5",
+    "docs/validation/independent_voice_modes/independent-final-build.txt": "5ae0673a75bcf2d24f9fcf08db9ceed286e78bc4ffb943e0682f5a28f0c62c12",
+    "docs/validation/independent_voice_modes/source_hashes.json": "96e699ae7ed2fc8f63a37a1af124744e621dcb4719e5141c0e25228ab6a9ecf5"
+  },
+  "physical_phone": {
+    "status": "NOT_RUN",
+    "new_apk_installed": false,
+    "microphone_tested": false,
+    "background_screen_off_tested": false,
+    "false_activations_per_hour_measured": false,
+    "battery_measured": false,
+    "protocol": "docs/INDEPENDENT_VOICE_MODES.md"
+  },
+  "limitations": [
+    "Voice ID/ASR doubles test routing, not biometric quality",
+    "Standalone v3 has no separate speaker verification",
+    "The accelerated three-hour PCM test is not device/microphone endurance",
+    "No retraining or claim of changed corpus accuracy"
+  ]
+}
