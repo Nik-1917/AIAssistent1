@@ -6,6 +6,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -14,7 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 
 @Composable
 internal fun BackgroundPowerSettings() {
@@ -25,8 +28,17 @@ internal fun BackgroundPowerSettings() {
         unrestricted = power.isIgnoringBatteryOptimizations(context.packageName)
     }
     Text(
-        if (unrestricted) "Работа во сне: оптимизация батареи Android отключена"
+        if (unrestricted) "Работа во сне: активировано"
         else "Для диалога во время глубокого сна разрешите работу без оптимизации батареи. Это увеличивает расход заряда.",
+        modifier = if (unrestricted) Modifier.clickable(
+            role = Role.Button,
+            onClickLabel = "Открыть настройки оптимизации батареи",
+        ) {
+            val settings = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            launcher.launch(if (settings.resolveActivity(context.packageManager) != null) settings
+                else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:${context.packageName}")))
+        } else Modifier,
         style = MaterialTheme.typography.bodySmall,
     )
     if (!unrestricted) {
