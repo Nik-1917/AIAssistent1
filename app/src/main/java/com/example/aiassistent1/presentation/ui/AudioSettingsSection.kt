@@ -13,10 +13,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.di.AppModule
+import com.example.aiassistent1.domain.interfaces.PersonalKeywordControls
+import com.example.aiassistent1.domain.interfaces.PersonalKeywordStatus
+import com.example.aiassistent1.domain.model.AudioPreferences
+import com.example.aiassistent1.domain.model.WakeWordEngine
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 
 @Composable
-fun AudioSettingsSection() {
+fun AudioSettingsSection(keywordControls: PersonalKeywordControls? = null) {
     val context = LocalContext.current
     val settings = remember { AppModule.provideSettingsRepository(context) }
     val prefs by settings.audioPreferences.collectAsStateWithLifecycle(initialValue = null)
@@ -51,27 +61,23 @@ fun AudioSettingsSection() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         HorizontalDivider()
         Text("Активация и звук", style = MaterialTheme.typography.titleMedium)
-        AudioToggle("Активация по имени", "Работает при включённом голосовом режиме",
+        AudioToggle("Голосовая активация", "Работает при включённом голосовом режиме",
             current.wakeWordEnabled, !saving) { save { settings.setWakeWordEnabled(it) } }
         OutlinedTextField(value = name, onValueChange = { if (it.length <= 40) name = it },
             label = { Text("Имя ассистента") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         TextButton(enabled = name != current.wakeWord && !saving, onClick = { save { settings.setCustomWakeWord(name) } }) {
             Text("Сохранить имя")
         }
-        Text(if (nativeKws) "Активация: Sherpa KWS" else
-            "Активация: локальное распознавание речи. Отдельная KWS-модель не установлена; имя определяется после паузы.",
+        Text(if (current.wakeWordEngine == WakeWordEngine.METRIC_KWS) "Выбран режим персонального слова v3"
+            else if (nativeKws) "Активация: Sherpa KWS" else
+            "Активация по имени: локальное распознавание речи после паузы.",
             style = MaterialTheme.typography.bodySmall)
         AudioToggle("Voice ID", "Первое обращение по имени запоминает голос. Смена имени сбрасывает отпечаток.",
             current.voiceIdEnabled, !saving) { save { settings.setVoiceIdEnabled(it) } }
         if (current.voiceIdEnabled) Text(
             if (current.needsEnrollment) "Ожидается первое обращение по имени для запоминания голоса"
             else "Проверка голоса включена", style = MaterialTheme.typography.bodySmall)
-        // Intentionally unavailable until an audited Russian encoder passes reference/device validation.
-        // Do not collect a biometric recording when it cannot be enrolled.
-        Text("Персональная ключевая фраза", style = MaterialTheme.typography.titleSmall)
-        Text("Пока недоступна: модель ещё не прошла проверку лицензии и русской речи. Доступна прежняя активация по имени.",
-            style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = {}, enabled = false) { Text("Записать ключевую фразу") }
+        PersonalKeywordSettings(keywordControls, current, saving)
         AudioToggle("Прерывать ответ голосом", "Микрофон остаётся активным во время ответа в голосовом режиме",
             current.bargeIn, !saving) { save { settings.setBargeInEnabled(it) } }
         AudioToggle("Вибрация перед ответом", "", current.haptics, !saving) { save { settings.setHapticFeedbackEnabled(it) } }
@@ -96,6 +102,79 @@ fun AudioSettingsSection() {
             current.autoSummary, !saving) { save { settings.setAutoSummaryEnabled(it) } }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
+}
+
+@Composable
+internal fun PersonalKeywordSettings(controls: PersonalKeywordControls?, current: AudioPreferences, settingsBusy: Boolean) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var status by remember(controls) { mutableStateOf<PersonalKeywordStatus?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var enrolling by remember { mutableStateOf(false) }
+    var operation by remember { mutableStateOf<Job?>(null) }
+    val fallbackFlow = remember(controls) { controls?.observeKeywordFallback() ?: emptyFlow() }
+    val fallback by fallbackFlow.collectAsStateWithLifecycle(initialValue = null)
+    val recordingFlow = remember(controls) { controls?.observeKeywordRecording() ?: emptyFlow() }
+    val recording by recordingFlow.collectAsStateWithLifecycle(initialValue = false)
+    LaunchedEffect(controls, current.revision, current.voiceIdEnabled, current.needsEnrollment, current.wakeWordEngine) {
+        status = controls?.keywordStatus()
+    }
+    fun perform(record: Boolean = false, action: suspend (PersonalKeywordControls) -> Unit) {
+        val target = controls ?: return
+        if (busy) return
+        busy = true; enrolling = record; message = null
+        operation = scope.launch {
+            try {
+                action(target)
+                status = target.keywordStatus()
+                message = if (record) "Слово сохранено. Теперь можно включить персональную активацию." else null
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { message = error.message ?: "Не удалось настроить персональное слово" }
+            catch (_: LinkageError) { message = "Не удалось загрузить аудиобиблиотеку" }
+            finally { busy = false; enrolling = false }
+        }
+    }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) perform(record = true) { it.enrollKeyword() }
+        else message = "Для записи слова нужно разрешение на микрофон"
+    }
+    Text("Персональное слово v3 · эксперимент", style = MaterialTheme.typography.titleSmall)
+    Text("Произнесите одно слово, дождитесь сигнала, затем скажите команду. Длинные фразы и слово с командой без паузы пока не проверены.",
+        style = MaterialTheme.typography.bodySmall)
+    Text(status?.message ?: if (controls == null) "Запись в этом окне недоступна" else "Проверка модели…",
+        style = MaterialTheme.typography.bodySmall)
+    Text("Перед записью выключите голосовой режим и остановите конференцию. Сохраняется только отпечаток слова на устройстве.",
+        style = MaterialTheme.typography.bodySmall)
+    val selected = current.wakeWordEngine == WakeWordEngine.METRIC_KWS
+    AudioToggle("Использовать персональное слово v3", "Нужны голосовая активация, настроенный Voice ID и сохранённое слово",
+        selected, !busy && !settingsBusy && controls != null &&
+            (selected || current.wakeWordEnabled && status?.canActivate == true)) { enabled ->
+        perform { it.selectKeywordMode(enabled) }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(enabled = !busy && !settingsBusy && status?.modelAvailable == true &&
+            current.voiceIdEnabled && !current.needsEnrollment, onClick = {
+            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                perform(record = true) { it.enrollKeyword() }
+            else permission.launch(android.Manifest.permission.RECORD_AUDIO)
+        }) { Text(if (status?.profileReady == true) "Перезаписать слово" else "Записать слово") }
+        TextButton(enabled = !busy && !settingsBusy && controls != null, onClick = { perform { it.deleteKeyword() } }) {
+            Text("Удалить слово")
+        }
+    }
+    if (enrolling) {
+        Text(if (recording) "Идёт запись: произнесите одно слово и сделайте паузу" else "Подготовка микрофона…")
+        TextButton(onClick = {
+            scope.launch {
+                operation?.cancelAndJoin()
+                status = controls?.keywordStatus()
+                message = "Запись остановлена. Состояние сохранённого слова обновлено."
+            }
+        }) { Text("Отменить запись") }
+    }
+    fallback?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+    message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 }
 
 @Composable

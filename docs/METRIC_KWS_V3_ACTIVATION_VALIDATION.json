@@ -1,0 +1,120 @@
+{
+  "date": "2026-09-27",
+  "status": "experimental_opt_in_implemented_and_automatically_verified; physical_microphone_pending",
+  "model": {
+    "version": "ru-mswc-personal-metric-v3",
+    "sha256": "5d4828f3a8aea2eff1f677b1ab9c51acef0aa732c55f1c425d8d95da41d009a2",
+    "bytes": 1004112,
+    "threshold": 0.5827946662902832,
+    "metadata_activation_validated": false,
+    "explicit_experimental_opt_in": true,
+    "default_engine": "LEGACY_ASR",
+    "license": "CC-BY-4.0"
+  },
+  "host_tests": {
+    "tests": 338,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint_severity_counts": {
+    "Warning": 49,
+    "Hint": 7
+  },
+  "android_emulator": {
+    "device": "emulator-5580",
+    "api": 34,
+    "abi": "x86_64",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "test_classes": {
+      "com.example.aiassistent1.audio.AudioModelIntegrationTest": 1,
+      "com.example.aiassistent1.audio.AudioNativeTest": 3,
+      "com.example.aiassistent1.audio.ConferenceStorageTest": 2,
+      "com.example.aiassistent1.audio.MetricKwsActivationTest": 3,
+      "com.example.aiassistent1.audio.MetricKwsEncoderTest": 4,
+      "com.example.aiassistent1.audio.MetricKwsFeatureExtractorTest": 1,
+      "com.example.aiassistent1.audio.MetricKwsSettingsTest": 2,
+      "com.example.aiassistent1.audio.MetricKwsStorageTest": 1,
+      "com.example.aiassistent1.audio.VoiceEnrollmentTest": 1
+    },
+    "pcm_cases": 41,
+    "score_decision_pairs": 144,
+    "max_absolute_error": 4.5597553e-06,
+    "min_float32_cosine": 1.0,
+    "ort": "1.27.0",
+    "scope": "Bundled ONNX/JNI/MFCC, profile persistence, gates, UI/cancellation; controlled owner/ASR doubles, no live microphone"
+  },
+  "emulator_application_start": {
+    "device": "emulator-5580",
+    "api": 34,
+    "abi": "x86_64",
+    "package": "com.example.aiassistent1",
+    "installed_on_emulator": true,
+    "installed_on_physical_phone": false,
+    "microphone_used": false,
+    "observed_utc": "2026-09-27T15:28:52.0458680Z",
+    "pid": "5908",
+    "main_activity_present": true,
+    "apk_sha256": "c7f6dd5546b32dfa506fec7f0160701acc25050986bd0849e70ba4f22d2ff0b3",
+    "crash_buffer_empty": true,
+    "fatal_exception_in_process_log": false,
+    "scope": "Cold MainActivity start and later process/activity observation; no microphone or LLM interaction"
+  },
+  "artifacts": {
+    "app_apk": {
+      "path": "app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 723177451,
+      "sha256": "c7f6dd5546b32dfa506fec7f0160701acc25050986bd0849e70ba4f22d2ff0b3"
+    },
+    "test_apk": {
+      "path": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 9337749,
+      "sha256": "eb3f328e49d246357f2b79ba764fdc32ae22f8ebc84e38564ce1d0a91bd2f363"
+    },
+    "unchanged_model_zip": {
+      "path": "tools/metric_ud_kws/experiments/ru-mswc-v3/ru-mswc-personal-v3.zip",
+      "bytes": 1898872,
+      "sha256": "200cd2e9e59e7921c65d1ba7b6a4fdac5458f09f291159805d08bbb60a62e345"
+    }
+  },
+  "main_apk_bundle_files": [
+    "ATTRIBUTION.md",
+    "LICENSE-CC-BY-4.0.txt",
+    "encoder.onnx",
+    "model.json"
+  ],
+  "main_apk_has_no_kws_speech_fixtures": true,
+  "v1_v2_model_hashes_preserved": true,
+  "v3_archive_checksums_verified": true,
+  "physical_phone": {
+    "status": "NOT_RUN_FOR_ACTIVATION",
+    "new_apk_installed": false,
+    "microphone_tested": false,
+    "background_screen_off_tested": false,
+    "false_activations_per_hour_measured": false,
+    "battery_measured": false,
+    "protocol": "docs/METRIC_KWS_V3_ACTIVATION.md"
+  },
+  "evidence": {
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/activation-android-package.log": "9f4efdf89b69a01f7a71d1418b7b2cafbf223b2dd0651799fbd70585bdd73a39",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/activation-emulator-activity.txt": "709945b613247b7e76a23c9f74d816fa5767971e282f19bcea88a7d9c65d28fa",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/activation-emulator-crash-logcat.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/activation-emulator-launch.log": "93f4cc2170c280cd6f8629bb2ab4f369dbeda9f39bca774c2170f839ccb15c27",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/activation-final-build.log": "3276870274be9cd160532066009ac93c0ed9aed4fb508170cd0fb0270820a7ac",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/android_emulator.xml": "26488c2d5b206a8281327b570c6ba6e06437813010eea5ced71b6e6b95cdd1a9",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/android_numeric.txt": "f5602eb4069ccaf413851d71e053cf3f55a8a2770686ab1e5dd6771a95786c15",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/emulator_smoke.json": "89e48c5f4551fb6e7a7498449fc0d7b6389f666fcb56b9610c8d2f940eece603",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/host_tests.xml": "a6c3e9a0af85343d4c23eef8b3f187dc73175ce38047b458700c2cf33e0d92a3",
+    "tools/metric_ud_kws/experiments/ru-mswc-v3/activation-validation/source_hashes.json": "1d5aa4aae7301df451256a1a782748b03425dbe087b614162d311e46ffdd292a"
+  },
+  "limitations": [
+    "Experimental one-word, pause, feedback, separate owner-verified command within 10 seconds",
+    "Weights, Kotlin MFCC and frozen dev threshold unchanged; corpus quality remains mixed",
+    "No claim of physical microphone, voice biometrics, continuous false activation or power acceptance",
+    "The accelerated native three-hour PCM loop completed in about one minute; it is not a three-hour device endurance test",
+    "Legacy name activation remains available; non-wake dictation and existing barge-in retain their prior conditions"
+  ]
+}

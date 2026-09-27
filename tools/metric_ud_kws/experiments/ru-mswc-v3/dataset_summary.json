@@ -1,0 +1,45 @@
+{
+  "train": {
+    "clips": 102400,
+    "words": 1184,
+    "speakers": 700,
+    "source_sentences": 45886,
+    "strata": {
+      "preserved_v2_training": 51200,
+      "additional_existing_word": 32768,
+      "additional_new_word": 18432
+    }
+  },
+  "dev": {
+    "clips": 256,
+    "words": 20,
+    "speakers": 11,
+    "source_sentences": 246,
+    "strata": {
+      "new_word_new_source": 64,
+      "previously_evaluated_word_new_source": 192
+    },
+    "trials": {
+      "positive": 177,
+      "negative": 3839,
+      "cross_speaker": 784,
+      "supports": 79
+    }
+  },
+  "test": {
+    "clips": 256,
+    "words": 20,
+    "speakers": 15,
+    "source_sentences": 246,
+    "strata": {
+      "new_word_new_source": 64,
+      "previously_evaluated_word_new_source": 192
+    },
+    "trials": {
+      "positive": 177,
+      "negative": 3979,
+      "cross_speaker": 808,
+      "supports": 79
+    }
+  }
+}

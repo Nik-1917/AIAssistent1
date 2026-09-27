@@ -1,0 +1,193 @@
+{
+  "threshold": 0.5827946662902832,
+  "misses": [
+    {
+      "word": "будет",
+      "misses": 6,
+      "positives": 13
+    },
+    {
+      "word": "этого",
+      "misses": 4,
+      "positives": 8
+    },
+    {
+      "word": "быть",
+      "misses": 4,
+      "positives": 13
+    },
+    {
+      "word": "этой",
+      "misses": 3,
+      "positives": 12
+    },
+    {
+      "word": "этом",
+      "misses": 3,
+      "positives": 11
+    },
+    {
+      "word": "подход",
+      "misses": 2,
+      "positives": 5
+    },
+    {
+      "word": "поэтому",
+      "misses": 2,
+      "positives": 13
+    },
+    {
+      "word": "всех",
+      "misses": 2,
+      "positives": 13
+    },
+    {
+      "word": "было",
+      "misses": 2,
+      "positives": 12
+    },
+    {
+      "word": "является",
+      "misses": 2,
+      "positives": 8
+    },
+    {
+      "word": "хотели",
+      "misses": 1,
+      "positives": 5
+    }
+  ],
+  "wrong_words": [
+    {
+      "enrollment_word": "этой",
+      "query_word": "быть",
+      "false_accepts": 10
+    },
+    {
+      "enrollment_word": "быть",
+      "query_word": "этой",
+      "false_accepts": 5
+    },
+    {
+      "enrollment_word": "этого",
+      "query_word": "этом",
+      "false_accepts": 4
+    },
+    {
+      "enrollment_word": "этой",
+      "query_word": "этом",
+      "false_accepts": 4
+    },
+    {
+      "enrollment_word": "этом",
+      "query_word": "этой",
+      "false_accepts": 4
+    },
+    {
+      "enrollment_word": "этого",
+      "query_word": "этой",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "быть",
+      "query_word": "будет",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "будет",
+      "query_word": "быть",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "этом",
+      "query_word": "этого",
+      "false_accepts": 3
+    },
+    {
+      "enrollment_word": "является",
+      "query_word": "делегации",
+      "false_accepts": 2
+    },
+    {
+      "enrollment_word": "делегации",
+      "query_word": "является",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "имени",
+      "query_word": "мира",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "программы",
+      "query_word": "этом",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "поэтому",
+      "query_word": "программы",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "этого",
+      "query_word": "было",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "этой",
+      "query_word": "этого",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "мира",
+      "query_word": "будет",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "было",
+      "query_word": "этой",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "было",
+      "query_word": "быть",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "было",
+      "query_word": "этом",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "было",
+      "query_word": "будет",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "быть",
+      "query_word": "было",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "быть",
+      "query_word": "этом",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "является",
+      "query_word": "программы",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "будет",
+      "query_word": "имени",
+      "false_accepts": 1
+    },
+    {
+      "enrollment_word": "этом",
+      "query_word": "быть",
+      "false_accepts": 1
+    }
+  ],
+  "scope": "Descriptive analysis after final evaluation; no threshold/checkpoint retuning"
+}

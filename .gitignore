@@ -26,5 +26,9 @@ soft/*.gguf
 !app/src/androidTest/assets/metric_kws_ru_v2/encoder.onnx
 !app/src/androidTest/assets/metric_kws_ru_v2/invalid_shape.onnx
 !tools/metric_ud_kws/experiments/ru-mswc-v2/encoder.onnx
+!app/src/androidTest/assets/metric_kws_ru_v3/encoder.onnx
+!app/src/androidTest/assets/metric_kws_ru_v3/invalid_shape.onnx
+!tools/metric_ud_kws/experiments/ru-mswc-v3/encoder.onnx
+!app/src/main/assets/metric_kws/v3/encoder.onnx
 *.wav
 app/src/main/assets/voice/tts

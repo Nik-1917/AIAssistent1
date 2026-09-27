@@ -1,0 +1,417 @@
+{
+  "automatic_checks_only": true,
+  "human_listened_recordings": 0,
+  "source_labels_semantically_verified": false,
+  "candidates": 67248,
+  "accepted": 67181,
+  "rejected_count": 67,
+  "reasons": {
+    "too_quiet_for_existing_enrollment_guard": 67
+  },
+  "policy": "16k mono .5..8s source; finite; canonical RMS>=sqrt(1e-5), clipped fraction<=.01; no repeated decoded PCM",
+  "baseline_rows_preserved": 51200,
+  "rejected": [
+    {
+      "path": "ru/clips/ядерного/common_voice_ru_21919497.opus",
+      "split": "train",
+      "word": "ядерного",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/проблеме/common_voice_ru_19451662.opus",
+      "split": "train",
+      "word": "проблеме",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/корея/common_voice_ru_19451662.opus",
+      "split": "train",
+      "word": "корея",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/движения/common_voice_ru_20026119.opus",
+      "split": "train",
+      "word": "движения",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/позиции/common_voice_ru_20393385.opus",
+      "split": "train",
+      "word": "позиции",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/многие/common_voice_ru_20393405.opus",
+      "split": "train",
+      "word": "многие",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/стать/common_voice_ru_20393428.opus",
+      "split": "train",
+      "word": "стать",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/воды/common_voice_ru_20393389.opus",
+      "split": "train",
+      "word": "воды",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/воды/common_voice_ru_20393387.opus",
+      "split": "train",
+      "word": "воды",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/воды/common_voice_ru_20393428.opus",
+      "split": "train",
+      "word": "воды",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ближнем/common_voice_ru_21740398.opus",
+      "split": "train",
+      "word": "ближнем",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ваши/common_voice_ru_19451663.opus",
+      "split": "train",
+      "word": "ваши",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/порядке/common_voice_ru_18916171.opus",
+      "split": "train",
+      "word": "порядке",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/опыт/common_voice_ru_20366466.opus",
+      "split": "train",
+      "word": "опыт",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/источником/common_voice_ru_21586672.opus",
+      "split": "train",
+      "word": "источником",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/источником/common_voice_ru_20393462.opus",
+      "split": "train",
+      "word": "источником",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/наций/common_voice_ru_19254073.opus",
+      "split": "train",
+      "word": "наций",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/четко/common_voice_ru_20393360.opus",
+      "split": "train",
+      "word": "четко",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/результаты/common_voice_ru_20393463.opus",
+      "split": "train",
+      "word": "результаты",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ресурсов/common_voice_ru_20393481.opus",
+      "split": "train",
+      "word": "ресурсов",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/оружия/common_voice_ru_20200107.opus",
+      "split": "train",
+      "word": "оружия",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/оружия/common_voice_ru_21919497.opus",
+      "split": "train",
+      "word": "оружия",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ходе/common_voice_ru_19253991.opus",
+      "split": "train",
+      "word": "ходе",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/корейской/common_voice_ru_19451662.opus",
+      "split": "train",
+      "word": "корейской",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/основные/common_voice_ru_21133879.opus",
+      "split": "train",
+      "word": "основные",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/путь/common_voice_ru_20393377.opus",
+      "split": "train",
+      "word": "путь",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/необходимо/common_voice_ru_20497569.opus",
+      "split": "test",
+      "word": "необходимо",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/люди/common_voice_ru_20393389.opus",
+      "split": "train",
+      "word": "люди",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/системы/common_voice_ru_20393360.opus",
+      "split": "train",
+      "word": "системы",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/наших/common_voice_ru_20025665.opus",
+      "split": "train",
+      "word": "наших",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/наших/common_voice_ru_19616752.opus",
+      "split": "train",
+      "word": "наших",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/процесс/common_voice_ru_20212026.opus",
+      "split": "train",
+      "word": "процесс",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/общих/common_voice_ru_20393464.opus",
+      "split": "train",
+      "word": "общих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ответ/common_voice_ru_21919229.opus",
+      "split": "train",
+      "word": "ответ",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/государствам/common_voice_ru_20393463.opus",
+      "split": "train",
+      "word": "государствам",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/поздно/common_voice_ru_18910557.opus",
+      "split": "train",
+      "word": "поздно",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/выполнить/common_voice_ru_19616596.opus",
+      "split": "train",
+      "word": "выполнить",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/штатов/common_voice_ru_21919473.opus",
+      "split": "train",
+      "word": "штатов",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ничего/common_voice_ru_20554242.opus",
+      "split": "train",
+      "word": "ничего",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_21919221.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_19254004.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_21316819.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_20200287.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_20281643.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_19195243.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/этих/common_voice_ru_18977144.opus",
+      "split": "train",
+      "word": "этих",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/быстро/common_voice_ru_20393464.opus",
+      "split": "train",
+      "word": "быстро",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/суда/common_voice_ru_20393360.opus",
+      "split": "train",
+      "word": "суда",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/дверь/common_voice_ru_20393439.opus",
+      "split": "train",
+      "word": "дверь",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/место/common_voice_ru_20393376.opus",
+      "split": "train",
+      "word": "место",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/энергии/common_voice_ru_20393462.opus",
+      "split": "train",
+      "word": "энергии",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/необходимым/common_voice_ru_20393362.opus",
+      "split": "train",
+      "word": "необходимым",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/нашим/common_voice_ru_19644352.opus",
+      "split": "train",
+      "word": "нашим",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/решение/common_voice_ru_19616608.opus",
+      "split": "train",
+      "word": "решение",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/общества/common_voice_ru_20393325.opus",
+      "split": "train",
+      "word": "общества",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/себе/common_voice_ru_20393486.opus",
+      "split": "train",
+      "word": "себе",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/людям/common_voice_ru_19451665.opus",
+      "split": "train",
+      "word": "людям",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/господин/common_voice_ru_19616677.opus",
+      "split": "train",
+      "word": "господин",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/ценим/common_voice_ru_19451663.opus",
+      "split": "train",
+      "word": "ценим",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/объединенных/common_voice_ru_21919471.opus",
+      "split": "train",
+      "word": "объединенных",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/выступать/common_voice_ru_19451662.opus",
+      "split": "train",
+      "word": "выступать",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/третий/common_voice_ru_20393429.opus",
+      "split": "train",
+      "word": "третий",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/стало/common_voice_ru_20393362.opus",
+      "split": "train",
+      "word": "стало",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/африканских/common_voice_ru_19195242.opus",
+      "split": "train",
+      "word": "африканских",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/одной/common_voice_ru_18910795.opus",
+      "split": "train",
+      "word": "одной",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/всеми/common_voice_ru_19616653.opus",
+      "split": "train",
+      "word": "всеми",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    },
+    {
+      "path": "ru/clips/стабильности/common_voice_ru_20393363.opus",
+      "split": "train",
+      "word": "стабильности",
+      "reason": "too_quiet_for_existing_enrollment_guard"
+    }
+  ]
+}

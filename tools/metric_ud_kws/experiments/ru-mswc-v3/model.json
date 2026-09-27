@@ -1,0 +1,215 @@
+{
+  "schema_version": 3,
+  "model_version": "ru-mswc-personal-metric-v3",
+  "model_file": "encoder.onnx",
+  "model_sha256": "5d4828f3a8aea2eff1f677b1ab9c51acef0aa732c55f1c425d8d95da41d009a2",
+  "model_bytes": 1004112,
+  "weights_file": "encoder.pt",
+  "weights_sha256": "e3021c37e96c0d1f56828cbe0143343a993ece7527ba4e6436d23720dd9e41fa",
+  "initial_weights_sha256": "81661fab73b3473b5a3ae0c5b41df35b9689c180d26441fc01b3ccadc7311650",
+  "initialization": "project-owned ru-mswc-personal-metric-v2; no external pretrained weights",
+  "model_license": "CC-BY-4.0",
+  "architecture": "RussianMetricEncoderV2",
+  "feature_version": "metric-cli-mfcc40-1s-v1",
+  "sample_rate": 16000,
+  "embedding_size": 64,
+  "input": {
+    "name": "features",
+    "dtype": "float32",
+    "shape": [
+      1,
+      101,
+      40
+    ]
+  },
+  "output": {
+    "name": "embedding",
+    "dtype": "float32",
+    "shape": [
+      1,
+      64
+    ],
+    "normalization": "L2 after inference"
+  },
+  "threshold": 0.5827946662902832,
+  "threshold_source": "New dev same-owner wrong-word pair FAR <= 1%; never final test",
+  "additional_dev_calibrations": {
+    "0.01": {
+      "threshold": 0.5827946662902832,
+      "false_rejects": 38,
+      "false_accepts": 38,
+      "false_reject_rate": 0.21468926553672316,
+      "false_accept_rate": 0.00989841104454285,
+      "cross_speaker_false_reject_rate": 0.40561224489795916
+    },
+    "0.025": {
+      "threshold": 0.4500464200973511,
+      "false_rejects": 19,
+      "false_accepts": 95,
+      "false_reject_rate": 0.10734463276836158,
+      "false_accept_rate": 0.024746027611357125,
+      "cross_speaker_false_reject_rate": 0.22193877551020408
+    },
+    "0.05": {
+      "threshold": 0.34871843457221985,
+      "false_rejects": 9,
+      "false_accepts": 191,
+      "false_reject_rate": 0.05084745762711865,
+      "false_accept_rate": 0.04975253972388643,
+      "cross_speaker_false_reject_rate": 0.11862244897959184
+    },
+    "0.1": {
+      "threshold": 0.27312198281288147,
+      "false_rejects": 5,
+      "false_accepts": 382,
+      "false_reject_rate": 0.02824858757062147,
+      "false_accept_rate": 0.09950507944777286,
+      "cross_speaker_false_reject_rate": 0.07908163265306123
+    }
+  },
+  "new_source_test": {
+    "positive_trials": 177,
+    "negative_trials": 3979,
+    "cross_speaker_trials": 808,
+    "operating_points": {
+      "0.01": {
+        "threshold": 0.5827946662902832,
+        "false_rejects": 31,
+        "false_accepts": 57,
+        "false_reject_rate": 0.1751412429378531,
+        "false_accept_rate": 0.014325207338527268,
+        "cross_speaker_false_reject_rate": 0.452970297029703
+      },
+      "0.025": {
+        "threshold": 0.4500464200973511,
+        "false_rejects": 11,
+        "false_accepts": 156,
+        "false_reject_rate": 0.062146892655367235,
+        "false_accept_rate": 0.039205830610706205,
+        "cross_speaker_false_reject_rate": 0.2561881188118812
+      },
+      "0.05": {
+        "threshold": 0.34871843457221985,
+        "false_rejects": 6,
+        "false_accepts": 320,
+        "false_reject_rate": 0.03389830508474576,
+        "false_accept_rate": 0.08042221663734607,
+        "cross_speaker_false_reject_rate": 0.14108910891089108
+      },
+      "0.1": {
+        "threshold": 0.27312198281288147,
+        "false_rejects": 4,
+        "false_accepts": 604,
+        "false_reject_rate": 0.022598870056497175,
+        "false_accept_rate": 0.1517969339029907,
+        "cross_speaker_false_reject_rate": 0.07549504950495049
+      }
+    },
+    "threshold": 0.5827946662902832
+  },
+  "test_strata": {
+    "new_word_new_source": {
+      "positive_trials": 39,
+      "negative_trials": 1536,
+      "cross_speaker_trials": 136,
+      "operating_points": {
+        "0.01": {
+          "threshold": 0.5827946662902832,
+          "false_rejects": 3,
+          "false_accepts": 3,
+          "false_reject_rate": 0.07692307692307693,
+          "false_accept_rate": 0.001953125,
+          "cross_speaker_false_reject_rate": 0.33088235294117646
+        },
+        "0.025": {
+          "threshold": 0.4500464200973511,
+          "false_rejects": 1,
+          "false_accepts": 20,
+          "false_reject_rate": 0.02564102564102564,
+          "false_accept_rate": 0.013020833333333334,
+          "cross_speaker_false_reject_rate": 0.16176470588235295
+        },
+        "0.05": {
+          "threshold": 0.34871843457221985,
+          "false_rejects": 1,
+          "false_accepts": 62,
+          "false_reject_rate": 0.02564102564102564,
+          "false_accept_rate": 0.040364583333333336,
+          "cross_speaker_false_reject_rate": 0.04411764705882353
+        },
+        "0.1": {
+          "threshold": 0.27312198281288147,
+          "false_rejects": 0,
+          "false_accepts": 160,
+          "false_reject_rate": 0.0,
+          "false_accept_rate": 0.10416666666666667,
+          "cross_speaker_false_reject_rate": 0.03676470588235294
+        }
+      },
+      "threshold": 0.5827946662902832
+    },
+    "previously_evaluated_word_new_source": {
+      "positive_trials": 138,
+      "negative_trials": 2443,
+      "cross_speaker_trials": 672,
+      "operating_points": {
+        "0.01": {
+          "threshold": 0.5827946662902832,
+          "false_rejects": 28,
+          "false_accepts": 54,
+          "false_reject_rate": 0.2028985507246377,
+          "false_accept_rate": 0.022103970528039297,
+          "cross_speaker_false_reject_rate": 0.47767857142857145
+        },
+        "0.025": {
+          "threshold": 0.4500464200973511,
+          "false_rejects": 10,
+          "false_accepts": 136,
+          "false_reject_rate": 0.07246376811594203,
+          "false_accept_rate": 0.05566925910765452,
+          "cross_speaker_false_reject_rate": 0.27529761904761907
+        },
+        "0.05": {
+          "threshold": 0.34871843457221985,
+          "false_rejects": 5,
+          "false_accepts": 258,
+          "false_reject_rate": 0.036231884057971016,
+          "false_accept_rate": 0.10560785918952108,
+          "cross_speaker_false_reject_rate": 0.16071428571428573
+        },
+        "0.1": {
+          "threshold": 0.27312198281288147,
+          "false_rejects": 4,
+          "false_accepts": 444,
+          "false_reject_rate": 0.028985507246376812,
+          "false_accept_rate": 0.18174375767498976,
+          "cross_speaker_false_reject_rate": 0.08333333333333333
+        }
+      },
+      "threshold": 0.5827946662902832
+    }
+  },
+  "python_onnx_parity": {
+    "cases": 512,
+    "max_absolute_error": 3.7997961044311523e-07,
+    "min_cosine": 0.9999999999994386,
+    "max_absolute_error_limit": 0.0001,
+    "min_cosine_limit": 0.9999,
+    "onnxruntime": "1.22.1",
+    "elapsed_s": 4.243387299997266,
+    "provider": "CPUExecutionProvider"
+  },
+  "activation_validated": false,
+  "evidence": "Isolated Russian corpus words; distinct enrollment/query recordings per owner/word",
+  "limits": [
+    "Only 177 positive queries in the new test; small, correlated corpus sample",
+    "Genuinely new words are a small separate stratum; do not claim the entire new test has uninspected labels",
+    "Recording labels inherited from MSWC; no individual human listening or transcript-completeness audit",
+    "51,200 new real recordings; training augmentations are not counted as additional human examples",
+    "Isolated words, no full-phrase/localization/live-microphone/continuous-false-activation/power acceptance",
+    "Pair false accepts are not false activations per hour; Voice ID remains independent"
+  ],
+  "frontend": "Unchanged MetricKwsFeatureExtractor; MFCC normalization and C0 centering are inside ONNX; do not apply twice",
+  "decision": "Keyword threshold AND independently configured Voice ID; no blended score",
+  "profile_compatibility": "Enroll again when encoder SHA changes; never compare embeddings from different models"
+}

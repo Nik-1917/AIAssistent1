@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "policy": "Training-only negative exclusions, manually selected before training. Keep all lexical labels and recordings unchanged. Never apply these exclusions to reported evaluation scores.",
+  "groups": [
+    {
+      "words": ["стремиться", "стремится"],
+      "reason": "Same stress and identical spoken -ться/-тся ending; spelling does not supply an acoustic contrast.",
+      "source": "https://www.tstu.ru/book/elib/pdf/2014/tovt-t.pdf"
+    },
+    {
+      "words": ["государством", "государствам"],
+      "reason": "Conservative exclusion of potentially indistinguishable unstressed -ом/-ам after a hard consonant. This is a phonetic risk annotation, not a claim that individual corpus clips were listened to.",
+      "source": "https://gramota.ru/biblioteka/spravochniki/pravila-russkoy-orfografii-i-punktuatsii/bezudarnye-glasnye-v-kornyakh"
+    }
+  ],
+  "implementation": "Do not put excluded forms in the same metric episode; mask only their competing auxiliary-class logits. Do not merge classes, alter test labels or lower evaluation thresholds."
+}

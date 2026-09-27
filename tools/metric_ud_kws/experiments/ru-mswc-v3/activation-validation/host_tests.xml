@@ -1,0 +1,545 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites tests="338" failures="0" errors="0" skipped="0"><testsuite name="com.example.aiassistent1.data.engine.LlamatikEnginePromptTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.184Z" hostname="DESKTOP1" time="0.022">
+  <properties />
+  <testcase name="chat prompt retains last assistant reply between two recent user messages" classname="com.example.aiassistent1.data.engine.LlamatikEnginePromptTest" time="0.02" />
+  <testcase name="renders only supplied system message before the user" classname="com.example.aiassistent1.data.engine.LlamatikEnginePromptTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.BundledMetricKwsEngineTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.209Z" hostname="DESKTOP1" time="0.031">
+  <properties />
+  <testcase name="constructionAndCloseNeverLoadUnusedModel" classname="com.example.aiassistent1.data.provider.BundledMetricKwsEngineTest" time="0.014" />
+  <testcase name="missingAssetIsCachedAndDoesNotLoadOnEveryUtterance" classname="com.example.aiassistent1.data.provider.BundledMetricKwsEngineTest" time="0.007" />
+  <testcase name="cancelledLoadingDoesNotPoisonFuturePreparation" classname="com.example.aiassistent1.data.provider.BundledMetricKwsEngineTest" time="0.009" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.MetricKwsFeatureExtractorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.244Z" hostname="DESKTOP1" time="0.104">
+  <properties />
+  <testcase name="rejectsUnsupportedSampleRatesAndDurations" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureExtractorTest" time="0.006" />
+  <testcase name="outputsDoNotShareBuffersOrRetainPreviousUtterance" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureExtractorTest" time="0.081" />
+  <testcase name="rejectsNonfiniteAndUnnormalizedPcm" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureExtractorTest" time="0.016" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.395Z" hostname="DESKTOP1" time="0.416">
+  <properties />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[silence]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.066" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[edge_impulses]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.03" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[tone_440]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.032" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[chirp]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.034" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[mixed_tones]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.021" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[noise]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.018" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[quiet_noise]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.023" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[dc]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.018" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[nyquist]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.018" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[global_db_floor]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.017" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_8000]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.017" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_8001]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.017" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_15999]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.016" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_16001]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.016" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_16002]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.023" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_32001]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.018" />
+  <testcase name="fullMfccMatrixMatchesPinnedTorchaudioReference[length_128000]" classname="com.example.aiassistent1.data.provider.MetricKwsFeatureParityTest" time="0.026" />
+  <system-out>silence samples=16000 features=4040 max_abs=3.0517578125E-4 rmse=4.8490264930629414E-5
+edge_impulses samples=16000 features=4040 max_abs=9.1552734375E-5 rmse=1.58288118532198E-5
+tone_440 samples=16000 features=4040 max_abs=1.8215179443359375E-4 rmse=5.4443034173775646E-5
+chirp samples=16000 features=4040 max_abs=4.0531158447265625E-4 rmse=3.538801531518343E-5
+mixed_tones samples=16000 features=4040 max_abs=3.39508056640625E-4 rmse=8.060208101635748E-5
+noise samples=16000 features=4040 max_abs=1.1444091796875E-5 rmse=1.2592494192258388E-6
+quiet_noise samples=16000 features=4040 max_abs=3.0517578125E-4 rmse=4.8490264930629414E-5
+dc samples=16000 features=4040 max_abs=1.1444091796875E-5 rmse=3.4449731557782964E-6
+nyquist samples=16000 features=4040 max_abs=6.103515625E-5 rmse=1.0829230645168728E-5
+global_db_floor samples=16000 features=4040 max_abs=1.8310546875E-4 rmse=2.0390780032086394E-5
+length_8000 samples=8000 features=4040 max_abs=1.52587890625E-4 rmse=1.6825519153399075E-5
+length_8001 samples=8001 features=4040 max_abs=1.52587890625E-4 rmse=1.682179538744292E-5
+length_15999 samples=15999 features=4040 max_abs=1.52587890625E-5 rmse=1.2620610972208045E-6
+length_16001 samples=16001 features=4040 max_abs=1.1444091796875E-5 rmse=1.2592494192258388E-6
+length_16002 samples=16002 features=4040 max_abs=1.52587890625E-5 rmse=1.238768285242789E-6
+length_32001 samples=32001 features=4040 max_abs=1.1444091796875E-5 rmse=1.1909284801598373E-6
+length_128000 samples=128000 features=4040 max_abs=1.52587890625E-5 rmse=1.3171395669078258E-6
+</system-out>
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.816Z" hostname="DESKTOP1" time="0.013">
+  <properties />
+  <testcase name="rejectsUnknownMagicAndVersionEvenWithValidChecksum" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.003" />
+  <testcase name="roundTripAllMetadataAndEmbedding" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.0" />
+  <testcase name="rejectsNonFinitePayloadEvenWithValidChecksum" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.001" />
+  <testcase name="rejectsTrailingGarbageAndOversizedFiles" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.001" />
+  <testcase name="everyTruncationAndSingleByteCorruptionRejected" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.007" />
+  <testcase name="refusesInvalidProfilesBeforeWriting" classname="com.example.aiassistent1.data.provider.MetricKwsProfileCodecTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.MicrophoneCoordinatorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.833Z" hostname="DESKTOP1" time="0.102">
+  <properties />
+  <testcase name="waitingSessionAcquiresAfterPreviousSessionReleases" classname="com.example.aiassistent1.data.provider.MicrophoneCoordinatorTest" time="0.018" />
+  <testcase name="cancellingWaiterDoesNotReleaseActiveSession" classname="com.example.aiassistent1.data.provider.MicrophoneCoordinatorTest" time="0.006" />
+  <testcase name="busyTimeoutIsReportedWithoutCancellingCaller" classname="com.example.aiassistent1.data.provider.MicrophoneCoordinatorTest" time="0.067" />
+  <testcase name="callerTimeoutRemainsCancellation" classname="com.example.aiassistent1.data.provider.MicrophoneCoordinatorTest" time="0.01" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.provider.PcmResamplerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:53.939Z" hostname="DESKTOP1" time="0.081">
+  <properties />
+  <testcase name="unchangedSampleRateDoesNotAllocateOrChangeSamples" classname="com.example.aiassistent1.data.provider.PcmResamplerTest" time="0.001" />
+  <testcase name="durationAndDcLevelArePreserved" classname="com.example.aiassistent1.data.provider.PcmResamplerTest" time="0.042" />
+  <testcase name="frequenciesAboveNewNyquistAreSuppressed" classname="com.example.aiassistent1.data.provider.PcmResamplerTest" time="0.038" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.repository.AudioPreferencesTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.023Z" hostname="DESKTOP1" time="0.102">
+  <properties />
+  <testcase name="invalidNameDoesNotMutatePreferences" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.05" />
+  <testcase name="securitySnapshotReadsPersistedValuesBeforeStateFlowsStart" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.006" />
+  <testcase name="legacyDefaultAndUnknownFutureEngineAreSafe" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.009" />
+  <testcase name="renamingRejectsEnrollmentThatStartedWithOldName" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.01" />
+  <testcase name="summarySettingAndNormalizedUnchangedNameDoNotResetProfile" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.006" />
+  <testcase name="enrollmentRequiresActualEnableTransition" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.005" />
+  <testcase name="nameChangeWhileDisabledDoesNotEnroll" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.005" />
+  <testcase name="disablingDuringEnrollmentCannotCompleteIt" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.005" />
+  <testcase name="engineSettingDoesNotEnableVoiceIdOrInvalidateOwner" classname="com.example.aiassistent1.data.repository.AudioPreferencesTest" time="0.005" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.131Z" hostname="DESKTOP1" time="0.364">
+  <properties />
+  <testcase name="calendar page remembers conversation mode when returning" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.017" />
+  <testcase name="opening chat from calendar saves destination and mode in one emission" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.029" />
+  <testcase name="old saved mode is restored when page preference does not yet exist" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.009" />
+  <testcase name="new installation uses calendar conversation and unknown destination keeps saved mode" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.009" />
+  <testcase name="restores all pages from the reopened actual preferences file" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.246" />
+  <testcase name="compact date mode restores both values from reopened preferences files" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.039" />
+  <testcase name="compact date mode defaults to compact and persists both switch positions" classname="com.example.aiassistent1.data.repository.DataStoreSettingsRepositoryTest" time="0.014" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.data.repository.DataStoreVoiceDraftRepositoryTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.497Z" hostname="DESKTOP1" time="0.01">
+  <properties />
+  <testcase name="saves restores and clears voice draft" classname="com.example.aiassistent1.data.repository.DataStoreVoiceDraftRepositoryTest" time="0.009" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.context.ModelContextBuilderTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.511Z" hostname="DESKTOP1" time="0.006">
+  <properties />
+  <testcase name="does not rewrite history or append style instruction to assistant reply" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.001" />
+  <testcase name="calendar context contains only latest request while full history remains intact" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.002" />
+  <testcase name="handles empty and short histories without duplicating messages" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.001" />
+  <testcase name="keeps two recent user messages and last assistant reply in chronological order" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.001" />
+  <testcase name="keeps only recent user messages before appending chat style instruction" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.0" />
+  <testcase name="keeps one user message when history is short" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.0" />
+  <testcase name="appends chat style instruction to visible chat mode context only" classname="com.example.aiassistent1.domain.context.ModelContextBuilderTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.formatter.CalendarNotesFormatterTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.519Z" hostname="DESKTOP1" time="0.003">
+  <properties />
+  <testcase name="absent notes leave existing reply unchanged" classname="com.example.aiassistent1.domain.formatter.CalendarNotesFormatterTest" time="0.001" />
+  <testcase name="shows the exact text without interpreting numbers or markup" classname="com.example.aiassistent1.domain.formatter.CalendarNotesFormatterTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.526Z" hostname="DESKTOP1" time="0.094">
+  <properties />
+  <testcase name="preserves daypart words inside the event title" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.012" />
+  <testcase name="formats noon and evening hours" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="uses the upcoming hour across noon and midnight without moving the start" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="omits dayparts at noon and midnight" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="retains title content across a daypart boundary" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.0" />
+  <testcase name="keeps an ordinary minute accurate next to a relative endpoint" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="preserves title clock text while changing only the spoken interval" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="keeps nearby ordinary minutes exact without rounding" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.0" />
+  <testcase name="formats transition through midnight" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="speaks all five to-hour forms at both interval endpoints" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.001" />
+  <testcase name="speaks quarter to without an extra preposition" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.0" />
+  <testcase name="formats morning time without digits" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.0" />
+  <testcase name="speaks quarter and half of the upcoming hour" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.0" />
+  <testcase name="no clock form adds a daypart at any hour" classname="com.example.aiassistent1.domain.formatter.CalendarReplyTimeFormatterTest" time="0.073" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.625Z" hostname="DESKTOP1" time="0.017">
+  <properties />
+  <testcase name="keeps every character of an oversized word" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.012" />
+  <testcase name="splits an oversized sentence at its last comma before the limit" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.001" />
+  <testcase name="treats colon as the end of a sentence" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.002" />
+  <testcase name="splits an oversized sentence at a word when no comma fits" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.0" />
+  <testcase name="recognizes question exclamation ellipsis and closing quote endings" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.001" />
+  <testcase name="does not exceed configured size for long normalized text" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.001" />
+  <testcase name="uses one chunk for every sentence even below the limit" classname="com.example.aiassistent1.domain.formatter.SpeechTextChunkerTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" tests="56" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.657Z" hostname="DESKTOP1" time="0.184">
+  <properties />
+  <testcase name="does not create empty speech from leading trailing or icon only groups" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.056" />
+  <testcase name="does not pronounce operators inside inline code" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="normalizes unambiguous dates" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.022" />
+  <testcase name="uses markdown images as speech boundaries" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="leaves invalid dates unchanged" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.005" />
+  <testcase name="does not add a pause after punctuation at the end of text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="isolates an atx markdown heading from surrounding text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="keeps punctuation next to icons with the preceding speech fragment" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="keeps ordinary hyphens and en dashes unchanged" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes inline code from speech" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="keeps other sentence endings unchanged" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="keeps punctuation attached to an isolated english word" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes a number together with inline code" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes fenced backtick and tilde code blocks" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="leaves unmatched curly brace text unchanged" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="includes a standalone cyrillic letter before an english phrase" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates a numbered starred heading from text on the same line" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="normalizes textual russian dates with correct day endings" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="isolates headings with one two or three hashes" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="does not introduce boundaries for icons in excluded code or image descriptions" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="does not treat list marker or code as a heading" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="expands abbreviations and uppercase abbreviations" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="does not split english identifiers inside code" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.0" />
+  <testcase name="isolates russian text inside parentheses" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="normalizes round and compound years" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="leaves unmatched parentheses in surrounding text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="keeps punctuation attached at an em dash boundary" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes emoji icons and complete emoji sequences from speech" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="does not take a letter from a russian word before english" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="speaks markdown links and urls without losing their address" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="uses one boundary for each mixed icon and image group" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.018" />
+  <testcase name="removes markdown emphasis stars" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="recognizes an emoji boundary immediately after a url" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="keeps a nested parenthetical block together" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="separates english phrases at punctuation and russian words" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="does not use an empty line as a pause" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="normalizes russian integers fractions percentages and ranges" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.009" />
+  <testcase name="keeps an english phrase together inside parentheses" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="keeps numbers inside ordinary text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="isolates starred headings without whitespace after closing stars" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.003" />
+  <testcase name="keeps sentence punctuation unchanged" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.0" />
+  <testcase name="does not isolate inline emphasis as a heading" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes balanced and nested curly blocks" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates leading headings with one two or three stars before body text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="removes a run of stars" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes starred list markers" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="keeps a standalone latin letter in the same english phrase" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates headings wrapped in one two or three stars" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="isolates a setext markdown heading" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="removes numbered list markers and keeps item boundaries" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates compact starred headings" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates multiple parenthetical blocks" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="isolates english words in markdown link title but not in url" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.002" />
+  <testcase name="returns blank when message contains only excluded code" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="groups adjacent english words in ordinary text" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <testcase name="normalizes year endings from grammatical context" classname="com.example.aiassistent1.domain.formatter.SpeechTextNormalizerTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.848Z" hostname="DESKTOP1" time="0.045">
+  <properties />
+  <testcase name="maps one query target with its source period" classname="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" time="0.043" />
+  <testcase name="missing target can select today while conflicting targets remain invalid" classname="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" time="0.0" />
+  <testcase name="maps the last event of a supplied period" classname="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" time="0.001" />
+  <testcase name="maps a period without a name for selection" classname="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" time="0.0" />
+  <testcase name="maps explicit last created target" classname="com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapperTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.mapper.CalendarNotesMapperTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.896Z" hostname="DESKTOP1" time="0.048">
+  <properties />
+  <testcase name="update facade passes notes and preview preserves existing when omitted" classname="com.example.aiassistent1.domain.mapper.CalendarNotesMapperTest" time="0.042" />
+  <testcase name="add maps notes without changing value" classname="com.example.aiassistent1.domain.mapper.CalendarNotesMapperTest" time="0.005" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapperTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.947Z" hostname="DESKTOP1" time="0.002">
+  <properties />
+  <testcase name="uses last created event when model omitted the target" classname="com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapperTest" time="0.001" />
+  <testcase name="keeps source period separate from destination date and lets query win" classname="com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapperTest" time="0.001" />
+  <testcase name="rejects source period without event query" classname="com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapperTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.model.AudioContractsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.954Z" hostname="DESKTOP1" time="0.013">
+  <properties />
+  <testcase name="invalidProfilesAreAlwaysRejected" classname="com.example.aiassistent1.domain.model.AudioContractsTest" time="0.003" />
+  <testcase name="speakerVerificationActuallyUsesBothEmbeddings" classname="com.example.aiassistent1.domain.model.AudioContractsTest" time="0.0" />
+  <testcase name="kwsDoesNotUseRawNameAsTokenList" classname="com.example.aiassistent1.domain.model.AudioContractsTest" time="0.005" />
+  <testcase name="activationRequiresWholeNameAtStart" classname="com.example.aiassistent1.domain.model.AudioContractsTest" time="0.002" />
+  <testcase name="textLimitCountsUtf8Bytes" classname="com.example.aiassistent1.domain.model.AudioContractsTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.model.MetricKwsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:54.972Z" hostname="DESKTOP1" time="0.033">
+  <properties />
+  <testcase name="malformedModelMetadataIsRejected" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.002" />
+  <testcase name="normalizationAndCosine" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.0" />
+  <testcase name="audioRejectsSilenceClippingInvalidAndUnboundedSegments" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.02" />
+  <testcase name="invalidEmbeddingsFailClosed" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.001" />
+  <testcase name="largeAndSubnormalVectorsDoNotOverflow" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.001" />
+  <testcase name="thresholdBoundaries" classname="com.example.aiassistent1.domain.model.MetricKwsTest" time="0.009" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.model.SpeechRateTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.009Z" hostname="DESKTOP1" time="0.002">
+  <properties />
+  <testcase name="limits speech speed to the supported range" classname="com.example.aiassistent1.domain.model.SpeechRateTest" time="0.001" />
+  <testcase name="uses 0_95 as the default speech speed" classname="com.example.aiassistent1.domain.model.SpeechRateTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.022Z" hostname="DESKTOP1" time="0.07">
+  <properties />
+  <testcase name="parses delete of the last created event" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.036" />
+  <testcase name="parses sum and preserves an integer value" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.006" />
+  <testcase name="parses an explicit calendar search range" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="treats chat_reply as an alias of chat" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="normalizes use last only for calendar update targets" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.008" />
+  <testcase name="normalizes a time-only starts_at emitted with an explicit date" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.002" />
+  <testcase name="accepts chat response without a calendar operation" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.0" />
+  <testcase name="rejects removed note intent" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="uses default title when calendar add response has an empty title" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.002" />
+  <testcase name="parses delete of the last event in a period" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="parses an update command with target and partial changes" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="parses immediate calendar delete target" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="keeps absent event fields empty for the dialog" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="rejects coercion, arrays and surrounding text" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.004" />
+  <testcase name="parses last created target without invented fields" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="keeps a supplied event time for the missing-date fallback" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.0" />
+  <testcase name="parses a complete local calendar event" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <testcase name="keeps a supplied event date when its time is absent" classname="com.example.aiassistent1.domain.parser.AssistantResponseParserTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarDeleteEmptyChangesTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.098Z" hostname="DESKTOP1" time="0.023">
+  <properties />
+  <testcase name="nonempty or nonobject changes are rejected" classname="com.example.aiassistent1.domain.parser.CalendarDeleteEmptyChangesTest" time="0.003" />
+  <testcase name="empty changes preserve all existing delete targets and normalized hours" classname="com.example.aiassistent1.domain.parser.CalendarDeleteEmptyChangesTest" time="0.017" />
+  <testcase name="empty changes do not bypass target validation or loosen other schemas" classname="com.example.aiassistent1.domain.parser.CalendarDeleteEmptyChangesTest" time="0.003" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarDeleteFlatRangeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.126Z" hostname="DESKTOP1" time="0.019">
+  <properties />
+  <testcase name="flat range does not admit unrelated fields or nonempty changes" classname="com.example.aiassistent1.domain.parser.CalendarDeleteFlatRangeTest" time="0.004" />
+  <testcase name="mixed flat and nested targets are rejected even with agreeing dates" classname="com.example.aiassistent1.domain.parser.CalendarDeleteFlatRangeTest" time="0.002" />
+  <testcase name="flat range still requires two valid ordered timestamps" classname="com.example.aiassistent1.domain.parser.CalendarDeleteFlatRangeTest" time="0.011" />
+  <testcase name="flat range and nested target map to the same selection command" classname="com.example.aiassistent1.domain.parser.CalendarDeleteFlatRangeTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.152Z" hostname="DESKTOP1" time="0.028">
+  <properties />
+  <testcase name="existing selector checks and other intent schemas remain strict" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.005" />
+  <testcase name="hour bounds require exactly one full day" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.005" />
+  <testcase name="absent hour fields preserve prior targets including arbitrary ranges" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.005" />
+  <testcase name="partial invalid and conflicting hour bounds never fall back to a full day" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.006" />
+  <testcase name="last in range uses the narrowed period" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.001" />
+  <testcase name="midnight bounds and next month retain strict timestamp format" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.003" />
+  <testcase name="logged hour bounds produce the same command as an explicit narrow range" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.001" />
+  <testcase name="period without a query supports selection and optional hour narrowing" classname="com.example.aiassistent1.domain.parser.CalendarDeleteHourRangeTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.187Z" hostname="DESKTOP1" time="0.021">
+  <properties />
+  <testcase name="range intent rejects other selectors and mixed field names" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.003" />
+  <testcase name="date-only boundaries normalize to midnight without extending the end date" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.004" />
+  <testcase name="mixed boundaries preserve any explicitly supplied time" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.001" />
+  <testcase name="existing range fields in other commands still require a time" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.001" />
+  <testcase name="new boundary spellings are limited to the new intent" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.002" />
+  <testcase name="range intent maps to the existing period deletion parameters" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.002" />
+  <testcase name="both boundaries must be valid ordered local dates or timestamps" classname="com.example.aiassistent1.domain.parser.CalendarDeleteRangeIntentTest" time="0.008" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.215Z" hostname="DESKTOP1" time="0.024">
+  <properties />
+  <testcase name="date and shorthand time can also pair with a full end" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="incomplete start retains end until time is filled without asking duration" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.017" />
+  <testcase name="date with shorthand endpoints derives duration and normalizes end" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="shorthand end before start rolls over to the following day" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="without end existing duration behavior is unchanged" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="endpoints derive duration while retaining optional notes and required value" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="rejects reversed equal conflicting malformed and excessive intervals" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.001" />
+  <testcase name="crossing midnight and matching duration are accepted" classname="com.example.aiassistent1.domain.parser.CalendarEndTimeTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.247Z" hostname="DESKTOP1" time="0.042">
+  <properties />
+  <testcase name="ordinary chat replies are never normalized by calendar parser" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.001" />
+  <testcase name="previous assistant context is consulted before current year but after user context" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.023" />
+  <testcase name="search sum delete update and date only delete boundaries normalize" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.003" />
+  <testcase name="explicit year wins over command reply context and current year" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.0" />
+  <testcase name="relative year in current request wins over earlier year" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.003" />
+  <testcase name="reply correction is limited to overflowing february dates" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.001" />
+  <testcase name="current request then recent history supply year before fallback" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.002" />
+  <testcase name="endpoint normalization precedes duration validation" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.002" />
+  <testcase name="current year is last resort and unrelated numbers are not years" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.001" />
+  <testcase name="missing year uses command endpoint before conversation" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.0" />
+  <testcase name="overflow table covers ordinary leap and century years" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.003" />
+  <testcase name="all other date and JSON errors remain errors" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.002" />
+  <testcase name="explicit reply year supplies a missing parameter year" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.0" />
+  <testcase name="ambiguous context does not silently select current year" classname="com.example.aiassistent1.domain.parser.CalendarFebruaryNormalizerTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarInvalidDatesTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.294Z" hostname="DESKTOP1" time="0.036">
+  <properties />
+  <testcase name="nonexistent reversed and empty intervals are rejected" classname="com.example.aiassistent1.domain.parser.CalendarInvalidDatesTest" time="0.007" />
+  <testcase name="valid leap date and cross midnight interval preserve model reply" classname="com.example.aiassistent1.domain.parser.CalendarInvalidDatesTest" time="0.001" />
+  <testcase name="invalid supplied dates cannot become creation parameters" classname="com.example.aiassistent1.domain.parser.CalendarInvalidDatesTest" time="0.005" />
+  <testcase name="draft validation rejects invalid dates even without an explicit end" classname="com.example.aiassistent1.domain.parser.CalendarInvalidDatesTest" time="0.023" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.335Z" hostname="DESKTOP1" time="0.01">
+  <properties />
+  <testcase name="notes-only update is accepted" classname="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" time="0.003" />
+  <testcase name="does not loosen types unknown fields or other intents" classname="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" time="0.003" />
+  <testcase name="accepts the model response that previously failed without inventing value" classname="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" time="0.001" />
+  <testcase name="absent and blank notes are optional in add and update" classname="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" time="0.002" />
+  <testcase name="preserves exact text including whitespace unicode quotes and newlines" classname="com.example.aiassistent1.domain.parser.CalendarNotesParserTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.348Z" hostname="DESKTOP1" time="0.009">
+  <properties />
+  <testcase name="zero and negative search periods remain invalid" classname="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" time="0.001" />
+  <testcase name="a regular search period remains unchanged" classname="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" time="0.001" />
+  <testcase name="sum and end only search still require complete range" classname="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" time="0.0" />
+  <testcase name="range without query reaches the executor as a search without a title filter" classname="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" time="0.005" />
+  <testcase name="a lone start becomes a one minute exact search interval" classname="com.example.aiassistent1.domain.parser.CalendarSearchPointTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.360Z" hostname="DESKTOP1" time="0.007">
+  <properties />
+  <testcase name="actual response and matching date time duplicates normalize to one start" classname="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" time="0.002" />
+  <testcase name="conflicting or malformed redundant fields are not ignored" classname="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" time="0.003" />
+  <testcase name="shorthand permits only matching redundant time" classname="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" time="0.001" />
+  <testcase name="mapper checks duplicates even when parser is bypassed" classname="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" time="0.001" />
+  <testcase name="normalization preserves end notes and value alias" classname="com.example.aiassistent1.domain.parser.CalendarStartDuplicatesTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarUpdateTargetAliasTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.373Z" hostname="DESKTOP1" time="0.027">
+  <properties />
+  <testcase name="valid flags never mask invalid companion flags in either field order" classname="com.example.aiassistent1.domain.parser.CalendarUpdateTargetAliasTest" time="0.013" />
+  <testcase name="aliases cannot select by query or by period" classname="com.example.aiassistent1.domain.parser.CalendarUpdateTargetAliasTest" time="0.005" />
+  <testcase name="delete still requires a period and keeps its original selection mode" classname="com.example.aiassistent1.domain.parser.CalendarUpdateTargetAliasTest" time="0.001" />
+  <testcase name="all true flag combinations map to the same last created update" classname="com.example.aiassistent1.domain.parser.CalendarUpdateTargetAliasTest" time="0.007" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.407Z" hostname="DESKTOP1" time="0.027">
+  <properties />
+  <testcase name="absent fields remain absent" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.001" />
+  <testcase name="conflicting fields are rejected in either order" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.001" />
+  <testcase name="alias cannot bypass clear value conflict or other intent schemas" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.0" />
+  <testcase name="either spelling and matching pairs preserve integer bounds and zero" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.019" />
+  <testcase name="bad alias type is rejected even alongside valid value" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.004" />
+  <testcase name="priority is accepted as a calendar add value alias" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.001" />
+  <testcase name="actual failing response now maps to value four" classname="com.example.aiassistent1.domain.parser.CalendarValueAliasTest" time="0.001" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.LastEventManualExamplesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.439Z" hostname="DESKTOP1" time="0.031">
+  <properties />
+  <testcase name="invented last command and target aliases remain rejected" classname="com.example.aiassistent1.domain.parser.LastEventManualExamplesTest" time="0.001" />
+  <testcase name="all manual answers select the intended kind of target and preserve changes" classname="com.example.aiassistent1.domain.parser.LastEventManualExamplesTest" time="0.03" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.parser.OrderCoverageExamplesTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.475Z" hostname="DESKTOP1" time="0.312">
+  <properties />
+  <testcase name="every new handwritten target is accepted without runtime changes" classname="com.example.aiassistent1.domain.parser.OrderCoverageExamplesTest" time="0.312" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.provider.SystemPromptProviderTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.790Z" hostname="DESKTOP1" time="0.019">
+  <properties />
+  <testcase name="returns chat prompt when calendar mode is disabled" classname="com.example.aiassistent1.domain.provider.SystemPromptProviderTest" time="0.001" />
+  <testcase name="contains only current temporal context and JSON instruction" classname="com.example.aiassistent1.domain.provider.SystemPromptProviderTest" time="0.018" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCaseTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.812Z" hostname="DESKTOP1" time="0.032">
+  <properties />
+  <testcase name="parseResponse handles duration_min specifically" classname="com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCaseTest" time="0.023" />
+  <testcase name="fails if JSON is missing" classname="com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCaseTest" time="0.004" />
+  <testcase name="invoke sends exactly two messages and returns formatted value" classname="com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCaseTest" time="0.005" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCaseTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:55.848Z" hostname="DESKTOP1" time="0.147">
+  <properties />
+  <testcase name="switching pages and restarting preserves every field in both histories including on first run" classname="com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCaseTest" time="0.095" />
+  <testcase name="calendar history stays subscribed to appended messages and explicit deletions" classname="com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCaseTest" time="0.017" />
+  <testcase name="delayed settings and history never emit a placeholder calendar mode or empty chat" classname="com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCaseTest" time="0.014" />
+  <testcase name="mode switch waits for matching history and cancels stale history loading" classname="com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCaseTest" time="0.018" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.023Z" hostname="DESKTOP1" time="0.135">
+  <properties />
+  <testcase name="cancellationDuringEnrollmentPreservesProfileAndWipesAudio" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.043" />
+  <testcase name="invalidOutputsCannotActivate" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.013" />
+  <testcase name="loadFailurePreventsRecordingAndPreservesProfile" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.008" />
+  <testcase name="explicitExperimentalOptInDoesNotClaimValidation" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.005" />
+  <testcase name="failedRepeatEnrollmentPreservesPreviousProfileAndWipesAudio" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.007" />
+  <testcase name="unvalidatedEngineNeverActivates" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.002" />
+  <testcase name="legacyDoesNotRunEncoderOrSpeaker" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.002" />
+  <testcase name="missingProfileModelAndChangedIdentityFallBack" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.003" />
+  <testcase name="dualGateTruthTableWithIndependentVetoes" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.006" />
+  <testcase name="missingActualSpeakerProfileRequiresOwnerEnrollment" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.012" />
+  <testcase name="shadowHasNoSpeakerOrEnrollmentSideEffects" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.003" />
+  <testcase name="saveFailurePreservesPreviousProfile" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.003" />
+  <testcase name="closeIsSerializedAndIdempotent" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.002" />
+  <testcase name="disabledOrUnenrolledVoiceIdCannotPass" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.002" />
+  <testcase name="settingsRaceRejectsAfterSpeakerCheck" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.003" />
+  <testcase name="deletionDoesNotModifySpeakerPreferences" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.004" />
+  <testcase name="oneShotCapturesOnceVerifiesSameAudioAndWipesPcm" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.005" />
+  <testcase name="exceptionsFallbackButCancellationPropagates" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.003" />
+  <testcase name="productionGateNeverRecordsOrRunsInference" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordActivationTest" time="0.007" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.161Z" hostname="DESKTOP1" time="0.031">
+  <properties />
+  <testcase name="rejectedKeywordNeverFallsThroughToAsrOrFeedback" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.011" />
+  <testcase name="emptyCommandCanBeRetriedAndCancellationPropagates" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.003" />
+  <testcase name="wakeIsConsumedAndNextCommandIsVerifiedSeparately" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="foreignCommandCannotUseOwnersActivationWindow" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="feedbackRaceDoesNotLeaveAnOpenWindow" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="utteranceCapturedBeforeFeedbackIsNotACommand" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="timeoutRequiresANewKeyword" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="technicalFallbackIsDistinctFromAKeywordRejection" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.001" />
+  <testcase name="modeChangeDuringSpeakerOrRecognitionCannotEmitCommand" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.002" />
+  <testcase name="legacyAndShadowDoNotRunActiveModel" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.002" />
+  <testcase name="revisionNameAndModeChangesInvalidateActivation" classname="com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSessionTest" time="0.005" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.195Z" hostname="DESKTOP1" time="0.03">
+  <properties />
+  <testcase name="incomplete invalid dates and offset timestamps stay literal" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.003" />
+  <testcase name="quoted titles code JSON and URLs remain literal" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.015" />
+  <testcase name="compact dates omit only current month and year" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.008" />
+  <testcase name="ranges disclose both dates across midnight" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.001" />
+  <testcase name="only assistant messages in general chat are transformed" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.002" />
+  <testcase name="search titles and multiline notes survive while subsequent event dates format" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.0" />
+  <testcase name="valid leap day and year boundary" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.0" />
+  <testcase name="changing today or preference re-renders the original source" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.001" />
+  <testcase name="disabled mode always includes month year and weekday" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.0" />
+  <testcase name="date time uses device zone and 24 hour clock without seconds" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.0" />
+  <testcase name="full numeric and Russian dates are supported" classname="com.example.aiassistent1.presentation.formatting.UserDateTimeFormatterTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.presentation.ui.ChatScrollRestorationPolicyTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.227Z" hostname="DESKTOP1" time="0.001">
+  <properties />
+  <testcase name="scrolls to a message that arrives after restoration" classname="com.example.aiassistent1.presentation.ui.ChatScrollRestorationPolicyTest" time="0.001" />
+  <testcase name="does not scroll to newest message while restoring saved position" classname="com.example.aiassistent1.presentation.ui.ChatScrollRestorationPolicyTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.233Z" hostname="DESKTOP1" time="0.025">
+  <properties />
+  <testcase name="failed deletion retains the row and releases the busy state" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.014" />
+  <testcase name="empty period and unknown ids cannot start deletion" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.002" />
+  <testcase name="flat and nested ranges allow sequential deletion with stable independent receipts" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.003" />
+  <testcase name="range intent selects September 16 through 18 and deletes them only one at a time" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.003" />
+  <testcase name="date-only range selects September 16 through 18 without including September 19" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.002" />
+  <testcase name="named and last-event targets keep their original operation identity" classname="com.example.aiassistent1.presentation.viewmodel.CalendarDeletePeriodFlowTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.261Z" hostname="DESKTOP1" time="0.01">
+  <properties />
+  <testcase name="explicit end on the next day derives duration and displays the end date" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.001" />
+  <testcase name="derived end includes the date when crossing midnight or several days" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="uses tomorrow when an omitted date has an earlier time" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="uses today when an omitted date has no exact time" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="requests value when the model omitted it" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="combines known date and time into an event start" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.001" />
+  <testcase name="explicit end displays and derives duration after filling the start" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="uses today when an omitted date has a later time" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="derived end uses elapsed time across clock changes as persistence does" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.004" />
+  <testcase name="derived end appears after filling the time or duration and follows changes" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="uses tomorrow when an omitted date equals the current minute" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.001" />
+  <testcase name="unresolvable derived end does not crash the dialog" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="duration displays an end without changing the explicit endpoint or required fields" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.001" />
+  <testcase name="retains a known date and requests only the time" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <testcase name="notes survive field completion but are never required" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiStateTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.presentation.viewmodel.CalendarEventEndDateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:56.273Z" hostname="DESKTOP1" time="0.001">
+  <properties />
+  <testcase name="same day ending keeps event creation date" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventEndDateTest" time="0.0" />
+  <testcase name="ending before start is next day" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventEndDateTest" time="0.001" />
+  <testcase name="equal start and end is treated as next day" classname="com.example.aiassistent1.presentation.viewmodel.CalendarEventEndDateTest" time="0.0" />
+  <system-out />
+  <system-err />
+</testsuite><testsuite name="com.example.aiassistent1.SendMessageUseCaseTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T15:22:52.897Z" hostname="DESKTOP1" time="0.283">
+  <properties />
+  <testcase name="adds the system prompt only when enabled" classname="com.example.aiassistent1.SendMessageUseCaseTest" time="0.268" />
+  <testcase name="returns streamed deltas after successful model loading" classname="com.example.aiassistent1.SendMessageUseCaseTest" time="0.003" />
+  <testcase name="does not generate when model loading fails" classname="com.example.aiassistent1.SendMessageUseCaseTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite></testsuites>

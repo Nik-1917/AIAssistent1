@@ -21,6 +21,9 @@ class PersonalKeywordActivationTest {
         override var config: MetricKwsConfig? = this@PersonalKeywordActivationTest.config
         override val unavailableReason: String? = null
         override var activationValidated = true
+        override var experimentalActivationAllowed = false
+        var prepareError: Exception? = null
+        override suspend fun prepare() { prepareError?.let { throw it } }
         var calls = 0
         var closes = 0
         var value = floatArrayOf(1f, 0f)
@@ -81,6 +84,37 @@ class PersonalKeywordActivationTest {
         engine.activationValidated = false
         assertEquals(MetricKwsDecision.Legacy("validation_required"), service().evaluate(audio, WakeWordEngine.METRIC_KWS))
         assertEquals(0, engine.calls)
+    }
+
+    @Test fun explicitExperimentalOptInDoesNotClaimValidation() = runBlocking {
+        engine.activationValidated = false
+        engine.experimentalActivationAllowed = true
+        val service = service()
+        assertFalse(service.activationValidated)
+        assertTrue(service.activationAllowed)
+        assertTrue(service.status().canActivate)
+        assertEquals(MetricKwsDecision.Accept, service.evaluate(audio, WakeWordEngine.METRIC_KWS))
+        assertTrue(service.evaluate(audio, WakeWordEngine.LEGACY_ASR) is MetricKwsDecision.Legacy)
+    }
+
+    @Test fun loadFailurePreventsRecordingAndPreservesProfile() = runBlocking {
+        val previous = store.current
+        engine.prepareError = IllegalStateException("model missing")
+        var captured = false
+        val service = service()
+        assertFalse(service.status().canActivate)
+        assertTrue(runCatching { service.enrollFrom { captured = true; audio } }.isFailure)
+        assertFalse(captured)
+        assertSame(previous, store.current)
+    }
+
+    @Test fun missingActualSpeakerProfileRequiresOwnerEnrollment() = runBlocking {
+        val service = PersonalKeywordActivation(engine, store, { prefs }, { true }, ownerReady = { false })
+        assertFalse(service.status().canActivate)
+        assertEquals(MetricKwsDecision.Legacy("voice_id_required"), service.evaluate(audio, WakeWordEngine.METRIC_KWS))
+        var captured = false
+        assertTrue(runCatching { service.enrollFrom { captured = true; audio } }.isFailure)
+        assertFalse(captured)
     }
 
     @Test fun missingProfileModelAndChangedIdentityFallBack() = runBlocking {

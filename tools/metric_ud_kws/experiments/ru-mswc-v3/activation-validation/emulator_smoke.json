@@ -1,0 +1,16 @@
+{
+  "device": "emulator-5580",
+  "api": 34,
+  "abi": "x86_64",
+  "package": "com.example.aiassistent1",
+  "installed_on_emulator": true,
+  "installed_on_physical_phone": false,
+  "microphone_used": false,
+  "observed_utc": "2026-09-27T15:28:52.0458680Z",
+  "pid": "5908",
+  "main_activity_present": true,
+  "apk_sha256": "c7f6dd5546b32dfa506fec7f0160701acc25050986bd0849e70ba4f22d2ff0b3",
+  "crash_buffer_empty": true,
+  "fatal_exception_in_process_log": false,
+  "scope": "Cold MainActivity start and later process/activity observation; no microphone or LLM interaction"
+}

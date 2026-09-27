@@ -110,6 +110,8 @@ class ChatViewModel(
     private var isManualMessagePlayback = false
     private val mutableAudioActivity = MutableStateFlow(com.example.aiassistent1.domain.model.AudioSessionState.Idle)
     val audioActivity = mutableAudioActivity.asStateFlow()
+    val personalKeywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls?
+        get() = voiceInput as? com.example.aiassistent1.domain.interfaces.PersonalKeywordControls
     private val mutableSummaryState = MutableStateFlow<String?>(null)
     val summaryState = mutableSummaryState.asStateFlow()
     private var summarizing = false

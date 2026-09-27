@@ -1,0 +1,20 @@
+{
+  "app/src/androidTest/java/com/example/aiassistent1/audio/MetricKwsActivationTest.kt": "a78f68d2df7cb2598a089f3354899af9bb86fa34f1b333a8aefebd72e876da60",
+  "app/src/androidTest/java/com/example/aiassistent1/audio/MetricKwsEncoderTest.kt": "b1b7a9671c026f59256508d55aca3cf78077c3fe3c49902c73056336c0baec74",
+  "app/src/androidTest/java/com/example/aiassistent1/audio/MetricKwsSettingsTest.kt": "52bd70bfebf1bcac0271219bb1d517d7be97c8e8367af73ca1c649350a76e998",
+  "app/src/main/java/com/example/aiassistent1/data/provider/BundledMetricKwsEngine.kt": "0cf7d96b815e6c6969b2ac371f95b72a7e428c8f2d02dbc73dbbaee30ad21948",
+  "app/src/main/java/com/example/aiassistent1/data/provider/MetricKwsFeatureExtractor.kt": "57c455fa4c0e4d285afc7cc3ef53272e0e1eefc7376c59d8955a2d516c2c7031",
+  "app/src/main/java/com/example/aiassistent1/data/provider/OnnxMetricKwsEngine.kt": "1bfb4a5c578a6fc873b50707a35bf3b71ed87f8e25d2ea6fc515cc490f28d7a6",
+  "app/src/main/java/com/example/aiassistent1/data/provider/SherpaOnnxVoiceConversation.kt": "66bfc86940ae895373b6574c09c610424f977428bf7f899742ccf631e4476f66",
+  "app/src/main/java/com/example/aiassistent1/di/AppModule.kt": "61cb2e25d6e6cbf9054aacdbcb2ee502ad12ee0b1b3757f909b59be83a65b0fd",
+  "app/src/main/java/com/example/aiassistent1/domain/interfaces/MetricKwsEngine.kt": "bcf5db47d8df30a7f1bc8af423de52814dc346e640ea931cebd031fff7e49269",
+  "app/src/main/java/com/example/aiassistent1/domain/model/MetricKws.kt": "e7187581beabe43d97835f53dbe61b3288dbe5c61fe2733bfc6518c8855eba8f",
+  "app/src/main/java/com/example/aiassistent1/domain/usecase/PersonalKeywordActivation.kt": "7665c90ab7dd51a7a1d4fb12eba99009a1f9093cc23e95e1bef897a2d28aecf6",
+  "app/src/main/java/com/example/aiassistent1/domain/usecase/PersonalKeywordWakeSession.kt": "ed8bc94db2fbda3763dc09fdb12a18cb5c2cfdb29a485add09f2eb41823caf94",
+  "app/src/main/java/com/example/aiassistent1/presentation/ui/AudioSettingsSection.kt": "ef3e0361b2d8107adff220a05043faf6729de826ae876a4837c68ae64a575303",
+  "app/src/main/java/com/example/aiassistent1/presentation/ui/ChatScreen.kt": "5366771f0d465f64982a521a1d5b26828fae9b3b64b630181a726b5e0049d93d",
+  "app/src/main/java/com/example/aiassistent1/presentation/viewmodel/ChatViewModel.kt": "c5b5ee8da70693b0aec8f2baa37803361b4caf81eb33fa83cf7fe8e94e72a734",
+  "app/src/test/java/com/example/aiassistent1/data/provider/BundledMetricKwsEngineTest.kt": "c0754ebd1b12c71ea5f85a89988899bdccc7b898c35abf6243df72f7d81dcc0e",
+  "app/src/test/java/com/example/aiassistent1/domain/usecase/PersonalKeywordActivationTest.kt": "f72419d14abe666fffd3cab7ce5d7ccc4e0eded7796a8c3d50849434f08488ad",
+  "app/src/test/java/com/example/aiassistent1/domain/usecase/PersonalKeywordWakeSessionTest.kt": "a0733b1d2ae825fe70d3cfe1a38884edb8c92ba4b5677227f30c40ae3072d83b"
+}

@@ -1,0 +1,14 @@
+{
+  "cases": 41,
+  "max_absolute_error": 4.537403583526611e-06,
+  "minimum_cosine": 0.9999999999476501,
+  "ort": "1.27.0",
+  "pipeline_ms_median": 14.792604,
+  "pipeline_ms_max": 64.565937,
+  "scope": "Physical ARM ART shell, exact app DEX/JNI; public PCM, no microphone/app lifecycle test",
+  "api": 33,
+  "abi": "arm64-v8a",
+  "installed_app_updated": false,
+  "microphone_used": false,
+  "installed_apk_sha_before_and_after": "2203806c4b542f5c1fd6f3f8ab278d5329243b6282a15b09342fe79ab216e022"
+}

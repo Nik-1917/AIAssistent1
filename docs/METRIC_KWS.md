@@ -1,9 +1,28 @@
-# Personal Metric UD-KWS: staged implementation, activation blocked
+# Personal Metric UD-KWS: experimental v3 activation
+
+Current integration (2026-09-27): the pinned v3 ONNX model is included in the
+application and can be explicitly selected after Voice ID and one-word enrollment.
+The live route is existing microphone/AEC/NS/VAD -> KWS -> independent Voice ID ->
+feedback -> separately verified command -> ASR. The wake utterance is consumed.
+Legacy ASR remains the default. Experimental permission is separate from
+`activationValidated`, which remains false until physical microphone acceptance.
+
+Implementation, full phone test steps and evidence boundaries:
+`METRIC_KWS_V3_ACTIVATION.md`. Build/test evidence:
+`METRIC_KWS_V3_ACTIVATION_VALIDATION.json`. Training and quality comparison:
+`METRIC_KWS_RU_V3.md`. No encoder retraining or threshold change was part of activation.
+
+The following records the earlier infrastructure stage **before opt-in activation**;
+its unavailable-engine and test-only statements are historical, not current wiring.
+
+## Historical infrastructure stage
 
 Date: 2026-09-27. **This is a gated experiment, not a completed KWS product.**
-The v2 retraining and ready model package are described in `METRIC_KWS_RU_V2.md`:
-fresh owner-word FRR 19.36% at 0.720% pair FAR, with emulator and physical ARM
-numerical parity. This does not enable production activation or full phrases.
+The v3 fine-tune on 102,400 human recordings is described in `METRIC_KWS_RU_V3.md`.
+On the same new-source test, v2/v3 owner-word FRR is 23.73%/17.51%, but pair FAR
+increases from 0.98% to 1.43%. This is a mixed result, not an unconditional
+improvement. The earlier v2 evidence remains in `METRIC_KWS_RU_V2.md`.
+Production activation and full phrases remain unvalidated.
 Stage 3 adds a project-trained Russian ResNet15 encoder, ONNX export and an experimental
 Android JNI engine reusing the ORT already in Sherpa. The unchanged stage-2 Kotlin MFCC
 is its frontend. Model/speech fixtures are test-only; no new ONNX runtime is packaged.

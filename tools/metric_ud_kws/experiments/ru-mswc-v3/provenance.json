@@ -1,0 +1,27 @@
+{
+  "source_hashes": {
+    "prepare_russian.py": "0e6b54ad695863daa9c894e526e751f378a7f6d2e0b32df225365b298831710c",
+    "prepare_russian_v3.py": "bc0f86a1a48e860a83707f08a03a27c752c5b4d2a7a1e09bd44bf3d4a5c7f459",
+    "rebalance_russian_v3_eval.py": "8a39fdfef3f86cff4503ec9d577edd4fb04558381df018666316625184ca952f",
+    "ru_model_v2.py": "a872c44d460a7b312a19c9b59e1a38b19e22d9016c1e64cb2ce75b7ceac4d9ac",
+    "train_russian_v3.py": "3c70b2d0782224154b05cde6291188d1cbd4015161369c30e49d8f087e427f33",
+    "evaluate_personal.py": "3bd37c999f4a34bc3f3847c6fc5c6cea2116515b4d242647762c36fd10ab4f48",
+    "finalize_russian_v3.py": "c42e805a541b31943d6b5a6e703f17cfeb954002b8764e3b61408308424b2aa1",
+    "export_russian_v3.py": "7e0c69800b823e63c13dffdef700b531f0ed7425f1ca072c87d5e7c561797bb4",
+    "package_russian_v3.py": "f9e3d44f59fc44831184fe5a1ed7200beb5f7f15cfab97283821636c828189e8",
+    "ru_model.py": "f710d75d2054db9c553779aeeeb87e303d93c673bf994d465a385f2a803487e2",
+    "train_russian.py": "6150d8a184e928e19a031d17838ba5ff59751291215a82927433360c906f4d7a",
+    "test_curation_contract.py": "4d769ec6af9f963761d4ed5cd9c4fe8306a63e6b6f06583664bb63d74a0817e3"
+  },
+  "training_sources_at_run_start": {
+    "train_russian_v3.py": "3c70b2d0782224154b05cde6291188d1cbd4015161369c30e49d8f087e427f33",
+    "prepare_russian_v3.py": "bc0f86a1a48e860a83707f08a03a27c752c5b4d2a7a1e09bd44bf3d4a5c7f459",
+    "ru_model_v2.py": "a872c44d460a7b312a19c9b59e1a38b19e22d9016c1e64cb2ce75b7ceac4d9ac",
+    "evaluate_personal.py": "3bd37c999f4a34bc3f3847c6fc5c6cea2116515b4d242647762c36fd10ab4f48"
+  },
+  "corpus_sha256": "96dfa7305744756cd17855ec58bf3735e5b580c61b4c7534cc28acd4edba2447",
+  "initialization": "project-owned ru-mswc-personal-metric-v2; no external pretrained weights",
+  "initial_weights_sha256": "81661fab73b3473b5a3ae0c5b41df35b9689c180d26441fc01b3ccadc7311650",
+  "curation_sha256": "ddca77cc89834ca8a3553bf09b9e770f291166af0144b5b4044b09f5ebd6c733",
+  "acoustic_exclusions_sha256": "bd2a827adc4b3782813aeab89a79bcec7179994953f90adc15ececf3679f543a"
+}

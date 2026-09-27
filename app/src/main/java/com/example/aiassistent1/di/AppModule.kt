@@ -84,11 +84,12 @@ object AppModule {
 
 	/** Each consumer owns its encoder lifecycle; profile storage is shared and serialized. */
 	fun providePersonalKeywordActivation(context: Context): PersonalKeywordActivation = PersonalKeywordActivation(
-		UnavailableMetricKwsEngine(),
+		com.example.aiassistent1.data.provider.BundledMetricKwsEngine.fromAssets(context),
 		provideMetricKwsProfiles(context),
 		{ provideSettingsRepository(context).readAudioPreferences() },
 		{ provideVoiceProfileManager(context).verify(it) },
 		selectLegacy = { provideSettingsRepository(context).setWakeWordEngine(com.example.aiassistent1.domain.model.WakeWordEngine.LEGACY_ASR) },
+		ownerReady = { !provideVoiceProfileManager(context).needsEnrollment() },
 	)
 
 	@Volatile

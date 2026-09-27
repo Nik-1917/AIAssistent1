@@ -1,0 +1,9 @@
+{
+  "corpus_sha256": "96dfa7305744756cd17855ec58bf3735e5b580c61b4c7534cc28acd4edba2447",
+  "preserved_training_rows": 51200,
+  "unique_new_human_recordings": 51200,
+  "all_pcm_hashes_unique": true,
+  "previous_evaluation_words_excluded_from_training": true,
+  "new_evaluation_source_sentences_absent_from_all_previous_samples": true,
+  "manual_word_plan_sha256": "ddca77cc89834ca8a3553bf09b9e770f291166af0144b5b4044b09f5ebd6c733"
+}

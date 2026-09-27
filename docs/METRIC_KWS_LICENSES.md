@@ -121,6 +121,27 @@ included in both the model ZIP and test assets. Code/application licenses remain
 unchanged. Exact artifact/source hashes and installed versions are in the v2
 experiment directory; measured scope is in `METRIC_KWS_RU_V2.md`.
 
+## V3 manually curated expansion
+
+`experiments/ru-mswc-v3` fine-tunes the project's own v2 checkpoint, whose SHA and
+random-initialization lineage are checked by the exporter. It uses 51,200 more
+human recordings from the same audited Russian archives: 102,400 total. No new
+external weights, corpus, SDK or dependency was downloaded. The manual word/pair
+plan, automatic quality report, full data provenance and initial checkpoint SHA
+are retained. No individual human listening is claimed. Generated weights and
+speech fixtures retain CC BY 4.0 attribution and change notices, bundled in both
+the ZIP and instrumentation assets; app/source licenses are unchanged. See
+`METRIC_KWS_RU_V3.md` for the measured result and limits. Training-only acoustic
+exclusions are documented with their linguistic sources in
+`tools/metric_ud_kws/curation/ru_v3_acoustic_exclusions.json`.
+
+The subsequent approved opt-in integration bundles this exact unchanged v3 ONNX
+in `app/src/main/assets/metric_kws/v3/`, alongside its full CC BY 4.0 terms,
+attribution/change notice and model metadata. Public speech fixtures remain in
+the instrumentation assets; they are not added to the application. No new runtime
+or pretrained weights are introduced. `activation_validated=false` is retained;
+experimental opt-in is an application policy, not a new quality/licensing claim.
+
 ## Before admitting a real artifact
 
 Record checkpoint source, SHA-256, exact training recipe and applicable data/augmentation rights;

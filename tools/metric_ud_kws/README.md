@@ -1,6 +1,7 @@
 # Metric UD-KWS: reference tools and separate Russian experiment
 
-Status: **upstream weights remain blocked; the separate local Russian experiment is test-only**.
+Status: **upstream weights remain blocked; our separate Russian v3 has explicit experimental app opt-in**.
+Current integration and phone test scenario: `docs/METRIC_KWS_V3_ACTIVATION.md`.
 `prepare_russian.py`, `train_russian.py`, `export_russian.py` and `ru_model.py` implement
 the from-scratch Russian path. Records and checkpoint: `experiments/ru-mswc-v1/`.
 The unchanged upstream harness is not a reproduced published-model result.
@@ -10,6 +11,35 @@ The completed **v2** model is in `experiments/ru-mswc-v2/ru-mswc-personal-v2.zip
 It keeps the MFCC interface but uses an own residual encoder, expanded Russian
 data and owner-focused metric episodes. See `docs/METRIC_KWS_RU_V2.md` for the
 fresh comparison, physical ARM parity and explicit activation limitations.
+
+The **v3** package is `experiments/ru-mswc-v3/ru-mswc-personal-v3.zip`.
+It fine-tunes v2 on exactly 102,400 human recordings. The 384 additional training
+words and 49 difficult pairs are manually authored; audio selection/quality checks
+are automatic, with zero individually human-listened recordings. Training uses
+48 pairs after one acoustic ambiguity exclusion. The same new-source test shows
+fewer misses but more false accepts at the selected dev-calibrated operating point.
+See `docs/METRIC_KWS_RU_V3.md` for both metrics, strata and Android evidence.
+
+## Reproduce v3
+
+Keep the v1/v2 manifests and the original v2 training corpus for reservations and
+lineage checks. These commands use fresh output directories and existing archives;
+they perform no network operations. `rebalance_russian_v3_eval.py` finalizes owner
+pairs before training, never after looking at model scores. Dev chooses the model
+and threshold; `finalize_russian_v3.py` evaluates final test once and refuses repeats.
+The already published test is now inspected; replay does not create fresh evidence.
+
+```powershell
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/prepare_russian_v3.py --output build/metric_kws_ru/corpus-v3-replay
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/rebalance_russian_v3_eval.py --output build/metric_kws_ru/corpus-v3-replay
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/train_russian_v3.py --corpus build/metric_kws_ru/corpus-v3-replay --output build/metric_kws_ru/run-v3-replay --threads 8
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/finalize_russian_v3.py --run build/metric_kws_ru/run-v3-replay --corpus build/metric_kws_ru/corpus-v3-replay
+& build/metric_kws_reference/venv/Scripts/python.exe -B tools/metric_ud_kws/export_russian_v3.py --run build/metric_kws_ru/run-v3-replay --corpus build/metric_kws_ru/corpus-v3-replay --output build/metric_kws_ru/export-v3-replay
+```
+
+The saved v3 run stopped at 15,000 of at most 24,000 steps; best checkpoint 7,000.
+This follows the predeclared eight-validation plateau rule with minimum 12,000
+steps. Input normalization and the Kotlin MFCC interface are preserved from v2.
 
 ## Reproduce v2
 
@@ -69,7 +99,8 @@ must remain disjoint. A failed preparation leaves an incomplete directory; use a
 
 The committed ONNX and licensed speech fixtures are under `app/src/androidTest/assets/metric_kws_ru`.
 They are excluded from the application APK by the Android source set, with narrow gitignore
-exceptions for these two test ONNX files. AppModule continues to supply the unavailable engine.
+exceptions for these two test ONNX files. This v1 artifact remains test-only;
+AppModule now supplies the separately pinned v3 bundle with lazy initialization.
 `OnnxMetricKwsEngine.createForExperiment` admits only the fixed frontend/dimensions and matching
 SHA, serializes inference/close, normalizes embeddings, and always reports activation unvalidated.
 Full evaluation, test/phone distinctions and license audit: `docs/METRIC_KWS_RU_EXPERIMENT.md`.

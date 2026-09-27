@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Experimental encoder using the ORT already packaged by Sherpa. No microphone or downloads.
- * AppModule intentionally does not select it. Acoustic quality and live activation remain gated.
+ * BundledMetricKwsEngine admits only the pinned v3 artifact for experimental opt-in.
  * The fixed frontend centrally crops/pads to one second; this is not multiword support.
  */
 internal class OnnxMetricKwsEngine private constructor(

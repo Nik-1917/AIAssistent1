@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="4" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-09-27T14:20:32" hostname="localhost">
+  <testsuite name="com.example.aiassistent1.audio.MetricKwsEncoderTest" tests="4" failures="0" errors="0" skipped="0" time="24.388" timestamp="2026-09-27T14:20:32" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5580" />
+    </properties>
+    <testcase name="existingSherpaModelsAndMetricSessionCoexist" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="18.252" />
+    <testcase name="russianAndAnalyticPcmMatchPythonEmbeddings" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="4.828" />
+    <testcase name="corruptModelsShapesInputsAndClosedSessionsAreRejected" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="0.359" />
+    <testcase name="parallelCallsReopenAndIdempotentClose" classname="com.example.aiassistent1.audio.MetricKwsEncoderTest" time="0.949" />
+  </testsuite>
+</testsuites>

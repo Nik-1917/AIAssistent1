@@ -1,0 +1,2103 @@
+{
+  "schema_version": 3,
+  "model_version": "ru-mswc-personal-metric-v3",
+  "initialization": "project-owned ru-mswc-personal-metric-v2; no external pretrained weights",
+  "initial_weights_sha256": "81661fab73b3473b5a3ae0c5b41df35b9689c180d26441fc01b3ccadc7311650",
+  "initial_model_license": "CC-BY-4.0",
+  "activation_validated": false,
+  "training_complete": true,
+  "stop_reason": "dev plateau after predeclared patience",
+  "architecture": "RussianMetricEncoderV2",
+  "embedding_size": 64,
+  "feature_version": "metric-cli-mfcc40-1s-v1",
+  "model_license": "CC-BY-4.0",
+  "dataset_license": "CC-BY-4.0",
+  "weights_sha256": "e3021c37e96c0d1f56828cbe0143343a993ece7527ba4e6436d23720dd9e41fa",
+  "corpus_sha256": "96dfa7305744756cd17855ec58bf3735e5b580c61b4c7534cc28acd4edba2447",
+  "corpus_source": "https://mlcommons.org/datasets/multilingual-spoken-words/",
+  "curation_sha256": "ddca77cc89834ca8a3553bf09b9e770f291166af0144b5b4044b09f5ebd6c733",
+  "training_source_hashes": {
+    "train_russian_v3.py": "3c70b2d0782224154b05cde6291188d1cbd4015161369c30e49d8f087e427f33",
+    "prepare_russian_v3.py": "bc0f86a1a48e860a83707f08a03a27c752c5b4d2a7a1e09bd44bf3d4a5c7f459",
+    "ru_model_v2.py": "a872c44d460a7b312a19c9b59e1a38b19e22d9016c1e64cb2ce75b7ceac4d9ac",
+    "evaluate_personal.py": "3bd37c999f4a34bc3f3847c6fc5c6cea2116515b4d242647762c36fd10ab4f48"
+  },
+  "acoustic_exclusions": {
+    "schema_version": 1,
+    "policy": "Training-only negative exclusions, manually selected before training. Keep all lexical labels and recordings unchanged. Never apply these exclusions to reported evaluation scores.",
+    "groups": [
+      {
+        "words": [
+          "стремиться",
+          "стремится"
+        ],
+        "reason": "Same stress and identical spoken -ться/-тся ending; spelling does not supply an acoustic contrast.",
+        "source": "https://www.tstu.ru/book/elib/pdf/2014/tovt-t.pdf"
+      },
+      {
+        "words": [
+          "государством",
+          "государствам"
+        ],
+        "reason": "Conservative exclusion of potentially indistinguishable unstressed -ом/-ам after a hard consonant. This is a phonetic risk annotation, not a claim that individual corpus clips were listened to.",
+        "source": "https://gramota.ru/biblioteka/spravochniki/pravila-russkoy-orfografii-i-punktuatsii/bezudarnye-glasnye-v-kornyakh"
+      }
+    ],
+    "implementation": "Do not put excluded forms in the same metric episode; mask only their competing auxiliary-class logits. Do not merge classes, alter test labels or lower evaluation thresholds."
+  },
+  "acoustic_exclusions_sha256": "bd2a827adc4b3782813aeab89a79bcec7179994953f90adc15ececf3679f543a",
+  "recipe": {
+    "steps": 24000,
+    "completed_steps": 15000,
+    "best_step": 7000,
+    "seed": 260928,
+    "threads": 8,
+    "device": "cpu",
+    "torch": "2.8.0+cpu",
+    "ways": 24,
+    "clips_per_word_per_episode": 2,
+    "training_words": 1184,
+    "training_clips": 102400,
+    "initial_lr": 0.0003,
+    "optimizer": "AdamW; 400-step warmup, cosine decay to 5%; weight_decay=1e-4",
+    "loss": "Symmetric angular prototype CE (learned scale) + normalized word CE (scale20 margin.15)",
+    "augmentation": "35% PCM synthetic white noise 15..35dB SNR; optional 0.03..0.12s echo 0.1..0.3 gain; 0.4..1.3 amplitude; time warp 0.9..1.1 and +/-5 frames; .015 scaled feature jitter",
+    "selection": "Minimum dev same-owner FRR at dev pair-FAR<=1%; cross-speaker FRR breaks ties",
+    "predeclared_early_stop_patience": 8,
+    "minimum_steps_before_early_stop": 12000,
+    "input_statistics": "Frozen v2 training-only MFCC mean/scale buffers",
+    "classifier_initialization": "Mean v2 embeddings of 16 random training clips per class; no held-out features",
+    "manual_contrast_pairs": 48,
+    "observed_episode_counts": {
+      "ordinary_cross_speaker": 3696,
+      "same_owner": 7534,
+      "manual_contrasts": 3770
+    },
+    "episode_sampling": "50% same-owner multiword; 25% ordinary mixed speakers; 25% include up to six manually authored contrast pairs"
+  },
+  "history": [
+    {
+      "step": 1000,
+      "loss": 3.208619317293167,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6210461854934692,
+            "false_rejects": 44,
+            "false_accepts": 38,
+            "false_reject_rate": 0.24858757062146894,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.4477040816326531
+          },
+          "0.025": {
+            "threshold": 0.48450660705566406,
+            "false_rejects": 23,
+            "false_accepts": 95,
+            "false_reject_rate": 0.12994350282485875,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22066326530612246
+          },
+          "0.05": {
+            "threshold": 0.36877819895744324,
+            "false_rejects": 10,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05649717514124294,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11734693877551021
+          },
+          "0.1": {
+            "threshold": 0.28995344042778015,
+            "false_rejects": 8,
+            "false_accepts": 383,
+            "false_reject_rate": 0.04519774011299435,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.06887755102040816
+          }
+        },
+        "threshold": 0.6210461854934692
+      },
+      "lr": 0.00029954571100188185,
+      "elapsed_s": 109.082184400002
+    },
+    {
+      "step": 2000,
+      "loss": 2.862978156149387,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6342644095420837,
+            "false_rejects": 45,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2542372881355932,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.46938775510204084
+          },
+          "0.025": {
+            "threshold": 0.48481300473213196,
+            "false_rejects": 17,
+            "false_accepts": 94,
+            "false_reject_rate": 0.096045197740113,
+            "false_accept_rate": 0.024485543110184943,
+            "cross_speaker_false_reject_rate": 0.22193877551020408
+          },
+          "0.05": {
+            "threshold": 0.3766785264015198,
+            "false_rejects": 10,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05649717514124294,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.125
+          },
+          "0.1": {
+            "threshold": 0.300553560256958,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.07015306122448979
+          }
+        },
+        "threshold": 0.6342644095420837
+      },
+      "lr": 0.000296779983049046,
+      "elapsed_s": 216.20953069999814
+    },
+    {
+      "step": 3000,
+      "loss": 2.6277800555825235,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6544694304466248,
+            "false_rejects": 57,
+            "false_accepts": 38,
+            "false_reject_rate": 0.3220338983050847,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.5522959183673469
+          },
+          "0.025": {
+            "threshold": 0.4782933294773102,
+            "false_rejects": 22,
+            "false_accepts": 95,
+            "false_reject_rate": 0.12429378531073447,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.2512755102040816
+          },
+          "0.05": {
+            "threshold": 0.3824104964733124,
+            "false_rejects": 11,
+            "false_accepts": 191,
+            "false_reject_rate": 0.062146892655367235,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.1556122448979592
+          },
+          "0.1": {
+            "threshold": 0.2969096601009369,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.08418367346938775
+          }
+        },
+        "threshold": 0.6544694304466248
+      },
+      "lr": 0.0002915497880006222,
+      "elapsed_s": 323.8741559999762
+    },
+    {
+      "step": 4000,
+      "loss": 2.480798897922039,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6376770734786987,
+            "false_rejects": 50,
+            "false_accepts": 37,
+            "false_reject_rate": 0.2824858757062147,
+            "false_accept_rate": 0.00963792654337067,
+            "cross_speaker_false_reject_rate": 0.4770408163265306
+          },
+          "0.025": {
+            "threshold": 0.4634532034397125,
+            "false_rejects": 15,
+            "false_accepts": 95,
+            "false_reject_rate": 0.0847457627118644,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.21428571428571427
+          },
+          "0.05": {
+            "threshold": 0.3791092336177826,
+            "false_rejects": 8,
+            "false_accepts": 190,
+            "false_reject_rate": 0.04519774011299435,
+            "false_accept_rate": 0.04949205522271425,
+            "cross_speaker_false_reject_rate": 0.1326530612244898
+          },
+          "0.1": {
+            "threshold": 0.28705862164497375,
+            "false_rejects": 4,
+            "false_accepts": 383,
+            "false_reject_rate": 0.022598870056497175,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.0778061224489796
+          }
+        },
+        "threshold": 0.6376770734786987
+      },
+      "lr": 0.0002839476706955614,
+      "elapsed_s": 431.25457599997753
+    },
+    {
+      "step": 5000,
+      "loss": 2.3564986310601235,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6182242035865784,
+            "false_rejects": 49,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2768361581920904,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.47831632653061223
+          },
+          "0.025": {
+            "threshold": 0.44540128111839294,
+            "false_rejects": 17,
+            "false_accepts": 95,
+            "false_reject_rate": 0.096045197740113,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.2193877551020408
+          },
+          "0.05": {
+            "threshold": 0.36195001006126404,
+            "false_rejects": 9,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05084745762711865,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11479591836734694
+          },
+          "0.1": {
+            "threshold": 0.2884935736656189,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.07525510204081633
+          }
+        },
+        "threshold": 0.6182242035865784
+      },
+      "lr": 0.00027410814556691406,
+      "elapsed_s": 538.7423978999723
+    },
+    {
+      "step": 6000,
+      "loss": 2.2855174103975298,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6025930047035217,
+            "false_rejects": 47,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2655367231638418,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.4489795918367347
+          },
+          "0.025": {
+            "threshold": 0.44657471776008606,
+            "false_rejects": 18,
+            "false_accepts": 95,
+            "false_reject_rate": 0.1016949152542373,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.21173469387755103
+          },
+          "0.05": {
+            "threshold": 0.3533548414707184,
+            "false_rejects": 5,
+            "false_accepts": 191,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11607142857142858
+          },
+          "0.1": {
+            "threshold": 0.2734372615814209,
+            "false_rejects": 4,
+            "false_accepts": 382,
+            "false_reject_rate": 0.022598870056497175,
+            "false_accept_rate": 0.09950507944777286,
+            "cross_speaker_false_reject_rate": 0.07270408163265306
+          }
+        },
+        "threshold": 0.6025930047035217
+      },
+      "lr": 0.00026220531649798705,
+      "elapsed_s": 651.8340919999755
+    },
+    {
+      "step": 7000,
+      "loss": 2.2056804453730585,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5827946662902832,
+            "false_rejects": 38,
+            "false_accepts": 38,
+            "false_reject_rate": 0.21468926553672316,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.40561224489795916
+          },
+          "0.025": {
+            "threshold": 0.4500464200973511,
+            "false_rejects": 19,
+            "false_accepts": 95,
+            "false_reject_rate": 0.10734463276836158,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22193877551020408
+          },
+          "0.05": {
+            "threshold": 0.34871843457221985,
+            "false_rejects": 9,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05084745762711865,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11862244897959184
+          },
+          "0.1": {
+            "threshold": 0.27312198281288147,
+            "false_rejects": 5,
+            "false_accepts": 382,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09950507944777286,
+            "cross_speaker_false_reject_rate": 0.07908163265306123
+          }
+        },
+        "threshold": 0.5827946662902832
+      },
+      "lr": 0.00024844979616938685,
+      "elapsed_s": 759.2052090999787
+    },
+    {
+      "step": 8000,
+      "loss": 2.1409306928515432,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5971874594688416,
+            "false_rejects": 45,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2542372881355932,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.4528061224489796
+          },
+          "0.025": {
+            "threshold": 0.4406757950782776,
+            "false_rejects": 21,
+            "false_accepts": 95,
+            "false_reject_rate": 0.11864406779661017,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.24872448979591838
+          },
+          "0.05": {
+            "threshold": 0.34838470816612244,
+            "false_rejects": 12,
+            "false_accepts": 191,
+            "false_reject_rate": 0.06779661016949153,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.14923469387755103
+          },
+          "0.1": {
+            "threshold": 0.26158326864242554,
+            "false_rejects": 6,
+            "false_accepts": 383,
+            "false_reject_rate": 0.03389830508474576,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.06505102040816327
+          }
+        },
+        "threshold": 0.5971874594688416
+      },
+      "lr": 0.00023308497940706326,
+      "elapsed_s": 868.2564348999877
+    },
+    {
+      "step": 9000,
+      "loss": 2.085597596049309,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6158083081245422,
+            "false_rejects": 49,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2768361581920904,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.5076530612244898
+          },
+          "0.025": {
+            "threshold": 0.43661391735076904,
+            "false_rejects": 18,
+            "false_accepts": 95,
+            "false_reject_rate": 0.1016949152542373,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22193877551020408
+          },
+          "0.05": {
+            "threshold": 0.3572160005569458,
+            "false_rejects": 9,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05084745762711865,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.1441326530612245
+          },
+          "0.1": {
+            "threshold": 0.27401742339134216,
+            "false_rejects": 6,
+            "false_accepts": 383,
+            "false_reject_rate": 0.03389830508474576,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.07142857142857142
+          }
+        },
+        "threshold": 0.6158083081245422
+      },
+      "lr": 0.00021638273647199387,
+      "elapsed_s": 975.0554756000056
+    },
+    {
+      "step": 10000,
+      "loss": 2.0162153026163576,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6003342866897583,
+            "false_rejects": 43,
+            "false_accepts": 38,
+            "false_reject_rate": 0.24293785310734464,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.4732142857142857
+          },
+          "0.025": {
+            "threshold": 0.4575763940811157,
+            "false_rejects": 18,
+            "false_accepts": 95,
+            "false_reject_rate": 0.1016949152542373,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22066326530612246
+          },
+          "0.05": {
+            "threshold": 0.3580019772052765,
+            "false_rejects": 7,
+            "false_accepts": 191,
+            "false_reject_rate": 0.03954802259887006,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11989795918367346
+          },
+          "0.1": {
+            "threshold": 0.2829500436782837,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.06760204081632654
+          }
+        },
+        "threshold": 0.6003342866897583
+      },
+      "lr": 0.00019863860249589598,
+      "elapsed_s": 1082.0996550999698
+    },
+    {
+      "step": 11000,
+      "loss": 2.007715196982026,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6124425530433655,
+            "false_rejects": 55,
+            "false_accepts": 38,
+            "false_reject_rate": 0.3107344632768362,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.5089285714285714
+          },
+          "0.025": {
+            "threshold": 0.452636182308197,
+            "false_rejects": 22,
+            "false_accepts": 95,
+            "false_reject_rate": 0.12429378531073447,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.25
+          },
+          "0.05": {
+            "threshold": 0.36596331000328064,
+            "false_rejects": 13,
+            "false_accepts": 190,
+            "false_reject_rate": 0.07344632768361582,
+            "false_accept_rate": 0.04949205522271425,
+            "cross_speaker_false_reject_rate": 0.15051020408163265
+          },
+          "0.1": {
+            "threshold": 0.2839753031730652,
+            "false_rejects": 4,
+            "false_accepts": 383,
+            "false_reject_rate": 0.022598870056497175,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.08418367346938775
+          }
+        },
+        "threshold": 0.6124425530433655
+      },
+      "lr": 0.00018016654818271775,
+      "elapsed_s": 1189.3383100999636
+    },
+    {
+      "step": 12000,
+      "loss": 1.9189650109857321,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5920606851577759,
+            "false_rejects": 43,
+            "false_accepts": 38,
+            "false_reject_rate": 0.24293785310734464,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.45535714285714285
+          },
+          "0.025": {
+            "threshold": 0.4410446584224701,
+            "false_rejects": 22,
+            "false_accepts": 95,
+            "false_reject_rate": 0.12429378531073447,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22704081632653061
+          },
+          "0.05": {
+            "threshold": 0.3585491180419922,
+            "false_rejects": 9,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05084745762711865,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.14795918367346939
+          },
+          "0.1": {
+            "threshold": 0.2715892493724823,
+            "false_rejects": 3,
+            "false_accepts": 383,
+            "false_reject_rate": 0.01694915254237288,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.06760204081632654
+          }
+        },
+        "threshold": 0.5920606851577759
+      },
+      "lr": 0.00016129342430488288,
+      "elapsed_s": 1297.1077102999552
+    },
+    {
+      "step": 13000,
+      "loss": 1.9167481145113707,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.6079201698303223,
+            "false_rejects": 51,
+            "false_accepts": 37,
+            "false_reject_rate": 0.288135593220339,
+            "false_accept_rate": 0.00963792654337067,
+            "cross_speaker_false_reject_rate": 0.48596938775510207
+          },
+          "0.025": {
+            "threshold": 0.42639222741127014,
+            "false_rejects": 16,
+            "false_accepts": 95,
+            "false_reject_rate": 0.0903954802259887,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.21045918367346939
+          },
+          "0.05": {
+            "threshold": 0.3470882177352905,
+            "false_rejects": 8,
+            "false_accepts": 191,
+            "false_reject_rate": 0.04519774011299435,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.13137755102040816
+          },
+          "0.1": {
+            "threshold": 0.2673589587211609,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.08163265306122448
+          }
+        },
+        "threshold": 0.6079201698303223
+      },
+      "lr": 0.00014235317829525043,
+      "elapsed_s": 1403.2265522999805
+    },
+    {
+      "step": 14000,
+      "loss": 1.8851701141893864,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.59095299243927,
+            "false_rejects": 41,
+            "false_accepts": 38,
+            "false_reject_rate": 0.23163841807909605,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.4528061224489796
+          },
+          "0.025": {
+            "threshold": 0.4487532377243042,
+            "false_rejects": 17,
+            "false_accepts": 95,
+            "false_reject_rate": 0.096045197740113,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.2461734693877551
+          },
+          "0.05": {
+            "threshold": 0.37157464027404785,
+            "false_rejects": 12,
+            "false_accepts": 191,
+            "false_reject_rate": 0.06779661016949153,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.1568877551020408
+          },
+          "0.1": {
+            "threshold": 0.28684550523757935,
+            "false_rejects": 5,
+            "false_accepts": 383,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.08801020408163265
+          }
+        },
+        "threshold": 0.59095299243927
+      },
+      "lr": 0.0001236809452683661,
+      "elapsed_s": 1508.3866375999642
+    },
+    {
+      "step": 15000,
+      "loss": 1.8472706744372844,
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5829129815101624,
+            "false_rejects": 50,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2824858757062147,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.48086734693877553
+          },
+          "0.025": {
+            "threshold": 0.42988473176956177,
+            "false_rejects": 17,
+            "false_accepts": 95,
+            "false_reject_rate": 0.096045197740113,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.23469387755102042
+          },
+          "0.05": {
+            "threshold": 0.3395319879055023,
+            "false_rejects": 8,
+            "false_accepts": 191,
+            "false_reject_rate": 0.04519774011299435,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.13520408163265307
+          },
+          "0.1": {
+            "threshold": 0.2641010880470276,
+            "false_rejects": 3,
+            "false_accepts": 383,
+            "false_reject_rate": 0.01694915254237288,
+            "false_accept_rate": 0.09976556394894504,
+            "cross_speaker_false_reject_rate": 0.07397959183673469
+          }
+        },
+        "threshold": 0.5829129815101624
+      },
+      "lr": 0.00010560711802647283,
+      "elapsed_s": 1614.8663384999963
+    }
+  ],
+  "dev": {
+    "positive_trials": 177,
+    "negative_trials": 3839,
+    "cross_speaker_trials": 784,
+    "operating_points": {
+      "0.01": {
+        "threshold": 0.5827946662902832,
+        "false_rejects": 38,
+        "false_accepts": 38,
+        "false_reject_rate": 0.21468926553672316,
+        "false_accept_rate": 0.00989841104454285,
+        "cross_speaker_false_reject_rate": 0.40561224489795916
+      },
+      "0.025": {
+        "threshold": 0.4500464200973511,
+        "false_rejects": 19,
+        "false_accepts": 95,
+        "false_reject_rate": 0.10734463276836158,
+        "false_accept_rate": 0.024746027611357125,
+        "cross_speaker_false_reject_rate": 0.22193877551020408
+      },
+      "0.05": {
+        "threshold": 0.34871843457221985,
+        "false_rejects": 9,
+        "false_accepts": 191,
+        "false_reject_rate": 0.05084745762711865,
+        "false_accept_rate": 0.04975253972388643,
+        "cross_speaker_false_reject_rate": 0.11862244897959184
+      },
+      "0.1": {
+        "threshold": 0.27312198281288147,
+        "false_rejects": 5,
+        "false_accepts": 382,
+        "false_reject_rate": 0.02824858757062147,
+        "false_accept_rate": 0.09950507944777286,
+        "cross_speaker_false_reject_rate": 0.07908163265306123
+      }
+    },
+    "threshold": 0.5827946662902832
+  },
+  "initial_v2_dev": {
+    "positive_trials": 177,
+    "negative_trials": 3839,
+    "cross_speaker_trials": 784,
+    "operating_points": {
+      "0.01": {
+        "threshold": 0.630303680896759,
+        "false_rejects": 52,
+        "false_accepts": 38,
+        "false_reject_rate": 0.2937853107344633,
+        "false_accept_rate": 0.00989841104454285,
+        "cross_speaker_false_reject_rate": 0.5038265306122449
+      },
+      "0.025": {
+        "threshold": 0.44730934500694275,
+        "false_rejects": 22,
+        "false_accepts": 95,
+        "false_reject_rate": 0.12429378531073447,
+        "false_accept_rate": 0.024746027611357125,
+        "cross_speaker_false_reject_rate": 0.22959183673469388
+      },
+      "0.05": {
+        "threshold": 0.3591741919517517,
+        "false_rejects": 12,
+        "false_accepts": 191,
+        "false_reject_rate": 0.06779661016949153,
+        "false_accept_rate": 0.04975253972388643,
+        "cross_speaker_false_reject_rate": 0.16071428571428573
+      },
+      "0.1": {
+        "threshold": 0.28435438871383667,
+        "false_rejects": 7,
+        "false_accepts": 382,
+        "false_reject_rate": 0.03954802259887006,
+        "false_accept_rate": 0.09950507944777286,
+        "cross_speaker_false_reject_rate": 0.09311224489795919
+      }
+    },
+    "threshold": 0.630303680896759
+  },
+  "test_status": "FINAL_EVALUATED",
+  "elapsed_s": 1615.1121467999765,
+  "comparison": {
+    "v2": {
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.630303680896759,
+            "false_rejects": 52,
+            "false_accepts": 38,
+            "false_reject_rate": 0.2937853107344633,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.5038265306122449
+          },
+          "0.025": {
+            "threshold": 0.44730934500694275,
+            "false_rejects": 22,
+            "false_accepts": 95,
+            "false_reject_rate": 0.12429378531073447,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22959183673469388
+          },
+          "0.05": {
+            "threshold": 0.3591741919517517,
+            "false_rejects": 12,
+            "false_accepts": 191,
+            "false_reject_rate": 0.06779661016949153,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.16071428571428573
+          },
+          "0.1": {
+            "threshold": 0.28435438871383667,
+            "false_rejects": 7,
+            "false_accepts": 382,
+            "false_reject_rate": 0.03954802259887006,
+            "false_accept_rate": 0.09950507944777286,
+            "cross_speaker_false_reject_rate": 0.09311224489795919
+          }
+        },
+        "threshold": 0.630303680896759
+      },
+      "test": {
+        "positive_trials": 177,
+        "negative_trials": 3979,
+        "cross_speaker_trials": 808,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.630303680896759,
+            "false_rejects": 42,
+            "false_accepts": 39,
+            "false_reject_rate": 0.23728813559322035,
+            "false_accept_rate": 0.009801457652676551,
+            "cross_speaker_false_reject_rate": 0.5272277227722773
+          },
+          "0.025": {
+            "threshold": 0.44730934500694275,
+            "false_rejects": 11,
+            "false_accepts": 193,
+            "false_reject_rate": 0.062146892655367235,
+            "false_accept_rate": 0.048504649409399345,
+            "cross_speaker_false_reject_rate": 0.25
+          },
+          "0.05": {
+            "threshold": 0.3591741919517517,
+            "false_rejects": 6,
+            "false_accepts": 335,
+            "false_reject_rate": 0.03389830508474576,
+            "false_accept_rate": 0.08419200804222167,
+            "cross_speaker_false_reject_rate": 0.1547029702970297
+          },
+          "0.1": {
+            "threshold": 0.28435438871383667,
+            "false_rejects": 3,
+            "false_accepts": 536,
+            "false_reject_rate": 0.01694915254237288,
+            "false_accept_rate": 0.13470721286755466,
+            "cross_speaker_false_reject_rate": 0.10272277227722772
+          }
+        },
+        "threshold": 0.630303680896759
+      },
+      "test_strata": {
+        "new_word_new_source": {
+          "positive_trials": 39,
+          "negative_trials": 1536,
+          "cross_speaker_trials": 136,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.630303680896759,
+              "false_rejects": 6,
+              "false_accepts": 2,
+              "false_reject_rate": 0.15384615384615385,
+              "false_accept_rate": 0.0013020833333333333,
+              "cross_speaker_false_reject_rate": 0.45588235294117646
+            },
+            "0.025": {
+              "threshold": 0.44730934500694275,
+              "false_rejects": 1,
+              "false_accepts": 22,
+              "false_reject_rate": 0.02564102564102564,
+              "false_accept_rate": 0.014322916666666666,
+              "cross_speaker_false_reject_rate": 0.11764705882352941
+            },
+            "0.05": {
+              "threshold": 0.3591741919517517,
+              "false_rejects": 0,
+              "false_accepts": 61,
+              "false_reject_rate": 0.0,
+              "false_accept_rate": 0.039713541666666664,
+              "cross_speaker_false_reject_rate": 0.058823529411764705
+            },
+            "0.1": {
+              "threshold": 0.28435438871383667,
+              "false_rejects": 0,
+              "false_accepts": 123,
+              "false_reject_rate": 0.0,
+              "false_accept_rate": 0.080078125,
+              "cross_speaker_false_reject_rate": 0.029411764705882353
+            }
+          },
+          "threshold": 0.630303680896759
+        },
+        "previously_evaluated_word_new_source": {
+          "positive_trials": 138,
+          "negative_trials": 2443,
+          "cross_speaker_trials": 672,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.630303680896759,
+              "false_rejects": 36,
+              "false_accepts": 37,
+              "false_reject_rate": 0.2608695652173913,
+              "false_accept_rate": 0.01514531313958248,
+              "cross_speaker_false_reject_rate": 0.5416666666666666
+            },
+            "0.025": {
+              "threshold": 0.44730934500694275,
+              "false_rejects": 10,
+              "false_accepts": 171,
+              "false_reject_rate": 0.07246376811594203,
+              "false_accept_rate": 0.06999590667212444,
+              "cross_speaker_false_reject_rate": 0.2767857142857143
+            },
+            "0.05": {
+              "threshold": 0.3591741919517517,
+              "false_rejects": 6,
+              "false_accepts": 274,
+              "false_reject_rate": 0.043478260869565216,
+              "false_accept_rate": 0.11215718379042161,
+              "cross_speaker_false_reject_rate": 0.17410714285714285
+            },
+            "0.1": {
+              "threshold": 0.28435438871383667,
+              "false_rejects": 3,
+              "false_accepts": 413,
+              "false_reject_rate": 0.021739130434782608,
+              "false_accept_rate": 0.16905444126074498,
+              "cross_speaker_false_reject_rate": 0.11755952380952381
+            }
+          },
+          "threshold": 0.630303680896759
+        }
+      },
+      "mixed_speaker_closed_set_dev": {
+        "threshold": 0.6205015778541565,
+        "words": 20,
+        "enrollment_clips": 20,
+        "positive_trials": 236,
+        "negative_trials": 4484,
+        "false_accepts": 44,
+        "false_rejects": 91,
+        "false_accept_rate": 0.009812667261373774,
+        "false_reject_rate": 0.3855932203389831,
+        "top1_accuracy": 0.7923728813559322,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      },
+      "mixed_speaker_closed_set_test": {
+        "threshold": 0.6205015778541565,
+        "words": 20,
+        "enrollment_clips": 20,
+        "positive_trials": 236,
+        "negative_trials": 4484,
+        "false_accepts": 38,
+        "false_rejects": 103,
+        "false_accept_rate": 0.00847457627118644,
+        "false_reject_rate": 0.4364406779661017,
+        "top1_accuracy": 0.8050847457627118,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      }
+    },
+    "v3": {
+      "dev": {
+        "positive_trials": 177,
+        "negative_trials": 3839,
+        "cross_speaker_trials": 784,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5827946662902832,
+            "false_rejects": 38,
+            "false_accepts": 38,
+            "false_reject_rate": 0.21468926553672316,
+            "false_accept_rate": 0.00989841104454285,
+            "cross_speaker_false_reject_rate": 0.40561224489795916
+          },
+          "0.025": {
+            "threshold": 0.4500464200973511,
+            "false_rejects": 19,
+            "false_accepts": 95,
+            "false_reject_rate": 0.10734463276836158,
+            "false_accept_rate": 0.024746027611357125,
+            "cross_speaker_false_reject_rate": 0.22193877551020408
+          },
+          "0.05": {
+            "threshold": 0.34871843457221985,
+            "false_rejects": 9,
+            "false_accepts": 191,
+            "false_reject_rate": 0.05084745762711865,
+            "false_accept_rate": 0.04975253972388643,
+            "cross_speaker_false_reject_rate": 0.11862244897959184
+          },
+          "0.1": {
+            "threshold": 0.27312198281288147,
+            "false_rejects": 5,
+            "false_accepts": 382,
+            "false_reject_rate": 0.02824858757062147,
+            "false_accept_rate": 0.09950507944777286,
+            "cross_speaker_false_reject_rate": 0.07908163265306123
+          }
+        },
+        "threshold": 0.5827946662902832
+      },
+      "test": {
+        "positive_trials": 177,
+        "negative_trials": 3979,
+        "cross_speaker_trials": 808,
+        "operating_points": {
+          "0.01": {
+            "threshold": 0.5827946662902832,
+            "false_rejects": 31,
+            "false_accepts": 57,
+            "false_reject_rate": 0.1751412429378531,
+            "false_accept_rate": 0.014325207338527268,
+            "cross_speaker_false_reject_rate": 0.452970297029703
+          },
+          "0.025": {
+            "threshold": 0.4500464200973511,
+            "false_rejects": 11,
+            "false_accepts": 156,
+            "false_reject_rate": 0.062146892655367235,
+            "false_accept_rate": 0.039205830610706205,
+            "cross_speaker_false_reject_rate": 0.2561881188118812
+          },
+          "0.05": {
+            "threshold": 0.34871843457221985,
+            "false_rejects": 6,
+            "false_accepts": 320,
+            "false_reject_rate": 0.03389830508474576,
+            "false_accept_rate": 0.08042221663734607,
+            "cross_speaker_false_reject_rate": 0.14108910891089108
+          },
+          "0.1": {
+            "threshold": 0.27312198281288147,
+            "false_rejects": 4,
+            "false_accepts": 604,
+            "false_reject_rate": 0.022598870056497175,
+            "false_accept_rate": 0.1517969339029907,
+            "cross_speaker_false_reject_rate": 0.07549504950495049
+          }
+        },
+        "threshold": 0.5827946662902832
+      },
+      "test_strata": {
+        "new_word_new_source": {
+          "positive_trials": 39,
+          "negative_trials": 1536,
+          "cross_speaker_trials": 136,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.5827946662902832,
+              "false_rejects": 3,
+              "false_accepts": 3,
+              "false_reject_rate": 0.07692307692307693,
+              "false_accept_rate": 0.001953125,
+              "cross_speaker_false_reject_rate": 0.33088235294117646
+            },
+            "0.025": {
+              "threshold": 0.4500464200973511,
+              "false_rejects": 1,
+              "false_accepts": 20,
+              "false_reject_rate": 0.02564102564102564,
+              "false_accept_rate": 0.013020833333333334,
+              "cross_speaker_false_reject_rate": 0.16176470588235295
+            },
+            "0.05": {
+              "threshold": 0.34871843457221985,
+              "false_rejects": 1,
+              "false_accepts": 62,
+              "false_reject_rate": 0.02564102564102564,
+              "false_accept_rate": 0.040364583333333336,
+              "cross_speaker_false_reject_rate": 0.04411764705882353
+            },
+            "0.1": {
+              "threshold": 0.27312198281288147,
+              "false_rejects": 0,
+              "false_accepts": 160,
+              "false_reject_rate": 0.0,
+              "false_accept_rate": 0.10416666666666667,
+              "cross_speaker_false_reject_rate": 0.03676470588235294
+            }
+          },
+          "threshold": 0.5827946662902832
+        },
+        "previously_evaluated_word_new_source": {
+          "positive_trials": 138,
+          "negative_trials": 2443,
+          "cross_speaker_trials": 672,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.5827946662902832,
+              "false_rejects": 28,
+              "false_accepts": 54,
+              "false_reject_rate": 0.2028985507246377,
+              "false_accept_rate": 0.022103970528039297,
+              "cross_speaker_false_reject_rate": 0.47767857142857145
+            },
+            "0.025": {
+              "threshold": 0.4500464200973511,
+              "false_rejects": 10,
+              "false_accepts": 136,
+              "false_reject_rate": 0.07246376811594203,
+              "false_accept_rate": 0.05566925910765452,
+              "cross_speaker_false_reject_rate": 0.27529761904761907
+            },
+            "0.05": {
+              "threshold": 0.34871843457221985,
+              "false_rejects": 5,
+              "false_accepts": 258,
+              "false_reject_rate": 0.036231884057971016,
+              "false_accept_rate": 0.10560785918952108,
+              "cross_speaker_false_reject_rate": 0.16071428571428573
+            },
+            "0.1": {
+              "threshold": 0.27312198281288147,
+              "false_rejects": 4,
+              "false_accepts": 444,
+              "false_reject_rate": 0.028985507246376812,
+              "false_accept_rate": 0.18174375767498976,
+              "cross_speaker_false_reject_rate": 0.08333333333333333
+            }
+          },
+          "threshold": 0.5827946662902832
+        }
+      },
+      "mixed_speaker_closed_set_dev": {
+        "threshold": 0.5983008146286011,
+        "words": 20,
+        "enrollment_clips": 20,
+        "positive_trials": 236,
+        "negative_trials": 4484,
+        "false_accepts": 44,
+        "false_rejects": 87,
+        "false_accept_rate": 0.009812667261373774,
+        "false_reject_rate": 0.3686440677966102,
+        "top1_accuracy": 0.8008474576271186,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      },
+      "mixed_speaker_closed_set_test": {
+        "threshold": 0.5983008146286011,
+        "words": 20,
+        "enrollment_clips": 20,
+        "positive_trials": 236,
+        "negative_trials": 4484,
+        "false_accepts": 44,
+        "false_rejects": 87,
+        "false_accept_rate": 0.009812667261373774,
+        "false_reject_rate": 0.3686440677966102,
+        "top1_accuracy": 0.7838983050847458,
+        "support_policy": "First hash-ordered clip per unseen word; distinct queries; no adaptation",
+        "includes_other_speakers": true,
+        "measures_voice_id": false,
+        "noise_or_continuous_audio": false
+      }
+    }
+  },
+  "test": {
+    "positive_trials": 177,
+    "negative_trials": 3979,
+    "cross_speaker_trials": 808,
+    "operating_points": {
+      "0.01": {
+        "threshold": 0.5827946662902832,
+        "false_rejects": 31,
+        "false_accepts": 57,
+        "false_reject_rate": 0.1751412429378531,
+        "false_accept_rate": 0.014325207338527268,
+        "cross_speaker_false_reject_rate": 0.452970297029703
+      },
+      "0.025": {
+        "threshold": 0.4500464200973511,
+        "false_rejects": 11,
+        "false_accepts": 156,
+        "false_reject_rate": 0.062146892655367235,
+        "false_accept_rate": 0.039205830610706205,
+        "cross_speaker_false_reject_rate": 0.2561881188118812
+      },
+      "0.05": {
+        "threshold": 0.34871843457221985,
+        "false_rejects": 6,
+        "false_accepts": 320,
+        "false_reject_rate": 0.03389830508474576,
+        "false_accept_rate": 0.08042221663734607,
+        "cross_speaker_false_reject_rate": 0.14108910891089108
+      },
+      "0.1": {
+        "threshold": 0.27312198281288147,
+        "false_rejects": 4,
+        "false_accepts": 604,
+        "false_reject_rate": 0.022598870056497175,
+        "false_accept_rate": 0.1517969339029907,
+        "cross_speaker_false_reject_rate": 0.07549504950495049
+      }
+    },
+    "threshold": 0.5827946662902832
+  },
+  "regression": {
+    "status": "Previously inspected v2 benchmark; separate old-dev calibration",
+    "results": {
+      "v2": {
+        "dev": {
+          "positive_trials": 546,
+          "negative_trials": 17365,
+          "cross_speaker_trials": 4422,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.598879337310791,
+              "false_rejects": 123,
+              "false_accepts": 173,
+              "false_reject_rate": 0.22527472527472528,
+              "false_accept_rate": 0.009962568384681831,
+              "cross_speaker_false_reject_rate": 0.43487109905020355
+            },
+            "0.025": {
+              "threshold": 0.47782671451568604,
+              "false_rejects": 56,
+              "false_accepts": 434,
+              "false_reject_rate": 0.10256410256410256,
+              "false_accept_rate": 0.024992801612438813,
+              "cross_speaker_false_reject_rate": 0.2261420171867933
+            },
+            "0.05": {
+              "threshold": 0.3878084421157837,
+              "false_rejects": 31,
+              "false_accepts": 868,
+              "false_reject_rate": 0.056776556776556776,
+              "false_accept_rate": 0.04998560322487763,
+              "cross_speaker_false_reject_rate": 0.12415196743554953
+            },
+            "0.1": {
+              "threshold": 0.2939204275608063,
+              "false_rejects": 17,
+              "false_accepts": 1736,
+              "false_reject_rate": 0.031135531135531136,
+              "false_accept_rate": 0.09997120644975525,
+              "cross_speaker_false_reject_rate": 0.06558118498417007
+            }
+          },
+          "threshold": 0.598879337310791
+        },
+        "test": {
+          "positive_trials": 563,
+          "negative_trials": 17774,
+          "cross_speaker_trials": 3968,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.598879337310791,
+              "false_rejects": 109,
+              "false_accepts": 128,
+              "false_reject_rate": 0.1936056838365897,
+              "false_accept_rate": 0.007201530325194104,
+              "cross_speaker_false_reject_rate": 0.46068548387096775
+            },
+            "0.025": {
+              "threshold": 0.47782671451568604,
+              "false_rejects": 50,
+              "false_accepts": 418,
+              "false_reject_rate": 0.08880994671403197,
+              "false_accept_rate": 0.023517497468211995,
+              "cross_speaker_false_reject_rate": 0.2517641129032258
+            },
+            "0.05": {
+              "threshold": 0.3878084421157837,
+              "false_rejects": 29,
+              "false_accepts": 923,
+              "false_reject_rate": 0.05150976909413854,
+              "false_accept_rate": 0.051929785079329355,
+              "cross_speaker_false_reject_rate": 0.16078629032258066
+            },
+            "0.1": {
+              "threshold": 0.2939204275608063,
+              "false_rejects": 15,
+              "false_accepts": 1890,
+              "false_reject_rate": 0.02664298401420959,
+              "false_accept_rate": 0.1063350962079442,
+              "cross_speaker_false_reject_rate": 0.08341733870967742
+            }
+          },
+          "threshold": 0.598879337310791
+        }
+      },
+      "v3": {
+        "dev": {
+          "positive_trials": 546,
+          "negative_trials": 17365,
+          "cross_speaker_trials": 4422,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.5750817656517029,
+              "false_rejects": 109,
+              "false_accepts": 173,
+              "false_reject_rate": 0.19963369963369965,
+              "false_accept_rate": 0.009962568384681831,
+              "cross_speaker_false_reject_rate": 0.39778380823156945
+            },
+            "0.025": {
+              "threshold": 0.4632367789745331,
+              "false_rejects": 44,
+              "false_accepts": 434,
+              "false_reject_rate": 0.08058608058608059,
+              "false_accept_rate": 0.024992801612438813,
+              "cross_speaker_false_reject_rate": 0.20691994572591588
+            },
+            "0.05": {
+              "threshold": 0.3737877309322357,
+              "false_rejects": 25,
+              "false_accepts": 867,
+              "false_reject_rate": 0.045787545787545784,
+              "false_accept_rate": 0.04992801612438814,
+              "cross_speaker_false_reject_rate": 0.1080958842152872
+            },
+            "0.1": {
+              "threshold": 0.28146740794181824,
+              "false_rejects": 9,
+              "false_accepts": 1736,
+              "false_reject_rate": 0.016483516483516484,
+              "false_accept_rate": 0.09997120644975525,
+              "cross_speaker_false_reject_rate": 0.05269109000452284
+            }
+          },
+          "threshold": 0.5750817656517029
+        },
+        "test": {
+          "positive_trials": 563,
+          "negative_trials": 17774,
+          "cross_speaker_trials": 3968,
+          "operating_points": {
+            "0.01": {
+              "threshold": 0.5750817656517029,
+              "false_rejects": 100,
+              "false_accepts": 156,
+              "false_reject_rate": 0.17761989342806395,
+              "false_accept_rate": 0.008776865083830314,
+              "cross_speaker_false_reject_rate": 0.41330645161290325
+            },
+            "0.025": {
+              "threshold": 0.4632367789745331,
+              "false_rejects": 45,
+              "false_accepts": 463,
+              "false_reject_rate": 0.07992895204262877,
+              "false_accept_rate": 0.02604928547316305,
+              "cross_speaker_false_reject_rate": 0.2361391129032258
+            },
+            "0.05": {
+              "threshold": 0.3737877309322357,
+              "false_rejects": 26,
+              "false_accepts": 993,
+              "false_reject_rate": 0.046181172291296625,
+              "false_accept_rate": 0.055868121975919886,
+              "cross_speaker_false_reject_rate": 0.14390120967741934
+            },
+            "0.1": {
+              "threshold": 0.28146740794181824,
+              "false_rejects": 11,
+              "false_accepts": 2017,
+              "false_reject_rate": 0.019538188277087035,
+              "false_accept_rate": 0.11348036457747271,
+              "cross_speaker_false_reject_rate": 0.07636088709677419
+            }
+          },
+          "threshold": 0.5750817656517029
+        }
+      }
+    }
+  },
+  "manual_curation": {
+    "schema_version": 1,
+    "curation": "Manually authored Russian word groups and contrast pairs; individual recordings are selected and checked automatically, not human-listened.",
+    "additional_clips": 51200,
+    "new_word_clips": 48,
+    "groups": {
+      "conversation_and_understanding": [
+        "видеть",
+        "видим",
+        "говорила",
+        "говорили",
+        "говорят",
+        "голос",
+        "делает",
+        "работает",
+        "сделал",
+        "сделано",
+        "сказать",
+        "понять",
+        "понимаю",
+        "понятно",
+        "кажется",
+        "конечно",
+        "вероятно",
+        "возможно",
+        "разумеется",
+        "несомненно",
+        "например",
+        "правда",
+        "поскольку",
+        "потому",
+        "насколько",
+        "наоборот",
+        "будто",
+        "полагаем",
+        "знал",
+        "известно",
+        "имеется",
+        "ничего"
+      ],
+      "daily_objects_people_and_position": [
+        "воду",
+        "воды",
+        "дверь",
+        "друга",
+        "отец",
+        "руками",
+        "рядом",
+        "туда",
+        "вокруг",
+        "впереди",
+        "места",
+        "месте",
+        "молодой",
+        "молодые",
+        "любые",
+        "любой",
+        "людям",
+        "моего",
+        "моей",
+        "ваши",
+        "нашему",
+        "нашими",
+        "всей",
+        "всему",
+        "сама",
+        "самом",
+        "самый",
+        "двумя",
+        "двух",
+        "главная",
+        "главных",
+        "большая"
+      ],
+      "time_order_and_numbers": [
+        "завтра",
+        "утром",
+        "вскоре",
+        "сразу",
+        "недавно",
+        "неделе",
+        "недели",
+        "месяцев",
+        "момент",
+        "минуту",
+        "будущем",
+        "будущих",
+        "прошлом",
+        "периода",
+        "долго",
+        "поздно",
+        "одновременно",
+        "далее",
+        "нынешнего",
+        "нынешняя",
+        "первый",
+        "последний",
+        "последнего",
+        "следующим",
+        "вторых",
+        "третий",
+        "третьих",
+        "шестой",
+        "семьдесят",
+        "сорок",
+        "тридцать",
+        "триста"
+      ],
+      "actions_and_requests": [
+        "идти",
+        "вносить",
+        "выполнить",
+        "выполнения",
+        "выступаем",
+        "выступать",
+        "забывать",
+        "заверить",
+        "занимается",
+        "заключается",
+        "зависит",
+        "вызывает",
+        "возникает",
+        "играют",
+        "желаем",
+        "желает",
+        "перейти",
+        "позволить",
+        "помочь",
+        "помощью",
+        "повысить",
+        "оказать",
+        "оказывать",
+        "проводить",
+        "продолжить",
+        "продолжают",
+        "привести",
+        "приветствовать",
+        "приветствует",
+        "приглашаю",
+        "поздравить",
+        "приступаем"
+      ],
+      "manner_and_deliberate_actions": [
+        "внимательно",
+        "немедленно",
+        "непосредственно",
+        "неоднократно",
+        "практически",
+        "серьезно",
+        "тесно",
+        "точно",
+        "согласно",
+        "соответственно",
+        "последовательно",
+        "фактически",
+        "всецело",
+        "значительно",
+        "чрезвычайно",
+        "искренне",
+        "кратко",
+        "сохранить",
+        "сохраняются",
+        "укреплять",
+        "уважать",
+        "учитывать",
+        "сотрудничать",
+        "служить",
+        "проявлять",
+        "стремиться",
+        "стремится",
+        "рассчитываем",
+        "разделяем",
+        "подтверждает",
+        "отвечает",
+        "относится"
+      ],
+      "qualities_and_general_vocabulary": [
+        "авторитет",
+        "авторов",
+        "аспектов",
+        "вопросах",
+        "вопросов",
+        "вопросом",
+        "важная",
+        "важной",
+        "важными",
+        "новая",
+        "новую",
+        "необходимым",
+        "единственным",
+        "основные",
+        "основой",
+        "позитивные",
+        "конкретные",
+        "значительные",
+        "возможное",
+        "возможностей",
+        "возможностью",
+        "дополнительных",
+        "многочисленные",
+        "меньше",
+        "нескольких",
+        "опыт",
+        "правило",
+        "порядку",
+        "требования",
+        "требуют",
+        "доступ",
+        "ответ"
+      ],
+      "change_process_and_outcome": [
+        "движение",
+        "движения",
+        "направление",
+        "направленные",
+        "начало",
+        "находятся",
+        "настало",
+        "намерен",
+        "намерены",
+        "надежду",
+        "надежды",
+        "наличие",
+        "переходного",
+        "перемен",
+        "произошло",
+        "приходится",
+        "предстоит",
+        "предпринять",
+        "предложений",
+        "причины",
+        "результаты",
+        "успехи",
+        "успешно",
+        "эффективность",
+        "эффективной",
+        "решимость",
+        "решимости",
+        "решающее",
+        "решении",
+        "решению",
+        "проблеме",
+        "проблему"
+      ],
+      "geography_and_scope": [
+        "россия",
+        "россии",
+        "германия",
+        "франция",
+        "бразилия",
+        "канада",
+        "канады",
+        "индии",
+        "испании",
+        "китая",
+        "турция",
+        "турции",
+        "швейцария",
+        "швейцарии",
+        "норвегии",
+        "мексика",
+        "афганистан",
+        "афганистана",
+        "ливия",
+        "куба",
+        "корея",
+        "корейской",
+        "африканских",
+        "ближнем",
+        "регион",
+        "регионального",
+        "региональные",
+        "региональных",
+        "мирового",
+        "глобальных",
+        "международный",
+        "международном"
+      ],
+      "organizations_roles_and_responsibilities": [
+        "генеральная",
+        "генеральный",
+        "генеральному",
+        "секретарь",
+        "президент",
+        "премьер",
+        "комиссия",
+        "комитета",
+        "коллег",
+        "представителей",
+        "представителем",
+        "представителя",
+        "представляет",
+        "представляют",
+        "делегацию",
+        "советом",
+        "совещания",
+        "координации",
+        "консультаций",
+        "организаций",
+        "органов",
+        "органа",
+        "мандата",
+        "сотрудников",
+        "обязанность",
+        "обязанностей",
+        "руководством",
+        "государством",
+        "государствам",
+        "сообществу",
+        "сообществом",
+        "бюро"
+      ],
+      "social_civic_and_security_terms": [
+        "демократии",
+        "независимости",
+        "доверия",
+        "справедливости",
+        "культуры",
+        "ценности",
+        "интересы",
+        "интересах",
+        "общая",
+        "общего",
+        "общее",
+        "общей",
+        "общих",
+        "насилие",
+        "нападения",
+        "преступления",
+        "жертв",
+        "ущерб",
+        "терроризм",
+        "терроризма",
+        "угрозой",
+        "примирения",
+        "политические",
+        "политическую",
+        "заслуживает",
+        "привержены",
+        "приверженности",
+        "поддержкой",
+        "пользу",
+        "ценим",
+        "призыв",
+        "уважаемый"
+      ],
+      "science_health_and_economy": [
+        "энергии",
+        "космического",
+        "пространства",
+        "планеты",
+        "источником",
+        "факторов",
+        "факт",
+        "финансирование",
+        "финансирования",
+        "инвестиций",
+        "производства",
+        "сектора",
+        "экономические",
+        "экономических",
+        "экономической",
+        "развитием",
+        "устойчивого",
+        "развивающихся",
+        "управление",
+        "управления",
+        "механизма",
+        "систему",
+        "методов",
+        "элементов",
+        "элементом",
+        "элементы",
+        "уровень",
+        "здоровья",
+        "здравоохранения",
+        "заболевания",
+        "расширение",
+        "расширения"
+      ],
+      "negotiation_structure_and_resources": [
+        "девятьсот",
+        "девяносто",
+        "гуманитарной",
+        "гуманитарных",
+        "военных",
+        "ядерных",
+        "разоружение",
+        "переговорам",
+        "переговорах",
+        "мирного",
+        "мирных",
+        "партнерами",
+        "состава",
+        "статуса",
+        "состоянии",
+        "сведению",
+        "соответствии",
+        "соответствующие",
+        "соответствующих",
+        "сотрудничеству",
+        "нормы",
+        "дальнейшего",
+        "последствий",
+        "назначения",
+        "достижении",
+        "изменений",
+        "использование",
+        "использования",
+        "использовать",
+        "числа",
+        "числу",
+        "миллиарда"
+      ]
+    },
+    "contrast_pairs": [
+      [
+        "воду",
+        "воды"
+      ],
+      [
+        "видеть",
+        "видим"
+      ],
+      [
+        "говорила",
+        "говорили"
+      ],
+      [
+        "места",
+        "месте"
+      ],
+      [
+        "моего",
+        "моей"
+      ],
+      [
+        "нашему",
+        "нашими"
+      ],
+      [
+        "самом",
+        "самый"
+      ],
+      [
+        "двумя",
+        "двух"
+      ],
+      [
+        "неделе",
+        "недели"
+      ],
+      [
+        "будущем",
+        "будущих"
+      ],
+      [
+        "третий",
+        "третьих"
+      ],
+      [
+        "тридцать",
+        "триста"
+      ],
+      [
+        "выступаем",
+        "выступать"
+      ],
+      [
+        "желаем",
+        "желает"
+      ],
+      [
+        "оказать",
+        "оказывать"
+      ],
+      [
+        "привести",
+        "приветствовать"
+      ],
+      [
+        "вопросах",
+        "вопросов"
+      ],
+      [
+        "вопросов",
+        "вопросом"
+      ],
+      [
+        "важная",
+        "важной"
+      ],
+      [
+        "важной",
+        "важными"
+      ],
+      [
+        "новая",
+        "новую"
+      ],
+      [
+        "движение",
+        "движения"
+      ],
+      [
+        "намерен",
+        "намерены"
+      ],
+      [
+        "надежду",
+        "надежды"
+      ],
+      [
+        "решимость",
+        "решимости"
+      ],
+      [
+        "решении",
+        "решению"
+      ],
+      [
+        "проблеме",
+        "проблему"
+      ],
+      [
+        "россия",
+        "россии"
+      ],
+      [
+        "канада",
+        "канады"
+      ],
+      [
+        "турция",
+        "турции"
+      ],
+      [
+        "афганистан",
+        "афганистана"
+      ],
+      [
+        "генеральная",
+        "генеральный"
+      ],
+      [
+        "представителем",
+        "представителей"
+      ],
+      [
+        "представляет",
+        "представляют"
+      ],
+      [
+        "органа",
+        "органов"
+      ],
+      [
+        "государством",
+        "государствам"
+      ],
+      [
+        "сообществу",
+        "сообществом"
+      ],
+      [
+        "общего",
+        "общей"
+      ],
+      [
+        "общее",
+        "общая"
+      ],
+      [
+        "терроризм",
+        "терроризма"
+      ],
+      [
+        "финансирование",
+        "финансирования"
+      ],
+      [
+        "управление",
+        "управления"
+      ],
+      [
+        "элементов",
+        "элементом"
+      ],
+      [
+        "расширение",
+        "расширения"
+      ],
+      [
+        "переговорам",
+        "переговорах"
+      ],
+      [
+        "мирного",
+        "мирных"
+      ],
+      [
+        "девятьсот",
+        "девяносто"
+      ],
+      [
+        "использование",
+        "использования"
+      ],
+      [
+        "числа",
+        "числу"
+      ]
+    ],
+    "pair_policy": "Different lexical labels remain negatives. Pairs increase their co-occurrence in training episodes; they are not merged or automatically relabeled.",
+    "fresh_dev_words": [
+      "африканского",
+      "времени",
+      "касается",
+      "международных",
+      "никогда",
+      "прений",
+      "процессе",
+      "проблем"
+    ],
+    "fresh_test_words": [
+      "голосования",
+      "делегации",
+      "заседания",
+      "имени",
+      "особенно",
+      "подход",
+      "программы",
+      "хотели"
+    ],
+    "fresh_word_clips": 8,
+    "new_recording_words_per_split": 12,
+    "new_recording_clips_per_word": 16,
+    "evaluation_note": "All new dev/test source sentences exclude every v1/v2 source sentence. Small genuinely new-word stratum is reported separately; the larger unchanged v2 test remains a regression benchmark.",
+    "recording_review": "Automatic signal/decode/duplicate checks and existing source labels only. No claim of individual human listening or transcript-completeness verification."
+  },
+  "limitations": [
+    "Only 177 positive queries in the new test; small, correlated corpus sample",
+    "Genuinely new words are a small separate stratum; do not claim the entire new test has uninspected labels",
+    "Recording labels inherited from MSWC; no individual human listening or transcript-completeness audit",
+    "51,200 new real recordings; training augmentations are not counted as additional human examples",
+    "Isolated words, no full-phrase/localization/live-microphone/continuous-false-activation/power acceptance",
+    "Pair false accepts are not false activations per hour; Voice ID remains independent"
+  ]
+}

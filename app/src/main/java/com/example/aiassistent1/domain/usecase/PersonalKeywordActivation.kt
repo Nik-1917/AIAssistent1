@@ -2,6 +2,7 @@ package com.example.aiassistent1.domain.usecase
 
 import com.example.aiassistent1.domain.interfaces.MetricKwsEngine
 import com.example.aiassistent1.domain.interfaces.MetricKwsProfileStore
+import com.example.aiassistent1.domain.interfaces.PersonalKeywordStatus
 import com.example.aiassistent1.domain.model.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,7 @@ class PersonalKeywordActivation(
     private val verifySpeaker: suspend (FloatArray) -> Boolean,
     private val clock: () -> Long = System::currentTimeMillis,
     private val selectLegacy: suspend () -> Unit = {},
+    private val ownerReady: suspend () -> Boolean = { true },
 ) {
     private val mutex = Mutex()
     private var closed = false
@@ -28,12 +30,14 @@ class PersonalKeywordActivation(
     val lastDiagnostic = diagnostic.asStateFlow()
     val available: Boolean get() = engine.config != null
     val activationValidated: Boolean get() = engine.activationValidated && available
+    val activationAllowed: Boolean get() = available && (engine.activationValidated || engine.experimentalActivationAllowed)
     val unavailableReason: String? get() = engine.unavailableReason
 
     suspend fun enrollFrom(capture: suspend () -> FloatArray) {
         check(available) { unavailableReason ?: "Модель недоступна" }
         val prefs = preferences()
-        check(prefs.voiceIdEnabled && !prefs.needsEnrollment) { "Сначала включите и настройте Voice ID" }
+        check(prefs.voiceIdEnabled && !prefs.needsEnrollment && ownerReady()) { "Сначала включите и настройте Voice ID" }
+        mutex.withLock { check(!closed); engine.prepare() }
         val samples = capture()
         try { enroll(samples) } finally { samples.fill(0f) }
     }
@@ -64,11 +68,11 @@ class PersonalKeywordActivation(
             mutex.withLock {
                 if (closed) return@withLock MetricKwsDecision.Legacy("closed")
                 val config = engine.config ?: return@withLock MetricKwsDecision.Legacy("model_unavailable")
-                if (mode == WakeWordEngine.METRIC_KWS && !engine.activationValidated)
+                if (mode == WakeWordEngine.METRIC_KWS && !activationAllowed)
                     return@withLock MetricKwsDecision.Legacy("validation_required")
                 try {
                     val before = preferences()
-                    if (!before.voiceIdEnabled || before.needsEnrollment)
+                    if (!before.voiceIdEnabled || before.needsEnrollment || !ownerReady())
                         return@withLock MetricKwsDecision.Legacy("voice_id_required")
                     val profile = profiles.load() ?: return@withLock MetricKwsDecision.Legacy("profile_missing_or_corrupt")
                     profile.validate()
@@ -96,15 +100,30 @@ class PersonalKeywordActivation(
         }.also { diagnostic.value = it }
     }
 
-    suspend fun profileStatus(): String = mutex.withLock {
-        if (!available) return@withLock unavailableReason ?: "Модель недоступна"
-        val profile = profiles.load() ?: return@withLock "Ключевая фраза не настроена"
-        val prefs = preferences()
-        if (profile.config != engine.config || profile.voiceRevision != prefs.revision)
-            "Требуется перезапись ключевой фразы"
-        else if (!prefs.voiceIdEnabled || prefs.needsEnrollment) "Требуется настроенный Voice ID"
-        else "Ключевая фраза сохранена; Voice ID включён"
+    suspend fun status(): PersonalKeywordStatus = withContext(Dispatchers.Default) {
+        mutex.withLock {
+            if (closed || !available) return@withLock PersonalKeywordStatus(false, false, false,
+                unavailableReason ?: "Модель недоступна")
+            try {
+                engine.prepare()
+                val prefs = preferences()
+                if (!prefs.voiceIdEnabled || prefs.needsEnrollment || !ownerReady())
+                    return@withLock PersonalKeywordStatus(true, false, false, "Сначала включите и настройте Voice ID")
+                val profile = profiles.load()
+                    ?: return@withLock PersonalKeywordStatus(true, false, false, "Персональное слово не записано")
+                profile.validate()
+                if (profile.config != engine.config || profile.voiceRevision != prefs.revision)
+                    return@withLock PersonalKeywordStatus(true, false, false, "Требуется перезапись персонального слова")
+                PersonalKeywordStatus(true, true, activationAllowed,
+                    if (activationAllowed) "Персональное слово сохранено; Voice ID настроен"
+                    else "Модель доступна только для проверки")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { PersonalKeywordStatus(false, false, false, unavailableReason ?: "Не удалось проверить модель и профиль") }
+            catch (_: LinkageError) { PersonalKeywordStatus(false, false, false, "Аудиобиблиотека недоступна; используйте активацию по имени") }
+        }
     }
+
+    suspend fun profileStatus(): String = status().message
 
     suspend fun delete() = mutex.withLock {
         selectLegacy()

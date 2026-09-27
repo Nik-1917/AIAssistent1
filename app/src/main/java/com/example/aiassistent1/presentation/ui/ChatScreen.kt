@@ -1116,6 +1116,7 @@ fun ChatScreen(
             onDialogueModeChange = viewModel::setDialogueModeEnabled,
             onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
             onSpeechRateChange = viewModel::setSpeechRate,
+            keywordControls = viewModel.personalKeywordControls,
         )
     }
 
@@ -2180,6 +2181,7 @@ fun ModelSettingsDialog(
     onDialogueModeChange: (Boolean) -> Unit,
     onAutoPlaybackChange: (Boolean) -> Unit,
     onSpeechRateChange: (Float) -> Unit,
+    keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
     var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
@@ -2318,7 +2320,7 @@ fun ModelSettingsDialog(
 
                 SettingsSection(title = "Голос") {
                     BackgroundPowerSettings()
-                    AudioSettingsSection()
+                    AudioSettingsSection(keywordControls)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

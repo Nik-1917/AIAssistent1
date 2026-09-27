@@ -9,6 +9,8 @@ import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import com.example.aiassistent1.domain.interfaces.*
 import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
+import com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSession
+import com.example.aiassistent1.domain.usecase.PersonalWakeResult
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -26,7 +28,7 @@ class SherpaOnnxVoiceInputProvider(
     private val settingsRepository: SettingsRepository,
     private val processing: AudioProcessingManager,
     private val personalKeyword: PersonalKeywordActivation? = null,
-) : InputProvider, AutoCloseable {
+) : InputProvider, PersonalKeywordControls, AutoCloseable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
@@ -38,6 +40,31 @@ class SherpaOnnxVoiceInputProvider(
     private var nextSessionId = 0L
     private var captureWake = false
     private var captureEnrollment = false
+    private val keywordFallback = MutableStateFlow<String?>(null)
+    override fun observeKeywordFallback() = keywordFallback.asStateFlow()
+    override fun observeKeywordRecording() = activity.map { it == AudioSessionState.Enrolling }.distinctUntilChanged()
+    override suspend fun keywordStatus() = personalKeyword?.status()
+        ?: PersonalKeywordStatus(false, false, false, "Персональная модель недоступна")
+    override suspend fun enrollKeyword() {
+        val service = checkNotNull(personalKeyword) { "Персональная модель недоступна" }
+        try { service.enrollFrom(::captureEnrollmentSegment) }
+        catch (timeout: TimeoutCancellationException) {
+            throw IllegalStateException("За 12 секунд слово не записано. Повторите запись и сделайте паузу после слова.", timeout)
+        }
+        keywordFallback.value = null
+    }
+    override suspend fun deleteKeyword() {
+        checkNotNull(personalKeyword).delete()
+        keywordFallback.value = null
+    }
+    override suspend fun selectKeywordMode(enabled: Boolean) {
+        if (enabled) {
+            val status = keywordStatus()
+            check(status.canActivate) { status.message }
+        }
+        settingsRepository.setWakeWordEngine(if (enabled) WakeWordEngine.METRIC_KWS else WakeWordEngine.LEGACY_ASR)
+        keywordFallback.value = null
+    }
     private val warmUpJob = scope.launch {
         try { vad.prepare(); recognizer.prepare() }
         catch (cancelled: CancellationException) { throw cancelled }
@@ -153,9 +180,9 @@ class SherpaOnnxVoiceInputProvider(
             val initial = settingsRepository.readAudioPreferences()
             val useKws = wake && keywordSpotter.isAvailable()
             if (useKws) keywordSpotter.prepare()
-            val segments = Channel<Pair<FloatArray, Boolean>>(4)
+            val segments = Channel<Triple<FloatArray, Boolean, Long>>(4)
             // A bounded observer of the SAME processed VAD utterance. It never controls activation.
-            // No encoder is shipped until weights licensing and Russian/parity checks are complete.
+            // Experimental active routing below is separate from this diagnostic observer.
             val shadowSegments = if (wake && personalKeyword?.available == true)
                 Channel<FloatArray>(Channel.CONFLATED, onUndeliveredElement = { it.fill(0f) }) else null
             val shadowJob = shadowSegments?.let { queue ->
@@ -168,17 +195,54 @@ class SherpaOnnxVoiceInputProvider(
                 }
             }
             val feedbackPlaying = AtomicBoolean(false)
+            val resetAfterMetricFeedback = AtomicBoolean(false)
+            suspend fun activationFeedback() {
+                activity.value = AudioSessionState.Listening
+                feedbackPlaying.set(true)
+                try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
+                finally { feedbackPlaying.set(false) }
+            }
             activity.value = if (enrollment != null) AudioSessionState.Enrolling
                 else if (wake || initial.needsEnrollment && initial.voiceIdEnabled) AudioSessionState.Waiting else AudioSessionState.Listening
             val recognition = launch {
                 var activatedUntil = 0L
                 var activeWord = initial.wakeWord
-                for ((segment, detected) in segments) {
+                var activeEngine = initial.wakeWordEngine
+                val metricSession = PersonalKeywordWakeSession(
+                    preferences = settingsRepository::readAudioPreferences,
+                    evaluate = { personalKeyword?.evaluate(it, WakeWordEngine.METRIC_KWS)
+                        ?: MetricKwsDecision.Legacy("model_unavailable") },
+                    verifySpeaker = voiceProfileManager::verify,
+                    recognize = { recognizer.recognize(it).getOrThrow() },
+                    onActivation = { activationFeedback(); resetAfterMetricFeedback.set(true) },
+                    onVerifiedSpeech = { if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id) },
+                    clock = SystemClock::elapsedRealtime,
+                )
+                for ((segment, detected, speechStartedAt) in segments) {
                     val prefs = settingsRepository.readAudioPreferences()
                     if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
                         shadowSegments?.trySend(segment.copyOf())
                     }
-                    if (prefs.wakeWord != activeWord) { activatedUntil = 0; activeWord = prefs.wakeWord }
+                    if (prefs.wakeWord != activeWord || prefs.wakeWordEngine != activeEngine) {
+                        activatedUntil = 0; activeWord = prefs.wakeWord; activeEngine = prefs.wakeWordEngine
+                    }
+                    if (wake) {
+                        when (val result = metricSession.handle(segment, speechStartedAt)) {
+                            is PersonalWakeResult.Legacy -> {
+                                keywordFallback.value = result.reason?.let {
+                                    "Персональная активация недоступна. Сейчас используется прежняя активация по имени; проверьте модель и профиль."
+                                }
+                            }
+                            PersonalWakeResult.Rejected -> { activity.value = AudioSessionState.Rejected; continue }
+                            PersonalWakeResult.Activated -> { keywordFallback.value = null; continue }
+                            PersonalWakeResult.Waiting -> continue
+                            is PersonalWakeResult.Command -> {
+                                if (isCurrent(id)) input.emit(VoiceInputEvent(id, result.text))
+                                activity.value = AudioSessionState.Waiting
+                                continue
+                            }
+                        }
+                    }
                     val enrollment = voiceProfileManager.needsEnrollment()
                     val requireName = (wake && SystemClock.elapsedRealtime() > activatedUntil) || enrollment
                     if (requireName && useKws && !detected) continue
@@ -199,10 +263,7 @@ class SherpaOnnxVoiceInputProvider(
                     }
                     if (prefs.voiceIdEnabled && prefs.bargeIn) speechStarts.emit(id)
                     if (requireName) {
-                        activity.value = AudioSessionState.Listening
-                        feedbackPlaying.set(true)
-                        try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
-                        finally { feedbackPlaying.set(false) }
+                        activationFeedback()
                         activatedUntil = SystemClock.elapsedRealtime() + 10_000
                     }
                     val transcript = text ?: recognizer.recognize(segment).getOrThrow().let {
@@ -220,15 +281,21 @@ class SherpaOnnxVoiceInputProvider(
             val pcm = ShortArray(512)
             var keywordDetected = false
             var wasSpeech = false
+            var speechStartedAt = 0L
             while (currentCoroutineContext().isActive) {
                 val read = withContext(Dispatchers.IO) { recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING) }
                 check(read >= 0) { "Ошибка микрофона: $read" }
                 if (read == 0 || feedbackPlaying.get()) continue
+                if (resetAfterMetricFeedback.getAndSet(false)) {
+                    vad.reset(); keywordSpotter.reset()
+                    keywordDetected = false; wasSpeech = false; speechStartedAt = 0L
+                }
                 val samples = processor.process(FloatArray(read) { pcm[it] / 32768f })
                 if (samples.isEmpty()) continue
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
                 val completed = vad.accept(samples)
                 val speech = vad.isSpeechDetected()
+                if (speech && !wasSpeech) speechStartedAt = SystemClock.elapsedRealtime()
                 if (speech && !wasSpeech && enrollment == null) {
                     val preferences = settingsRepository.readAudioPreferences()
                     if (preferences.bargeIn && !preferences.voiceIdEnabled) speechStarts.tryEmit(id)
@@ -241,9 +308,13 @@ class SherpaOnnxVoiceInputProvider(
                         enrollment.complete(segment)
                         return@coroutineScope
                     }
-                    check(segments.trySend(segment to keywordDetected).isSuccess) { "Распознавание не успевает за речью. Повторите запрос." }
+                    check(segments.trySend(Triple(segment, keywordDetected,
+                        speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime())).isSuccess) {
+                        "Распознавание не успевает за речью. Повторите запрос."
+                    }
                     keywordDetected = false
                 }
+                if (!speech && completed.isNotEmpty()) speechStartedAt = 0L
             }
             segments.close()
             recognition.join()
