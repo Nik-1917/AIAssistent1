@@ -5,10 +5,9 @@ import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelState
-import com.llamatik.library.platform.LlamaBridge
 import com.llamatik.library.platform.GenStream
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -21,50 +20,60 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-class LlamatikEngine(
+class LlamatikEngine internal constructor(
     private val modelProvider: ModelProvider,
-    initialParams: GenerationParams = GenerationParams(),
+    initialParams: GenerationParams,
+    executor: ExecutorService,
+    private val runtime: LlamaRuntime,
 ) : LLMEngine {
+    constructor(
+        modelProvider: ModelProvider,
+        initialParams: GenerationParams = GenerationParams(),
+    ) : this(modelProvider, initialParams, Executors.newFixedThreadPool(threadCount), NativeLlamaRuntime)
+
     private val modelMutex = Mutex()
-    private val executor = Executors.newFixedThreadPool(threadCount)
-    private val engineDispatcher: CoroutineDispatcher = executor.asCoroutineDispatcher()
+    private val lifecycleLock = Any()
+    private val engineDispatcher = executor.asCoroutineDispatcher()
     private val mutableState = MutableStateFlow<ModelState>(ModelState.Unloaded)
     private var params = initialParams
+    @Volatile private var closed = false
 
     override val state: StateFlow<ModelState> = mutableState.asStateFlow()
 
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
-        if (state.value is ModelState.Ready) {
-            return Result.success(Unit)
+        synchronized(lifecycleLock) {
+            if (closed) return Result.failure(IllegalStateException("Движок закрыт"))
+            if (state.value is ModelState.Ready) return Result.success(Unit)
+            mutableState.value = ModelState.Loading
         }
 
-        mutableState.value = ModelState.Loading
         withContext(engineDispatcher) {
             runCatching {
                 val modelPath = modelProvider.getModelPath().getOrThrow()
-                LlamaBridge.updateGenerateParams(
-                    temperature = params.temperature,
-                    maxTokens = params.maxTokens,
-                    topP = params.topP,
-                    topK = params.topK,
-                    repeatPenalty = params.repeatPenalty,
-                    contextLength = params.contextSize,
-                    numThreads = threadCount,
-                    useMmap = true,
-                    flashAttention = true,
-                    batchSize = NATIVE_BATCH_SIZE,
-                    gpuLayers = params.gpuLayers,
-                )
-                check(LlamaBridge.initGenerateModel(modelPath)) { "Не удалось загрузить модель" }
-                mutableState.value = ModelState.Ready
+                synchronized(lifecycleLock) {
+                    check(!closed) { "Движок закрыт" }
+                    runtime.updateParams(params, threadCount, NATIVE_BATCH_SIZE)
+                    check(runtime.load(modelPath)) { "Не удалось загрузить модель" }
+                    mutableState.value = ModelState.Ready
+                }
             }.onFailure { error ->
-                LlamaBridge.shutdown()
-                mutableState.value = ModelState.Error(error.toUserMessage())
+                synchronized(lifecycleLock) {
+                    if (!closed) {
+                        runtime.shutdown()
+                        mutableState.value = ModelState.Error(error.toUserMessage())
+                    }
+                }
             }
         }
     }
 
-    override fun generate(messages: List<ChatMessage>): Flow<String> = callbackFlow {
+    override fun generate(messages: List<ChatMessage>): Flow<String> {
+        check(!closed) { "Движок закрыт" }
+        return generationFlow(messages)
+    }
+
+    private fun generationFlow(messages: List<ChatMessage>): Flow<String> = callbackFlow {
+        check(!closed) { "Движок закрыт" }
         check(state.value is ModelState.Ready) { "Модель не загружена" }
         val buffer = StringBuilder()
         var bufferedTokens = 0
@@ -79,7 +88,7 @@ class LlamatikEngine(
             }
         }
 
-        LlamaBridge.generateStream(buildPrompt(messages), object : GenStream {
+        runtime.generateStream(buildPrompt(messages), object : GenStream {
             override fun onDelta(text: String) {
                 buffer.append(text)
                 bufferedTokens += 1
@@ -99,37 +108,46 @@ class LlamatikEngine(
             }
         })
 
-        awaitClose { LlamaBridge.nativeCancelGenerate() }
+        awaitClose { cancelGeneration() }
     }.flowOn(engineDispatcher)
 
-    override fun cancelGeneration() {
-        LlamaBridge.nativeCancelGenerate()
+    override fun cancelGeneration() = synchronized(lifecycleLock) {
+        if (!closed) runtime.cancel()
     }
 
-    override fun updateParams(params: GenerationParams) {
+    override fun updateParams(params: GenerationParams) = synchronized(lifecycleLock) {
+        // Cancelled work can still restore its parameters in finally after onCleared.
+        if (closed) return
         this.params = params
         if (state.value is ModelState.Ready) {
-            LlamaBridge.updateGenerateParams(
-                temperature = params.temperature,
-                maxTokens = params.maxTokens,
-                topP = params.topP,
-                topK = params.topK,
-                repeatPenalty = params.repeatPenalty,
-                contextLength = params.contextSize,
-                numThreads = threadCount,
-                useMmap = true,
-                flashAttention = true,
-                batchSize = NATIVE_BATCH_SIZE,
-                gpuLayers = params.gpuLayers,
-            )
+            runtime.updateParams(params, threadCount, NATIVE_BATCH_SIZE)
         }
     }
 
-    override fun close() {
-        cancelGeneration()
-        LlamaBridge.shutdown()
-        // Не вызываем executor.shutdown(), чтобы можно было загрузить модель снова
-        mutableState.value = ModelState.Unloaded
+    override fun unload() = synchronized(lifecycleLock) {
+        if (!closed) releaseModel()
+    }
+
+    override fun close() = synchronized(lifecycleLock) {
+        if (closed) return
+        closed = true
+        try {
+            releaseModel()
+        } finally {
+            engineDispatcher.close()
+        }
+    }
+
+    private fun releaseModel() {
+        try {
+            runtime.cancel()
+        } finally {
+            try {
+                runtime.shutdown()
+            } finally {
+                mutableState.value = ModelState.Unloaded
+            }
+        }
     }
 
     internal fun buildPrompt(messages: List<ChatMessage>): String {

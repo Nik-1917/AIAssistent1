@@ -74,6 +74,8 @@ class SendMessageUseCaseTest {
 
         override fun updateParams(params: com.example.aiassistent1.domain.model.GenerationParams) = Unit
 
+        override fun unload() = Unit
+
         override fun close() = Unit
     }
 }

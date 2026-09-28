@@ -12,4 +12,10 @@ interface LLMEngine : AutoCloseable {
     fun generate(messages: List<ChatMessage>): Flow<String>
     fun cancelGeneration()
     fun updateParams(params: com.example.aiassistent1.domain.model.GenerationParams)
+
+    /** Releases the model while keeping this engine available for another load. */
+    fun unload()
+
+    /** Permanently releases the model and execution resources. Repeated calls are safe. */
+    override fun close()
 }

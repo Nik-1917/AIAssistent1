@@ -199,7 +199,7 @@ class ChatViewModel(
                 session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 session.awaitReady()
                 // Reserve a bounded context for sequential transcript chunks; restore chat settings in finally.
-                llmEngine.close()
+                llmEngine.unload()
                 llmEngine.updateParams(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
                 val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
                     com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
@@ -210,7 +210,7 @@ class ChatViewModel(
             } catch (error: Exception) { mutableSummaryState.value = error.message ?: "Ошибка выжимки" }
             finally {
                 summarizing = false
-                llmEngine.close()
+                llmEngine.unload()
                 llmEngine.updateParams(uiState.value.modelParams)
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
                 session?.close()
@@ -665,7 +665,7 @@ class ChatViewModel(
             
             stopGeneration(resumeDialogue = false)
             previousGeneration?.join()
-            llmEngine.close()
+            llmEngine.unload()
             // Принудительно сбрасываем флаги при смене модели
             mutableUiState.update { it.copy(isStopping = false, isProcessing = false) }
             settingsRepository.setSelectedModel(modelName)

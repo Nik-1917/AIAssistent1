@@ -25,6 +25,7 @@ class FormatCalendarFieldUseCaseTest {
         }
         override fun cancelGeneration() {}
         override fun updateParams(params: GenerationParams) {}
+        override fun unload() {}
         override fun close() {}
     }
 
