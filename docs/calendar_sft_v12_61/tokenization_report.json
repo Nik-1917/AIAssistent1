@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "max_seq_length": 256,
+  "total_rows": 5127,
+  "truncated_rows": 0,
+  "assistant_only_mask": "PASS",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 124,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "504b86dfacc3bbc742e1007f389f60a2bd43f01d9e29a0a9d5f29fa3cee82ade"
+    },
+    "context_transfer_eval.jsonl": {
+      "rows": 132,
+      "max_tokens": 189,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "1c7b74b54b58861ec47f80a297ea45108d7cecbe1e1de3645daa345cbb247d94"
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 169,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "cbced8f2401f00cd4e216e71829f967d8048f895e081211d14b052b895bd9b28"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 134,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "a70f5720cb03b2dbd6f1b57cb30f28cfa4e9da80ffba71a0d182402fb980be19"
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "max_tokens": 176,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "ef7c5d0a994e41c0566f9f5e96a6c627cf77a6d2899e2be192623df5b2eb2b61"
+    },
+    "last_event_holdout.jsonl": {
+      "rows": 6,
+      "max_tokens": 179,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "a90840f4e7af67d179516a343e1a6f0b32b508dce106915d933182bae26179cc"
+    },
+    "order_holdout.jsonl": {
+      "rows": 43,
+      "max_tokens": 185,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "89dda5833b9b9c38e35b689923109861fc94733f26a94e86eebb13c782e7f403"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 60,
+      "max_tokens": 184,
+      "new_rows": 0,
+      "new_max_tokens": null,
+      "sha256": "4bc174ea14f02deb53cce2af65e689c1a3999b412fcb01deaeda18b0df8ec50e"
+    },
+    "speech_holdout.jsonl": {
+      "rows": 28,
+      "max_tokens": 209,
+      "new_rows": 28,
+      "new_max_tokens": 209,
+      "sha256": "adae6c722356e540d2f155484f5f025e703818f8463f3109508c13d8894aadd8"
+    },
+    "train.jsonl": {
+      "rows": 4096,
+      "max_tokens": 256,
+      "new_rows": 1252,
+      "new_max_tokens": 209,
+      "sha256": "dfc806c3bb4b8ecafa64b074849f77829466244071eddc47afeba0cd5a5bdb45"
+    },
+    "validation.jsonl": {
+      "rows": 670,
+      "max_tokens": 206,
+      "new_rows": 28,
+      "new_max_tokens": 197,
+      "sha256": "cff413d637913efc888eb936164054c29d175bbe442cd26ff76d9ef5a7363a60"
+    }
+  },
+  "weights_loaded": false,
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

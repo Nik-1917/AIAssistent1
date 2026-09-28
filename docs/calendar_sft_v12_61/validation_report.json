@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "rows": 5127,
+  "contract": "v12.57",
+  "base_clock_input_and_reply_matches": 1440,
+  "runtime_single_user_message": "PASS",
+  "duplicate_full_prompts_within_splits": 0,
+  "training_wording_in_evaluation": 0,
+  "context_transfer_eval_intentionally_overlaps_train": 132,
+  "source_hashes": "PASS",
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "gguf": "NOT_RUN",
+  "device": "NOT_RUN"
+}

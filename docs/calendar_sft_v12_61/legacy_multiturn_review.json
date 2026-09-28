@@ -1,0 +1,3409 @@
+[
+  {
+    "source": "train",
+    "line": 21,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-17 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь пробежку двадцать первого сентября в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Пробежка.\",\"params\":{\"title\":\"Пробежка\",\"starts_at\":\"2030-09-21T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 32,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-19 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь совещание через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Совещание.\",\"params\":{\"title\":\"Совещание\",\"starts_at\":\"2030-11-21T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 33,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-24 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь стоматолога через два месяца в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Стоматолог.\",\"params\":{\"title\":\"Стоматолог\",\"starts_at\":\"2031-01-24T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 39,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-15 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2030-10-18T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 54,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-20 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной через два месяца в восемь утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2031-04-20T08:00\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 61,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-20 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму двадцать восьмого ноября в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2030-11-28T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 74,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-24 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой завтра в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-10-25T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 92,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-16 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля через два месяца в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-06-16T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 111,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-12 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь разговор с бухгалтером двенадцатого марта в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разговор с бухгалтером.\",\"params\":{\"title\":\"Разговор с бухгалтером\",\"starts_at\":\"2031-03-12T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 113,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-17 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля двадцать второго декабря в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2030-12-22T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 114,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-09 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-09-12T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 115,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-27 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета тридцать первого октября в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2030-10-31T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 129,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-21 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму двадцать девятого сентября в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2030-09-29T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 137,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-05 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной десятого февраля в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2031-02-10T11:20\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 151,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-25 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета двадцать девятого января в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2031-01-29T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 166,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-11 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета двадцатого декабря в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2030-12-20T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 180,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-14 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского через два дня в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2030-09-16T11:20\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 184,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-16 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля двадцать первого января в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-01-21T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 185,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-23 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать третьего октября в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-10-23T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 212,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-06 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь занятие йогой десятого ноября в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Занятие йогой.\",\"params\":{\"title\":\"Занятие йогой\",\"starts_at\":\"2030-11-10T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 222,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-17 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь совещание через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Совещание.\",\"params\":{\"title\":\"Совещание\",\"starts_at\":\"2031-02-19T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 252,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-03 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь проверку отчёта через два месяца в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка отчёта.\",\"params\":{\"title\":\"Проверка отчёта\",\"starts_at\":\"2031-05-03T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 256,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-22 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать второго декабря в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-12-22T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 266,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-13 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2031-04-16T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 270,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-04 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь проверку отчёта через четыре дня в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка отчёта.\",\"params\":{\"title\":\"Проверка отчёта\",\"starts_at\":\"2030-09-08T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 271,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-04 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму седьмого января в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2031-01-07T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 275,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-12 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2031-01-14T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 281,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-11 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета двадцатого марта в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2031-03-20T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 319,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-26 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь разговор с бухгалтером через месяц в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разговор с бухгалтером.\",\"params\":{\"title\":\"Разговор с бухгалтером\",\"starts_at\":\"2031-05-26T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 343,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-21 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать первого апреля в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2031-04-21T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 344,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-18 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму двадцать шестого февраля в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2031-02-26T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 347,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-10 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь тренировку восемнадцатого ноября в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Тренировка.\",\"params\":{\"title\":\"Тренировка\",\"starts_at\":\"2030-11-18T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 352,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-28 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского сегодня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2030-11-28T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 353,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-14 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2030-10-16T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 360,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-06 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в полдень."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-02-09T12:00\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 369,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-25 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь тренировку через два месяца в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Тренировка.\",\"params\":{\"title\":\"Тренировка\",\"starts_at\":\"2031-05-25T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 389,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-07 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двенадцатого декабря в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-12-12T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 400,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-05-01 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля первого мая в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-05-01T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 403,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-30 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через два месяца в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2030-11-30T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 407,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-26 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета тридцатого марта в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2031-03-30T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 408,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-02 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля через два месяца в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-01-02T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 410,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-07 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через два месяца в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-03-07T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 421,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-23 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать третьего сентября в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-09-23T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 439,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-04 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь занятие йогой восьмого февраля в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Занятие йогой.\",\"params\":{\"title\":\"Занятие йогой\",\"starts_at\":\"2031-02-08T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 441,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-12 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета двадцать первого сентября в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2030-09-21T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 473,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-16 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь пробежку через два месяца в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Пробежка.\",\"params\":{\"title\":\"Пробежка\",\"starts_at\":\"2031-02-16T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 507,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-14 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через три дня в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2030-11-17T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 510,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-23 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через месяц в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-12-23T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 523,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-08 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной через два месяца в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-11-08T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 553,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-12 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2031-04-14T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 572,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-17 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля двадцать второго марта в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-03-22T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 576,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-20 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму двадцать восьмого марта в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2031-03-28T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 588,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-22 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой завтра в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-01-23T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 598,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-18 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля через месяц в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2030-10-18T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 610,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-08 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-12-11T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 621,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-13 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2031-01-16T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 622,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-12 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши покупку продуктов через три дня в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Покупка продуктов.\",\"params\":{\"title\":\"Покупка продуктов\",\"starts_at\":\"2031-02-15T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 639,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-22 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой завтра в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-04-23T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 642,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-09 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-10-12T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 655,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-11 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета двадцатого ноября в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2030-11-20T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 660,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-03 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь проверку отчёта через четыре дня в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка отчёта.\",\"params\":{\"title\":\"Проверка отчёта\",\"starts_at\":\"2030-12-07T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 673,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-26 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского сегодня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2031-02-26T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 686,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-07 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-04-10T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 702,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-03 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля третьего сентября в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2030-09-03T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 710,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-22 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать второго марта в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2031-03-22T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 712,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-02 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля второго декабря в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2030-12-02T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 713,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-08-25 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой завтра в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2030-08-26T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 725,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-28 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь разговор с бухгалтером второго ноября в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разговор с бухгалтером.\",\"params\":{\"title\":\"Разговор с бухгалтером\",\"starts_at\":\"2030-11-02T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 742,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-12 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь разговор с бухгалтером двенадцатого декабря в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разговор с бухгалтером.\",\"params\":{\"title\":\"Разговор с бухгалтером\",\"starts_at\":\"2030-12-12T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 756,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-09-26 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь тренировку двадцать девятого сентября в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Тренировка.\",\"params\":{\"title\":\"Тренировка\",\"starts_at\":\"2030-09-29T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 758,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-08-24 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать четвёртого августа в восемь утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-08-24T08:00\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 766,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-07 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двенадцатого ноября в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2030-11-12T11:20\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 787,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-16 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь пробежку двадцатого марта в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Пробежка.\",\"params\":{\"title\":\"Пробежка\",\"starts_at\":\"2031-03-20T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 795,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-10-06 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму девятого октября в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2030-10-09T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 797,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-25 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь тренировку двадцать восьмого декабря в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Тренировка.\",\"params\":{\"title\":\"Тренировка\",\"starts_at\":\"2030-12-28T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 818,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-04-27 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок английского через два месяца в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок английского.\",\"params\":{\"title\":\"Урок английского\",\"starts_at\":\"2031-06-27T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 824,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-08 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с командой через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с командой.\",\"params\":{\"title\":\"Созвон с командой\",\"starts_at\":\"2031-03-11T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 830,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-03-02 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши сервис автомобиля через месяц в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сервис автомобиля.\",\"params\":{\"title\":\"Сервис автомобиля\",\"starts_at\":\"2031-04-02T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 831,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-08 (суббота) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь тренировку через месяц в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Тренировка.\",\"params\":{\"title\":\"Тренировка\",\"starts_at\":\"2031-03-08T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 839,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-11-05 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму восьмого ноября в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2030-11-08T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 854,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-26 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь разговор с бухгалтером тридцать первого января в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разговор с бухгалтером.\",\"params\":{\"title\":\"Разговор с бухгалтером\",\"starts_at\":\"2031-01-31T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 855,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-09 (воскресенье) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета через два месяца в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2031-04-09T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 860,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-02-03 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши: поздравить маму шестого февраля в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поздравить маму.\",\"params\":{\"title\":\"Поздравить маму\",\"starts_at\":\"2031-02-06T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 864,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2031-01-21 (вторник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Анной двадцать первого января в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Анной.\",\"params\":{\"title\":\"Встреча с Анной\",\"starts_at\":\"2031-01-21T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 869,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2030-12-26 (четверг) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату интернета через месяц в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата интернета.\",\"params\":{\"title\":\"Оплата интернета\",\"starts_at\":\"2031-01-26T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 892,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v5_add_complete_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши ремонт насоса завтра в девять утра."
+        },
+        {
+          "role": "user",
+          "content": "На час, ценность двадцать пять единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Ремонт насоса.\",\"params\":{\"title\":\"Ремонт насоса\",\"starts_at\":\"2026-08-25T09:00\",\"duration_min\":60,\"value\":25}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 895,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v5_add_zero_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши инвентаризацию завтра в десять утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут, ценность ноль."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Инвентаризация.\",\"params\":{\"title\":\"Инвентаризация\",\"starts_at\":\"2026-08-25T10:00\",\"duration_min\":30,\"value\":0}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1007,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v6_duration_mixed",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-02-29 (вторник) 22:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши профилактику сети через три дня в семь утра."
+        },
+        {
+          "role": "user",
+          "content": "На четыре часа пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Профилактика сети.\",\"params\":{\"title\":\"Профилактика сети\",\"starts_at\":\"2028-03-03T07:00\",\"duration_min\":245}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1033,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v6_add_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2026-10-12 (понедельник) 13:20 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши выдачу заказа завтра в девять утра."
+        },
+        {
+          "role": "user",
+          "content": "На двадцать минут, ценность тридцать четыре единицы."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Выдача заказа.\",\"params\":{\"title\":\"Выдача заказа\",\"starts_at\":\"2026-10-13T09:00\",\"duration_min\":20,\"value\":34}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1036,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v6_add_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-01-31 (понедельник) 09:10 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь приём техники завтра в два часа дня."
+        },
+        {
+          "role": "user",
+          "content": "На час, ценность двести единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём техники.\",\"params\":{\"title\":\"Приём техники\",\"starts_at\":\"2028-02-01T14:00\",\"duration_min\":60,\"value\":200}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1038,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v6_add_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-02-29 (вторник) 22:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши приём смены завтра в семь утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут, ценность семьдесят единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём смены.\",\"params\":{\"title\":\"Приём смены\",\"starts_at\":\"2028-03-01T07:00\",\"duration_min\":30,\"value\":70}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1650,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v12_value_add",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-02-29 (вторник) 22:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запланируй приём расходников завтра в семь утра."
+        },
+        {
+          "role": "user",
+          "content": "На полчаса, ценность сорок восемь единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём расходников.\",\"params\":{\"title\":\"Приём расходников\",\"starts_at\":\"2028-03-01T07:00\",\"duration_min\":30,\"value\":48}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1655,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v12_value_add",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2026-10-12 (понедельник) 13:20 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь сверку оборудования послезавтра в четыре часа дня."
+        },
+        {
+          "role": "user",
+          "content": "На три четверти часа, ценность ноль."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка оборудования.\",\"params\":{\"title\":\"Сверка оборудования\",\"starts_at\":\"2026-10-14T16:00\",\"duration_min\":45,\"value\":0}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "train",
+    "line": 1858,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "v12_1_short_context",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2026-09-07 (понедельник) 15:00 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши чтение на завтра."
+        },
+        {
+          "role": "user",
+          "content": "В восемь вечера на четверть часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Чтение.\",\"params\":{\"title\":\"Чтение\",\"starts_at\":\"2026-09-08T20:00\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1",
+      "case_id": "T12112"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 43,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-23 (среда) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь консультацию двадцать восьмого апреля в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Консультация.\",\"params\":{\"title\":\"Консультация\",\"starts_at\":\"2036-04-28T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 51,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-05 (суббота) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь: забрать заказ через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Забрать заказ.\",\"params\":{\"title\":\"Забрать заказ\",\"starts_at\":\"2036-04-07T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 53,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-24 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши урок математики через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок математики.\",\"params\":{\"title\":\"Урок математики\",\"starts_at\":\"2036-04-27T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 63,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-10 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь приём у врача через два месяца в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём у врача.\",\"params\":{\"title\":\"Приём у врача\",\"starts_at\":\"2036-06-10T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 69,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-09 (воскресенье) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь встречу с Ильёй девятого марта в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Ильёй.\",\"params\":{\"title\":\"Встреча с Ильёй\",\"starts_at\":\"2036-03-09T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 80,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-09 (среда) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с дизайнером через месяц в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с дизайнером.\",\"params\":{\"title\":\"Созвон с дизайнером\",\"starts_at\":\"2036-05-09T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 85,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-02 (среда) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь оплату аренды шестого апреля в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата аренды.\",\"params\":{\"title\":\"Оплата аренды\",\"starts_at\":\"2036-04-06T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 87,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-18 (пятница) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши встречу с Ильёй восемнадцатого апреля в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Ильёй.\",\"params\":{\"title\":\"Встреча с Ильёй\",\"starts_at\":\"2036-04-18T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 92,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-13 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши оплату аренды семнадцатого марта в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата аренды.\",\"params\":{\"title\":\"Оплата аренды\",\"starts_at\":\"2036-03-17T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 104,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-19 (суббота) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь созвон с дизайнером через четыре дня в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На два часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с дизайнером.\",\"params\":{\"title\":\"Созвон с дизайнером\",\"starts_at\":\"2036-04-23T10:15\",\"duration_min\":120}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 121,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-22 (суббота) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши плавание двадцать пятого марта в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Плавание.\",\"params\":{\"title\":\"Плавание\",\"starts_at\":\"2036-03-25T09:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 123,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-14 (понедельник) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь урок математики сегодня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок математики.\",\"params\":{\"title\":\"Урок математики\",\"starts_at\":\"2036-04-14T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 124,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-31 (понедельник) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши приём у врача через три дня в девять тридцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём у врача.\",\"params\":{\"title\":\"Приём у врача\",\"starts_at\":\"2036-04-03T09:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 127,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-19 (среда) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши встречу с Ильёй через два месяца в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Ильёй.\",\"params\":{\"title\":\"Встреча с Ильёй\",\"starts_at\":\"2036-05-19T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 139,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-10 (понедельник) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши созвон с дизайнером завтра в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На тридцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с дизайнером.\",\"params\":{\"title\":\"Созвон с дизайнером\",\"starts_at\":\"2036-03-11T18:30\",\"duration_min\":30}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 156,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-27 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь презентацию четвёртого апреля в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Презентация.\",\"params\":{\"title\":\"Презентация\",\"starts_at\":\"2036-04-04T15:45\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 178,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-02-28 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь встречу с Ильёй двадцать восьмого февраля в два часа дня."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Ильёй.\",\"params\":{\"title\":\"Встреча с Ильёй\",\"starts_at\":\"2036-02-28T14:00\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 211,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-23 (воскресенье) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь оплату аренды двадцать седьмого марта в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Оплата аренды.\",\"params\":{\"title\":\"Оплата аренды\",\"starts_at\":\"2036-03-27T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 215,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-01 (суббота) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши приём у врача через три дня в шесть тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём у врача.\",\"params\":{\"title\":\"Приём у врача\",\"starts_at\":\"2036-03-04T18:30\",\"duration_min\":90}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 216,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-20 (воскресенье) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь приём у врача через месяц в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятнадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Приём у врача.\",\"params\":{\"title\":\"Приём у врача\",\"starts_at\":\"2036-05-20T11:20\",\"duration_min\":15}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 228,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-02-29 (пятница) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь созвон с дизайнером через два дня в три сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с дизайнером.\",\"params\":{\"title\":\"Созвон с дизайнером\",\"starts_at\":\"2036-03-02T15:45\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 230,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-03-06 (четверг) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь: забрать заказ через два дня в одиннадцать двадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На час."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Забрать заказ.\",\"params\":{\"title\":\"Забрать заказ\",\"starts_at\":\"2036-03-08T11:20\",\"duration_min\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 231,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "calendar_add_complete",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2036-04-28 (понедельник) 09:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Поставь встречу с Ильёй двадцать восьмого апреля в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с Ильёй.\",\"params\":{\"title\":\"Встреча с Ильёй\",\"starts_at\":\"2036-04-28T10:15\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 236,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v5_eval_add_complete_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши отгрузку завтра в семь вечера."
+        },
+        {
+          "role": "user",
+          "content": "На сорок минут, ценность восемьдесят единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Отгрузка.\",\"params\":{\"title\":\"Отгрузка\",\"starts_at\":\"2027-02-04T19:00\",\"duration_min\":40,\"value\":80}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 277,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v6_eval_value_add",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-12-30 (суббота) 20:40 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши настройку проектора завтра в восемь утра."
+        },
+        {
+          "role": "user",
+          "content": "На час, ценность шестьдесят единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Настройка проектора.\",\"params\":{\"title\":\"Настройка проектора\",\"starts_at\":\"2028-12-31T08:00\",\"duration_min\":60,\"value\":60}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 463,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v11_eval_h004_leap_day",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2076-02-28 (пятница) 09:40 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запланируй созвон с отделом завтра в десять пятнадцать утра."
+        },
+        {
+          "role": "user",
+          "content": "На двадцать пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Созвон с отделом.\",\"params\":{\"title\":\"Созвон с отделом\",\"starts_at\":\"2076-02-29T10:15\",\"duration_min\":25}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 466,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v11_eval_h004_leap_day",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2078-02-28 (понедельник) 15:50 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Назначь чтение документации завтра в четыре сорок пять дня."
+        },
+        {
+          "role": "user",
+          "content": "На сорок пять минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Чтение документации.\",\"params\":{\"title\":\"Чтение документации\",\"starts_at\":\"2078-03-01T16:45\",\"duration_min\":45}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 476,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "manual_v11_eval_h011_duration_twenty",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2049-12-10 (пятница) 18:15 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь разбор проекта завтра в восемь тридцать вечера."
+        },
+        {
+          "role": "user",
+          "content": "На один час двадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разбор проекта.\",\"params\":{\"title\":\"Разбор проекта\",\"starts_at\":\"2049-12-11T20:30\",\"duration_min\":80}}"
+        }
+      ],
+      "contract_version": "v12.1"
+    }
+  },
+  {
+    "source": "validation",
+    "line": 535,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "v12_1_short_context",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2028-02-28 (понедельник) 10:00 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши завтра к терапевту в полдень."
+        },
+        {
+          "role": "user",
+          "content": "На двадцать минут."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"К терапевту.\",\"params\":{\"title\":\"К терапевту\",\"starts_at\":\"2028-02-29T12:00\",\"duration_min\":20}}"
+        }
+      ],
+      "contract_version": "v12.1",
+      "case_id": "E12104"
+    }
+  },
+  {
+    "source": "regression_holdout",
+    "line": 7,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "holdout_calendar_add_next_month",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь смену на заводе первого числа следующего месяца в восемь утра."
+        },
+        {
+          "role": "user",
+          "content": "На двенадцать часов."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Смена на заводе.\",\"params\":{\"title\":\"Смена на заводе\",\"starts_at\":\"2027-03-01T08:00\",\"duration_min\":720}}"
+        }
+      ],
+      "contract_version": "v12.1",
+      "case_id": "H010"
+    }
+  },
+  {
+    "source": "regression_holdout",
+    "line": 44,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "holdout_v5_add_complete_value",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Запиши поезд до Сызрани послезавтра в шесть сорок утра."
+        },
+        {
+          "role": "user",
+          "content": "На пятьдесят пять минут, ценность тридцать единиц."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Поезд до Сызрани.\",\"params\":{\"title\":\"Поезд до Сызрани\",\"starts_at\":\"2027-02-05T06:40\",\"duration_min\":55,\"value\":30}}"
+        }
+      ],
+      "contract_version": "v12.1",
+      "case_id": "H050"
+    }
+  },
+  {
+    "source": "regression_holdout",
+    "line": 60,
+    "reason": "calendar_runtime_sends_one_user_message",
+    "record": {
+      "category": "v12_1_short_context",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Сегодня дата и время:2027-12-31 (пятница) 21:00 Europe/Samara ответ JSON"
+        },
+        {
+          "role": "user",
+          "content": "Добавь завтра уборку в десять утра."
+        },
+        {
+          "role": "user",
+          "content": "На полтора часа, ценность ноль."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"intent\":\"calendar_add\",\"reply\":\"Уборка.\",\"params\":{\"title\":\"Уборка\",\"starts_at\":\"2028-01-01T10:00\",\"duration_min\":90,\"value\":0}}"
+        }
+      ],
+      "contract_version": "v12.1",
+      "case_id": "H12103"
+    }
+  }
+]

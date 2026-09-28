@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "date": "2026-09-28",
+  "total_tests": 57,
+  "runs": [
+    {
+      "working_directory": ".",
+      "command": "python -X utf8 -B -m unittest discover -s tools/calendar_sft -p test_v12_61_dataset.py",
+      "tests": 13,
+      "exit_code": 0
+    },
+    {
+      "working_directory": "tools/calendar_sft",
+      "command": "python -X utf8 -B -m unittest test_dataset_contract test_dataset_provenance test_train_qlora",
+      "tests": 44,
+      "exit_code": 0
+    }
+  ],
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN",
+  "gguf": "NOT_RUN",
+  "device": "NOT_RUN"
+}

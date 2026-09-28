@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.61-manual-repair",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-09-28",
+    "decision_evidence": "Owner approved manual V12.61 repairs and all 1440 clock combinations; existing rules remain unchanged."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "dfc806c3bb4b8ecafa64b074849f77829466244071eddc47afeba0cd5a5bdb45"
+    },
+    "validation": {
+      "sha256": "cff413d637913efc888eb936164054c29d175bbe442cd26ff76d9ef5a7363a60"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_order_coverage/provenance.json and docs/calendar_v12_61_manual",
+      "rights_evidence": "Existing approved project examples plus literal AI-authored fictional conversations manually written in this task; no external corpus or personal records.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}
