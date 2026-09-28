@@ -30,7 +30,59 @@ data class CalendarEventDraftUiState(
     val isVoiceInputActive: Boolean = false,
     val notes: String? = null,
     val endsAt: String? = null,
+    val chatId: String = "calendar",
+    val createdAtEpochMillis: Long = System.currentTimeMillis(),
+    val fieldInputs: Map<CalendarEventField, String> = emptyMap(),
+    val savedEventId: String? = null,
+    val saveRequested: Boolean = false,
+    val isSaving: Boolean = false,
+    val formattingField: CalendarEventField? = null,
 ) {
+    val isEditable: Boolean get() = savedEventId == null && !saveRequested && !isSaving
+
+    fun fieldText(field: CalendarEventField): String = fieldInputs[field] ?: when (field) {
+        CalendarEventField.Title -> title
+        CalendarEventField.Date -> date
+        CalendarEventField.Time -> time
+        CalendarEventField.DurationMinutes -> durationMinutes?.toString() ?: inferredDuration()?.toString()
+        CalendarEventField.Value -> value?.toString()
+    }.orEmpty()
+
+    private fun inferredDuration(): Int? = runCatching {
+        val startDate = fieldInputs[CalendarEventField.Date] ?: date
+        val startTime = fieldInputs[CalendarEventField.Time] ?: time
+        val start = if (startDate.isNullOrBlank() || startTime.isNullOrBlank()) null
+            else CalendarTime.dateTime("${startDate.trim()}T${startTime.trim()}")
+        CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, ZoneId.systemDefault())
+    }.getOrNull()
+
+    val missingFields: List<CalendarEventField>
+        get() = CalendarEventField.entries.filter { fieldText(it).isBlank() }
+
+    /** Validate every edited field together; never silently save an older valid value. */
+    fun resolveInputs(): CalendarEventDraftUiState {
+        fun text(field: CalendarEventField) = fieldText(field).trim().ifEmpty { null }
+        val dateText = text(CalendarEventField.Date)
+        val timeText = text(CalendarEventField.Time)
+        dateText?.let { require(runCatching { CalendarTime.date(it) }.isSuccess) { "Введите существующую дату в формате ГГГГ-ММ-ДД." } }
+        timeText?.let { require(runCatching { CalendarTime.time(it) }.isSuccess) { "Введите время от 00:00 до 23:59 в формате ЧЧ:ММ." } }
+        val durationText = text(CalendarEventField.DurationMinutes)
+        val valueText = text(CalendarEventField.Value)
+        val scheduleChanged = fieldInputs.any { (field, input) ->
+            (field == CalendarEventField.DurationMinutes ||
+                (startsAt != null && field in setOf(CalendarEventField.Date, CalendarEventField.Time))) &&
+                input.trim() != copy(fieldInputs = emptyMap()).fieldText(field)
+        }
+        return copy(
+            title = text(CalendarEventField.Title), date = dateText, time = timeText,
+            durationMinutes = durationText?.let {
+                requireNotNull(it.toIntOrNull()) { "Длительность должна быть целым числом минут." }
+            },
+            value = valueText?.let { requireNotNull(it.toLongOrNull()) { "Ценность должна быть целым числом." } },
+            endsAt = endsAt.takeUnless { scheduleChanged }, fieldInputs = emptyMap(),
+        ).withNextField()
+    }
+
     val startsAt: String?
         get() = if (date.isNullOrBlank() || time.isNullOrBlank()) null else "$date" + "T" + "$time"
 

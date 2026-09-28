@@ -95,6 +95,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -152,7 +153,7 @@ import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
-import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
+import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
 import com.example.aiassistent1.presentation.viewmodel.CalendarDeleteTargetSelectionUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateField
 import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateDraftUiState
@@ -187,6 +188,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
+    var pendingCalendarMicrophone by remember { mutableStateOf<Pair<String, CalendarEventField>?>(null) }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showConferences by rememberSaveable { mutableStateOf(false) }
     val audioActivity by viewModel.audioActivity.collectAsStateWithLifecycle()
@@ -277,6 +279,11 @@ fun ChatScreen(
                 null -> Unit
             }
         }
+    }
+    val calendarMicrophonePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val target = pendingCalendarMicrophone
+        pendingCalendarMicrophone = null
+        if (granted && target != null) viewModel.startCalendarDraftVoiceInput(target.first, target.second)
     }
 
     val requestMicrophoneAction: (MicrophoneAction) -> Unit = { action ->
@@ -830,6 +837,18 @@ fun ChatScreen(
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    val pendingDraftCount = uiState.calendarDrafts.drafts.count {
+                        it.chatId == uiState.activeChatId && it.savedEventId == null
+                    }
+                    if (pendingDraftCount > 0) {
+                        TextButton(onClick = viewModel::showCalendarDrafts, modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Text("Черновики · $pendingDraftCount")
+                        }
+                    }
+                    uiState.calendarDrafts.storageError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
+                        TextButton(onClick = viewModel::retryCalendarDraftStorage) { Text("Повторить сохранение черновиков") }
+                    }
                     val modelState = uiState.modelState
 
                     if (modelState is ModelState.Importing) {
@@ -903,6 +922,12 @@ fun ChatScreen(
                                     },
                                     onSpeak = viewModel::speakMessage,
                                 )
+                                uiState.calendarDrafts.drafts.firstOrNull { it.requestId == message.id }?.let { draft ->
+                                    CalendarDraftCard(
+                                        draft = draft, onOpen = { viewModel.openCalendarDraft(draft.requestId) },
+                                        modifier = Modifier.padding(top = 8.dp),
+                                    )
+                                }
                             }
                         }
                     }
@@ -1125,12 +1150,31 @@ fun ChatScreen(
     }
 
     uiState.calendarEventDraft?.let { draft ->
-        CalendarEventDraftDialog(
-            draft = draft,
-            onValueChange = viewModel::updateCalendarDraftInput,
-            onSubmit = viewModel::submitCalendarDraftField,
-            onVoiceInput = viewModel::startCalendarDraftVoiceInput,
-            onDismiss = viewModel::cancelCalendarEventDraft,
+        key(draft.requestId) {
+            CalendarDraftEditorSheet(
+                draft = draft,
+                onValueChange = { field, value -> viewModel.updateCalendarDraftField(draft.requestId, field, value) },
+                onNotesChange = { viewModel.updateCalendarDraftNotes(draft.requestId, it) },
+                onFormat = { viewModel.formatCalendarDraftField(draft.requestId, it) },
+                onVoiceInput = { field ->
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        viewModel.startCalendarDraftVoiceInput(draft.requestId, field)
+                    } else {
+                        pendingCalendarMicrophone = draft.requestId to field
+                        calendarMicrophonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
+                onCreate = { viewModel.createCalendarDraftEvent(draft.requestId) },
+                onDelete = { viewModel.discardCalendarDraft(draft.requestId) },
+                onDismiss = viewModel::closeCalendarDraftEditor,
+                storageError = uiState.calendarDrafts.storageError,
+            )
+        }
+    }
+    if (uiState.calendarDrafts.showList) {
+        CalendarDraftListSheet(
+            drafts = uiState.calendarDrafts.drafts.filter { it.chatId == uiState.activeChatId && it.savedEventId == null },
+            onOpen = viewModel::openCalendarDraft, onDismiss = viewModel::closeCalendarDraftEditor,
         )
     }
 
@@ -1255,88 +1299,6 @@ fun ChatScreen(
             }
         )
     }
-}
-
-@Composable
-private fun CalendarEventDraftDialog(
-    draft: CalendarEventDraftUiState,
-    onValueChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onVoiceInput: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(if (draft.isComplete) "Создать событие?" else "Заполните данные события")
-                Text(
-                    LocalUserDateTimeFormatter.current.todayLabel(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text("Создаём новое событие", style = MaterialTheme.typography.labelLarge)
-                Text("Название: ${draft.title ?: "не указано"}")
-                Text("Дата: ${draft.date?.let(LocalUserDateTimeFormatter.current::value) ?: "не указана"}")
-                Text("Время: ${draft.time ?: "не указано"}")
-                Text("Длительность: ${draft.durationMinutes?.let { "$it мин" } ?: "не указана"}")
-                Text("Окончание события: ${draft.endDisplayText()?.let(LocalUserDateTimeFormatter.current::value) ?: "не указано"}")
-                Text("Ценность: ${draft.value ?: "не указана"}")
-                CalendarNotesText(draft.notes)
-
-                if (!draft.isComplete) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    val field = requireNotNull(draft.activeField)
-                    Text(field.label, style = MaterialTheme.typography.labelLarge)
-                    OutlinedTextField(
-                        value = draft.input,
-                        onValueChange = onValueChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        enabled = !draft.isFormatting,
-                        isError = draft.error != null,
-                        supportingText = draft.error?.let { { Text(it) } },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = onVoiceInput,
-                                enabled = !draft.isFormatting && !draft.isVoiceInputActive,
-                            ) {
-                                Icon(
-                                    imageVector = if (draft.isVoiceInputActive) Icons.Filled.MicOff else Icons.Filled.Mic,
-                                    contentDescription = "Голосовой ввод поля ${field.label}",
-                                )
-                            }
-                        },
-                    )
-                    if (draft.isFormatting) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Форматирование значения…")
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onSubmit,
-                enabled = !draft.isFormatting && (draft.isComplete || draft.input.isNotBlank()),
-            ) {
-                Text(if (draft.isComplete) "Создать событие" else "Далее")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Отмена")
-            }
-        },
-    )
 }
 
 @Composable

@@ -26,7 +26,7 @@ data class ChatUiState(
     val isFloatingControlPositionsLoaded: Boolean = false,
     val modelState: ModelState = ModelState.Unloaded,
     val modelAvailability: ModelAvailability = ModelAvailability.Checking,
-    val calendarEventDraft: CalendarEventDraftUiState? = null,
+    val calendarDrafts: CalendarDraftsState = CalendarDraftsState(),
     val calendarUpdateDraft: CalendarUpdateDraftUiState? = null,
     val calendarUpdateTargetSelection: CalendarUpdateTargetSelectionUiState? = null,
     val calendarDeleteTargetSelection: CalendarDeleteTargetSelectionUiState? = null,
@@ -52,4 +52,5 @@ data class ChatUiState(
     val modelParams: GenerationParams = GenerationParams(),
 ) {
     val isCalendarMode: Boolean get() = activeChatId == "calendar"
+    val calendarEventDraft: CalendarEventDraftUiState? get() = calendarDrafts.selected
 }

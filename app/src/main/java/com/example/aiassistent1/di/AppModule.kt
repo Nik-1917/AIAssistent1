@@ -55,6 +55,9 @@ object AppModule {
 	private var voiceDraftRepository: VoiceDraftRepository? = null
 
 	@Volatile
+	private var calendarDraftRepository: CalendarDraftRepository? = null
+
+	@Volatile
 	private var settingsRepository: SettingsRepository? = null
 
 	@Volatile
@@ -246,6 +249,11 @@ object AppModule {
 	fun provideChatRepository(context: Context): ChatRepository = RoomChatRepository(
 		provideChatDatabase(context).chatMessageDao(),
 	)
+
+	fun provideCalendarDraftRepository(context: Context): CalendarDraftRepository = calendarDraftRepository ?: synchronized(this) {
+		calendarDraftRepository ?: DataStoreCalendarDraftRepository(context.applicationContext.calendarDraftStore())
+			.also { calendarDraftRepository = it }
+	}
 
 	fun provideNoteRepository(context: Context): NoteRepository = noteRepository ?: synchronized(this) {
 		noteRepository ?: RoomNoteRepository(

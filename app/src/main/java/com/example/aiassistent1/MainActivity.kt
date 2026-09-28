@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
                     llmEngine = llmEngine,
                     voiceInput = AppModule.provideVoiceInputProvider(applicationContext),
                     voiceDraftRepository = AppModule.provideVoiceDraftRepository(applicationContext),
+                    calendarDraftRepository = AppModule.provideCalendarDraftRepository(applicationContext),
                     speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
                     settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                     searchCalendarEvents = AppModule.provideSearchCalendarEventsUseCase(applicationContext),
