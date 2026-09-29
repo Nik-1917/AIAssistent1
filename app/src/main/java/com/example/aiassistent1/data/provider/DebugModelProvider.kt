@@ -21,7 +21,7 @@ class DebugModelProvider(
             }
 
             require(modelFile.canRead()) {
-                "Файл найден, но система запрещает его чтение. Проверьте разрешения приложения."
+                "Файл модели найден, но недоступен для чтения."
             }
             
             require(modelFile.length() > 0L) {
