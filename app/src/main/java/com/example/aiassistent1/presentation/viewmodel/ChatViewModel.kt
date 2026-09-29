@@ -53,7 +53,6 @@ import com.example.aiassistent1.presentation.playback.SpeechStopReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,6 +101,7 @@ class ChatViewModel(
         SpeechPlaybackController(context, it)
     }
     private var generationJob: Job? = null
+    private val pendingChatMessages = PendingChatMessages()
     private var activeChatJob: Job? = null
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
@@ -479,7 +479,7 @@ class ChatViewModel(
                 mutableUiState.update { it.copy(error = "Сообщение не должно превышать 3000 символов") }
                 return false
             }
-            state.isProcessing -> return false
+            state.isProcessing || state.isStopping -> return false
         }
 
         stopVoiceInput()
@@ -490,6 +490,7 @@ class ChatViewModel(
             content = trimmedText,
             chatId = state.activeChatId
         )
+        pendingChatMessages.put(userMessage)
         mutableUiState.update { currentState ->
             currentState.copy(
                 messages = currentState.messages + userMessage,
@@ -511,6 +512,7 @@ class ChatViewModel(
     ) {
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
+            var responseWriter: ChatResponseWriter? = null
             var backgroundSession: GenerationForegroundService.Session? = null
             try {
                 backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
@@ -537,21 +539,19 @@ class ChatViewModel(
                     content = "",
                     chatId = currentState.activeChatId
                 )
-                mutableUiState.update { state ->
-                    if (state.activeChatId == currentState.activeChatId) {
-                        state.copy(messages = state.messages + assistantMessage!!)
-                    } else state
-                }
-
-                response.collect { delta ->
-                    val currentAssistantMessage = assistantMessage ?: return@collect
-                    val updatedAssistantMessage = currentAssistantMessage.copy(
-                        content = currentAssistantMessage.content + delta,
-                    )
-                    withContext(Dispatchers.IO) { chatRepository.saveMessage(updatedAssistantMessage) }
-                    assistantMessage = updatedAssistantMessage
-                    updateMessage(updatedAssistantMessage)
-                }
+                updateMessage(assistantMessage!!, isStreaming = true)
+                val writer = ChatResponseWriter(
+                    initialMessage = assistantMessage!!,
+                    saveMessage = { message ->
+                        withContext(Dispatchers.IO) { chatRepository.saveMessage(message) }
+                    },
+                    onMessageChanged = { message, isStreaming ->
+                        assistantMessage = message
+                        updateMessage(message, isStreaming)
+                    },
+                )
+                responseWriter = writer
+                writer.collect(response)
 
                 // Сохраняем в БД только если есть контент
                 val finalMessage = assistantMessage
@@ -592,17 +592,14 @@ class ChatViewModel(
                                 finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте изменить запрос.")
                             }
 
-                            // Обновляем UI как для разобранного ответа, так и для фолбэка при ошибке парсинга
-                            assistantMessage = messageToSave
-                            updateMessage(messageToSave)
-
-                            withContext(Dispatchers.IO) { chatRepository.saveMessage(messageToSave) }
+                            // Финальная запись следует после всех контрольных точек сырого JSON.
+                            writer.complete(messageToSave)
 
                             if (parsed != null) {
                                 handleParsedResponse(parsed, messageToSave.id, lastUserMessageContent)
                             }
                         } else {
-                            withContext(Dispatchers.IO) { chatRepository.saveMessage(finalMessage) }
+                            writer.complete(finalMessage)
                         }
                     } else {
                         // Если сообщение пустое после завершения (например, сброс), удаляем из UI
@@ -627,26 +624,25 @@ class ChatViewModel(
                     }
                 }
             } catch (error: CancellationException) {
-                assistantMessage?.let { partialMessage ->
-                    if (partialMessage.content.isBlank()) {
-                        mutableUiState.update { state ->
-                            state.copy(messages = state.messages.filterNot { it.id == partialMessage.id })
-                        }
-                    } else {
-                        val interruptedMessage = partialMessage.copy(isInterrupted = true)
-                        updateMessage(interruptedMessage)
-                        withContext(NonCancellable + Dispatchers.IO) {
-                            chatRepository.saveMessage(interruptedMessage)
-                        }
-                    }
-                }
                 throw error
             } catch (error: Exception) {
                 mutableUiState.update { it.copy(error = error.userMessage()) }
             } finally {
+                try {
+                    // No-op after a successful final write; also flushes the tail on ordinary errors.
+                    responseWriter?.interrupt()
+                } catch (storageError: Exception) {
+                    mutableUiState.update { state ->
+                        state.copy(error = listOfNotNull(
+                            state.error,
+                            "Не удалось сохранить ответ: ${storageError.userMessage()}",
+                        ).joinToString("\n"))
+                    }
+                }
                 // Финальная проверка: если в списке осталось пустое сообщение, удаляем его
                 assistantMessage?.let { final ->
                     if (final.content.isBlank()) {
+                        pendingChatMessages.remove(final.id)
                         mutableUiState.update { state ->
                             state.copy(messages = state.messages.filterNot { it.id == final.id })
                         }
@@ -694,6 +690,7 @@ class ChatViewModel(
 
     fun deleteMessage(id: String) {
         viewModelScope.launch {
+            pendingChatMessages.remove(id)
             // Сначала немедленно удаляем из UI
             mutableUiState.update { it.copy(messages = it.messages.filterNot { it.id == id }) }
             // Затем удаляем из базы данных
@@ -705,7 +702,7 @@ class ChatViewModel(
 
     fun retry() {
         val state = uiState.value
-        if (state.isProcessing) return
+        if (state.isProcessing || state.isStopping) return
 
         setVoiceMode(false)
         
@@ -718,6 +715,7 @@ class ChatViewModel(
         viewModelScope.launch {
             // Удаляем из БД сообщения после последнего пользовательского
             val messagesToDelete = state.messages.drop(lastUserMessageIndex + 1)
+            messagesToDelete.forEach { pendingChatMessages.remove(it.id) }
             withContext(Dispatchers.IO) {
                 messagesToDelete.forEach { chatRepository.deleteMessage(it.id) }
             }
@@ -833,11 +831,12 @@ class ChatViewModel(
 
         viewModelScope.launch {
             activeGeneration?.join()
+            pendingChatMessages.clear(state.activeChatId)
             withContext(Dispatchers.IO) { chatRepository.deleteAllMessages(state.activeChatId) }
             settingsRepository.setChatScrollPosition(ChatScrollPosition())
             mutableUiState.update {
                 it.copy(
-                    messages = emptyList(),
+                    messages = if (it.activeChatId == state.activeChatId) emptyList() else it.messages,
                     isProcessing = false,
                     isVoiceMode = false,
                     voiceDraft = it.voiceDraft.copy(isVisible = false, isRecording = false),
@@ -1794,18 +1793,15 @@ class ChatViewModel(
             try {
                 ObserveAppSessionUseCase(settingsRepository, chatRepository)().collect { session ->
                     if (uiState.value.activeChatId != session.navigation.chatId) closeCalendarDraftEditor()
+                    val messages = pendingChatMessages.merge(session.navigation.chatId, session.messages)
                     mutableUiState.update { state ->
-                        val persistedIds = session.messages.mapTo(mutableSetOf()) { it.id }
-                        val pendingMessages = if (state.activeChatId == session.navigation.chatId) {
-                            state.messages.filterNot { it.id in persistedIds }
-                        } else emptyList()
                         state.copy(
                             navigationState = session.navigation,
                             systemPromptEnabled = session.navigation.isCalendarMode,
                             activeChatId = session.navigation.chatId,
                             calendarDeleteTargetSelection = state.calendarDeleteTargetSelection
                                 .takeIf { state.activeChatId == session.navigation.chatId },
-                            messages = session.messages + pendingMessages,
+                            messages = messages,
                             isHistoryLoaded = true,
                             chatScrollPosition = session.scrollPosition,
                             isChatScrollPositionLoaded = true,
@@ -1830,16 +1826,20 @@ class ChatViewModel(
         }
     }
 
-    private fun updateMessage(message: ChatMessage) {
+    private fun updateMessage(message: ChatMessage, isStreaming: Boolean = false) {
+        pendingChatMessages.put(message, isStreaming)
         mutableUiState.update { state ->
-            state.copy(messages = state.messages.map { current ->
-                if (current.id == message.id) message else current
+            if (state.activeChatId != message.chatId) state
+            else state.copy(messages = if (state.messages.any { it.id == message.id }) {
+                state.messages.map { current -> if (current.id == message.id) message else current }
+            } else {
+                state.messages + message
             })
         }
     }
 
     private suspend fun replaceAssistantReply(messageId: String, reply: String) {
-        val originalMessage = mutableUiState.value.messages
+        val originalMessage = pendingChatMessages.find(messageId) ?: mutableUiState.value.messages
             .firstOrNull { it.id == messageId }
             // A calendar command can finish after the user has switched to the other chat.
             ?: withContext(Dispatchers.IO) {
