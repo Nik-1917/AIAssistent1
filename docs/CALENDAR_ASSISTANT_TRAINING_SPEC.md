@@ -1,5 +1,29 @@
 # Calendar Assistant: training contract
 
+## V12.62: complete clock pronunciation in reply
+
+For V12.62 data preparation, use the
+[complete reply clock rules](CALENDAR_ASSISTANT_V12_62_REPLY_CLOCK.md)
+for every minute of every hour: all 1,440 values from `00:00` to `23:59`.
+Only the pronunciation of known event times inside `reply` is affected.
+Known event times are spoken; missing times are never invented.
+
+At `:00`, retain the existing whole-hour wording. At `:01` through `:29`,
+name the elapsed minutes of the upcoming hour, with `в четверть ...` at
+`:15`. At `:30`, use `в половине ...`. At every minute `:31` through `:59`,
+name the remaining `60 - minute` minutes with `без ...` and the upcoming
+hour: `12:31` is `без двадцати девяти минут час`, and `12:59` is
+`без одной минуты час`. Use `без четверти ...` at `:45`; the user-requested
+short form at `:50` is `без десяти ...`. Never round or substitute `:30`
+for `:15`. Apply the documented Russian case and number agreement.
+
+This V12.62 wording takes precedence over older reply clock variants below
+only for new V12.62 targets. It does not alter time extraction, daypart
+resolution, input messages, `intent`, `params`, exact title copies,
+durations, relative delays, interval dates, or historical datasets.
+These authoring rules are not automatically inserted into the model prompt;
+the corresponding target replies must be present in the training data.
+
 ## Active input-order and single-event rules
 
 **Input parameters may appear in any order and in any supported combination.**

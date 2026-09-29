@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "max_seq_length": 256,
+  "total_rows": 5127,
+  "truncated_rows": 0,
+  "assistant_only_mask": "PASS",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 131,
+      "changed_rows": 4,
+      "changed_max_tokens": 131,
+      "sha256": "16bc7c384622505631f0b16c15e8175aaa1a60d9673d58bef9fbac28dc5ac0be"
+    },
+    "context_transfer_eval.jsonl": {
+      "rows": 132,
+      "max_tokens": 189,
+      "changed_rows": 3,
+      "changed_max_tokens": 138,
+      "sha256": "6b156f74d530b7c91f6ae87c3f2209fe5784bc1fa6648decc575e2743bba2376"
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 169,
+      "changed_rows": 0,
+      "changed_max_tokens": null,
+      "sha256": "cbced8f2401f00cd4e216e71829f967d8048f895e081211d14b052b895bd9b28"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 140,
+      "changed_rows": 36,
+      "changed_max_tokens": 140,
+      "sha256": "093a5159402f53345f7db3041e9b67e7a5e3486edc3135db13416f0459a83a02"
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "max_tokens": 176,
+      "changed_rows": 0,
+      "changed_max_tokens": null,
+      "sha256": "ef7c5d0a994e41c0566f9f5e96a6c627cf77a6d2899e2be192623df5b2eb2b61"
+    },
+    "last_event_holdout.jsonl": {
+      "rows": 6,
+      "max_tokens": 179,
+      "changed_rows": 0,
+      "changed_max_tokens": null,
+      "sha256": "a90840f4e7af67d179516a343e1a6f0b32b508dce106915d933182bae26179cc"
+    },
+    "order_holdout.jsonl": {
+      "rows": 43,
+      "max_tokens": 185,
+      "changed_rows": 0,
+      "changed_max_tokens": null,
+      "sha256": "89dda5833b9b9c38e35b689923109861fc94733f26a94e86eebb13c782e7f403"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 60,
+      "max_tokens": 184,
+      "changed_rows": 13,
+      "changed_max_tokens": 144,
+      "sha256": "5e0985dd0be07ec9af926d9523f700cc518f7be73a0291fe58e3637091b175f6"
+    },
+    "speech_holdout.jsonl": {
+      "rows": 28,
+      "max_tokens": 209,
+      "changed_rows": 0,
+      "changed_max_tokens": null,
+      "sha256": "adae6c722356e540d2f155484f5f025e703818f8463f3109508c13d8894aadd8"
+    },
+    "train.jsonl": {
+      "rows": 4096,
+      "max_tokens": 256,
+      "changed_rows": 526,
+      "changed_max_tokens": 201,
+      "sha256": "112d9d8c9477e9bdf9a74e2071bb5f0acc6445d548806e372d0b066cbe12d365"
+    },
+    "validation.jsonl": {
+      "rows": 670,
+      "max_tokens": 206,
+      "changed_rows": 167,
+      "changed_max_tokens": 170,
+      "sha256": "0e2d265796f28b1505f9c2c30c8ce481e6d42782ed956023ec1aca7e0292b42b"
+    }
+  },
+  "failures": [],
+  "weights_loaded": false,
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}

@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.62-reply-clock",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-09-29",
+    "decision_evidence": "Owner approved complete 1440 reply clock coverage, a narrow rule clarification, and explicitly requested training. Only model reply targets change."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "112d9d8c9477e9bdf9a74e2071bb5f0acc6445d548806e372d0b066cbe12d365"
+    },
+    "validation": {
+      "sha256": "0e2d265796f28b1505f9c2c30c8ce481e6d42782ed956023ec1aca7e0292b42b"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_61/provenance.json and docs/calendar_v12_62_manual",
+      "rights_evidence": "Existing approved fictional project examples and complete literal AI-authored reply strings manually reviewed in this task; no external corpus or personal records.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

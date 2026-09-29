@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "version": "v12.62",
+  "rows": {
+    "calendar_holdout_v12_2": 8,
+    "context_transfer_eval": 132,
+    "half_hour_holdout": 36,
+    "holdout": 36,
+    "interval_holdout": 12,
+    "last_event_holdout": 6,
+    "order_holdout": 43,
+    "regression_holdout": 60,
+    "speech_holdout": 28,
+    "train": 4096,
+    "validation": 670
+  },
+  "changed_replies": {
+    "calendar_holdout_v12_2": 4,
+    "context_transfer_eval": 3,
+    "train": 526,
+    "holdout": 36,
+    "regression_holdout": 13,
+    "validation": 167
+  },
+  "total_changed_replies": 749,
+  "manual_literal_groups": 476,
+  "title_only_rows_repaired": 700,
+  "base_clock_input_and_reply_matches": 1440,
+  "model_inputs_unchanged": true,
+  "intent_and_params_unchanged": true,
+  "json_schema": "v12.57",
+  "historical_contract_metadata_promoted_rows": 700,
+  "leakage_checks": "PASS",
+  "tokenization": "NOT_RUN",
+  "training": "NOT_RUN",
+  "model_evaluation": "NOT_RUN"
+}
