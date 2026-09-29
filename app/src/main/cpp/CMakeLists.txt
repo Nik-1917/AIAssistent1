@@ -32,3 +32,7 @@ target_link_libraries(assistant_audio mp3lame log m)
 # Reuse the ORT shared object already inside Sherpa; never package a second ORT AAR.
 add_library(assistant_metric_kws SHARED metric_kws_jni.cpp)
 target_link_libraries(assistant_metric_kws dl)
+
+# Токенизация использует libllama.so из Llamatik без второй библиотеки инференса и копии весов.
+add_library(assistant_llm_context SHARED llm_context_jni.cpp)
+target_link_libraries(assistant_llm_context dl)

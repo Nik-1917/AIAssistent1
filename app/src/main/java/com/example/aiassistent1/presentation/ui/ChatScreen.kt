@@ -148,6 +148,7 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.context.ContextWindowPolicy
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -957,6 +958,9 @@ fun ChatScreen(
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
                     InputPanel(
+                        text = uiState.messageDraft,
+                        onTextChange = viewModel::updateMessageDraft,
+                        maxMessageLength = uiState.modelParams.maxMessageLength,
                         textInputEnabled = !uiState.isProcessing &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
@@ -1132,6 +1136,7 @@ fun ChatScreen(
     if (showSettingsDialog) {
         ModelSettingsDialog(
             params = uiState.modelParams,
+            contextBudget = uiState.contextBudget,
             compactDatesEnabled = uiState.compactDatesEnabled,
             onCompactDatesChange = viewModel::setCompactDatesEnabled,
             smoothResponseEnabled = uiState.smoothResponseEnabled,
@@ -1899,6 +1904,9 @@ private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun InputPanel(
+    text: String,
+    onTextChange: (String) -> Unit,
+    maxMessageLength: Int,
     textInputEnabled: Boolean,
     microphoneEnabled: Boolean,
     isProcessing: Boolean,
@@ -1908,8 +1916,8 @@ private fun InputPanel(
     onVoiceTap: () -> Unit,
     onVoiceLongPress: () -> Unit,
 ) {
-    var text by remember { mutableStateOf("") }
-    val canSend = textInputEnabled && text.trim().isNotEmpty()
+    val exceedsLimit = text.length > maxMessageLength
+    val canSend = textInputEnabled && text.trim().isNotEmpty() && !exceedsLimit
     val isKeyboardVisible = WindowInsets.isImeVisible
 
     Row(
@@ -1922,7 +1930,8 @@ private fun InputPanel(
     ) {
         OutlinedTextField(
             value = text,
-            onValueChange = { text = it.take(MAX_MESSAGE_LENGTH) },
+            onValueChange = onTextChange,
+            isError = exceedsLimit,
             modifier = Modifier
                 .weight(1f)
                 .offset(y = 0.dp),
@@ -1935,7 +1944,8 @@ private fun InputPanel(
             placeholder = { Text("Сообщение") },
             supportingText = {
                 Text(
-                    text = "${text.length}/$MAX_MESSAGE_LENGTH",
+                    text = if (exceedsLimit) "${text.length}/$maxMessageLength — сократите текст или увеличьте лимит"
+                        else "${text.length}/$maxMessageLength",
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
                     fontSize = 12.sp,
@@ -1948,7 +1958,6 @@ private fun InputPanel(
                 onSend = {
                     if (canSend) {
                         onSend(text)
-                        text = ""
                     }
                 }
             )
@@ -1973,7 +1982,6 @@ private fun InputPanel(
                     enabled = canSend,
                     onClick = {
                         onSend(text)
-                        text = ""
                     },
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
@@ -2137,6 +2145,7 @@ private fun VoiceMicrophoneButton(
 @Composable
 fun ModelSettingsDialog(
     params: GenerationParams,
+    contextBudget: com.example.aiassistent1.domain.context.ContextBudget? = null,
     compactDatesEnabled: Boolean,
     onCompactDatesChange: (Boolean) -> Unit,
     smoothResponseEnabled: Boolean,
@@ -2153,8 +2162,10 @@ fun ModelSettingsDialog(
     voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
 ) {
     var temperature by remember { mutableStateOf(params.temperature) }
-    var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
-    var maxTokens by remember { mutableStateOf(params.maxTokens.toFloat()) }
+    var contextSize by remember(params.contextSize) { mutableStateOf(GenerationParams.normalizeContextSize(params.contextSize)) }
+    var maxContextSize by remember(params.maxContextSize) { mutableStateOf(GenerationParams.normalizeContextSize(params.maxContextSize)) }
+    var autoContextEnabled by remember(params.autoContextEnabled) { mutableStateOf(params.autoContextEnabled) }
+    var maxMessageLength by remember(params.maxMessageLength) { mutableStateOf(params.maxMessageLength.toFloat()) }
     var topP by remember { mutableStateOf(params.topP) }
     var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
@@ -2166,8 +2177,10 @@ fun ModelSettingsDialog(
         onParamsChange(
             params.copy(
                 temperature = temperature,
-                contextSize = contextSize.toInt(),
-                maxTokens = maxTokens.toInt(),
+                contextSize = contextSize,
+                maxContextSize = maxContextSize,
+                autoContextEnabled = autoContextEnabled,
+                maxMessageLength = maxMessageLength.toInt(),
                 topP = topP,
                 repeatPenalty = repeatPenalty,
             )
@@ -2205,25 +2218,57 @@ fun ModelSettingsDialog(
                     )
 
                     SettingSlider(
-                        label = "Context Size: ${contextSize.toInt()}",
-                        value = contextSize,
+                        label = "Минимальный контекст: $contextSize токенов",
+                        value = GenerationParams.CONTEXT_SIZES.indexOf(contextSize).toFloat(),
                         onValueChange = {
-                            contextSize = it
-                            saveModelParams()
+                            contextSize = GenerationParams.CONTEXT_SIZES[kotlin.math.round(it).toInt().coerceIn(0, 3)]
+                            maxContextSize = maxOf(maxContextSize, contextSize)
                         },
-                        valueRange = 512f..8192f,
-                        steps = 15
+                        valueRange = 0f..3f,
+                        steps = 2,
+                        onValueChangeFinished = ::saveModelParams,
                     )
 
-                    SettingSlider(
-                        label = "Max Tokens: ${maxTokens.toInt()}",
-                        value = maxTokens,
-                        onValueChange = {
-                            maxTokens = it
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Автоматически увеличивать контекст", modifier = Modifier.weight(1f))
+                        Switch(checked = autoContextEnabled, onCheckedChange = {
+                            autoContextEnabled = it
                             saveModelParams()
+                        })
+                    }
+                    SettingSlider(
+                        label = "Максимальный контекст: $maxContextSize токенов",
+                        value = GenerationParams.CONTEXT_SIZES.indexOf(maxContextSize).toFloat(),
+                        onValueChange = {
+                            maxContextSize = maxOf(contextSize, GenerationParams.CONTEXT_SIZES[kotlin.math.round(it).toInt().coerceIn(0, 3)])
                         },
-                        valueRange = 64f..2048f,
-                        steps = 30
+                        valueRange = 0f..3f,
+                        steps = 2,
+                        enabled = autoContextEnabled,
+                        onValueChangeFinished = ::saveModelParams,
+                    )
+                    Text(
+                        if (autoContextEnabled)
+                            "Контекст и лимит ответа подбираются перед каждым запросом: 1024/512 → 2048/1024 → 4096/2048 → 8192/4096. Учитывается весь запрос с историей. Для нового сообщения до ${ContextWindowPolicy.SMALL_MESSAGE_MAX_TOKENS} токенов запас ${ContextWindowPolicy.SMALL_MESSAGE_SAFETY_TOKENS}, для остальных — ${ContextWindowPolicy.SAFETY_TOKENS}. Когда весь запрос снова помещается в минимум, оба значения уменьшаются. Смена контекста может занять время."
+                        else "Размер контекста фиксирован, половина отводится для ответа. Слишком длинный запрос останется в черновике.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    contextBudget?.let { budget ->
+                        Text(
+                            "Рабочий контекст: ${budget.contextSize} токенов · " +
+                                (budget.userMessageTokens?.let { "новое сообщение $it, " } ?: "") +
+                                "весь запрос ${budget.promptTokens}, ответ ${budget.responseTokens}, запас ${budget.reserveTokens}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Text(
+                        text = if (autoContextEnabled)
+                            "Максимальная длина ответа: ${contextSize / 2}–${maxContextSize / 2} токенов, автоматически"
+                        else "Максимальная длина ответа: ${contextSize / 2} токенов",
+                        style = MaterialTheme.typography.labelMedium,
                     )
 
                     SettingSlider(
@@ -2265,6 +2310,19 @@ fun ModelSettingsDialog(
                 }
 
                 SettingsSection(title = "Чат") {
+                    SettingSlider(
+                        label = "Максимальная длина сообщения: ${maxMessageLength.toInt()} символов",
+                        value = maxMessageLength,
+                        onValueChange = { maxMessageLength = kotlin.math.round(it / 500f) * 500f },
+                        valueRange = 500f..12000f,
+                        steps = 22,
+                        onValueChangeFinished = ::saveModelParams,
+                    )
+                    Text(
+                        "Лимит общий для текста и голосового ввода. Вместимость запроса с историей проверяется перед отправкой.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -2395,13 +2453,17 @@ private fun SettingSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int = 0
+    steps: Int = 0,
+    enabled: Boolean = true,
+    onValueChangeFinished: (() -> Unit)? = null,
 ) {
     Column {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
         Slider(
             value = value,
             onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            enabled = enabled,
             valueRange = valueRange,
             steps = steps
         )
@@ -2421,5 +2483,4 @@ private fun ModelState.label(): String = when (this) {
     is ModelState.Importing -> "Импорт..."
 }
 
-private const val MAX_MESSAGE_LENGTH = 3000
 private const val VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS = 2_000L

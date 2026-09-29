@@ -200,7 +200,7 @@ class ChatViewModel(
                 session.awaitReady()
                 // Reserve a bounded context for sequential transcript chunks; restore chat settings in finally.
                 llmEngine.unload()
-                llmEngine.updateParams(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
+                llmEngine.updateParams(uiState.value.modelParams.copy(contextSize = 4096, fixedResponseTokens = 512))
                 val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
                     com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
                 mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
@@ -432,16 +432,23 @@ class ChatViewModel(
         }
     }
 
+    fun updateMessageDraft(text: String) {
+        mutableUiState.update { it.copy(messageDraft = text) }
+    }
+
     fun sendMessage(text: String) {
-        sendMessageInternal(text)
+        sendMessageInternal(text, onAccepted = {
+            mutableUiState.update { if (it.messageDraft == text) it.copy(messageDraft = "") else it }
+        })
     }
 
     fun sendVoiceDraft() {
         val state = mutableUiState.value
-        if (!state.voiceDraft.isVisible || !sendMessageInternal(state.voiceDraft.text)) return
-
-        mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
-        clearPersistedVoiceDraft()
+        if (!state.voiceDraft.isVisible) return
+        sendMessageInternal(state.voiceDraft.text, onAccepted = {
+            mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
+            clearPersistedVoiceDraft()
+        })
     }
 
     fun setChatMode(isCalendar: Boolean) {
@@ -470,13 +477,20 @@ class ChatViewModel(
         }
     }
 
-    private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
+    private fun sendMessageInternal(
+        text: String,
+        preserveVoiceMode: Boolean = false,
+        onAccepted: () -> Unit = {},
+    ): Boolean {
         val trimmedText = text.trim()
         val state = mutableUiState.value
         when {
             trimmedText.isEmpty() -> return false
-            trimmedText.length > MAX_MESSAGE_LENGTH -> {
-                mutableUiState.update { it.copy(error = "Сообщение не должно превышать 3000 символов") }
+            text.length > state.modelParams.maxMessageLength -> {
+                mutableUiState.update { it.copy(
+                    error = "Сообщение не должно превышать ${state.modelParams.maxMessageLength} символов",
+                    messageDraft = if (!it.voiceDraft.isVisible && it.messageDraft.isBlank()) text else it.messageDraft,
+                ) }
                 return false
             }
             state.isProcessing || state.isStopping -> return false
@@ -490,25 +504,24 @@ class ChatViewModel(
             content = trimmedText,
             chatId = state.activeChatId
         )
-        pendingChatMessages.put(userMessage)
         mutableUiState.update { currentState ->
             currentState.copy(
-                messages = currentState.messages + userMessage,
                 isProcessing = true,
                 isStopping = false,
                 isVoiceMode = preserveVoiceMode,
-                voiceDraft = currentState.voiceDraft.copy(isVisible = false, isRecording = false),
+                voiceDraft = currentState.voiceDraft.copy(isRecording = false),
                 error = null,
             )
         }
 
-        startGenerationFlow(state.copy(messages = state.messages + userMessage), userMessage)
+        startGenerationFlow(state.copy(messages = state.messages + userMessage), userMessage, onAccepted)
         return true
     }
 
     private fun startGenerationFlow(
         requestState: ChatUiState = mutableUiState.value,
         newUserMessage: ChatMessage? = null,
+        onAccepted: () -> Unit = {},
     ) {
         generationJob = viewModelScope.launch {
             var assistantMessage: ChatMessage? = null
@@ -517,7 +530,6 @@ class ChatViewModel(
             try {
                 backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 backgroundSession.awaitReady()
-                if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
                 val currentState = requestState
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 val responseFlowResult = sendMessage(
@@ -528,10 +540,26 @@ class ChatViewModel(
                     ),
                     useSystemPrompt = true,
                     isCalendarMode = currentState.isCalendarMode,
+                    // Классифицируем текст пользователя до добавления стилевой инструкции.
+                    userMessageForSizing = lastUserMessageContent,
                 )
                 val response = responseFlowResult.getOrElse { error ->
-                    mutableUiState.update { it.copy(error = error.userMessage()) }
+                    mutableUiState.update { it.copy(
+                        error = error.userMessage(),
+                        messageDraft = if (newUserMessage != null && !it.voiceDraft.isVisible && it.messageDraft.isBlank())
+                            newUserMessage.content else it.messageDraft,
+                    ) }
                     return@launch
+                }
+
+                // После проверки вместимости можно сохранить сообщение и очистить черновик.
+                if (newUserMessage != null) {
+                    withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
+                    updateMessage(newUserMessage)
+                    mutableUiState.update { state -> state.copy(
+                        voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
+                    ) }
+                    onAccepted()
                 }
 
                 assistantMessage = ChatMessage(
@@ -1724,7 +1752,7 @@ class ChatViewModel(
 
             voiceDraftRestored = true
             mutableUiState.update { state ->
-                state.copy(voiceDraft = state.voiceDraft.copy(text = draft.take(MAX_MESSAGE_LENGTH)))
+                state.copy(voiceDraft = state.voiceDraft.copy(text = draft))
             }
             if (openVoiceDraftAfterRestore) {
                 openVoiceDraftAfterRestore = false
@@ -1742,14 +1770,7 @@ class ChatViewModel(
 
         val currentText = state.voiceDraft.text.trim()
         val separator = if (currentText.isEmpty()) "" else " "
-        val availableLength = MAX_MESSAGE_LENGTH - currentText.length - separator.length
-        if (availableLength <= 0) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
-            return
-        }
-
-        val appendedText = recognizedText.take(availableLength)
-        val updatedText = currentText + separator + appendedText
+        val updatedText = currentText + separator + recognizedText
         mutableUiState.update {
             it.copy(voiceDraft = it.voiceDraft.copy(text = updatedText))
         }
@@ -1759,8 +1780,12 @@ class ChatViewModel(
                     state.copy(error = "Не удалось сохранить голосовой черновик")
                 }
             }
-        if (appendedText.length < recognizedText.length) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
+        if (updatedText.length > state.modelParams.maxMessageLength) {
+            stopVoiceInput()
+            mutableUiState.update { it.copy(
+                voiceDraft = it.voiceDraft.copy(isRecording = false),
+                error = "Голосовой черновик превышает ${state.modelParams.maxMessageLength} символов. Текст сохранён. Увеличьте лимит в настройках.",
+            ) }
         }
     }
 
@@ -1820,6 +1845,11 @@ class ChatViewModel(
 
     private fun observeModelState() {
         viewModelScope.launch {
+            llmEngine.contextBudget.collect { budget ->
+                mutableUiState.update { it.copy(contextBudget = budget) }
+            }
+        }
+        viewModelScope.launch {
             llmEngine.state.collect { modelState ->
                 mutableUiState.update { it.copy(modelState = modelState) }
             }
@@ -1855,7 +1885,6 @@ class ChatViewModel(
 
     private companion object {
         const val TAG = "ChatViewModel"
-        const val MAX_MESSAGE_LENGTH = 3000
         const val MAX_LOGCAT_PAYLOAD_LENGTH = 3500
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024

@@ -85,3 +85,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+// llm_context_jni.cpp использует ABI параметров llama.cpp, закреплённый в этом выпуске.
+check(libs.versions.llamatik.get() == "1.10.1") {
+    "Audit llama_tokenizer_abi.h and native tokenization tests before updating Llamatik"
+}

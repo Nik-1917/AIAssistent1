@@ -23,6 +23,49 @@ import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DataStoreSettingsRepositoryTest {
+    @Test
+    fun `context settings and message limit persist per model without saving working sizes`() = runTest {
+        val store = TestPreferencesDataStore()
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val chosen = com.example.aiassistent1.domain.model.GenerationParams(
+            contextSize = 2048, maxContextSize = 4096, autoContextEnabled = true, maxMessageLength = 6000,
+        )
+        repository.updateParamsForModel("first.gguf", chosen)
+        val first = repository.getParamsForModel("first.gguf")
+        val second = repository.getParamsForModel("second.gguf")
+        runCurrent()
+        assertEquals(chosen, first.value)
+        assertEquals(3000, second.value.maxMessageLength)
+        val budget = com.example.aiassistent1.domain.context.ContextWindowPolicy.plan(1400, first.value, 32768)
+        assertEquals(4096, budget.contextSize)
+        val reopened = DataStoreSettingsRepository(store, backgroundScope).getParamsForModel("first.gguf")
+        runCurrent()
+        assertEquals(chosen, reopened.value)
+        repository.updateParamsForModel("first.gguf", chosen.copy(autoContextEnabled = false))
+        runCurrent()
+        assertEquals(false, first.value.autoContextEnabled)
+    }
+
+    @Test
+    fun `legacy minimum and independent answer setting migrate to paired steps`() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(
+            androidx.datastore.preferences.core.intPreferencesKey("old.gguf_contextSize") to 512,
+            androidx.datastore.preferences.core.intPreferencesKey("old.gguf_maxTokens") to 64,
+        ))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val saved = repository.getParamsForModel("old.gguf")
+        runCurrent()
+        assertEquals(1024, saved.value.contextSize)
+        assertEquals(512, saved.value.maxTokens)
+        assertEquals(true, saved.value.autoContextEnabled)
+        assertEquals(8192, saved.value.maxContextSize)
+        assertEquals(3000, saved.value.maxMessageLength)
+        repository.updateParamsForModel("old.gguf", saved.value.copy(contextSize = 8192))
+        runCurrent()
+        assertEquals(4096, saved.value.maxTokens)
+        assertEquals(null, store.data.first()[androidx.datastore.preferences.core.intPreferencesKey("old.gguf_maxTokens")])
+    }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
