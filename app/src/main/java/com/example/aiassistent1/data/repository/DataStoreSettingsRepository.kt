@@ -288,22 +288,21 @@ class DataStoreSettingsRepository(
             dataStore.data
                 .map { preferences ->
                     GenerationParams(
-                        contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: GenerationParams().contextSize,
+                        contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 512,
+                        maxTokens = preferences[intPreferencesKey("${modelName}_maxTokens")] ?: 512,
                         temperature = preferences[floatPreferencesKey("${modelName}_temperature")] ?: 0.35f,
                         topP = preferences[floatPreferencesKey("${modelName}_topP")] ?: 0.9f,
                         topK = preferences[intPreferencesKey("${modelName}_topK")] ?: 20,
                         repeatPenalty = preferences[floatPreferencesKey("${modelName}_repeatPenalty")] ?: 1.15f,
                         gpuLayers = preferences[intPreferencesKey("${modelName}_gpuLayers")] ?: 0,
-                        autoContextEnabled = preferences[booleanPreferencesKey("${modelName}_autoContextEnabled")] ?: true,
-                        maxContextSize = preferences[intPreferencesKey("${modelName}_maxContextSize")] ?: GenerationParams.MAX_CONTEXT_SIZE,
-                        maxMessageLength = preferences[intPreferencesKey("${modelName}_maxMessageLength")] ?: GenerationParams.DEFAULT_MESSAGE_LENGTH,
-                    ).normalized()
+                    )
                 }
                 .stateIn(
                     scope = scope,
                     started = SharingStarted.Eagerly,
                     initialValue = GenerationParams(
-                        contextSize = GenerationParams().contextSize,
+                        contextSize = 512,
+                        maxTokens = 512,
                         temperature = 0.35f,
                         topP = 0.9f,
                         repeatPenalty = 1.15f
@@ -313,13 +312,9 @@ class DataStoreSettingsRepository(
     }
 
     override suspend fun updateParamsForModel(modelName: String, params: GenerationParams) {
-        val normalized = params.normalized()
         dataStore.edit { preferences ->
-            preferences[intPreferencesKey("${modelName}_contextSize")] = normalized.contextSize
-            preferences.remove(intPreferencesKey("${modelName}_maxTokens"))
-            preferences[booleanPreferencesKey("${modelName}_autoContextEnabled")] = normalized.autoContextEnabled
-            preferences[intPreferencesKey("${modelName}_maxContextSize")] = normalized.maxContextSize
-            preferences[intPreferencesKey("${modelName}_maxMessageLength")] = normalized.maxMessageLength
+            preferences[intPreferencesKey("${modelName}_contextSize")] = params.contextSize
+            preferences[intPreferencesKey("${modelName}_maxTokens")] = params.maxTokens
             preferences[floatPreferencesKey("${modelName}_temperature")] = params.temperature
             preferences[floatPreferencesKey("${modelName}_topP")] = params.topP
             preferences[intPreferencesKey("${modelName}_topK")] = params.topK

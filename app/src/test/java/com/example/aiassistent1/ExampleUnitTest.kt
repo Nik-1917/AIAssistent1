@@ -14,28 +14,9 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SendMessageUseCaseTest {
-    @Test
-    fun `keeps raw new message separate from system history and style instructions`() = runTest {
-        val engine = FakeLlmEngine(loadResult = Result.success(Unit))
-        val useCase = SendMessageUseCase(engine, SystemPromptProvider())
-        val raw = "Привет"
-        val history = listOf(ChatMessage(role = MessageRole.USER, content = "Предыдущий вопрос"),
-            ChatMessage(role = MessageRole.ASSISTANT, content = "Предыдущий ответ"),
-            ChatMessage(role = MessageRole.USER, content = raw))
-        val messages = com.example.aiassistent1.domain.context.ModelContextBuilder()
-            .build(history, appendChatStyleInstruction = true)
-        useCase(messages, useSystemPrompt = true, isCalendarMode = false, userMessageForSizing = raw)
-            .getOrThrow().toList()
-        assertEquals(raw, engine.lastUserMessageForSizing)
-        assertEquals(MessageRole.SYSTEM, engine.lastMessages.first().role)
-        assertTrue(engine.lastMessages.last().content.contains("отвечай очень вежливо используй эмодзи"))
-        assertEquals(4, engine.lastMessages.size)
-    }
-
     @Test
     fun `returns streamed deltas after successful model loading`() = runTest {
         val engine = FakeLlmEngine(loadResult = Result.success(Unit))
@@ -78,16 +59,10 @@ class SendMessageUseCaseTest {
         private val mutableState = MutableStateFlow<ModelState>(ModelState.Unloaded)
         var generateCalls = 0
         var lastMessages: List<ChatMessage> = emptyList()
-        var lastUserMessageForSizing: String? = null
 
         override val state: StateFlow<ModelState> = mutableState
 
         override suspend fun ensureLoaded(): Result<Unit> = loadResult
-
-        override suspend fun prepareGeneration(messages: List<ChatMessage>, userMessageForSizing: String?): Result<Flow<String>> {
-            lastUserMessageForSizing = userMessageForSizing
-            return super<LLMEngine>.prepareGeneration(messages, userMessageForSizing)
-        }
 
         override fun generate(messages: List<ChatMessage>): Flow<String> {
             generateCalls += 1

@@ -8,13 +8,10 @@ import com.llamatik.library.platform.LlamaBridge
 internal interface LlamaRuntime {
     fun updateParams(params: GenerationParams, threads: Int, batchSize: Int)
     fun load(path: String): Boolean
-    fun inspectPrompt(path: String, prompt: String, userMessageForSizing: String? = null): PromptInspection
     fun generateStream(prompt: String, stream: GenStream)
     fun cancel()
     fun shutdown()
 }
-
-internal data class PromptInspection(val tokenCount: Int, val modelContextLimit: Int, val userMessageTokens: Int? = null)
 
 internal object NativeLlamaRuntime : LlamaRuntime {
     override fun updateParams(params: GenerationParams, threads: Int, batchSize: Int) {
@@ -34,17 +31,9 @@ internal object NativeLlamaRuntime : LlamaRuntime {
     }
 
     override fun load(path: String): Boolean = LlamaBridge.initGenerateModel(path)
-    override fun inspectPrompt(path: String, prompt: String, userMessageForSizing: String?): PromptInspection {
-        val result = NativePromptTokenizer.inspect(path, prompt, userMessageForSizing)
-        check(result.size == 3 && result[2] >= -1) { "Не удалось подсчитать токены запроса" }
-        check(userMessageForSizing == null || result[2] >= 0) { "Не удалось подсчитать токены сообщения" }
-        return PromptInspection(result[0], result[1], result[2].takeIf { it >= 0 })
-    }
     override fun generateStream(prompt: String, stream: GenStream) {
         LlamaBridge.generateStream(prompt, stream)
     }
     override fun cancel() { LlamaBridge.nativeCancelGenerate() }
-    override fun shutdown() {
-        try { NativePromptTokenizer.close() } finally { LlamaBridge.shutdown() }
-    }
+    override fun shutdown() { LlamaBridge.shutdown() }
 }

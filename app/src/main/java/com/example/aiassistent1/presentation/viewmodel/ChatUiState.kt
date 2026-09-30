@@ -19,8 +19,6 @@ data class ChatUiState(
     val navigationState: AppNavigationState? = null,
     val sessionError: String? = null,
     val messages: List<ChatMessage> = emptyList(),
-    val messageDraft: String = "",
-    val contextBudget: com.example.aiassistent1.domain.context.ContextBudget? = null,
     val isHistoryLoaded: Boolean = false,
     val chatScrollPosition: ChatScrollPosition = ChatScrollPosition(),
     val isChatScrollPositionLoaded: Boolean = false,

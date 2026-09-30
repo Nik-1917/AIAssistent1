@@ -14,13 +14,12 @@ class SendMessageUseCase(
         messages: List<ChatMessage>,
         useSystemPrompt: Boolean = false,
         isCalendarMode: Boolean = true,
-        userMessageForSizing: String? = null,
     ): Result<Flow<String>> {
         val systemMessage = ChatMessage(
             role = MessageRole.SYSTEM,
             content = systemPromptProvider.getSystemPrompt(isCalendarMode)
         )
         val modelMessages = if (useSystemPrompt) listOf(systemMessage) + messages else messages
-        return llmEngine.prepareGeneration(modelMessages, userMessageForSizing)
+        return llmEngine.ensureLoaded().map { llmEngine.generate(modelMessages) }
     }
 }

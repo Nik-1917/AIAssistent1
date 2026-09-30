@@ -28,7 +28,7 @@ class LlamatikEngineLifecycleTest {
             assertFalse(executor.isShutdown)
 
             path = "second.gguf"
-            val summaryParams = GenerationParams(contextSize = 4096, fixedResponseTokens = 512)
+            val summaryParams = GenerationParams(contextSize = 4096, maxTokens = 512)
             engine.updateParams(summaryParams)
             engine.ensureLoaded().getOrThrow()
             assertEquals(summaryParams, runtime.params.last())
@@ -59,7 +59,7 @@ class LlamatikEngineLifecycleTest {
             engine.close()
             engine.unload()
             engine.cancelGeneration()
-            engine.updateParams(GenerationParams())
+            engine.updateParams(GenerationParams(maxTokens = 512))
 
             assertTrue(engine.ensureLoaded().isFailure)
             assertThrows(IllegalStateException::class.java) { engine.generate(emptyList()) }
@@ -145,7 +145,6 @@ class LlamatikEngineLifecycleTest {
             this.params += params
         }
         override fun load(path: String): Boolean { paths += path; return true }
-        override fun inspectPrompt(path: String, prompt: String, userMessageForSizing: String?) = PromptInspection(32, 8192)
         override fun generateStream(prompt: String, stream: GenStream) {
             stream.onDelta("response")
             stream.onComplete()
