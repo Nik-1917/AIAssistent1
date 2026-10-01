@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.ModelProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
@@ -223,8 +224,12 @@ class DataStoreSettingsRepositoryTest {
         val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
         val snapshotStore = TestPreferencesDataStore()
         val writer = DataStoreSettingsRepository(snapshotStore, writerScope)
-        val calendar = ModelProfile.CALENDAR.defaults.withMaxTokens(512).copy(temperature = 0.4f, batchSizeAuto = false, batchSize = 128)
-        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(topK = 32, temperature = 0.8f, batchSize = 1024)
+        val calendar = ModelProfile.CALENDAR.defaults.withMaxTokens(512).copy(
+            temperature = 0.4f, batchSizeAuto = false, batchSize = 128, cpuThreadsAuto = false, cpuThreads = 1,
+        )
+        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(
+            topK = 32, temperature = 0.8f, batchSize = 1024, cpuThreads = CpuThreadSettings.availableProcessors,
+        )
         writer.updateParamsForModel("assistant.gguf", ModelProfile.CALENDAR, calendar)
         writer.updateParamsForModel("assistant.gguf", ModelProfile.CHAT, chat)
         // Write one complete snapshot: Android's mock SDK uses renameTo on Windows,
@@ -279,5 +284,41 @@ class DataStoreSettingsRepositoryTest {
         assertEquals(128, saved[intPreferencesKey("model_params/calendar/assistant.gguf/batchSize")])
         assertEquals(true, saved[booleanPreferencesKey("model_params/chat/assistant.gguf/batchSizeAuto")])
         assertEquals(1024, saved[intPreferencesKey("model_params/chat/assistant.gguf/batchSize")])
+    }
+
+    @Test
+    fun `cpu mode and manual value persist atomically per model and profile with device bounds`() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(
+            booleanPreferencesKey("model_params/calendar/assistant.gguf/cpuThreadsAuto") to true,
+            intPreferencesKey("model_params/calendar/assistant.gguf/cpuThreads") to Int.MAX_VALUE,
+        ))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals(ModelProfile.CALENDAR.defaults.copy(cpuThreads = CpuThreadSettings.availableProcessors),
+            repository.getParamsForModel("assistant.gguf", ModelProfile.CALENDAR).first())
+        assertEquals(ModelProfile.CHAT.defaults, repository.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first())
+
+        val observed = mutableListOf<GenerationParams>()
+        backgroundScope.launch {
+            repository.getParamsForModel("assistant.gguf", ModelProfile.CALENDAR).collect { observed += it }
+        }
+        runCurrent()
+        val manual = ModelProfile.CALENDAR.defaults.copy(cpuThreadsAuto = false, cpuThreads = Int.MIN_VALUE)
+        val expected = manual.copy(cpuThreads = 1)
+        repository.updateParamsForModel("assistant.gguf", ModelProfile.CALENDAR, manual)
+        runCurrent()
+        val auto = ModelProfile.CHAT.defaults.copy(cpuThreadsAuto = true, cpuThreads = 1)
+        repository.updateParamsForModel("assistant.gguf", ModelProfile.CHAT, auto)
+        runCurrent()
+        assertEquals(expected, observed.last())
+        assertEquals(1, observed.drop(1).size)
+        assertEquals(auto, repository.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first())
+        for (profile in ModelProfile.entries) {
+            assertEquals(profile.defaults, repository.getParamsForModel("other.gguf", profile).first())
+        }
+        val saved = store.data.first()
+        assertEquals(false, saved[booleanPreferencesKey("model_params/calendar/assistant.gguf/cpuThreadsAuto")])
+        assertEquals(1, saved[intPreferencesKey("model_params/calendar/assistant.gguf/cpuThreads")])
+        assertEquals(true, saved[booleanPreferencesKey("model_params/chat/assistant.gguf/cpuThreadsAuto")])
+        assertEquals(1, saved[intPreferencesKey("model_params/chat/assistant.gguf/cpuThreads")])
     }
 }

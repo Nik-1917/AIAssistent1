@@ -3,6 +3,7 @@ package com.example.aiassistent1.data.engine
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelState
 import com.llamatik.library.platform.GenStream
@@ -25,11 +26,12 @@ class LlamatikEngine internal constructor(
     initialParams: GenerationParams,
     executor: ExecutorService,
     private val runtime: LlamaRuntime,
+    private val processorCount: Int = CpuThreadSettings.availableProcessors,
 ) : LLMEngine {
     constructor(
         modelProvider: ModelProvider,
         initialParams: GenerationParams = GenerationParams(),
-    ) : this(modelProvider, initialParams, Executors.newFixedThreadPool(threadCount), NativeLlamaRuntime)
+    ) : this(modelProvider, initialParams, Executors.newFixedThreadPool(CpuThreadSettings.automaticThreadCount()), NativeLlamaRuntime)
 
     private val modelMutex = Mutex()
     private val lifecycleLock = Any()
@@ -46,7 +48,7 @@ class LlamatikEngine internal constructor(
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
         synchronized(lifecycleLock) {
             if (closed) return Result.failure(IllegalStateException("Движок закрыт"))
-            if (state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params)) {
+            if (state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params, processorCount)) {
                 applyRuntimeParams()
                 return Result.success(Unit)
             }
@@ -58,12 +60,12 @@ class LlamatikEngine internal constructor(
                 val modelPath = modelProvider.getModelPath().getOrThrow()
                 synchronized(lifecycleLock) {
                     check(!closed) { "Движок закрыт" }
-                    // Batch/context settings take effect at native context creation, not in the setter.
+                    // Batch/context/CPU settings take effect at native context creation, not in the setter.
                     if (loadedConfiguration != null) releaseModel()
                     mutableState.value = ModelState.Loading
                     applyRuntimeParams()
                     check(runtime.load(modelPath)) { "Не удалось загрузить модель" }
-                    loadedConfiguration = NativeConfiguration(params)
+                    loadedConfiguration = NativeConfiguration(params, processorCount)
                     mutableState.value = ModelState.Ready
                 }
             }.onFailure { error ->
@@ -145,7 +147,7 @@ class LlamatikEngine internal constructor(
         if (closed) return
         this.params = params
         // Settings may be saved during a request. Its native parameters remain unchanged.
-        if (!generationActive && state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params)) {
+        if (!generationActive && state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params, processorCount)) {
             applyRuntimeParams()
         }
     }
@@ -153,7 +155,7 @@ class LlamatikEngine internal constructor(
     /** Call only with lifecycleLock held. Reloads and repeated identical updates are avoided. */
     private fun applyRuntimeParams() {
         if (appliedParams != params) {
-            runtime.updateParams(params, threadCount, params.effectiveBatchSize)
+            runtime.updateParams(params, params.effectiveCpuThreads(processorCount), params.effectiveBatchSize)
             appliedParams = params
         }
     }
@@ -207,18 +209,19 @@ class LlamatikEngine internal constructor(
         else -> message ?: "Ошибка загрузки модели"
     }
 
-    private data class NativeConfiguration(val contextSize: Int, val batchSize: Int, val gpuLayers: Int) {
-        constructor(params: GenerationParams) : this(params.contextSize, params.effectiveBatchSize, params.gpuLayers)
+    private data class NativeConfiguration(
+        val contextSize: Int,
+        val batchSize: Int,
+        val gpuLayers: Int,
+        val cpuThreads: Int,
+    ) {
+        constructor(params: GenerationParams, processorCount: Int) : this(
+            params.contextSize, params.effectiveBatchSize, params.gpuLayers,
+            params.effectiveCpuThreads(processorCount),
+        )
     }
 
     private companion object {
-        val threadCount = Runtime.getRuntime().availableProcessors().let { cores ->
-            when {
-                cores <= 4 -> cores
-                cores <= 8 -> 4
-                else -> 6
-            }
-        }
         const val STREAM_FLUSH_TOKEN_COUNT = 1
         const val MAX_BATCH_DELAY_MILLIS = 50L
     }

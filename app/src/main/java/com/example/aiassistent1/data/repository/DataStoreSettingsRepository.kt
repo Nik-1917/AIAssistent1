@@ -309,6 +309,8 @@ class DataStoreSettingsRepository(
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
             batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
             batchSize = intValue("batchSize", defaults.batchSize),
+            cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
+            cpuThreads = preferences[intPreferencesKey(prefix + "cpuThreads")] ?: defaults.cpuThreads,
         ).normalizedForSettings()
     }
 
@@ -325,6 +327,8 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
             preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto
             preferences[intPreferencesKey(prefix + "batchSize")] = normalized.batchSize
+            preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] = normalized.cpuThreadsAuto
+            preferences[intPreferencesKey(prefix + "cpuThreads")] = normalized.cpuThreads
         }
     }
 

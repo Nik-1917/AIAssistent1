@@ -154,6 +154,7 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
@@ -2343,6 +2344,42 @@ fun ModelSettingsDialog(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Потоки CPU")
+                                Text(
+                                    if (modelParams.cpuThreadsAuto) "Режим: Авто" else "Режим: Вручную",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            Switch(
+                                checked = modelParams.cpuThreadsAuto,
+                                onCheckedChange = { enabled -> modelSettings.update { it.copy(cpuThreadsAuto = enabled) } },
+                                modifier = Modifier.semantics { contentDescription = "Подбирать число потоков CPU автоматически" },
+                            )
+                        }
+                        val availableCpuProcessors = CpuThreadSettings.availableProcessors
+                        val automaticCpuThreads = CpuThreadSettings.automaticThreadCount()
+                        SettingSlider(
+                            label = "Число потоков: ${modelParams.effectiveCpuThreads()}",
+                            value = modelParams.effectiveCpuThreads().toFloat(),
+                            onValueChange = { value -> modelSettings.update { it.copy(cpuThreads = value.roundToInt()) } },
+                            valueRange = 1f..availableCpuProcessors.toFloat(),
+                            steps = (availableCpuProcessors - 2).coerceAtLeast(0),
+                            enabled = !modelParams.cpuThreadsAuto && availableCpuProcessors > 1,
+                            defaultValue = automaticCpuThreads.toFloat(),
+                            defaultValueText = "$automaticCpuThreads (Авто)",
+                        )
+                        Text(
+                            "Доступно процессоров: $availableCpuProcessors. Число вычислительных потоков CPU " +
+                                "при генерации ответа. Новое значение применяется перед следующим запросом.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
@@ -2529,8 +2566,9 @@ private fun SettingSlider(
                     enabled = enabled,
                     modifier = if (defaultValue == null) Modifier else Modifier.drawWithContent {
                         drawContent()
-                        val fraction = (defaultValue - valueRange.start) /
-                            (valueRange.endInclusive - valueRange.start)
+                        val range = valueRange.endInclusive - valueRange.start
+                        // A device with one available CPU has a single, disabled slider position.
+                        val fraction = if (range > 0f) (defaultValue - valueRange.start) / range else 0f
                         // Only interior discrete ticks are inset by the rounded corners.
                         val corner = if (steps > 0 && fraction > 0f && fraction < 1f) size.height / 2f else 0f
                         val position = corner + (size.width - 2f * corner) * fraction

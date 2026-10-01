@@ -12,6 +12,8 @@ data class GenerationParams(
     val gpuLayers: Int = 0,
     val batchSizeAuto: Boolean = true,
     val batchSize: Int = 256,
+    val cpuThreadsAuto: Boolean = true,
+    val cpuThreads: Int = CpuThreadSettings.automaticThreadCount(),
 ) {
     /** Settings use a shared 16-position grid; temporary engine parameters remain independent. */
     fun withContextSize(value: Int): GenerationParams {
@@ -38,12 +40,17 @@ data class GenerationParams(
             }
         }
 
+    fun effectiveCpuThreads(processorCount: Int = CpuThreadSettings.availableProcessors): Int =
+        if (cpuThreadsAuto) CpuThreadSettings.automaticThreadCount(processorCount)
+        else CpuThreadSettings.boundedThreadCount(cpuThreads, processorCount)
+
     // The stored context is authoritative for legacy, independently saved slider values.
     fun normalizedForSettings(): GenerationParams {
         val paired = withContextSize(contextSize)
         return paired.copy(
             topK = paired.topK.coerceIn(MIN_TOP_K, MAX_TOP_K),
             batchSize = paired.normalizedManualBatchSize(paired.contextSize),
+            cpuThreads = CpuThreadSettings.boundedThreadCount(paired.cpuThreads),
         )
     }
 
