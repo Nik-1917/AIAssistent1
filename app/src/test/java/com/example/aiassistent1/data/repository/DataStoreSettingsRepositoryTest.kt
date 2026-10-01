@@ -223,8 +223,8 @@ class DataStoreSettingsRepositoryTest {
         val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
         val snapshotStore = TestPreferencesDataStore()
         val writer = DataStoreSettingsRepository(snapshotStore, writerScope)
-        val calendar = ModelProfile.CALENDAR.defaults.withMaxTokens(512).copy(temperature = 0.4f)
-        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(topK = 32, temperature = 0.8f)
+        val calendar = ModelProfile.CALENDAR.defaults.withMaxTokens(512).copy(temperature = 0.4f, batchSizeAuto = false, batchSize = 128)
+        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(topK = 32, temperature = 0.8f, batchSize = 1024)
         writer.updateParamsForModel("assistant.gguf", ModelProfile.CALENDAR, calendar)
         writer.updateParamsForModel("assistant.gguf", ModelProfile.CHAT, chat)
         // Write one complete snapshot: Android's mock SDK uses renameTo on Windows,
@@ -252,5 +252,32 @@ class DataStoreSettingsRepositoryTest {
         assertFalse(firstValue.isCompleted)
         gate.complete(Unit)
         assertEquals(saved, firstValue.await())
+    }
+
+    @Test
+    fun `batch mode and manual value are saved per profile and invalid values are normalized`() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(
+            intPreferencesKey("model_params/calendar/assistant.gguf/batchSize") to 200,
+            booleanPreferencesKey("model_params/calendar/assistant.gguf/batchSizeAuto") to false,
+            intPreferencesKey("model_params/calendar/assistant.gguf/topK") to 0,
+        ))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals(ModelProfile.CALENDAR.defaults.copy(batchSizeAuto = false, batchSize = 256, topK = 1),
+            repository.getParamsForModel("assistant.gguf", ModelProfile.CALENDAR).first())
+        assertEquals(ModelProfile.CHAT.defaults,
+            repository.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first())
+
+        val manual = ModelProfile.CALENDAR.defaults.copy(batchSizeAuto = false, batchSize = 128, topK = 25)
+        repository.updateParamsForModel("assistant.gguf", ModelProfile.CALENDAR, manual)
+        val auto = ModelProfile.CHAT.defaults.copy(batchSizeAuto = true, batchSize = 1024)
+        repository.updateParamsForModel("assistant.gguf", ModelProfile.CHAT, auto)
+        assertEquals(manual, repository.getParamsForModel("assistant.gguf", ModelProfile.CALENDAR).first())
+        assertEquals(auto, repository.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first())
+        assertEquals(ModelProfile.CALENDAR.defaults, repository.getParamsForModel("other.gguf", ModelProfile.CALENDAR).first())
+        val saved = store.data.first()
+        assertEquals(false, saved[booleanPreferencesKey("model_params/calendar/assistant.gguf/batchSizeAuto")])
+        assertEquals(128, saved[intPreferencesKey("model_params/calendar/assistant.gguf/batchSize")])
+        assertEquals(true, saved[booleanPreferencesKey("model_params/chat/assistant.gguf/batchSizeAuto")])
+        assertEquals(1024, saved[intPreferencesKey("model_params/chat/assistant.gguf/batchSize")])
     }
 }

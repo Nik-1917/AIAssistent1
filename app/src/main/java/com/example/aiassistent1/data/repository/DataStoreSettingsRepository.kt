@@ -307,6 +307,8 @@ class DataStoreSettingsRepository(
             topK = intValue("topK", defaults.topK),
             repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
+            batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
+            batchSize = intValue("batchSize", defaults.batchSize),
         ).normalizedForSettings()
     }
 
@@ -321,6 +323,8 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
             preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
+            preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto
+            preferences[intPreferencesKey(prefix + "batchSize")] = normalized.batchSize
         }
     }
 

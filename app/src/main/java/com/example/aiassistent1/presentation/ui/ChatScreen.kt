@@ -2289,12 +2289,59 @@ fun ModelSettingsDialog(
                         )
 
                         SettingSlider(
+                            label = "Top K: ${modelParams.topK}",
+                            value = modelParams.topK.toFloat(),
+                            onValueChange = { value -> modelSettings.update { it.copy(topK = value.roundToInt()) } },
+                            valueRange = GenerationParams.MIN_TOP_K.toFloat()..GenerationParams.MAX_TOP_K.toFloat(),
+                            steps = GenerationParams.MAX_TOP_K - GenerationParams.MIN_TOP_K - 1,
+                            defaultValue = defaults.topK.toFloat(),
+                        )
+
+                        SettingSlider(
                             label = "Repeat Penalty: ${String.format("%.2f", modelParams.repeatPenalty)}",
                             value = modelParams.repeatPenalty,
                             onValueChange = { value -> modelSettings.update { it.copy(repeatPenalty = value) } },
                             valueRange = 1f..2f,
                             defaultValue = defaults.repeatPenalty,
                             defaultValueDecimals = 2,
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Batch Size")
+                                Text(
+                                    if (modelParams.batchSizeAuto) "Режим: Авто" else "Режим: Вручную",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            Switch(
+                                checked = modelParams.batchSizeAuto,
+                                onCheckedChange = { enabled -> modelSettings.update { it.copy(batchSizeAuto = enabled) } },
+                                modifier = Modifier.semantics { contentDescription = "Подбирать Batch Size автоматически" },
+                            )
+                        }
+                        val batchOptions = modelParams.batchSizeOptions
+                        SettingSlider(
+                            label = "Размер пакета: ${modelParams.effectiveBatchSize} токенов",
+                            value = batchOptions.indexOf(modelParams.effectiveBatchSize).toFloat(),
+                            onValueChange = { value ->
+                                modelSettings.update { it.copy(batchSize = batchOptions[value.roundToInt()]) }
+                            },
+                            valueRange = 0f..batchOptions.lastIndex.toFloat(),
+                            steps = batchOptions.size - 2,
+                            enabled = !modelParams.batchSizeAuto,
+                            defaultValue = batchOptions.indexOf(defaults.effectiveBatchSize).toFloat(),
+                            defaultValueText = "${defaults.effectiveBatchSize} (Авто)",
+                        )
+                        Text(
+                            "Размер порции токенов при обработке вопроса. В режиме «Авто» — не больше 512 " +
+                                "и объёма, оставшегося после выделения места под ответ. " +
+                                "Новое значение применяется перед следующим запросом.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -2460,6 +2507,8 @@ private fun SettingSlider(
     steps: Int = 0,
     defaultValue: Float? = null,
     defaultValueDecimals: Int = 0,
+    defaultValueText: String? = null,
+    enabled: Boolean = true,
 ) {
     val markerColor = MaterialTheme.colorScheme.onSurface
     val markerOutline = MaterialTheme.colorScheme.surface
@@ -2470,12 +2519,14 @@ private fun SettingSlider(
             onValueChange = onValueChange,
             valueRange = valueRange,
             steps = steps,
+            enabled = enabled,
             modifier = if (defaultValue != null) Modifier.semantics {
-                contentDescription = label.substringBefore(':')
+                contentDescription = label
             } else Modifier,
             track = { sliderState ->
                 SliderDefaults.Track(
                     sliderState = sliderState,
+                    enabled = enabled,
                     modifier = if (defaultValue == null) Modifier else Modifier.drawWithContent {
                         drawContent()
                         val fraction = (defaultValue - valueRange.start) /
@@ -2494,7 +2545,7 @@ private fun SettingSlider(
         )
         if (defaultValue != null) {
             Text(
-                text = "По умолчанию: ${String.format(java.util.Locale.ROOT, "%.${defaultValueDecimals}f", defaultValue)}",
+                text = "По умолчанию: ${defaultValueText ?: String.format(java.util.Locale.ROOT, "%.${defaultValueDecimals}f", defaultValue)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
