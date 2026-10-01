@@ -1,0 +1,1002 @@
+[
+  {
+    "train_line": 2,
+    "hour": 9,
+    "minute": 30
+  },
+  {
+    "train_line": 4,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 59,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 70,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 118,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 187,
+    "hour": 9,
+    "minute": 30
+  },
+  {
+    "train_line": 205,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 217,
+    "hour": 18,
+    "minute": 30
+  },
+  {
+    "train_line": 234,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 238,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 245,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 267,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 298,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 358,
+    "hour": 15,
+    "minute": 45
+  },
+  {
+    "train_line": 363,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 384,
+    "hour": 15,
+    "minute": 45
+  },
+  {
+    "train_line": 385,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 397,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 406,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 423,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 430,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 433,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 461,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 464,
+    "hour": 15,
+    "minute": 45
+  },
+  {
+    "train_line": 469,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 536,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 550,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 556,
+    "hour": 15,
+    "minute": 45
+  },
+  {
+    "train_line": 623,
+    "hour": 18,
+    "minute": 30
+  },
+  {
+    "train_line": 639,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 659,
+    "hour": 9,
+    "minute": 30
+  },
+  {
+    "train_line": 673,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 678,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 708,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 726,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 750,
+    "hour": 10,
+    "minute": 15
+  },
+  {
+    "train_line": 774,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 777,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 782,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 786,
+    "hour": 11,
+    "minute": 20
+  },
+  {
+    "train_line": 831,
+    "hour": 14,
+    "minute": 30
+  },
+  {
+    "train_line": 834,
+    "hour": 15,
+    "minute": 35
+  },
+  {
+    "train_line": 835,
+    "hour": 18,
+    "minute": 10
+  },
+  {
+    "train_line": 838,
+    "hour": 18,
+    "minute": 30
+  },
+  {
+    "train_line": 839,
+    "hour": 20,
+    "minute": 15
+  },
+  {
+    "train_line": 840,
+    "hour": 23,
+    "minute": 50
+  },
+  {
+    "train_line": 841,
+    "hour": 9,
+    "minute": 15
+  },
+  {
+    "train_line": 842,
+    "hour": 10,
+    "minute": 40
+  },
+  {
+    "train_line": 843,
+    "hour": 22,
+    "minute": 20
+  },
+  {
+    "train_line": 844,
+    "hour": 23,
+    "minute": 30
+  },
+  {
+    "train_line": 847,
+    "hour": 17,
+    "minute": 45
+  },
+  {
+    "train_line": 848,
+    "hour": 17,
+    "minute": 45
+  },
+  {
+    "train_line": 849,
+    "hour": 9,
+    "minute": 10
+  },
+  {
+    "train_line": 850,
+    "hour": 9,
+    "minute": 10
+  },
+  {
+    "train_line": 851,
+    "hour": 22,
+    "minute": 15
+  },
+  {
+    "train_line": 852,
+    "hour": 22,
+    "minute": 15
+  },
+  {
+    "train_line": 854,
+    "hour": 17,
+    "minute": 45
+  },
+  {
+    "train_line": 855,
+    "hour": 12,
+    "minute": 50
+  },
+  {
+    "train_line": 856,
+    "hour": 8,
+    "minute": 30
+  },
+  {
+    "train_line": 857,
+    "hour": 17,
+    "minute": 30
+  },
+  {
+    "train_line": 860,
+    "hour": 6,
+    "minute": 40
+  },
+  {
+    "train_line": 862,
+    "hour": 14,
+    "minute": 25
+  },
+  {
+    "train_line": 870,
+    "hour": 9,
+    "minute": 10
+  },
+  {
+    "train_line": 894,
+    "hour": 8,
+    "minute": 50
+  },
+  {
+    "train_line": 1141,
+    "hour": 0,
+    "minute": 5
+  },
+  {
+    "train_line": 1142,
+    "hour": 1,
+    "minute": 10
+  },
+  {
+    "train_line": 1143,
+    "hour": 2,
+    "minute": 15
+  },
+  {
+    "train_line": 1144,
+    "hour": 3,
+    "minute": 20
+  },
+  {
+    "train_line": 1145,
+    "hour": 4,
+    "minute": 25
+  },
+  {
+    "train_line": 1146,
+    "hour": 5,
+    "minute": 30
+  },
+  {
+    "train_line": 1147,
+    "hour": 6,
+    "minute": 35
+  },
+  {
+    "train_line": 1148,
+    "hour": 7,
+    "minute": 40
+  },
+  {
+    "train_line": 1149,
+    "hour": 8,
+    "minute": 45
+  },
+  {
+    "train_line": 1150,
+    "hour": 9,
+    "minute": 50
+  },
+  {
+    "train_line": 1151,
+    "hour": 10,
+    "minute": 55
+  },
+  {
+    "train_line": 1152,
+    "hour": 11,
+    "minute": 5
+  },
+  {
+    "train_line": 1153,
+    "hour": 12,
+    "minute": 10
+  },
+  {
+    "train_line": 1154,
+    "hour": 13,
+    "minute": 15
+  },
+  {
+    "train_line": 1155,
+    "hour": 14,
+    "minute": 20
+  },
+  {
+    "train_line": 1156,
+    "hour": 15,
+    "minute": 25
+  },
+  {
+    "train_line": 1157,
+    "hour": 16,
+    "minute": 30
+  },
+  {
+    "train_line": 1158,
+    "hour": 17,
+    "minute": 35
+  },
+  {
+    "train_line": 1159,
+    "hour": 18,
+    "minute": 40
+  },
+  {
+    "train_line": 1160,
+    "hour": 19,
+    "minute": 45
+  },
+  {
+    "train_line": 1161,
+    "hour": 20,
+    "minute": 50
+  },
+  {
+    "train_line": 1162,
+    "hour": 21,
+    "minute": 55
+  },
+  {
+    "train_line": 1163,
+    "hour": 22,
+    "minute": 5
+  },
+  {
+    "train_line": 1164,
+    "hour": 23,
+    "minute": 10
+  },
+  {
+    "train_line": 1199,
+    "hour": 13,
+    "minute": 20
+  },
+  {
+    "train_line": 1201,
+    "hour": 17,
+    "minute": 45
+  },
+  {
+    "train_line": 1205,
+    "hour": 9,
+    "minute": 10
+  },
+  {
+    "train_line": 1206,
+    "hour": 9,
+    "minute": 15
+  },
+  {
+    "train_line": 1225,
+    "hour": 7,
+    "minute": 30
+  },
+  {
+    "train_line": 1226,
+    "hour": 7,
+    "minute": 30
+  },
+  {
+    "train_line": 1527,
+    "hour": 17,
+    "minute": 45
+  },
+  {
+    "train_line": 1528,
+    "hour": 19,
+    "minute": 30
+  },
+  {
+    "train_line": 1529,
+    "hour": 8,
+    "minute": 20
+  },
+  {
+    "train_line": 1531,
+    "hour": 22,
+    "minute": 30
+  },
+  {
+    "train_line": 1532,
+    "hour": 7,
+    "minute": 40
+  },
+  {
+    "train_line": 1533,
+    "hour": 9,
+    "minute": 50
+  },
+  {
+    "train_line": 1536,
+    "hour": 9,
+    "minute": 30
+  },
+  {
+    "train_line": 1537,
+    "hour": 14,
+    "minute": 45
+  },
+  {
+    "train_line": 1539,
+    "hour": 21,
+    "minute": 10
+  },
+  {
+    "train_line": 1540,
+    "hour": 0,
+    "minute": 30
+  },
+  {
+    "train_line": 1554,
+    "hour": 9,
+    "minute": 30
+  },
+  {
+    "train_line": 1555,
+    "hour": 18,
+    "minute": 30
+  },
+  {
+    "train_line": 1578,
+    "hour": 13,
+    "minute": 20
+  },
+  {
+    "train_line": 1580,
+    "hour": 6,
+    "minute": 30
+  },
+  {
+    "train_line": 1588,
+    "hour": 13,
+    "minute": 20
+  },
+  {
+    "train_line": 1593,
+    "hour": 7,
+    "minute": 30
+  },
+  {
+    "train_line": 1887,
+    "hour": 1,
+    "minute": 0
+  },
+  {
+    "train_line": 1888,
+    "hour": 2,
+    "minute": 0
+  },
+  {
+    "train_line": 1889,
+    "hour": 3,
+    "minute": 0
+  },
+  {
+    "train_line": 1890,
+    "hour": 4,
+    "minute": 0
+  },
+  {
+    "train_line": 1891,
+    "hour": 5,
+    "minute": 0
+  },
+  {
+    "train_line": 1892,
+    "hour": 6,
+    "minute": 0
+  },
+  {
+    "train_line": 1893,
+    "hour": 7,
+    "minute": 0
+  },
+  {
+    "train_line": 1894,
+    "hour": 8,
+    "minute": 0
+  },
+  {
+    "train_line": 1895,
+    "hour": 9,
+    "minute": 0
+  },
+  {
+    "train_line": 1896,
+    "hour": 10,
+    "minute": 0
+  },
+  {
+    "train_line": 1897,
+    "hour": 11,
+    "minute": 0
+  },
+  {
+    "train_line": 1898,
+    "hour": 12,
+    "minute": 0
+  },
+  {
+    "train_line": 1899,
+    "hour": 13,
+    "minute": 0
+  },
+  {
+    "train_line": 1900,
+    "hour": 14,
+    "minute": 0
+  },
+  {
+    "train_line": 1901,
+    "hour": 15,
+    "minute": 0
+  },
+  {
+    "train_line": 1902,
+    "hour": 16,
+    "minute": 0
+  },
+  {
+    "train_line": 1903,
+    "hour": 17,
+    "minute": 0
+  },
+  {
+    "train_line": 1904,
+    "hour": 18,
+    "minute": 0
+  },
+  {
+    "train_line": 1905,
+    "hour": 19,
+    "minute": 0
+  },
+  {
+    "train_line": 1906,
+    "hour": 20,
+    "minute": 0
+  },
+  {
+    "train_line": 1907,
+    "hour": 21,
+    "minute": 0
+  },
+  {
+    "train_line": 1908,
+    "hour": 22,
+    "minute": 0
+  },
+  {
+    "train_line": 1909,
+    "hour": 23,
+    "minute": 0
+  },
+  {
+    "train_line": 1910,
+    "hour": 0,
+    "minute": 0
+  },
+  {
+    "train_line": 5537,
+    "hour": 12,
+    "minute": 0
+  },
+  {
+    "train_line": 5538,
+    "hour": 12,
+    "minute": 1
+  },
+  {
+    "train_line": 5539,
+    "hour": 12,
+    "minute": 2
+  },
+  {
+    "train_line": 5540,
+    "hour": 12,
+    "minute": 3
+  },
+  {
+    "train_line": 5541,
+    "hour": 12,
+    "minute": 4
+  },
+  {
+    "train_line": 5542,
+    "hour": 12,
+    "minute": 5
+  },
+  {
+    "train_line": 5543,
+    "hour": 12,
+    "minute": 6
+  },
+  {
+    "train_line": 5544,
+    "hour": 12,
+    "minute": 7
+  },
+  {
+    "train_line": 5545,
+    "hour": 12,
+    "minute": 8
+  },
+  {
+    "train_line": 5546,
+    "hour": 12,
+    "minute": 9
+  },
+  {
+    "train_line": 5547,
+    "hour": 12,
+    "minute": 10
+  },
+  {
+    "train_line": 5548,
+    "hour": 12,
+    "minute": 11
+  },
+  {
+    "train_line": 5549,
+    "hour": 12,
+    "minute": 12
+  },
+  {
+    "train_line": 5550,
+    "hour": 12,
+    "minute": 13
+  },
+  {
+    "train_line": 5551,
+    "hour": 12,
+    "minute": 14
+  },
+  {
+    "train_line": 5552,
+    "hour": 12,
+    "minute": 15
+  },
+  {
+    "train_line": 5553,
+    "hour": 12,
+    "minute": 16
+  },
+  {
+    "train_line": 5554,
+    "hour": 12,
+    "minute": 17
+  },
+  {
+    "train_line": 5555,
+    "hour": 12,
+    "minute": 18
+  },
+  {
+    "train_line": 5556,
+    "hour": 12,
+    "minute": 19
+  },
+  {
+    "train_line": 5557,
+    "hour": 12,
+    "minute": 20
+  },
+  {
+    "train_line": 5558,
+    "hour": 12,
+    "minute": 21
+  },
+  {
+    "train_line": 5559,
+    "hour": 12,
+    "minute": 22
+  },
+  {
+    "train_line": 5560,
+    "hour": 12,
+    "minute": 23
+  },
+  {
+    "train_line": 5561,
+    "hour": 12,
+    "minute": 24
+  },
+  {
+    "train_line": 5562,
+    "hour": 12,
+    "minute": 25
+  },
+  {
+    "train_line": 5563,
+    "hour": 12,
+    "minute": 26
+  },
+  {
+    "train_line": 5564,
+    "hour": 12,
+    "minute": 27
+  },
+  {
+    "train_line": 5565,
+    "hour": 12,
+    "minute": 28
+  },
+  {
+    "train_line": 5566,
+    "hour": 12,
+    "minute": 29
+  },
+  {
+    "train_line": 5567,
+    "hour": 12,
+    "minute": 30
+  },
+  {
+    "train_line": 5568,
+    "hour": 12,
+    "minute": 31
+  },
+  {
+    "train_line": 5569,
+    "hour": 12,
+    "minute": 32
+  },
+  {
+    "train_line": 5570,
+    "hour": 12,
+    "minute": 33
+  },
+  {
+    "train_line": 5571,
+    "hour": 12,
+    "minute": 34
+  },
+  {
+    "train_line": 5572,
+    "hour": 12,
+    "minute": 35
+  },
+  {
+    "train_line": 5573,
+    "hour": 12,
+    "minute": 36
+  },
+  {
+    "train_line": 5574,
+    "hour": 12,
+    "minute": 37
+  },
+  {
+    "train_line": 5575,
+    "hour": 12,
+    "minute": 38
+  },
+  {
+    "train_line": 5576,
+    "hour": 12,
+    "minute": 39
+  },
+  {
+    "train_line": 5577,
+    "hour": 12,
+    "minute": 40
+  },
+  {
+    "train_line": 5578,
+    "hour": 12,
+    "minute": 41
+  },
+  {
+    "train_line": 5579,
+    "hour": 12,
+    "minute": 42
+  },
+  {
+    "train_line": 5580,
+    "hour": 12,
+    "minute": 43
+  },
+  {
+    "train_line": 5581,
+    "hour": 12,
+    "minute": 44
+  },
+  {
+    "train_line": 5582,
+    "hour": 12,
+    "minute": 45
+  },
+  {
+    "train_line": 5583,
+    "hour": 12,
+    "minute": 46
+  },
+  {
+    "train_line": 5584,
+    "hour": 12,
+    "minute": 47
+  },
+  {
+    "train_line": 5585,
+    "hour": 12,
+    "minute": 48
+  },
+  {
+    "train_line": 5586,
+    "hour": 12,
+    "minute": 49
+  },
+  {
+    "train_line": 5587,
+    "hour": 12,
+    "minute": 50
+  },
+  {
+    "train_line": 5588,
+    "hour": 12,
+    "minute": 51
+  },
+  {
+    "train_line": 5589,
+    "hour": 12,
+    "minute": 52
+  },
+  {
+    "train_line": 5590,
+    "hour": 12,
+    "minute": 53
+  },
+  {
+    "train_line": 5591,
+    "hour": 12,
+    "minute": 54
+  },
+  {
+    "train_line": 5592,
+    "hour": 12,
+    "minute": 55
+  },
+  {
+    "train_line": 5593,
+    "hour": 12,
+    "minute": 56
+  },
+  {
+    "train_line": 5594,
+    "hour": 12,
+    "minute": 57
+  },
+  {
+    "train_line": 5595,
+    "hour": 12,
+    "minute": 58
+  },
+  {
+    "train_line": 5596,
+    "hour": 12,
+    "minute": 59
+  },
+  {
+    "train_line": 5598,
+    "hour": 12,
+    "minute": 15
+  },
+  {
+    "train_line": 5605,
+    "hour": 18,
+    "minute": 15
+  },
+  {
+    "train_line": 5617,
+    "hour": 0,
+    "minute": 1
+  },
+  {
+    "train_line": 5622,
+    "hour": 14,
+    "minute": 29
+  },
+  {
+    "train_line": 5624,
+    "hour": 21,
+    "minute": 25
+  },
+  {
+    "train_line": 5628,
+    "hour": 23,
+    "minute": 31
+  }
+]

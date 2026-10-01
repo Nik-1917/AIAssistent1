@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "total_rows": 6755,
+  "max_tokens": 256,
+  "max_seq_length": 256,
+  "truncated_rows": 0,
+  "assistant_only_mask": "PASS",
+  "chat_template_sha256": "64f85b198065d0fba2a81f37e10ed68161ce2c19a754c7100e67e0ca2ee9c326",
+  "files": {
+    "calendar_holdout_v12_2.jsonl": {
+      "rows": 8,
+      "max_tokens": 131,
+      "sha256": "5a15403e6c2e770d9d22b1630b677c43f984fcc0f0e42f68406030273fef2bb9"
+    },
+    "context_transfer_eval.jsonl": {
+      "rows": 132,
+      "max_tokens": 189,
+      "sha256": "09fbb97ec4fcc1c17e05a1c428e540778e116bcaa1dc9341dd2f5c11c8d96e92"
+    },
+    "half_hour_holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 169,
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c"
+    },
+    "holdout.jsonl": {
+      "rows": 36,
+      "max_tokens": 140,
+      "sha256": "093a5159402f53345f7db3041e9b67e7a5e3486edc3135db13416f0459a83a02"
+    },
+    "input_clock_holdout.jsonl": {
+      "rows": 72,
+      "max_tokens": 186,
+      "sha256": "3859b076a287d9810f85746516740d0bb146786a94eec770a41221738f3736fc"
+    },
+    "interval_holdout.jsonl": {
+      "rows": 12,
+      "max_tokens": 176,
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1"
+    },
+    "last_event_holdout.jsonl": {
+      "rows": 6,
+      "max_tokens": 179,
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53"
+    },
+    "order_holdout.jsonl": {
+      "rows": 43,
+      "max_tokens": 185,
+      "sha256": "6a28655f44e9024bc527e13d8a45f100a06c3e8ff3df19439888b33ce8d4f2ea"
+    },
+    "regression_holdout.jsonl": {
+      "rows": 60,
+      "max_tokens": 184,
+      "sha256": "0692c7d1ea1bbc655233a0c5cd758ccf63c4cf4fcc0bdfb52f605769b50252de"
+    },
+    "speech_holdout.jsonl": {
+      "rows": 28,
+      "max_tokens": 209,
+      "sha256": "fd01d41cd17f19a4b1f33a3b91263bf1191d02fad52ec8b575821093cb9b62bd"
+    },
+    "train.jsonl": {
+      "rows": 5628,
+      "max_tokens": 256,
+      "sha256": "4651810c700ca0f7f7c0c6ba54c361d759dd2b79c83c9cbfd7aa5e54cdfe9562"
+    },
+    "validation.jsonl": {
+      "rows": 694,
+      "max_tokens": 206,
+      "sha256": "b82416cc68d3887f1804ce2c6e991de7fc6cfaf8d4cc7fdbc696fd2f9ce668d7"
+    }
+  },
+  "weights_loaded": false
+}

@@ -1,5 +1,16 @@
 # Calendar Assistant: training contract
 
+## V12.63: interpreting spoken clocks
+
+The [V12.63 input clock rules](CALENDAR_ASSISTANT_V12_63_INPUT_CLOCK.md)
+make the existing short, fully spoken, and relative clock meanings explicit.
+They preserve the V12.56 exception for half-hour expressions and the V12.62
+reply style. There is no general afternoon/evening default for ordinary hours.
+The withdrawn proposal to map bare four/six/ten to 16/18/22 is not adopted.
+Unknown or ambiguous fields remain absent under the existing partial-command
+contract. Markdown rules are preparation instructions, not an extra runtime
+system prompt; their effects must be verified in literal examples and inference.
+
 ## V12.62: complete clock pronunciation in reply
 
 For V12.62 data preparation, use the

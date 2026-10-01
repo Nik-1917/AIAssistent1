@@ -1,0 +1,116 @@
+{
+  "version": "v12.63",
+  "contract_version": "v12.57",
+  "rows": {
+    "calendar_holdout_v12_2": 8,
+    "context_transfer_eval": 132,
+    "half_hour_holdout": 36,
+    "holdout": 36,
+    "interval_holdout": 12,
+    "last_event_holdout": 6,
+    "order_holdout": 43,
+    "regression_holdout": 60,
+    "speech_holdout": 28,
+    "train": 5628,
+    "validation": 694,
+    "input_clock_holdout": 72
+  },
+  "artifacts": {
+    "calendar_holdout_v12_2": {
+      "sha256": "5a15403e6c2e770d9d22b1630b677c43f984fcc0f0e42f68406030273fef2bb9",
+      "rows": 8
+    },
+    "context_transfer_eval": {
+      "sha256": "09fbb97ec4fcc1c17e05a1c428e540778e116bcaa1dc9341dd2f5c11c8d96e92",
+      "rows": 132
+    },
+    "half_hour_holdout": {
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c",
+      "rows": 36
+    },
+    "holdout": {
+      "sha256": "093a5159402f53345f7db3041e9b67e7a5e3486edc3135db13416f0459a83a02",
+      "rows": 36
+    },
+    "interval_holdout": {
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1",
+      "rows": 12
+    },
+    "last_event_holdout": {
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53",
+      "rows": 6
+    },
+    "order_holdout": {
+      "sha256": "6a28655f44e9024bc527e13d8a45f100a06c3e8ff3df19439888b33ce8d4f2ea",
+      "rows": 43
+    },
+    "regression_holdout": {
+      "sha256": "0692c7d1ea1bbc655233a0c5cd758ccf63c4cf4fcc0bdfb52f605769b50252de",
+      "rows": 60
+    },
+    "speech_holdout": {
+      "sha256": "fd01d41cd17f19a4b1f33a3b91263bf1191d02fad52ec8b575821093cb9b62bd",
+      "rows": 28
+    },
+    "train": {
+      "sha256": "4651810c700ca0f7f7c0c6ba54c361d759dd2b79c83c9cbfd7aa5e54cdfe9562",
+      "rows": 5628
+    },
+    "validation": {
+      "sha256": "b82416cc68d3887f1804ce2c6e991de7fc6cfaf8d4cc7fdbc696fd2f9ce668d7",
+      "rows": 694
+    },
+    "input_clock_holdout": {
+      "sha256": "3859b076a287d9810f85746516740d0bb146786a94eec770a41221738f3736fc",
+      "rows": 72
+    }
+  },
+  "unchanged_baseline_rows": 5127,
+  "protected_files_checked": 1172,
+  "manual_sha256": {
+    "docs/calendar_v12_63_manual/baseline_lock.json": "7463beba41553b62fc511faff37bfad4f6cad0131dd87cd18e56f69a1d389737",
+    "docs/calendar_v12_63_manual/blind.txt": "937f817c2bf23b19f1ea8247427e925514fe70a90cc5ab1d97b6730992d77dcf",
+    "docs/calendar_v12_63_manual/contexts.json": "b5db7712cc7bbc6aeab3acd96915425171c4e390f2ec7ebcfed8a5779d83f84a",
+    "docs/calendar_v12_63_manual/dev.txt": "a1d41a0603b225e6e24323e23a218a7f27ea5fd6c3ed636b79ad3ad1de49af2e",
+    "docs/calendar_v12_63_manual/full_12.txt": "49d279bad3143c14955a01bd961499eb8a91386528c60f35fc70030124e33363",
+    "docs/calendar_v12_63_manual/relative_00.txt": "05ee9ef3be3c478a79289e30d64ac02291d07418cf7a55a74c812ac0f47552c6",
+    "docs/calendar_v12_63_manual/relative_01.txt": "838f4da1ff2edb5f9901accbabbb6709c1701e55a5abc3f3a1833f8febbe9fa9",
+    "docs/calendar_v12_63_manual/relative_02.txt": "e5f791a7182889b80a5894cf6ca71911fc88880983c199e441b114680cd2595c",
+    "docs/calendar_v12_63_manual/relative_03.txt": "9b509ce7dc64fb2cf52c5733fb33f754d838a76b9250b09e02f8b6aa5371bf0f",
+    "docs/calendar_v12_63_manual/relative_04.txt": "e15af3386f42d575ff04590435204d0994a24a8976585da56583c3d5a93219dc",
+    "docs/calendar_v12_63_manual/relative_05.txt": "e3768db881dbd7f3b6e26c89e6ab78a6bcc0e8bcb8b7eacecbb0448a5c074175",
+    "docs/calendar_v12_63_manual/relative_06.txt": "350a19f296a6b1aec158d68aa05a9de5586440e4fb53dec7ceeca17b0801b23b",
+    "docs/calendar_v12_63_manual/relative_07.txt": "08800980d4462f6a32a84a27a19bf69f09789eac69b338f2f808f3f0e9302756",
+    "docs/calendar_v12_63_manual/relative_08.txt": "9825f3ac1ba8df7ddc0f8be194fda2d0e5ab8bb0b2bc54d2294b93fbce16d0fb",
+    "docs/calendar_v12_63_manual/relative_09.txt": "32f3b3391a2bf481698a2d839f4dc7f025077fb6b31a3dc7a33d0d5689cabd17",
+    "docs/calendar_v12_63_manual/relative_10.txt": "618e4c13d138114fde284674d390d990ff4d693b42e50e830d7898dd955619b7",
+    "docs/calendar_v12_63_manual/relative_11.txt": "5400ffdba0454f1cff3a38805da3c4ff9c69541590fe8dbbf4495a48687f2a5e",
+    "docs/calendar_v12_63_manual/relative_12.txt": "e79f05d0b7f84f9fa82f149bd9cdf0e8af19750b789e52df825ed327521d6adc",
+    "docs/calendar_v12_63_manual/relative_13.txt": "e7f078a036ca7e0687c443e8331013437e4273943ac3433cb90c42fcd9a11cf1",
+    "docs/calendar_v12_63_manual/relative_14.txt": "949eeab450552a1c9a0492f70758f0f64bb0e338102948c251934f78865b346d",
+    "docs/calendar_v12_63_manual/relative_15.txt": "44b5cd9bbeab758e3f21b5e0a323264891fcd21a3c626e847a230493edfc0a4a",
+    "docs/calendar_v12_63_manual/relative_16.txt": "5fa973a3d54aa255b2d8b9de5b4fb0c86f203d7c40be9d576252088f0b4539c8",
+    "docs/calendar_v12_63_manual/relative_17.txt": "6cb07a10f6735170f2247d9438a3ebdece8ddf06eed3d386fef176b3ab249f77",
+    "docs/calendar_v12_63_manual/relative_18.txt": "b2cd4d6152dc4ae0ffb8b4f2f35ee1c4060e0a99efe2214fff78f67431cf651e",
+    "docs/calendar_v12_63_manual/relative_19.txt": "0d3d4ec9fd6a56ca91c40c734eb31756e7784d822101a5c67611b813be6f8de0",
+    "docs/calendar_v12_63_manual/relative_20.txt": "953d6317f06acb7c84a90189fcfabbb71b4dad23e0988176dca1ec4c59280fb5",
+    "docs/calendar_v12_63_manual/relative_21.txt": "11ddd4898e72be33284402f681480a3d8eecddd6c761cb102db749c55200dc56",
+    "docs/calendar_v12_63_manual/relative_22.txt": "d529b404698563ae4867227c32c713d1d1b8d827dff4de4dd2fc0563777494f3",
+    "docs/calendar_v12_63_manual/relative_23.txt": "f47eb5a94d5956327773de855d448f1dc8012e89440d22eaafd285bae146b8f8",
+    "docs/calendar_v12_63_manual/train_extra.txt": "43482c3db5beff7b26a09d62c4ee6ee47caa1bb4fcde5c9900750f552e6cba14"
+  },
+  "rules_sha256": {
+    "docs/CALENDAR_ASSISTANT_TRAINING_SPEC.md": "6114e724bce6fde370916a24cb581d9383f23c265010040bccc1b1535510cf63",
+    "docs/CALENDAR_ASSISTANT_V12_63_INPUT_CLOCK.md": "2ad51249cc258c4e673c1cf42868fc424f53526427fede82c029b0b93dd4661c"
+  },
+  "coverage": {
+    "compact_grid": 1440,
+    "relative_grid": 1440,
+    "full_units_distinct_clocks": 142,
+    "full_units_hours": 24,
+    "full_units_minutes": 60,
+    "full_units_is_cartesian_1440": false
+  },
+  "training": "NOT_RUN",
+  "inference": "NOT_RUN"
+}
