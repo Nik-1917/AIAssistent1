@@ -3,11 +3,17 @@ package com.example.aiassistent1.data.repository
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
+import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -16,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -138,5 +145,112 @@ class DataStoreSettingsRepositoryTest {
             runCurrent()
             assertEquals(enabled, reader.compactDatesEnabled.value)
         }
+    }
+
+    @Test
+    fun `new profiles have independent defaults and only calendar inherits legacy settings`() = runTest {
+        val legacy = GenerationParams(contextSize = 1952, maxTokens = 64, temperature = 0.55f,
+            topP = 0.72f, topK = 32, repeatPenalty = 1.3f, gpuLayers = 2)
+        val store = TestPreferencesDataStore(preferencesOf(
+            intPreferencesKey("legacy_contextSize") to legacy.contextSize,
+            intPreferencesKey("legacy_maxTokens") to legacy.maxTokens,
+            floatPreferencesKey("legacy_temperature") to legacy.temperature,
+            floatPreferencesKey("legacy_topP") to legacy.topP,
+            intPreferencesKey("legacy_topK") to legacy.topK,
+            floatPreferencesKey("legacy_repeatPenalty") to legacy.repeatPenalty,
+            intPreferencesKey("legacy_gpuLayers") to legacy.gpuLayers,
+        ))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        for (profile in ModelProfile.entries) {
+            assertEquals(profile.defaults, repository.getParamsForModel("new", profile).first())
+        }
+        assertEquals(legacy.copy(contextSize = 2048, maxTokens = 1024),
+            repository.getParamsForModel("legacy", ModelProfile.CALENDAR).first())
+        assertEquals(ModelProfile.CHAT.defaults, repository.getParamsForModel("legacy", ModelProfile.CHAT).first())
+
+        val changed = ModelProfile.CALENDAR.defaults.withContextSize(1024)
+        repository.updateParamsForModel("legacy", ModelProfile.CALENDAR, changed)
+        val reopened = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals(changed, reopened.getParamsForModel("legacy", ModelProfile.CALENDAR).first())
+        assertEquals(ModelProfile.CHAT.defaults, reopened.getParamsForModel("legacy", ModelProfile.CHAT).first())
+        // Reading and saving the calendar profile does not rewrite the legacy snapshot.
+        assertEquals(1952, store.data.first()[intPreferencesKey("legacy_contextSize")])
+        assertEquals(0.55f, store.data.first()[floatPreferencesKey("legacy_temperature")])
+    }
+
+    @Test
+    fun `one atomic profile update keeps the other profile and other models unchanged`() = runTest {
+        val store = TestPreferencesDataStore()
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val calendarObserved = mutableListOf<GenerationParams>()
+        val chatObserved = mutableListOf<GenerationParams>()
+        backgroundScope.launch {
+            repository.getParamsForModel("first", ModelProfile.CALENDAR).collect { calendarObserved += it }
+        }
+        backgroundScope.launch {
+            repository.getParamsForModel("first", ModelProfile.CHAT).collect { chatObserved += it }
+        }
+        runCurrent()
+        val requested = GenerationParams(contextSize = 4096, maxTokens = 64, temperature = 0.8f,
+            topP = 0.75f, topK = 32, repeatPenalty = 1.3f, gpuLayers = 2)
+        val expected = requested.copy(maxTokens = 2048)
+        repository.updateParamsForModel("first", ModelProfile.CALENDAR, requested)
+        runCurrent()
+        assertEquals(listOf(ModelProfile.CALENDAR.defaults, expected), calendarObserved)
+        assertEquals(listOf(ModelProfile.CHAT.defaults), chatObserved)
+
+        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(topK = 40)
+        repository.updateParamsForModel("first", ModelProfile.CHAT, chat)
+        runCurrent()
+        assertEquals(listOf(ModelProfile.CALENDAR.defaults, expected), calendarObserved)
+        assertEquals(listOf(ModelProfile.CHAT.defaults, chat), chatObserved)
+        for (profile in ModelProfile.entries) {
+            assertEquals(profile.defaults, repository.getParamsForModel("second", profile).first())
+        }
+        val saved = store.data.first()
+        assertEquals(4096, saved[intPreferencesKey("model_params/calendar/first/contextSize")])
+        assertEquals(2048, saved[intPreferencesKey("model_params/calendar/first/maxTokens")])
+        assertEquals(6144, saved[intPreferencesKey("model_params/chat/first/contextSize")])
+        assertEquals(3072, saved[intPreferencesKey("model_params/chat/first/maxTokens")])
+        assertEquals(40, saved[intPreferencesKey("model_params/chat/first/topK")])
+    }
+
+    @Test
+    fun `both model profiles survive reopening the real preferences file`() = runTest {
+        val file = File(temporaryFolder.newFolder(), "model-settings.preferences_pb")
+        val writerJob = Job(backgroundScope.coroutineContext[Job])
+        val writerScope = CoroutineScope(backgroundScope.coroutineContext + writerJob)
+        val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
+        val snapshotStore = TestPreferencesDataStore()
+        val writer = DataStoreSettingsRepository(snapshotStore, writerScope)
+        val calendar = ModelProfile.CALENDAR.defaults.withMaxTokens(512).copy(temperature = 0.4f)
+        val chat = ModelProfile.CHAT.defaults.withMaxTokens(3072).copy(topK = 32, temperature = 0.8f)
+        writer.updateParamsForModel("assistant.gguf", ModelProfile.CALENDAR, calendar)
+        writer.updateParamsForModel("assistant.gguf", ModelProfile.CHAT, chat)
+        // Write one complete snapshot: Android's mock SDK uses renameTo on Windows,
+        // which cannot replace an existing file. Profile mutations are tested above.
+        writerStore.updateData { snapshotStore.data.first() }
+        writerJob.cancelAndJoin()
+
+        val readerStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
+        assertEquals(calendar, reader.getParamsForModel("assistant.gguf", ModelProfile.CALENDAR).first())
+        assertEquals(chat, reader.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first())
+    }
+
+    @Test
+    fun `model settings wait for storage instead of first emitting temporary defaults`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val saved = ModelProfile.CHAT.defaults.withContextSize(4096).copy(temperature = 0.6f)
+        val store = TestPreferencesDataStore(preferencesOf(
+            intPreferencesKey("model_params/chat/assistant.gguf/contextSize") to saved.contextSize,
+            floatPreferencesKey("model_params/chat/assistant.gguf/temperature") to saved.temperature,
+        ), readGate = gate)
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val firstValue = async { repository.getParamsForModel("assistant.gguf", ModelProfile.CHAT).first() }
+        runCurrent()
+        assertFalse(firstValue.isCompleted)
+        gate.complete(Unit)
+        assertEquals(saved, firstValue.await())
     }
 }

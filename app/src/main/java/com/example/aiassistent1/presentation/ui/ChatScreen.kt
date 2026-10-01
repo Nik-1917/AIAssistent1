@@ -88,6 +88,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -108,6 +111,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -119,7 +123,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -127,6 +131,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.style.TextAlign
@@ -141,6 +146,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
@@ -148,6 +154,8 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
+import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -1130,23 +1138,28 @@ fun ChatScreen(
     if (showConferences) ConferenceScreen(viewModel, onClose = { showConferences = false })
 
     if (showSettingsDialog) {
-        ModelSettingsDialog(
-            params = uiState.modelParams,
-            compactDatesEnabled = uiState.compactDatesEnabled,
-            onCompactDatesChange = viewModel::setCompactDatesEnabled,
-            smoothResponseEnabled = uiState.smoothResponseEnabled,
-            dialogueModeEnabled = uiState.dialogueModeEnabled,
-            autoPlaybackEnabled = uiState.autoPlaybackEnabled,
-            speechRate = uiState.speechRate,
-            onDismiss = { showSettingsDialog = false },
-            onParamsChange = viewModel::updateModelParams,
-            onSmoothResponseChange = viewModel::setSmoothResponseEnabled,
-            onDialogueModeChange = viewModel::setDialogueModeEnabled,
-            onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
-            onSpeechRateChange = viewModel::setSpeechRate,
-            keywordControls = viewModel.personalKeywordControls,
-            voiceControls = viewModel.voiceProfileControls,
-        )
+        val settingsModel = uiState.selectedModel
+        key(settingsModel) {
+            ModelSettingsDialog(
+                profiles = uiState.modelProfiles,
+                initialProfile = uiState.modelProfile,
+                paramsLoaded = uiState.areModelParamsLoaded,
+                compactDatesEnabled = uiState.compactDatesEnabled,
+                onCompactDatesChange = viewModel::setCompactDatesEnabled,
+                smoothResponseEnabled = uiState.smoothResponseEnabled,
+                dialogueModeEnabled = uiState.dialogueModeEnabled,
+                autoPlaybackEnabled = uiState.autoPlaybackEnabled,
+                speechRate = uiState.speechRate,
+                onDismiss = { showSettingsDialog = false },
+                onParamsChange = { profile, params -> viewModel.updateModelParams(settingsModel, profile, params) },
+                onSmoothResponseChange = viewModel::setSmoothResponseEnabled,
+                onDialogueModeChange = viewModel::setDialogueModeEnabled,
+                onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
+                onSpeechRateChange = viewModel::setSpeechRate,
+                keywordControls = viewModel.personalKeywordControls,
+                voiceControls = viewModel.voiceProfileControls,
+            )
+        }
     }
 
     uiState.calendarEventDraft?.let { draft ->
@@ -2136,7 +2149,9 @@ private fun VoiceMicrophoneButton(
 
 @Composable
 fun ModelSettingsDialog(
-    params: GenerationParams,
+    profiles: ModelParameterProfiles,
+    initialProfile: ModelProfile,
+    paramsLoaded: Boolean,
     compactDatesEnabled: Boolean,
     onCompactDatesChange: (Boolean) -> Unit,
     smoothResponseEnabled: Boolean,
@@ -2144,7 +2159,7 @@ fun ModelSettingsDialog(
     autoPlaybackEnabled: Boolean,
     speechRate: Float,
     onDismiss: () -> Unit,
-    onParamsChange: (GenerationParams) -> Unit,
+    onParamsChange: (ModelProfile, GenerationParams) -> Unit,
     onSmoothResponseChange: (Boolean) -> Unit,
     onDialogueModeChange: (Boolean) -> Unit,
     onAutoPlaybackChange: (Boolean) -> Unit,
@@ -2152,26 +2167,38 @@ fun ModelSettingsDialog(
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
     voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
 ) {
-    var temperature by remember { mutableStateOf(params.temperature) }
-    var contextSize by remember { mutableStateOf(params.contextSize.toFloat()) }
-    var maxTokens by remember { mutableStateOf(params.maxTokens.toFloat()) }
-    var topP by remember { mutableStateOf(params.topP) }
-    var repeatPenalty by remember { mutableStateOf(params.repeatPenalty) }
+    val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
+    val chatSettings = remember { ModelSettingsState(profiles.chat) }
+    var selectedProfile by rememberSaveable { mutableStateOf(initialProfile) }
+    // Capture the profile by value: cancellation of an old timer must save to its original profile.
+    val editingProfile = selectedProfile
+    val modelSettings = if (editingProfile == ModelProfile.CALENDAR) calendarSettings else chatSettings
+    val modelParams = modelSettings.params
+    val defaults = editingProfile.defaults
+    var modelExpanded by rememberSaveable { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val saveModelParams by rememberUpdatedState(onParamsChange)
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
     var selectedSpeechRate by remember { mutableStateOf(speechRate) }
 
-    fun saveModelParams() {
-        onParamsChange(
-            params.copy(
-                temperature = temperature,
-                contextSize = contextSize.toInt(),
-                maxTokens = maxTokens.toInt(),
-                topP = topP,
-                repeatPenalty = repeatPenalty,
-            )
-        )
+    LaunchedEffect(profiles) {
+        calendarSettings.acceptPersisted(profiles.calendar)
+        chatSettings.acceptPersisted(profiles.chat)
+    }
+    LaunchedEffect(modelExpanded, editingProfile, lifecycleOwner, paramsLoaded) {
+        if (modelExpanded && paramsLoaded) {
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                modelSettings.saveWhileActive { saveModelParams(editingProfile, it) }
+            }
+        }
+    }
+    DisposableEffect(calendarSettings, chatSettings) {
+        onDispose {
+            calendarSettings.flush { saveModelParams(ModelProfile.CALENDAR, it) }
+            chatSettings.flush { saveModelParams(ModelProfile.CHAT, it) }
+        }
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -2193,58 +2220,83 @@ fun ModelSettingsDialog(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                SettingsSection(title = "Модель") {
-                    SettingSlider(
-                        label = "Temperature: ${String.format("%.2f", temperature)}",
-                        value = temperature,
-                        onValueChange = {
-                            temperature = it
-                            saveModelParams()
-                        },
-                        valueRange = 0f..2f
-                    )
+                SettingsSection(
+                    title = "Модель",
+                    expanded = modelExpanded,
+                    onExpandedChange = { expanded ->
+                        if (!expanded) modelSettings.flush { saveModelParams(editingProfile, it) }
+                        modelExpanded = expanded
+                    },
+                ) {
+                    PrimaryTabRow(selectedTabIndex = editingProfile.ordinal) {
+                        ModelProfile.entries.forEach { profile ->
+                            Tab(
+                                selected = editingProfile == profile,
+                                onClick = {
+                                    if (editingProfile != profile) {
+                                        modelSettings.flush { saveModelParams(editingProfile, it) }
+                                        selectedProfile = profile
+                                    }
+                                },
+                                text = { Text(if (profile == ModelProfile.CALENDAR) "Модель календарь" else "Модель чат") },
+                            )
+                        }
+                    }
+                    if (!paramsLoaded) {
+                        Text("Загрузка настроек модели…", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        SettingSlider(
+                            label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
+                            value = modelParams.temperature,
+                            onValueChange = { value -> modelSettings.update { it.copy(temperature = value) } },
+                            valueRange = 0f..2f,
+                            defaultValue = defaults.temperature,
+                            defaultValueDecimals = 2,
+                        )
 
-                    SettingSlider(
-                        label = "Context Size: ${contextSize.toInt()}",
-                        value = contextSize,
-                        onValueChange = {
-                            contextSize = it
-                            saveModelParams()
-                        },
-                        valueRange = 512f..8192f,
-                        steps = 15
-                    )
+                        SettingSlider(
+                            label = "Размер вопроса: ${modelParams.contextSize} токенов",
+                            value = modelParams.contextSize.toFloat(),
+                            onValueChange = { value -> modelSettings.update { it.withContextSize(value.roundToInt()) } },
+                            valueRange = GenerationParams.MIN_CONTEXT_SIZE.toFloat()..GenerationParams.MAX_CONTEXT_SIZE.toFloat(),
+                            steps = GenerationParams.SLIDER_STEPS,
+                            defaultValue = defaults.contextSize.toFloat(),
+                        )
 
-                    SettingSlider(
-                        label = "Max Tokens: ${maxTokens.toInt()}",
-                        value = maxTokens,
-                        onValueChange = {
-                            maxTokens = it
-                            saveModelParams()
-                        },
-                        valueRange = 64f..2048f,
-                        steps = 30
-                    )
+                        SettingSlider(
+                            label = "Место под ответ: ${modelParams.maxTokens} токенов",
+                            value = modelParams.maxTokens.toFloat(),
+                            onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
+                            valueRange = GenerationParams.MIN_MAX_TOKENS.toFloat()..GenerationParams.MAX_MAX_TOKENS.toFloat(),
+                            steps = GenerationParams.SLIDER_STEPS,
+                            defaultValue = defaults.maxTokens.toFloat(),
+                        )
+                        Text(
+                            text = "Размер вопроса к модели включает в себя зарезервированное место под ответ. " +
+                                "Настройки синхронизируются: под ответ выделяется половина размера вопроса. " +
+                                "Если ответ модели не поместился в карточке ответа, увеличьте место под ответ.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
 
-                    SettingSlider(
-                        label = "Top P: ${String.format("%.2f", topP)}",
-                        value = topP,
-                        onValueChange = {
-                            topP = it
-                            saveModelParams()
-                        },
-                        valueRange = 0f..1f
-                    )
+                        SettingSlider(
+                            label = "Top P: ${String.format("%.2f", modelParams.topP)}",
+                            value = modelParams.topP,
+                            onValueChange = { value -> modelSettings.update { it.copy(topP = value) } },
+                            valueRange = 0f..1f,
+                            defaultValue = defaults.topP,
+                            defaultValueDecimals = 2,
+                        )
 
-                    SettingSlider(
-                        label = "Repeat Penalty: ${String.format("%.2f", repeatPenalty)}",
-                        value = repeatPenalty,
-                        onValueChange = {
-                            repeatPenalty = it
-                            saveModelParams()
-                        },
-                        valueRange = 1f..2f
-                    )
+                        SettingSlider(
+                            label = "Repeat Penalty: ${String.format("%.2f", modelParams.repeatPenalty)}",
+                            value = modelParams.repeatPenalty,
+                            onValueChange = { value -> modelSettings.update { it.copy(repeatPenalty = value) } },
+                            valueRange = 1f..2f,
+                            defaultValue = defaults.repeatPenalty,
+                            defaultValueDecimals = 2,
+                        )
+                    }
                 }
 
                 SettingsSection(title = "Даты и время") {
@@ -2355,7 +2407,16 @@ private fun SettingsSection(
     content: @Composable () -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    SettingsSection(title, expanded, { expanded = it }, content)
+}
 
+@Composable
+private fun SettingsSection(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -2364,7 +2425,7 @@ private fun SettingsSection(
                 .clickable(
                     role = Role.Button,
                     onClickLabel = if (expanded) "Свернуть" else "Развернуть",
-                ) { expanded = !expanded },
+                ) { onExpandedChange(!expanded) },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -2390,21 +2451,54 @@ private fun SettingsSection(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun SettingSlider(
     label: String,
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int = 0
+    steps: Int = 0,
+    defaultValue: Float? = null,
+    defaultValueDecimals: Int = 0,
 ) {
+    val markerColor = MaterialTheme.colorScheme.onSurface
+    val markerOutline = MaterialTheme.colorScheme.surface
     Column {
         Text(text = label, style = MaterialTheme.typography.labelMedium)
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            steps = steps
+            steps = steps,
+            modifier = if (defaultValue != null) Modifier.semantics {
+                contentDescription = label.substringBefore(':')
+            } else Modifier,
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = if (defaultValue == null) Modifier else Modifier.drawWithContent {
+                        drawContent()
+                        val fraction = (defaultValue - valueRange.start) /
+                            (valueRange.endInclusive - valueRange.start)
+                        // Only interior discrete ticks are inset by the rounded corners.
+                        val corner = if (steps > 0 && fraction > 0f && fraction < 1f) size.height / 2f else 0f
+                        val position = corner + (size.width - 2f * corner) * fraction
+                        val x = if (layoutDirection == LayoutDirection.Rtl) size.width - position else position
+                        val start = Offset(x, -2.dp.toPx())
+                        val end = Offset(x, size.height + 2.dp.toPx())
+                        drawLine(markerOutline, start, end, strokeWidth = 4.dp.toPx())
+                        drawLine(markerColor, start, end, strokeWidth = 2.dp.toPx())
+                    },
+                )
+            },
         )
+        if (defaultValue != null) {
+            Text(
+                text = "По умолчанию: ${String.format(java.util.Locale.ROOT, "%.${defaultValueDecimals}f", defaultValue)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

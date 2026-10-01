@@ -39,6 +39,8 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
+import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
@@ -57,6 +59,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -109,6 +114,8 @@ class ChatViewModel(
     private var voiceStartJob: Job? = null
     private var voiceBackgroundSession: GenerationForegroundService.Session? = null
     private var paramsJob: Job? = null
+    private val modelParamsWrites = Mutex()
+    private val modelParamsController = ModelParamsController(llmEngine)
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
     private var isManualMessagePlayback = false
@@ -200,7 +207,7 @@ class ChatViewModel(
                 session.awaitReady()
                 // Reserve a bounded context for sequential transcript chunks; restore chat settings in finally.
                 llmEngine.unload()
-                llmEngine.updateParams(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
+                modelParamsController.applyForRequest(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
                 val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
                     com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
                 mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
@@ -211,7 +218,7 @@ class ChatViewModel(
             finally {
                 summarizing = false
                 llmEngine.unload()
-                llmEngine.updateParams(uiState.value.modelParams)
+                modelParamsController.applyForRequest(uiState.value.modelParams)
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
                 session?.close()
             }
@@ -221,7 +228,11 @@ class ChatViewModel(
     private fun observeSettings() {
         viewModelScope.launch {
             settingsRepository.selectedModel.collect { model ->
-                mutableUiState.update { it.copy(selectedModel = model.orEmpty()) }
+                mutableUiState.update { it.copy(
+                    selectedModel = model.orEmpty(),
+                    modelProfiles = ModelParameterProfiles(),
+                    areModelParamsLoaded = false,
+                ) }
                 checkModelPresence(model)
                 if (model != null) observeParams(model)
             }
@@ -276,17 +287,33 @@ class ChatViewModel(
     private fun observeParams(modelName: String) {
         paramsJob?.cancel()
         paramsJob = viewModelScope.launch {
-            settingsRepository.getParamsForModel(modelName).collect { params ->
-                mutableUiState.update { it.copy(modelParams = params) }
-                if (!summarizing) llmEngine.updateParams(params)
+            combine(
+                settingsRepository.getParamsForModel(modelName, ModelProfile.CALENDAR),
+                settingsRepository.getParamsForModel(modelName, ModelProfile.CHAT),
+            ) { calendar, chat -> ModelParameterProfiles(calendar, chat) }.collect { profiles ->
+                if (uiState.value.selectedModel == modelName) {
+                    mutableUiState.update { it.copy(modelProfiles = profiles, areModelParamsLoaded = true) }
+                    applyCurrentModelParamsIfIdle()
+                }
             }
         }
     }
 
-    fun updateModelParams(params: GenerationParams) {
+    fun updateModelParams(modelName: String, profile: ModelProfile, params: GenerationParams) {
         viewModelScope.launch {
-            settingsRepository.updateParamsForModel(uiState.value.selectedModel, params)
+            modelParamsWrites.withLock {
+                settingsRepository.updateParamsForModel(modelName, profile, params)
+            }
         }
+    }
+
+    private suspend fun readRequestParams(modelName: String, profile: ModelProfile): GenerationParams =
+        modelParamsWrites.withLock {
+            settingsRepository.getParamsForModel(modelName, profile).first()
+        }
+
+    private fun applyCurrentModelParamsIfIdle() {
+        modelParamsController.applyWhenIdle(uiState.value, summarizing)
     }
 
     fun refreshModelStatus() {
@@ -519,6 +546,7 @@ class ChatViewModel(
                 backgroundSession.awaitReady()
                 if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
                 val currentState = requestState
+                modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 val responseFlowResult = sendMessage(
                     modelContextBuilder.build(
@@ -649,6 +677,7 @@ class ChatViewModel(
                     }
                 }
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                applyCurrentModelParamsIfIdle()
                 backgroundSession?.close()
             }
         }
@@ -1462,6 +1491,7 @@ class ChatViewModel(
             try {
                 background = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 background.awaitReady()
+                modelParamsController.applyForRequest(readRequestParams(uiState.value.selectedModel, ModelProfile.CALENDAR))
                 val result = formatCalendarField(field.modelName, field.expectedFormat, rawValue)
                     .mapCatching { validateCalendarField(field, it).getOrThrow() }
                 calendarDraftController.finishFormatting(id, field, rawValue, result)
@@ -1474,6 +1504,7 @@ class ChatViewModel(
             } finally {
                 background?.close()
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                applyCurrentModelParamsIfIdle()
                 if (kotlin.coroutines.coroutineContext[Job]?.isActive == true) resumeDialogueVoiceInput()
             }
         }
@@ -1808,6 +1839,7 @@ class ChatViewModel(
                             sessionError = null,
                         )
                     }
+                    applyCurrentModelParamsIfIdle()
                 }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error

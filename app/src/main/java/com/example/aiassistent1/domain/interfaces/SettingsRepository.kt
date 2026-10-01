@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.interfaces
 
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.CalendarViewState
@@ -24,8 +25,9 @@ interface SettingsRepository {
     val selectedModel: StateFlow<String?>
     suspend fun setSelectedModel(modelName: String)
 
-    fun getParamsForModel(modelName: String): StateFlow<GenerationParams>
-    suspend fun updateParamsForModel(modelName: String, params: GenerationParams)
+    /** Emits only after reading storage, without a temporary default snapshot. */
+    fun getParamsForModel(modelName: String, profile: ModelProfile): Flow<GenerationParams>
+    suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams)
 
     val showDeleteMessageConfirmation: StateFlow<Boolean>
     suspend fun setShowDeleteMessageConfirmation(show: Boolean)

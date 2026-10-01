@@ -4,6 +4,8 @@ import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
+import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
@@ -49,8 +51,11 @@ data class ChatUiState(
     val speechRate: Float = SpeechRate.DEFAULT,
     val availableModels: List<String> = emptyList(),
     val selectedModel: String = "",
-    val modelParams: GenerationParams = GenerationParams(),
+    val modelProfiles: ModelParameterProfiles = ModelParameterProfiles(),
+    val areModelParamsLoaded: Boolean = false,
 ) {
     val isCalendarMode: Boolean get() = activeChatId == "calendar"
+    val modelProfile: ModelProfile get() = ModelProfile.forCalendarMode(isCalendarMode)
+    val modelParams: GenerationParams get() = modelProfiles[modelProfile]
     val calendarEventDraft: CalendarEventDraftUiState? get() = calendarDrafts.selected
 }

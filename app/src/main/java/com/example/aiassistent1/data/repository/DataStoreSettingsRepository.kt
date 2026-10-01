@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.CalendarViewState
@@ -149,7 +150,6 @@ class DataStoreSettingsRepository(
     private val hapticFeedbackEnabledKey = booleanPreferencesKey("haptic_feedback_enabled")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
-    private val paramsFlows = mutableMapOf<String, StateFlow<GenerationParams>>()
 
     // No placeholder emission: navigation becomes available only after reading storage.
     override val navigationState = dataStore.data.map { preferences ->
@@ -283,43 +283,44 @@ class DataStoreSettingsRepository(
         }
     }
 
-    override fun getParamsForModel(modelName: String): StateFlow<GenerationParams> {
-        return paramsFlows.getOrPut(modelName) {
-            dataStore.data
-                .map { preferences ->
-                    GenerationParams(
-                        contextSize = preferences[intPreferencesKey("${modelName}_contextSize")] ?: 512,
-                        maxTokens = preferences[intPreferencesKey("${modelName}_maxTokens")] ?: 512,
-                        temperature = preferences[floatPreferencesKey("${modelName}_temperature")] ?: 0.35f,
-                        topP = preferences[floatPreferencesKey("${modelName}_topP")] ?: 0.9f,
-                        topK = preferences[intPreferencesKey("${modelName}_topK")] ?: 20,
-                        repeatPenalty = preferences[floatPreferencesKey("${modelName}_repeatPenalty")] ?: 1.15f,
-                        gpuLayers = preferences[intPreferencesKey("${modelName}_gpuLayers")] ?: 0,
-                    )
-                }
-                .stateIn(
-                    scope = scope,
-                    started = SharingStarted.Eagerly,
-                    initialValue = GenerationParams(
-                        contextSize = 512,
-                        maxTokens = 512,
-                        temperature = 0.35f,
-                        topP = 0.9f,
-                        repeatPenalty = 1.15f
-                    )
-                )
-        }
+    override fun getParamsForModel(modelName: String, profile: ModelProfile) = dataStore.data
+        .map { preferences -> readModelParams(preferences, modelName, profile) }
+        .distinctUntilChanged()
+
+    private fun modelParamsPrefix(modelName: String, profile: ModelProfile) =
+        "model_params/${profile.storageKey}/$modelName/"
+
+    private fun readModelParams(preferences: Preferences, modelName: String, profile: ModelProfile): GenerationParams {
+        val prefix = modelParamsPrefix(modelName, profile)
+        val defaults = profile.defaults
+        // Legacy shared settings belong to calendar only. Chat starts with its own defaults.
+        val legacyPrefix = if (profile == ModelProfile.CALENDAR) "${modelName}_" else null
+        fun intValue(name: String, default: Int): Int = preferences[intPreferencesKey(prefix + name)]
+            ?: legacyPrefix?.let { preferences[intPreferencesKey(it + name)] } ?: default
+        fun floatValue(name: String, default: Float): Float = preferences[floatPreferencesKey(prefix + name)]
+            ?: legacyPrefix?.let { preferences[floatPreferencesKey(it + name)] } ?: default
+        return GenerationParams(
+            contextSize = intValue("contextSize", defaults.contextSize),
+            maxTokens = intValue("maxTokens", defaults.maxTokens),
+            temperature = floatValue("temperature", defaults.temperature),
+            topP = floatValue("topP", defaults.topP),
+            topK = intValue("topK", defaults.topK),
+            repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
+            gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
+        ).normalizedForSettings()
     }
 
-    override suspend fun updateParamsForModel(modelName: String, params: GenerationParams) {
+    override suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams) {
+        val normalized = params.normalizedForSettings()
+        val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
-            preferences[intPreferencesKey("${modelName}_contextSize")] = params.contextSize
-            preferences[intPreferencesKey("${modelName}_maxTokens")] = params.maxTokens
-            preferences[floatPreferencesKey("${modelName}_temperature")] = params.temperature
-            preferences[floatPreferencesKey("${modelName}_topP")] = params.topP
-            preferences[intPreferencesKey("${modelName}_topK")] = params.topK
-            preferences[floatPreferencesKey("${modelName}_repeatPenalty")] = params.repeatPenalty
-            preferences[intPreferencesKey("${modelName}_gpuLayers")] = params.gpuLayers
+            preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize
+            preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.maxTokens
+            preferences[floatPreferencesKey(prefix + "temperature")] = normalized.temperature
+            preferences[floatPreferencesKey(prefix + "topP")] = normalized.topP
+            preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
+            preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
+            preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
         }
     }
 
