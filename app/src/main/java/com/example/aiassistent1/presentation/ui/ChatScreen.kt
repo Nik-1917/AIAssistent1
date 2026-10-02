@@ -2290,6 +2290,11 @@ fun ModelSettingsDialog(
                                 )
                             }
                             Text(
+                                text = modelFileSizeDescription(modelParams),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
                                 text = memory.explanation,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (memory.canLoad) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,

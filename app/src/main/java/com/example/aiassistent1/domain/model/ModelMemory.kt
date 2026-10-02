@@ -49,6 +49,8 @@ data class DeviceContextLimit(
     val totalBytes: Long = 0,
     val availableBytes: Long = 0,
     val reserveBytes: Long = 0,
+    /** Fresh inputs for the settings description; never persisted or used as a loading authority. */
+    val modelFileBudget: ModelFileBudget? = null,
 ) {
     val canLoad: Boolean get() = status == MemoryLimitStatus.ESTIMATED && maximumContext >= 2
 
@@ -59,6 +61,12 @@ data class DeviceContextLimit(
         MemoryLimitStatus.MEMORY_UNAVAILABLE -> "Не удалось определить доступную оперативную память. Загрузка модели приостановлена."
         MemoryLimitStatus.METADATA_UNAVAILABLE -> "Не удалось рассчитать потребление памяти этой модели по GGUF. Загрузка модели приостановлена."
     }
+}
+
+/** Allows local context/batch edits to update the description without Android calls on the UI thread. */
+data class ModelFileBudget(val capacityBytes: Long, val metadata: ModelMemoryMetadata) {
+    fun maximumFileBytes(context: Int, settings: MemoryRuntimeSettings): Long? =
+        ModelMemoryCalculator.maximumModelFileBytes(metadata, settings, context, capacityBytes)
 }
 
 data class ModelMemoryCost(val weightsBytes: Long, val workingBytes: Long) {
@@ -109,7 +117,34 @@ object ModelMemoryCalculator {
         }
         return result(lower * GenerationParams.CONTEXT_STEP,
             if (lower > 0) MemoryLimitStatus.ESTIMATED else MemoryLimitStatus.INSUFFICIENT_MEMORY)
+            .copy(modelFileBudget = ModelFileBudget(capacity, metadata))
     }
+
+    /** Inverts the same weight cost at a fixed context, keeping the selected model's dimensions. */
+    fun maximumModelFileBytes(
+        metadata: ModelMemoryMetadata,
+        settings: MemoryRuntimeSettings,
+        context: Int,
+        capacityBytes: Long,
+    ): Long? {
+        if (capacityBytes < 0) return null
+        val working = cost(metadata, settings, context)?.workingBytes ?: return null
+        val remaining = (capacityBytes - working).coerceAtLeast(0)
+        var lower = 0L
+        var upper = remaining
+        while (lower < upper) {
+            val distance = upper - lower
+            val middle = lower + distance / 2 + distance % 2
+            val weights = try { weightsBytes(middle, settings.gpuLayers) } catch (_: ArithmeticException) { null }
+            if (weights != null && weights <= remaining) lower = middle else upper = middle - 1
+        }
+        return lower
+    }
+
+    private fun weightsBytes(fileBytes: Long, gpuLayers: Int): Long = Math.addExact(
+        Math.multiplyExact(fileBytes, if (gpuLayers != 0) 2L else 1L),
+        maxOf(64 * MIB, fileBytes / 10),
+    )
 
     fun cost(metadata: ModelMemoryMetadata, settings: MemoryRuntimeSettings, context: Int): ModelMemoryCost? = try {
         require(metadata.architecture in supportedArchitectures && metadata.fileBytes > 0 && context > 0)
@@ -140,8 +175,7 @@ object ModelMemoryCalculator {
         val attention = multiply(batch, heads, paddedContext, 4)
         val working = sum(128 * MIB, kv, activations, logits, attention)
         // File size is a conservative weight estimate, with overhead and a possible GPU-side copy.
-        val weights = sum(metadata.fileBytes, maxOf(64 * MIB, metadata.fileBytes / 10),
-            if (settings.gpuLayers != 0) metadata.fileBytes else 0)
+        val weights = weightsBytes(metadata.fileBytes, settings.gpuLayers)
         ModelMemoryCost(weights, working).also { it.totalBytes }
     } catch (_: IllegalArgumentException) {
         null

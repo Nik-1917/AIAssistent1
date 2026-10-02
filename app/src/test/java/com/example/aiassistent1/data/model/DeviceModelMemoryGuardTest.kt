@@ -21,7 +21,9 @@ class DeviceModelMemoryGuardTest {
         guard.loaded(file, params, memory)
         memory = memory.copy(availableBytes = memory.availableBytes - cost.workingBytes,
             processPrivateDirtyBytes = memory.processPrivateDirtyBytes + cost.workingBytes)
-        assertEquals(before.maximumContext, guard.assess(file, params).maximumContext)
+        val after = guard.assess(file, params)
+        assertEquals(before.maximumContext, after.maximumContext)
+        assertEquals(before.modelFileBudget, after.modelFileBudget)
         guard.unloaded()
         assertTrue(guard.assess(file, params).maximumContext < before.maximumContext)
     }
