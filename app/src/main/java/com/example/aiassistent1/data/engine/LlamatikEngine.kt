@@ -2,6 +2,7 @@ package com.example.aiassistent1.data.engine
 
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
+import com.example.aiassistent1.data.model.GgufMetadataReader
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.GenerationParams
@@ -9,6 +10,7 @@ import com.example.aiassistent1.domain.model.ModelState
 import com.llamatik.library.platform.GenStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.io.File
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +42,8 @@ class LlamatikEngine internal constructor(
     private var params = initialParams
     private var loadedConfiguration: NativeConfiguration? = null
     private var appliedParams: GenerationParams? = null
+    private var loadedContextLength: Int? = null
+    private val runtimeParams: GenerationParams get() = params.boundedForRuntime(loadedContextLength)
     private var generationActive = false
     @Volatile private var closed = false
 
@@ -48,7 +52,7 @@ class LlamatikEngine internal constructor(
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
         synchronized(lifecycleLock) {
             if (closed) return Result.failure(IllegalStateException("Движок закрыт"))
-            if (state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params, processorCount)) {
+            if (state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
                 applyRuntimeParams()
                 return Result.success(Unit)
             }
@@ -58,14 +62,16 @@ class LlamatikEngine internal constructor(
         withContext(engineDispatcher) {
             runCatching {
                 val modelPath = modelProvider.getModelPath().getOrThrow()
+                val contextLength = GgufMetadataReader.readContextLength(File(modelPath))
                 synchronized(lifecycleLock) {
                     check(!closed) { "Движок закрыт" }
                     // Batch/context/CPU settings take effect at native context creation, not in the setter.
                     if (loadedConfiguration != null) releaseModel()
+                    loadedContextLength = contextLength
                     mutableState.value = ModelState.Loading
                     applyRuntimeParams()
                     check(runtime.load(modelPath)) { "Не удалось загрузить модель" }
-                    loadedConfiguration = NativeConfiguration(params, processorCount)
+                    loadedConfiguration = NativeConfiguration(runtimeParams, processorCount)
                     mutableState.value = ModelState.Ready
                 }
             }.onFailure { error ->
@@ -76,6 +82,7 @@ class LlamatikEngine internal constructor(
                         } finally {
                             loadedConfiguration = null
                             appliedParams = null
+                            loadedContextLength = null
                             mutableState.value = ModelState.Error(error.toUserMessage())
                         }
                     }
@@ -147,16 +154,17 @@ class LlamatikEngine internal constructor(
         if (closed) return
         this.params = params
         // Settings may be saved during a request. Its native parameters remain unchanged.
-        if (!generationActive && state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(params, processorCount)) {
+        if (!generationActive && state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
             applyRuntimeParams()
         }
     }
 
     /** Call only with lifecycleLock held. Reloads and repeated identical updates are avoided. */
     private fun applyRuntimeParams() {
-        if (appliedParams != params) {
-            runtime.updateParams(params, params.effectiveCpuThreads(processorCount), params.effectiveBatchSize)
-            appliedParams = params
+        val effective = runtimeParams
+        if (appliedParams != effective) {
+            runtime.updateParams(effective, effective.effectiveCpuThreads(processorCount), effective.effectiveBatchSize)
+            appliedParams = effective
         }
     }
 
@@ -183,6 +191,7 @@ class LlamatikEngine internal constructor(
             } finally {
                 loadedConfiguration = null
                 appliedParams = null
+                loadedContextLength = null
                 mutableState.value = ModelState.Unloaded
             }
         }

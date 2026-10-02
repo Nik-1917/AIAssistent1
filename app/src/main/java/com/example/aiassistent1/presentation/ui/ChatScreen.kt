@@ -2175,7 +2175,8 @@ fun ModelSettingsDialog(
     val editingProfile = selectedProfile
     val modelSettings = if (editingProfile == ModelProfile.CALENDAR) calendarSettings else chatSettings
     val modelParams = modelSettings.params
-    val defaults = editingProfile.defaults
+    val contextLimits = modelParams.contextLimits
+    val defaults = editingProfile.defaults.copy(trainedContextLength = modelParams.trainedContextLength).normalizedForSettings()
     var modelExpanded by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val saveModelParams by rememberUpdatedState(onParamsChange)
@@ -2255,12 +2256,19 @@ fun ModelSettingsDialog(
                             defaultValueDecimals = 2,
                         )
 
+                        Text(
+                            text = modelParams.trainedContextLength?.let { "Предел контекста модели: $it токенов" }
+                                ?: "Предел контекста модели не определён. Потолок приложения: ${contextLimits.maximum} токенов.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         SettingSlider(
                             label = "Размер вопроса: ${modelParams.contextSize} токенов",
                             value = modelParams.contextSize.toFloat(),
                             onValueChange = { value -> modelSettings.update { it.withContextSize(value.roundToInt()) } },
-                            valueRange = GenerationParams.MIN_CONTEXT_SIZE.toFloat()..GenerationParams.MAX_CONTEXT_SIZE.toFloat(),
-                            steps = GenerationParams.SLIDER_STEPS,
+                            valueRange = contextLimits.minimum.toFloat()..contextLimits.maximum.toFloat(),
+                            steps = contextLimits.sliderSteps,
+                            enabled = contextLimits.adjustable,
                             defaultValue = defaults.contextSize.toFloat(),
                         )
 
@@ -2268,8 +2276,9 @@ fun ModelSettingsDialog(
                             label = "Место под ответ: ${modelParams.maxTokens} токенов",
                             value = modelParams.maxTokens.toFloat(),
                             onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
-                            valueRange = GenerationParams.MIN_MAX_TOKENS.toFloat()..GenerationParams.MAX_MAX_TOKENS.toFloat(),
-                            steps = GenerationParams.SLIDER_STEPS,
+                            valueRange = (contextLimits.minimum / 2).toFloat()..(contextLimits.maximum / 2).toFloat(),
+                            steps = contextLimits.sliderSteps,
+                            enabled = contextLimits.adjustable,
                             defaultValue = defaults.maxTokens.toFloat(),
                         )
                         Text(

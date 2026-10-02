@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.data.model.GgufMetadataReader
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
@@ -20,6 +21,8 @@ import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.AssistantDisplayName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,9 +41,15 @@ class DataStoreSettingsRepository(
     private val dataStore: DataStore<Preferences>,
     private val scope: CoroutineScope,
     private val profileFile: java.io.File? = null,
+    private val readModelContextLength: suspend (String) -> Int? = { null },
 ) : SettingsRepository {
     constructor(context: Context, scope: CoroutineScope) : this(context.settingsStore, scope,
-        java.io.File(context.noBackupFilesDir, "voice_profile.bin"))
+        java.io.File(context.noBackupFilesDir, "voice_profile.bin"),
+        readModelContextLength = { modelName ->
+            withContext(Dispatchers.IO) {
+                context.getExternalFilesDir("models")?.let { GgufMetadataReader.readInDirectory(it, modelName) }
+            }
+        })
 
     private val appDestinationKey = stringPreferencesKey("last_app_destination")
     private val selectedModelKey = stringPreferencesKey("selected_model")
@@ -290,7 +299,7 @@ class DataStoreSettingsRepository(
     private fun modelParamsPrefix(modelName: String, profile: ModelProfile) =
         "model_params/${profile.storageKey}/$modelName/"
 
-    private fun readModelParams(preferences: Preferences, modelName: String, profile: ModelProfile): GenerationParams {
+    private suspend fun readModelParams(preferences: Preferences, modelName: String, profile: ModelProfile): GenerationParams {
         val prefix = modelParamsPrefix(modelName, profile)
         val defaults = profile.defaults
         // Legacy shared settings belong to calendar only. Chat starts with its own defaults.
@@ -311,11 +320,12 @@ class DataStoreSettingsRepository(
             batchSize = intValue("batchSize", defaults.batchSize),
             cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
             cpuThreads = preferences[intPreferencesKey(prefix + "cpuThreads")] ?: defaults.cpuThreads,
+            trainedContextLength = readModelContextLength(modelName),
         ).normalizedForSettings()
     }
 
     override suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams) {
-        val normalized = params.normalizedForSettings()
+        val normalized = params.copy(trainedContextLength = readModelContextLength(modelName)).normalizedForSettings()
         val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
             preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize

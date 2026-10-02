@@ -22,6 +22,14 @@ internal class ModelSettingsState(initialParams: GenerationParams) {
 
     fun acceptPersisted(value: GenerationParams) {
         val normalized = value.normalizedForSettings()
+        if (params.trainedContextLength != normalized.trainedContextLength) {
+            // A new file limit also bounds unsaved edits and pending DataStore acknowledgements.
+            fun GenerationParams.withCurrentLimit() =
+                copy(trainedContextLength = normalized.trainedContextLength).normalizedForSettings()
+            params = params.withCurrentLimit()
+            persisted = persisted.withCurrentLimit()
+            submitted = submitted?.withCurrentLimit()
+        }
         val awaiting = submitted
         if (awaiting != null && normalized != awaiting) return
         val hasLocalChanges = params != (awaiting ?: persisted)

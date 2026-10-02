@@ -685,7 +685,11 @@ class ChatViewModel(
 
     fun selectModel(modelName: String) {
         viewModelScope.launch {
-            if (uiState.value.selectedModel == modelName) return@launch
+            if (uiState.value.selectedModel == modelName) {
+                // Import may restore a previously selected but missing file.
+                observeParams(modelName)
+                return@launch
+            }
             val previousGeneration = generationJob
             
             stopGeneration(resumeDialogue = false)
