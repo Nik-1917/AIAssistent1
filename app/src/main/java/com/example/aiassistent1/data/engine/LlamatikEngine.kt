@@ -3,6 +3,8 @@ package com.example.aiassistent1.data.engine
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.data.model.GgufMetadataReader
+import com.example.aiassistent1.data.model.ModelMemoryGuard
+import com.example.aiassistent1.domain.model.DeviceContextLimit
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.GenerationParams
@@ -29,11 +31,14 @@ class LlamatikEngine internal constructor(
     executor: ExecutorService,
     private val runtime: LlamaRuntime,
     private val processorCount: Int = CpuThreadSettings.availableProcessors,
+    private val memoryGuard: ModelMemoryGuard? = null,
 ) : LLMEngine {
     constructor(
         modelProvider: ModelProvider,
+        memoryGuard: ModelMemoryGuard,
         initialParams: GenerationParams = GenerationParams(),
-    ) : this(modelProvider, initialParams, Executors.newFixedThreadPool(CpuThreadSettings.automaticThreadCount()), NativeLlamaRuntime)
+    ) : this(modelProvider, initialParams, Executors.newFixedThreadPool(CpuThreadSettings.automaticThreadCount()),
+        NativeLlamaRuntime, memoryGuard = memoryGuard)
 
     private val modelMutex = Mutex()
     private val lifecycleLock = Any()
@@ -43,7 +48,9 @@ class LlamatikEngine internal constructor(
     private var loadedConfiguration: NativeConfiguration? = null
     private var appliedParams: GenerationParams? = null
     private var loadedContextLength: Int? = null
-    private val runtimeParams: GenerationParams get() = params.boundedForRuntime(loadedContextLength)
+    private var loadedMemoryLimit: DeviceContextLimit? = null
+    private var loadedModelPath: String? = null
+    private val runtimeParams: GenerationParams get() = params.boundedForRuntime(loadedContextLength, loadedMemoryLimit)
     private var generationActive = false
     @Volatile private var closed = false
 
@@ -52,26 +59,39 @@ class LlamatikEngine internal constructor(
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
         synchronized(lifecycleLock) {
             if (closed) return Result.failure(IllegalStateException("Движок закрыт"))
-            if (state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
-                applyRuntimeParams()
-                return Result.success(Unit)
-            }
-            mutableState.value = ModelState.Loading
         }
 
         withContext(engineDispatcher) {
             runCatching {
                 val modelPath = modelProvider.getModelPath().getOrThrow()
-                val contextLength = GgufMetadataReader.readContextLength(File(modelPath))
+                val file = File(modelPath)
+                val contextLength = GgufMetadataReader.readContextLength(file)
                 synchronized(lifecycleLock) {
                     check(!closed) { "Движок закрыт" }
+                    // Recheck RAM even when reusing a loaded context; caller-provided limits are untrusted.
+                    val assessment = memoryGuard?.assess(file, params)
+                    check(assessment?.canLoad != false) { assessment?.explanation.orEmpty() }
+                    check(params.contextSize >= 2) { "Контекст недоступен. Дождитесь обновления настроек памяти и повторите запрос." }
+                    loadedContextLength = contextLength
+                    loadedMemoryLimit = assessment
+                    if (state.value is ModelState.Ready && loadedModelPath == modelPath &&
+                        loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
+                        applyRuntimeParams()
+                        return@runCatching
+                    }
                     // Batch/context/CPU settings take effect at native context creation, not in the setter.
                     if (loadedConfiguration != null) releaseModel()
                     loadedContextLength = contextLength
+                    // Assess after unloading, without counting the old allocation as free twice.
+                    loadedMemoryLimit = memoryGuard?.assess(file, params)
+                    check(loadedMemoryLimit?.canLoad != false) { loadedMemoryLimit?.explanation.orEmpty() }
                     mutableState.value = ModelState.Loading
+                    val memoryBefore = memoryGuard?.beforeLoad()
                     applyRuntimeParams()
                     check(runtime.load(modelPath)) { "Не удалось загрузить модель" }
                     loadedConfiguration = NativeConfiguration(runtimeParams, processorCount)
+                    loadedModelPath = modelPath
+                    memoryGuard?.loaded(file, runtimeParams, memoryBefore)
                     mutableState.value = ModelState.Ready
                 }
             }.onFailure { error ->
@@ -83,6 +103,9 @@ class LlamatikEngine internal constructor(
                             loadedConfiguration = null
                             appliedParams = null
                             loadedContextLength = null
+                            loadedMemoryLimit = null
+                            loadedModelPath = null
+                            memoryGuard?.unloaded()
                             mutableState.value = ModelState.Error(error.toUserMessage())
                         }
                     }
@@ -192,6 +215,9 @@ class LlamatikEngine internal constructor(
                 loadedConfiguration = null
                 appliedParams = null
                 loadedContextLength = null
+                loadedMemoryLimit = null
+                loadedModelPath = null
+                memoryGuard?.unloaded()
                 mutableState.value = ModelState.Unloaded
             }
         }

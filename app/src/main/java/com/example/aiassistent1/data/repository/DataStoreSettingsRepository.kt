@@ -11,6 +11,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.data.model.GgufMetadataReader
+import com.example.aiassistent1.data.model.ModelMemoryGuard
+import com.example.aiassistent1.domain.model.DeviceContextLimit
+import com.example.aiassistent1.domain.model.MemoryLimitStatus
+import com.example.aiassistent1.domain.model.ContextResponseRatio
+import com.example.aiassistent1.domain.model.ModelContextLimits
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
@@ -31,6 +36,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -42,14 +48,28 @@ class DataStoreSettingsRepository(
     private val scope: CoroutineScope,
     private val profileFile: java.io.File? = null,
     private val readModelContextLength: suspend (String) -> Int? = { null },
+    private val readModelMemoryLimit: suspend (String, GenerationParams) -> DeviceContextLimit? = { _, _ -> null },
+    private val memoryChanges: kotlinx.coroutines.flow.Flow<Long> = flowOf(0L),
+    private val refreshMemory: () -> Unit = {},
 ) : SettingsRepository {
-    constructor(context: Context, scope: CoroutineScope) : this(context.settingsStore, scope,
+    constructor(context: Context, scope: CoroutineScope, memoryGuard: ModelMemoryGuard) : this(context.settingsStore, scope,
         java.io.File(context.noBackupFilesDir, "voice_profile.bin"),
         readModelContextLength = { modelName ->
             withContext(Dispatchers.IO) {
                 context.getExternalFilesDir("models")?.let { GgufMetadataReader.readInDirectory(it, modelName) }
             }
-        })
+        },
+        readModelMemoryLimit = { modelName, params ->
+            withContext(Dispatchers.IO) {
+                val file = context.getExternalFilesDir("models")
+                    ?.let { GgufMetadataReader.resolveInDirectory(it, modelName) }
+                file?.let { memoryGuard.assess(it, params) }
+                    ?: DeviceContextLimit(0, MemoryLimitStatus.METADATA_UNAVAILABLE)
+            }
+        },
+        memoryChanges = memoryGuard.changes,
+        refreshMemory = memoryGuard::refresh,
+    )
 
     private val appDestinationKey = stringPreferencesKey("last_app_destination")
     private val selectedModelKey = stringPreferencesKey("selected_model")
@@ -292,9 +312,12 @@ class DataStoreSettingsRepository(
         }
     }
 
-    override fun getParamsForModel(modelName: String, profile: ModelProfile) = dataStore.data
-        .map { preferences -> readModelParams(preferences, modelName, profile) }
+    override fun getParamsForModel(modelName: String, profile: ModelProfile) = combine(dataStore.data, memoryChanges) { preferences, _ ->
+        readModelParams(preferences, modelName, profile)
+    }
         .distinctUntilChanged()
+
+    override fun refreshModelMemory() = refreshMemory()
 
     private fun modelParamsPrefix(modelName: String, profile: ModelProfile) =
         "model_params/${profile.storageKey}/$modelName/"
@@ -308,7 +331,7 @@ class DataStoreSettingsRepository(
             ?: legacyPrefix?.let { preferences[intPreferencesKey(it + name)] } ?: default
         fun floatValue(name: String, default: Float): Float = preferences[floatPreferencesKey(prefix + name)]
             ?: legacyPrefix?.let { preferences[floatPreferencesKey(it + name)] } ?: default
-        return GenerationParams(
+        val params = GenerationParams(
             contextSize = intValue("contextSize", defaults.contextSize),
             maxTokens = intValue("maxTokens", defaults.maxTokens),
             temperature = floatValue("temperature", defaults.temperature),
@@ -321,15 +344,32 @@ class DataStoreSettingsRepository(
             cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
             cpuThreads = preferences[intPreferencesKey(prefix + "cpuThreads")] ?: defaults.cpuThreads,
             trainedContextLength = readModelContextLength(modelName),
-        ).normalizedForSettings()
+            contextResponseRatio = ContextResponseRatio.fromStored(intValue("contextResponseRatio", defaults.contextResponseRatio.divisor)),
+        )
+        return params.copy(deviceContextLimit = readModelMemoryLimit(modelName, params)).normalizedForSettings()
     }
 
     override suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams) {
-        val normalized = params.copy(trainedContextLength = readModelContextLength(modelName)).normalizedForSettings()
+        val normalized = params.copy(
+            trainedContextLength = readModelContextLength(modelName),
+            deviceContextLimit = readModelMemoryLimit(modelName, params),
+        ).normalizedForSettings()
         val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
-            preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize
-            preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.maxTokens
+            // A transient memory block must not overwrite the last usable pair with zero.
+            if (normalized.deviceContextLimit?.canLoad != false) {
+                preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize
+                preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.maxTokens
+            } else {
+                val retainedContext = ModelContextLimits(normalized.trainedContextLength,
+                    contextMultiple = normalized.contextResponseRatio.divisor).normalize(
+                    preferences[intPreferencesKey(prefix + "contextSize")]
+                        ?: if (profile == ModelProfile.CALENDAR) preferences[intPreferencesKey("${modelName}_contextSize")]
+                            ?: profile.defaults.contextSize else profile.defaults.contextSize)
+                preferences[intPreferencesKey(prefix + "contextSize")] = retainedContext
+                preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.contextResponseRatio.maximumFor(retainedContext)
+            }
+            preferences[intPreferencesKey(prefix + "contextResponseRatio")] = normalized.contextResponseRatio.divisor
             preferences[floatPreferencesKey(prefix + "temperature")] = normalized.temperature
             preferences[floatPreferencesKey(prefix + "topP")] = normalized.topP
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK

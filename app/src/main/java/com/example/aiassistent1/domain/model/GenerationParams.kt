@@ -16,26 +16,37 @@ data class GenerationParams(
     val cpuThreads: Int = CpuThreadSettings.automaticThreadCount(),
     /** Read from the selected GGUF, never trusted from saved preferences or a UI callback. */
     val trainedContextLength: Int? = null,
+    /** Fresh device assessment; not stored in preferences. Null only outside Android's memory guard. */
+    val deviceContextLimit: DeviceContextLimit? = null,
+    val contextResponseRatio: ContextResponseRatio = ContextResponseRatio.TWO_TO_ONE,
 ) {
-    val contextLimits: ModelContextLimits get() = ModelContextLimits(trainedContextLength)
+    val contextLimits: ModelContextLimits get() = ModelContextLimits(trainedContextLength,
+        deviceContextLimit?.maximumContext, contextResponseRatio.divisor)
 
     /** Both settings sliders share the selected model's bounded grid. */
     fun withContextSize(value: Int): GenerationParams {
         val context = contextLimits.normalize(value)
-        return copy(contextSize = context, maxTokens = context / 2)
+        return copy(contextSize = context, maxTokens = contextResponseRatio.maximumFor(context))
     }
 
     fun withMaxTokens(value: Int): GenerationParams =
-        withContextSize(value.coerceIn(contextLimits.minimum / 2, contextLimits.maximum / 2) * 2)
+        withContextSize(value.coerceIn(contextResponseRatio.maximumFor(contextLimits.minimum),
+            contextResponseRatio.maximumFor(contextLimits.maximum)) * contextResponseRatio.divisor)
+
+    fun withContextResponseRatio(ratio: ContextResponseRatio): GenerationParams =
+        copy(contextResponseRatio = ratio).normalizedForSettings()
 
     /** Keep smaller temporary response budgets, including conference summaries. */
-    fun boundedForRuntime(actualContextLength: Int?): GenerationParams {
-        val maximum = ModelContextLimits(actualContextLength).maximum
-        val context = contextSize.coerceIn(2, maximum)
+    fun boundedForRuntime(actualContextLength: Int?, actualDeviceLimit: DeviceContextLimit? = null): GenerationParams {
+        check(actualDeviceLimit?.canLoad != false) { actualDeviceLimit?.explanation.orEmpty() }
+        val maximum = ModelContextLimits(actualContextLength, actualDeviceLimit?.maximumContext, contextResponseRatio.divisor).maximum
+        check(maximum >= contextResponseRatio.divisor) { "Контекст модели слишком мал для выбранного соотношения контекста и ответа." }
+        val context = contextSize.coerceIn(contextResponseRatio.divisor, maximum)
         return copy(
             trainedContextLength = actualContextLength,
+            deviceContextLimit = actualDeviceLimit,
             contextSize = context,
-            maxTokens = maxTokens.coerceIn(1, context / 2),
+            maxTokens = maxTokens.coerceIn(1, contextResponseRatio.maximumFor(context)),
         )
     }
 
@@ -63,7 +74,10 @@ data class GenerationParams(
         val paired = withContextSize(contextSize)
         return paired.copy(
             topK = paired.topK.coerceIn(MIN_TOP_K, MAX_TOP_K),
-            batchSize = paired.normalizedManualBatchSize(paired.contextSize),
+            // A temporary RAM block disables loading, but must retain the manual batch preference.
+            batchSize = paired.normalizedManualBatchSize(if (paired.deviceContextLimit?.canLoad == false)
+                ModelContextLimits(trainedContextLength, contextMultiple = contextResponseRatio.divisor).maximum
+                else paired.contextSize),
             cpuThreads = CpuThreadSettings.boundedThreadCount(paired.cpuThreads),
         )
     }
@@ -82,5 +96,17 @@ data class GenerationParams(
         const val MAX_TOP_K = 100
         const val AUTO_BATCH_LIMIT = 512
         val MANUAL_BATCH_SIZES: List<Int> = listOf(64, 128, 256, 512, 1024)
+    }
+}
+
+/** The ratio controls output reservation only; RAM sizing receives no ratio or maxTokens. */
+enum class ContextResponseRatio(val divisor: Int, val label: String) {
+    TWO_TO_ONE(2, "2:1"),
+    FOUR_TO_ONE(4, "4:1");
+
+    fun maximumFor(contextSize: Int): Int = contextSize / divisor
+
+    companion object {
+        fun fromStored(value: Int): ContextResponseRatio = entries.firstOrNull { it.divisor == value } ?: TWO_TO_ONE
     }
 }

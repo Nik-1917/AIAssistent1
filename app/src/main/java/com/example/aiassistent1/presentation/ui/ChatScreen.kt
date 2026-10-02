@@ -154,6 +154,9 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ContextResponseRatio
+import com.example.aiassistent1.domain.model.ModelContextLimits
+import androidx.compose.material3.FilterChip
 import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.ModelParameterProfiles
@@ -171,6 +174,8 @@ import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -1157,6 +1162,7 @@ fun ChatScreen(
                 onDialogueModeChange = viewModel::setDialogueModeEnabled,
                 onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
                 onSpeechRateChange = viewModel::setSpeechRate,
+                onRefreshMemory = viewModel::refreshModelMemory,
                 keywordControls = viewModel.personalKeywordControls,
                 voiceControls = viewModel.voiceProfileControls,
             )
@@ -2167,6 +2173,7 @@ fun ModelSettingsDialog(
     onSpeechRateChange: (Float) -> Unit,
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
     voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
+    onRefreshMemory: () -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2176,10 +2183,13 @@ fun ModelSettingsDialog(
     val modelSettings = if (editingProfile == ModelProfile.CALENDAR) calendarSettings else chatSettings
     val modelParams = modelSettings.params
     val contextLimits = modelParams.contextLimits
-    val defaults = editingProfile.defaults.copy(trainedContextLength = modelParams.trainedContextLength).normalizedForSettings()
+    val defaults = editingProfile.defaults.copy(trainedContextLength = modelParams.trainedContextLength,
+        deviceContextLimit = modelParams.deviceContextLimit,
+        contextResponseRatio = modelParams.contextResponseRatio).normalizedForSettings()
     var modelExpanded by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val saveModelParams by rememberUpdatedState(onParamsChange)
+    val refreshMemory by rememberUpdatedState(onRefreshMemory)
     var smoothResponse by remember { mutableStateOf(smoothResponseEnabled) }
     var dialogueMode by remember { mutableStateOf(dialogueModeEnabled) }
     var autoPlayback by remember { mutableStateOf(autoPlaybackEnabled) }
@@ -2192,6 +2202,12 @@ fun ModelSettingsDialog(
     LaunchedEffect(modelExpanded, editingProfile, lifecycleOwner, paramsLoaded) {
         if (modelExpanded && paramsLoaded) {
             lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                launch {
+                    while (isActive) {
+                        refreshMemory()
+                        delay(5_000L)
+                    }
+                }
                 modelSettings.saveWhileActive { saveModelParams(editingProfile, it) }
             }
         }
@@ -2258,10 +2274,46 @@ fun ModelSettingsDialog(
 
                         Text(
                             text = modelParams.trainedContextLength?.let { "Предел контекста модели: $it токенов" }
-                                ?: "Предел контекста модели не определён. Потолок приложения: ${contextLimits.maximum} токенов.",
+                                ?: "Предел контекста модели не определён. Потолок приложения: ${ModelContextLimits.FALLBACK_CONTEXT_SIZE} токенов.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        modelParams.deviceContextLimit?.let { memory ->
+                            val context = LocalContext.current
+                            if (memory.totalBytes > 0) {
+                                Text(
+                                    text = "Доступно оперативной памяти: " +
+                                        android.text.format.Formatter.formatShortFileSize(context, memory.availableBytes) +
+                                        " из " + android.text.format.Formatter.formatShortFileSize(context, memory.totalBytes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Text(
+                                text = memory.explanation,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (memory.canLoad) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                            )
+                            if (memory.canLoad) {
+                                Text(
+                                    text = "Максимум в настройках: ${contextLimits.maximum} токенов. " +
+                                        "Предел рассчитан с запасом памяти для системы и приложения.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Text("Соотношение контекста и ответа", style = MaterialTheme.typography.bodyMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ContextResponseRatio.entries.forEach { ratio ->
+                                FilterChip(
+                                    selected = modelParams.contextResponseRatio == ratio,
+                                    onClick = { modelSettings.update { it.withContextResponseRatio(ratio) } },
+                                    enabled = (modelParams.trainedContextLength ?: Int.MAX_VALUE) >= ratio.divisor,
+                                    label = { Text(ratio.label) },
+                                )
+                            }
+                        }
                         SettingSlider(
                             label = "Размер вопроса: ${modelParams.contextSize} токенов",
                             value = modelParams.contextSize.toFloat(),
@@ -2276,14 +2328,17 @@ fun ModelSettingsDialog(
                             label = "Место под ответ: ${modelParams.maxTokens} токенов",
                             value = modelParams.maxTokens.toFloat(),
                             onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
-                            valueRange = (contextLimits.minimum / 2).toFloat()..(contextLimits.maximum / 2).toFloat(),
+                            valueRange = modelParams.contextResponseRatio.maximumFor(contextLimits.minimum).toFloat()..
+                                modelParams.contextResponseRatio.maximumFor(contextLimits.maximum).toFloat(),
                             steps = contextLimits.sliderSteps,
                             enabled = contextLimits.adjustable,
                             defaultValue = defaults.maxTokens.toFloat(),
                         )
                         Text(
                             text = "Размер вопроса к модели включает в себя зарезервированное место под ответ. " +
-                                "Настройки синхронизируются: под ответ выделяется половина размера вопроса. " +
+                                (if (modelParams.contextResponseRatio == ContextResponseRatio.TWO_TO_ONE)
+                                    "Настройки синхронизируются: под ответ выделяется половина размера вопроса. "
+                                else "Настройки синхронизируются: под ответ выделяется четверть размера вопроса. ") +
                                 "Если ответ модели не поместился в карточке ответа, увеличьте место под ответ.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2336,14 +2391,14 @@ fun ModelSettingsDialog(
                         val batchOptions = modelParams.batchSizeOptions
                         SettingSlider(
                             label = "Размер пакета: ${modelParams.effectiveBatchSize} токенов",
-                            value = batchOptions.indexOf(modelParams.effectiveBatchSize).toFloat(),
+                            value = batchOptions.indexOf(modelParams.effectiveBatchSize).coerceAtLeast(0).toFloat(),
                             onValueChange = { value ->
                                 modelSettings.update { it.copy(batchSize = batchOptions[value.roundToInt()]) }
                             },
-                            valueRange = 0f..batchOptions.lastIndex.toFloat(),
-                            steps = batchOptions.size - 2,
-                            enabled = !modelParams.batchSizeAuto,
-                            defaultValue = batchOptions.indexOf(defaults.effectiveBatchSize).toFloat(),
+                            valueRange = 0f..batchOptions.lastIndex.coerceAtLeast(0).toFloat(),
+                            steps = (batchOptions.size - 2).coerceAtLeast(0),
+                            enabled = !modelParams.batchSizeAuto && batchOptions.size > 1,
+                            defaultValue = batchOptions.indexOf(defaults.effectiveBatchSize).coerceAtLeast(0).toFloat(),
                             defaultValueText = "${defaults.effectiveBatchSize} (Авто)",
                         )
                         Text(

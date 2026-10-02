@@ -36,6 +36,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 object AppModule {
+    @Volatile
+    private var modelMemoryGuard: com.example.aiassistent1.data.model.ModelMemoryGuard? = null
+
+    private fun provideModelMemoryGuard(context: Context): com.example.aiassistent1.data.model.ModelMemoryGuard =
+        modelMemoryGuard ?: synchronized(this) {
+            modelMemoryGuard ?: com.example.aiassistent1.data.model.DeviceModelMemoryGuard.forAndroid(context)
+                .also { modelMemoryGuard = it }
+        }
 	@Volatile
 	private var chatDatabase: ChatDatabase? = null
 
@@ -104,7 +112,8 @@ object AppModule {
 	fun provideSettingsRepository(context: Context): SettingsRepository = settingsRepository ?: synchronized(this) {
 		settingsRepository ?: DataStoreSettingsRepository(
 			context.applicationContext,
-			CoroutineScope(SupervisorJob() + Dispatchers.Main)
+			CoroutineScope(SupervisorJob() + Dispatchers.Main),
+			provideModelMemoryGuard(context),
 		).also { settingsRepository = it }
 	}
 
@@ -115,6 +124,7 @@ object AppModule {
 
 	fun provideLlmEngine(context: Context): LLMEngine = LlamatikEngine(
 		modelProvider = provideModelProvider(context),
+		memoryGuard = provideModelMemoryGuard(context),
 	)
 
 	fun provideVoiceModelProvider(context: Context): VoiceModelProvider = voiceModelProvider ?: synchronized(this) {

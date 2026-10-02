@@ -10,6 +10,56 @@ import org.junit.rules.TemporaryFolder
 class GgufMetadataReaderTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
 
+    @Test fun `memory dimensions after context are read in either byte order`() {
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            val fixture = GgufTestFile(order).architecture().context(32768).memory()
+            fixture.entry("qwen3.attention.key_length", 10, fixture.long(128))
+                .entry("qwen3.attention.value_length", 4, fixture.int(96))
+                .memory("llama", layers = 80, kvHeads = 16)
+            val file = fixture.write(temporaryFolder.newFile())
+            val metadata = requireNotNull(GgufMetadataReader.readMetadata(file))
+            val memory = requireNotNull(metadata.memory)
+            assertEquals(32768, metadata.contextLength)
+            assertEquals(file.length(), memory.fileBytes)
+            assertEquals(32, memory.blockCount)
+            assertEquals(2048, memory.embeddingLength)
+            assertEquals(5632, memory.feedForwardLength)
+            assertEquals(16, memory.headCount)
+            assertEquals(8, memory.kvHeadCount)
+            assertEquals(128, memory.keyLength)
+            assertEquals(96, memory.valueLength)
+            assertEquals(32000, memory.vocabularySize)
+        }
+    }
+
+    @Test fun `vocabulary uses tokenizer count when size is missing or smaller`() {
+        for (explicit in listOf<Int?>(null, 2, 10)) {
+            val fixture = GgufTestFile().architecture().context(8192)
+            if (explicit != null) fixture.entry("qwen3.vocab_size", 4, fixture.int(explicit))
+            fixture.entry("tokenizer.ggml.tokens", 9, fixture.int(8) + fixture.long(3) +
+                fixture.string("Привет") + fixture.string("") + fixture.string("😀"))
+            val memory = requireNotNull(GgufMetadataReader.readMetadata(fixture.write(temporaryFolder.newFile()))?.memory)
+            assertEquals(maxOf(3, explicit ?: 0), memory.vocabularySize)
+            assertNull(memory.keyLength)
+            assertNull(memory.kvHeadCount)
+        }
+    }
+
+    @Test fun `invalid optional memory dimensions cannot silently fall back to defaults`() {
+        for (type in listOf(4, 8, 9)) {
+            val fixture = GgufTestFile().architecture().context(8192).memory()
+            val encoded = when (type) {
+                4 -> fixture.int(0)
+                8 -> fixture.string("128")
+                else -> fixture.int(4) + fixture.long(1) + fixture.int(128)
+            }
+            fixture.entry("qwen3.attention.key_length", type, encoded)
+            val metadata = requireNotNull(GgufMetadataReader.readMetadata(fixture.write(temporaryFolder.newFile())))
+            assertEquals(8192, metadata.contextLength)
+            assertNull(metadata.memory)
+        }
+    }
+
     @Test fun `reads v2 and v3 uint32 and uint64 in either byte order and key order`() {
         for (version in 2..3) for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
             for (wide in listOf(false, true)) for (contextFirst in listOf(false, true)) {

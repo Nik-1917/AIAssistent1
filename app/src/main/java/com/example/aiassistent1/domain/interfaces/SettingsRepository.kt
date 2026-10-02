@@ -28,6 +28,7 @@ interface SettingsRepository {
     /** Emits only after reading storage, without a temporary default snapshot. */
     fun getParamsForModel(modelName: String, profile: ModelProfile): Flow<GenerationParams>
     suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams)
+    fun refreshModelMemory() = Unit
 
     val showDeleteMessageConfirmation: StateFlow<Boolean>
     suspend fun setShowDeleteMessageConfirmation(show: Boolean)

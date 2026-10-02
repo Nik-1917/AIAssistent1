@@ -312,6 +312,8 @@ class ChatViewModel(
             settingsRepository.getParamsForModel(modelName, profile).first()
         }
 
+    fun refreshModelMemory() = settingsRepository.refreshModelMemory()
+
     private fun applyCurrentModelParamsIfIdle() {
         modelParamsController.applyWhenIdle(uiState.value, summarizing)
     }

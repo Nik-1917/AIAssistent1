@@ -18,6 +18,12 @@ internal class GgufTestFile(private val order: ByteOrder = ByteOrder.LITTLE_ENDI
     fun context(value: Long, architecture: String = "qwen3", wide: Boolean = false) =
         entry("$architecture.context_length", if (wide) 10 else 4, if (wide) long(value) else int(value.toInt()))
 
+    fun memory(architecture: String = "qwen3", layers: Int = 32, kvHeads: Int = 8): GgufTestFile = apply {
+        mapOf("block_count" to layers, "embedding_length" to 2048, "feed_forward_length" to 5632,
+            "attention.head_count" to 16, "attention.head_count_kv" to kvHeads, "vocab_size" to 32000)
+            .forEach { (name, value) -> entry("$architecture.$name", 4, int(value)) }
+    }
+
     fun bytes(): ByteArray = ByteArrayOutputStream().use { stream ->
         stream.write("GGUF".toByteArray(Charsets.US_ASCII))
         stream.write(int(version))

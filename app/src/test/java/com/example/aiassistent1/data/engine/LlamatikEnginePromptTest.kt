@@ -11,6 +11,7 @@ class LlamatikEnginePromptTest {
     @Test
     fun `chat prompt retains last assistant reply between two recent user messages`() {
         val engine = LlamatikEngine(
+            memoryGuard = com.example.aiassistent1.data.model.DeviceModelMemoryGuard { null },
             modelProvider = object : ModelProvider {
                 override suspend fun getModelPath(): Result<String> = Result.failure(IllegalStateException("unused"))
             },
@@ -37,6 +38,7 @@ class LlamatikEnginePromptTest {
     @Test
     fun `renders only supplied system message before the user`() {
         val engine = LlamatikEngine(
+            memoryGuard = com.example.aiassistent1.data.model.DeviceModelMemoryGuard { null },
             modelProvider = object : ModelProvider {
                 override suspend fun getModelPath(): Result<String> = Result.failure(IllegalStateException("unused"))
             },

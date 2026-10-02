@@ -2,6 +2,9 @@ package com.example.aiassistent1.presentation.ui
 
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelProfile
+import com.example.aiassistent1.domain.model.ContextResponseRatio
+import com.example.aiassistent1.domain.model.DeviceContextLimit
+import com.example.aiassistent1.domain.model.MemoryLimitStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
@@ -14,6 +17,45 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelSettingsStateTest {
+    @Test fun `ratio selection survives delayed echoes and pairs both token sliders`() {
+        val initial = ModelProfile.CHAT.defaults.withContextSize(4096)
+        val state = ModelSettingsState(initial)
+        val writes = mutableListOf<GenerationParams>()
+        state.update { it.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE) }
+        state.flush { writes += it }
+        state.acceptPersisted(initial)
+        assertEquals(1024, state.params.maxTokens)
+        state.acceptPersisted(writes.single())
+        state.update { it.withMaxTokens(1536) }
+        assertEquals(6144, state.params.contextSize)
+        assertEquals(ContextResponseRatio.FOUR_TO_ONE, state.params.contextResponseRatio)
+    }
+
+    @Test fun `memory ceiling clamps pending edits and recovery restores stored context after block`() {
+        val initial = ModelProfile.CHAT.defaults.withContextSize(4096)
+            .copy(deviceContextLimit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED))
+        val state = ModelSettingsState(initial)
+        val writes = mutableListOf<GenerationParams>()
+        state.update { it.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE) }
+        state.flush { writes += it }
+        val clamped = writes.single().copy(deviceContextLimit = DeviceContextLimit(2048, MemoryLimitStatus.ESTIMATED))
+            .normalizedForSettings()
+        state.acceptPersisted(clamped)
+        assertEquals(2048, state.params.contextSize)
+        assertEquals(512, state.params.maxTokens)
+        val blocked = clamped.copy(deviceContextLimit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY))
+        state.acceptPersisted(blocked)
+        assertEquals(0, state.params.contextSize)
+        state.update { it.copy(temperature = 0.9f) }
+        state.flush { writes += it }
+        state.acceptPersisted(writes.last())
+        val recovered = initial.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE).copy(temperature = 0.9f)
+        state.acceptPersisted(recovered)
+        assertEquals(recovered, state.params)
+        state.flush { writes += it }
+        assertEquals(2, writes.size)
+    }
+
     @Test
     fun `continuous dragging saves the latest pair each second without restarting the timer`() = runTest {
         val state = ModelSettingsState(ModelProfile.CHAT.defaults)

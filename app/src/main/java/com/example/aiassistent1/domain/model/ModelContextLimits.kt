@@ -1,9 +1,12 @@
 package com.example.aiassistent1.domain.model
 
 /** A model's declared training window; an unknown window keeps the application's old ceiling. */
-data class ModelContextLimits(val trainedContextLength: Int? = null) {
-    private val declaredMaximum = trainedContextLength?.takeIf { it >= 2 } ?: FALLBACK_CONTEXT_SIZE
-    private val step = if (declaredMaximum >= GenerationParams.CONTEXT_STEP) GenerationParams.CONTEXT_STEP else 2
+data class ModelContextLimits(val trainedContextLength: Int? = null, val deviceMaximum: Int? = null,
+    private val contextMultiple: Int = 2) {
+    init { require(contextMultiple == 2 || contextMultiple == 4) }
+    private val modelMaximum = trainedContextLength?.takeIf { it >= 2 } ?: FALLBACK_CONTEXT_SIZE
+    private val declaredMaximum = minOf(modelMaximum, deviceMaximum?.coerceAtLeast(0) ?: modelMaximum)
+    private val step = if (declaredMaximum >= GenerationParams.CONTEXT_STEP) GenerationParams.CONTEXT_STEP else contextMultiple
 
     // Round down so snapping a slider can never exceed the value in the file.
     val maximum: Int = declaredMaximum / step * step
@@ -15,6 +18,7 @@ data class ModelContextLimits(val trainedContextLength: Int? = null) {
         .takeIf { it <= 256 } ?: 0
 
     fun normalize(value: Int): Int {
+        if (maximum == 0) return 0
         val bounded = value.coerceIn(minimum, maximum).toLong()
         return (((bounded + step / 2) / step) * step)
             .coerceIn(minimum.toLong(), maximum.toLong()).toInt()

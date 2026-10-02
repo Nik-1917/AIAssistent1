@@ -23,6 +23,8 @@ class LlamatikEngineEmojiInstrumentedTest {
         val selectedModelPath = modelPath ?: return@runBlocking
 
         val engine = LlamatikEngine(
+            memoryGuard = com.example.aiassistent1.data.model.DeviceModelMemoryGuard.forAndroid(
+                InstrumentationRegistry.getInstrumentation().targetContext),
             modelProvider = object : ModelProvider {
                 override suspend fun getModelPath(): Result<String> = Result.success(selectedModelPath)
             },
