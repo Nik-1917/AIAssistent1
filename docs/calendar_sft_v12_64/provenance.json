@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.64-offset-reply",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-10-03",
+    "decision_evidence": "Owner confirmed the offset/reply data and evaluation plan in this chat. New fictional conversations are literal authored examples with arithmetic and contract audits; no external calendar data."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "153816c7e6ac3c9af3c5ce3de166f0db77eb7be2ab8e543a2865f58aae3d900c"
+    },
+    "validation": {
+      "sha256": "6b463ffdaf338f2b556e822f6ce65bbfd20699132eec9196213638af8d3f79f0"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_63/provenance.json and docs/calendar_v12_64_manual",
+      "rights_evidence": "Inherited approved fictional data and new complete literal fictional conversations. The serializer never generates Russian user or reply text.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

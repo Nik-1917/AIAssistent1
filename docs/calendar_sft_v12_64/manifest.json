@@ -1,0 +1,452 @@
+{
+  "version": "v12.64",
+  "contract_version": "v12.57",
+  "artifacts": {
+    "calendar_holdout_v12_2": {
+      "rows": 8,
+      "sha256": "5a15403e6c2e770d9d22b1630b677c43f984fcc0f0e42f68406030273fef2bb9"
+    },
+    "context_transfer_eval": {
+      "rows": 132,
+      "sha256": "09fbb97ec4fcc1c17e05a1c428e540778e116bcaa1dc9341dd2f5c11c8d96e92"
+    },
+    "half_hour_holdout": {
+      "rows": 36,
+      "sha256": "5d614f04f6d90333c7857b50833c20efebbf055262547d89086d16d8da56982c"
+    },
+    "holdout": {
+      "rows": 36,
+      "sha256": "093a5159402f53345f7db3041e9b67e7a5e3486edc3135db13416f0459a83a02"
+    },
+    "input_clock_holdout": {
+      "rows": 72,
+      "sha256": "3859b076a287d9810f85746516740d0bb146786a94eec770a41221738f3736fc"
+    },
+    "interval_holdout": {
+      "rows": 12,
+      "sha256": "08532c3e0d667452bec2e7bded0804636bb2c08c29e9a585f68a5eeef3d930d1"
+    },
+    "last_event_holdout": {
+      "rows": 6,
+      "sha256": "d7141c98bdc4a5310200062f64738f2ba768f5a14d9de3acadbcd8ea84b04b53"
+    },
+    "order_holdout": {
+      "rows": 43,
+      "sha256": "6a28655f44e9024bc527e13d8a45f100a06c3e8ff3df19439888b33ce8d4f2ea"
+    },
+    "regression_holdout": {
+      "rows": 60,
+      "sha256": "0692c7d1ea1bbc655233a0c5cd758ccf63c4cf4fcc0bdfb52f605769b50252de"
+    },
+    "speech_holdout": {
+      "rows": 28,
+      "sha256": "fd01d41cd17f19a4b1f33a3b91263bf1191d02fad52ec8b575821093cb9b62bd"
+    },
+    "train": {
+      "rows": 5857,
+      "sha256": "153816c7e6ac3c9af3c5ce3de166f0db77eb7be2ab8e543a2865f58aae3d900c"
+    },
+    "validation": {
+      "rows": 726,
+      "sha256": "6b463ffdaf338f2b556e822f6ce65bbfd20699132eec9196213638af8d3f79f0"
+    },
+    "offset_reply_holdout": {
+      "rows": 48,
+      "sha256": "54f856333cf0882edee628a6368a190eb5176f29c66bfdffdf540e4922ed075a"
+    }
+  },
+  "inherited_rows": 6755,
+  "protected_files_checked": 776,
+  "additions": {
+    "train": 229,
+    "validation": 32,
+    "holdout": 48
+  },
+  "categories": {
+    "v12_64_clock_train": 30,
+    "v12_64_contrast_train": 32,
+    "v12_64_hours_train": 25,
+    "v12_64_minutes_train": 59,
+    "v12_64_mixed_train": 59,
+    "v12_64_order_train": 24
+  },
+  "coverage": {
+    "minute_offsets": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59
+    ],
+    "hour_offsets": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      48
+    ],
+    "mixed_pairs": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        25
+      ],
+      [
+        1,
+        49
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        26
+      ],
+      [
+        2,
+        50
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        27
+      ],
+      [
+        3,
+        51
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        4,
+        28
+      ],
+      [
+        4,
+        52
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        5,
+        29
+      ],
+      [
+        5,
+        53
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        6,
+        30
+      ],
+      [
+        6,
+        54
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        7,
+        31
+      ],
+      [
+        7,
+        55
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        8,
+        32
+      ],
+      [
+        8,
+        56
+      ],
+      [
+        9,
+        9
+      ],
+      [
+        9,
+        33
+      ],
+      [
+        9,
+        57
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        34
+      ],
+      [
+        10,
+        58
+      ],
+      [
+        11,
+        11
+      ],
+      [
+        11,
+        35
+      ],
+      [
+        11,
+        59
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        12,
+        36
+      ],
+      [
+        13,
+        13
+      ],
+      [
+        13,
+        37
+      ],
+      [
+        14,
+        14
+      ],
+      [
+        14,
+        38
+      ],
+      [
+        15,
+        15
+      ],
+      [
+        15,
+        39
+      ],
+      [
+        16,
+        16
+      ],
+      [
+        16,
+        40
+      ],
+      [
+        17,
+        17
+      ],
+      [
+        17,
+        41
+      ],
+      [
+        18,
+        18
+      ],
+      [
+        18,
+        42
+      ],
+      [
+        19,
+        19
+      ],
+      [
+        19,
+        43
+      ],
+      [
+        20,
+        20
+      ],
+      [
+        20,
+        44
+      ],
+      [
+        21,
+        21
+      ],
+      [
+        21,
+        45
+      ],
+      [
+        22,
+        22
+      ],
+      [
+        22,
+        46
+      ],
+      [
+        23,
+        23
+      ],
+      [
+        23,
+        47
+      ],
+      [
+        24,
+        24
+      ],
+      [
+        24,
+        48
+      ]
+    ],
+    "mixed_full_cartesian": false,
+    "inherited_clock_grid": 1440,
+    "four_field_orders": {
+      "title-offset-duration-value": 1,
+      "title-offset-value-duration": 1,
+      "title-duration-offset-value": 1,
+      "title-duration-value-offset": 1,
+      "title-value-offset-duration": 1,
+      "title-value-duration-offset": 1,
+      "offset-title-duration-value": 1,
+      "offset-title-value-duration": 1,
+      "offset-duration-title-value": 1,
+      "offset-duration-value-title": 1,
+      "offset-value-title-duration": 1,
+      "offset-value-duration-title": 1,
+      "duration-title-offset-value": 1,
+      "duration-title-value-offset": 1,
+      "duration-offset-title-value": 1,
+      "duration-offset-value-title": 1,
+      "duration-value-title-offset": 1,
+      "duration-value-offset-title": 1,
+      "value-title-offset-duration": 1,
+      "value-title-duration-offset": 1,
+      "value-offset-title-duration": 1,
+      "value-offset-duration-title": 1,
+      "value-duration-title-offset": 1,
+      "value-duration-offset-title": 1
+    },
+    "three_field_orders": [
+      "duration-offset-title",
+      "duration-title-offset",
+      "offset-duration-title",
+      "offset-title-duration",
+      "title-duration-offset",
+      "title-offset-duration"
+    ],
+    "new_eval_titles_disjoint": true
+  },
+  "manual_sha256": {
+    "clock_train.txt": "7d942b50441f20e9abe8f92ba8460e6d79bb5bd1195f2991bf488800c6aaf4d8",
+    "contexts.json": "c7cc2e0d28ae9b5b5694dfd37d71f239764efdc0874ba22b15ed2034f39b2e40",
+    "contrast_train.txt": "d90a1b48c04d05e1816134f986a32f27cf1b39f3b1aa8ab8d0c8a5dc90b704aa",
+    "holdout.txt": "4ac2c8362bc28076dcf57d2745cc0850ee83853a6e0a6871f11961b2b828c5e0",
+    "hours_train.txt": "8d406f3f61cf3b7960b3c4b73330c64ac5ed6b5c42838f7f33c0f6abb3d0cb46",
+    "minutes_train.txt": "27371954873c2dddc2d014dfb6f7c81905f38ffe3d26e7880bf108e2bbdcb9e0",
+    "mixed_train.txt": "628a48dd176a6cd96f2e3a153b9e46f99522317910940f2a527a0b05fc1da94d",
+    "order_train.txt": "c48899e954578d2fb90f0a1cfb753dcb2327b4b97ca56e2e054b29d00be0da2e",
+    "source_lock.json": "084f54bbf86167c37210b397fdf8e08a1cf5a77537df04f3ab34b216262de932",
+    "validation.txt": "5fa48d65ce866e144faa5a076883b287d19a32f1448f1afad461cb3ee65fa19a"
+  },
+  "training": "NOT_RUN",
+  "inference": "NOT_RUN"
+}
