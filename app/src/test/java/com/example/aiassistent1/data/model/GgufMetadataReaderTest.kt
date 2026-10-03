@@ -2,6 +2,7 @@ package com.example.aiassistent1.data.model
 
 import java.io.File
 import java.nio.ByteOrder
+import com.example.aiassistent1.domain.model.*
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -9,6 +10,67 @@ import org.junit.rules.TemporaryFolder
 
 class GgufMetadataReaderTest {
     @get:Rule val temporaryFolder = TemporaryFolder()
+
+    @Test fun `delivered qwen35 metadata supports RAM estimation in either byte order`() {
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            val fixture = GgufTestFile(order).qwen35Memory().context(262144, "qwen35").architecture("qwen35")
+            fixture.entry("qwen35.full_attention_interval", 10, fixture.long(4))
+                .entry("qwen35.nextn_predict_layers", 4, fixture.int(0))
+            val metadata = requireNotNull(GgufMetadataReader.readMetadata(fixture.write(temporaryFolder.newFile())))
+            assertEquals(262144, metadata.contextLength)
+            val memory = requireNotNull(metadata.memory)
+            assertEquals(HybridMemoryMetadata(4, 2048, 128, 16, 16, 4), memory.hybrid)
+            val estimate = requireNotNull(ModelMemoryCalculator.cost(memory.copy(fileBytes = 1_274_388_480), MemoryRuntimeSettings(), 512))
+            assertEquals(MemoryEstimateProfile.QWEN35, estimate.profile)
+        }
+    }
+
+    @Test fun `recurrent layout accepts native boolean arrays and scalar overrides`() {
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            val fixture = GgufTestFile(order).architecture("qwen35").qwen35Memory()
+            val flags = List(24) { (it + 1) % 4 != 0 }
+            fixture.entry("qwen35.attention.recurrent_layers", 9,
+                fixture.int(7) + fixture.long(24) + flags.map { if (it) 1.toByte() else 0.toByte() }.toByteArray())
+            val metadata = requireNotNull(GgufMetadataReader.readMetadata(fixture.write(temporaryFolder.newFile()))?.memory)
+            assertEquals(flags, metadata.hybrid?.recurrentLayers)
+            assertNotNull(ModelMemoryCalculator.cost(metadata, MemoryRuntimeSettings(), 512))
+        }
+        val scalar = GgufTestFile().architecture("qwen35").qwen35Memory()
+            .entry("qwen35.attention.recurrent_layers", 7, byteArrayOf(0))
+        assertEquals(false, GgufMetadataReader.readMetadata(scalar.write(temporaryFolder.newFile()))?.memory?.hybrid?.uniformRecurrentLayers)
+    }
+
+    @Test fun `hybrid invalid fields masks hostile counts and duplicate keys remain blocked`() {
+        val f = GgufTestFile()
+        val cases = listOf(
+            Triple("full_attention_interval", 4, f.int(0)),
+            Triple("full_attention_interval", 8, f.string("4")),
+            Triple("nextn_predict_layers", 10, f.long(Long.MAX_VALUE)),
+            Triple("attention.recurrent_layers", 7, byteArrayOf(2)),
+            Triple("attention.recurrent_layers", 8, f.string("true")),
+            Triple("attention.recurrent_layers", 9, f.int(7) + f.long(Long.MAX_VALUE)),
+            Triple("attention.recurrent_layers", 9, f.int(7) + f.long(4097) + ByteArray(4097)),
+            Triple("attention.recurrent_layers", 9, f.int(7) + f.long(1) + byteArrayOf(1)),
+            Triple("attention.recurrent_layers", 9, f.int(4) + f.long(24) + ByteArray(96)),
+            Triple("ssm.inner_size", 4, f.int(2048)), // Duplicate, not a replacement.
+        )
+        for ((key, type, bytes) in cases) {
+            val file = GgufTestFile().architecture("qwen35").qwen35Memory()
+                .entry("qwen35.$key", type, bytes).write(temporaryFolder.newFile())
+            val metadata = GgufMetadataReader.readMetadata(file)?.memory
+            assertEquals(key, MemoryLimitStatus.METADATA_UNAVAILABLE, ModelMemoryCalculator.calculate(metadata,
+                MemoryRuntimeSettings(), DeviceMemorySnapshot(8L shl 30, 6L shl 30, 256L shl 20, false)).status)
+        }
+    }
+
+    @Test fun `unknown architecture with valid dimensions reaches conservative fallback`() {
+        val file = GgufTestFile().architecture("future-v2").memory("future-v2").context(32768, "future-v2")
+            .write(temporaryFolder.newFile())
+        val metadata = requireNotNull(GgufMetadataReader.readMetadata(file)?.memory)
+        val estimate = requireNotNull(ModelMemoryCalculator.cost(metadata, MemoryRuntimeSettings(), 512))
+        assertEquals(MemoryEstimateProfile.CONSERVATIVE_FALLBACK, estimate.profile)
+        assertNull(metadata.hybrid)
+    }
 
     @Test fun `memory dimensions after context are read in either byte order`() {
         for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {

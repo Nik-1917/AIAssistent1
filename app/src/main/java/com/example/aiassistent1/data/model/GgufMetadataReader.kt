@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.model
 
 import com.example.aiassistent1.domain.model.ModelMemoryMetadata
+import com.example.aiassistent1.domain.model.HybridMemoryMetadata
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -60,8 +61,11 @@ object GgufMetadataReader {
         null
     }
 
+    private val hybridKeys = setOf("ssm.conv_kernel", "ssm.inner_size", "ssm.state_size", "ssm.time_step_rank", "ssm.group_count")
     private val memoryKeys = setOf("block_count", "embedding_length", "feed_forward_length", "attention.head_count",
-        "attention.head_count_kv", "attention.key_length", "attention.value_length", "vocab_size")
+        "attention.head_count_kv", "attention.key_length", "attention.value_length", "vocab_size",
+        "full_attention_interval", "nextn_predict_layers") + hybridKeys
+    private data class LayerLayout(val flags: List<Boolean>? = null, val uniform: Boolean? = null)
 
     private fun readUncached(file: File): Metadata? = RandomAccessFile(file, "r").use { input ->
         require(input.readInt() == 0x47475546) // ASCII GGUF
@@ -78,6 +82,7 @@ object GgufMetadataReader {
         var architecture: String? = null
         val contexts = mutableMapOf<String, Int?>()
         val dimensions = mutableMapOf<String, Int?>()
+        val layouts = mutableMapOf<String, LayerLayout?>()
         var vocabularySize: Int? = null
         repeat(count.toInt()) {
             val key = reader.string(65_535)
@@ -104,7 +109,12 @@ object GgufMetadataReader {
                         10 -> reader.unsignedLong()
                         else -> { reader.skipValue(type); null }
                     }
-                    dimensions[key] = value?.takeIf { it in 1..Int.MAX_VALUE.toLong() }?.toInt()
+                    val minimum = if (key.substringAfter('.') == "nextn_predict_layers") 0L else 1L
+                    dimensions[key] = value?.takeIf { it in minimum..Int.MAX_VALUE.toLong() }?.toInt()
+                }
+                key.substringAfter('.') == "attention.recurrent_layers" -> {
+                    require(layouts.size < 128 && key !in layouts)
+                    layouts[key] = reader.layerLayout(type)
                 }
                 key == "tokenizer.ggml.tokens" && type == 9 -> {
                     require(vocabularySize == null)
@@ -117,12 +127,25 @@ object GgufMetadataReader {
         fun dimension(name: String) = dimensions["$arch.$name"]
         // A present but invalid/array-valued dimension must not silently use an optional default.
         val validDimensions = dimensions.filterKeys { it.startsWith("$arch.") }.values.all { it != null }
-        val memory = if (!validDimensions) null else ModelMemoryMetadata(
+        val layoutKey = "$arch.attention.recurrent_layers"
+        val layout = layouts[layoutKey]
+        val validLayout = layoutKey !in layouts || layout != null
+        val hybrid = if (arch == "qwen35" || layoutKey in layouts || hybridKeys.any { "$arch.$it" in dimensions }) {
+            HybridMemoryMetadata(
+                convolutionKernel = dimension("ssm.conv_kernel"), innerSize = dimension("ssm.inner_size"),
+                stateSize = dimension("ssm.state_size"), timeStepRank = dimension("ssm.time_step_rank"),
+                groupCount = dimension("ssm.group_count"), fullAttentionInterval = dimension("full_attention_interval"),
+                recurrentLayers = layout?.flags, uniformRecurrentLayers = layout?.uniform,
+                nextNPredictLayers = dimension("nextn_predict_layers") ?: 0,
+            )
+        } else null
+        val memory = if (!validDimensions || !validLayout) null else ModelMemoryMetadata(
             architecture = arch, fileBytes = file.length(), blockCount = dimension("block_count"),
             embeddingLength = dimension("embedding_length"), feedForwardLength = dimension("feed_forward_length"),
             headCount = dimension("attention.head_count"), kvHeadCount = dimension("attention.head_count_kv"),
             keyLength = dimension("attention.key_length"), valueLength = dimension("attention.value_length"),
             vocabularySize = listOfNotNull(dimension("vocab_size"), vocabularySize).maxOrNull(),
+            hybrid = hybrid,
         )
         Metadata(contexts["$arch.context_length"], memory)
     }
@@ -132,6 +155,27 @@ object GgufMetadataReader {
         private val end = minOf(input.length(), 256L * 1024 * 1024)
         val remaining: Long get() = (end - input.filePointer).coerceAtLeast(0)
         private var stringElements = 0L
+        private var layerElements = 0L
+
+        private fun boolean(): Boolean {
+            require(remaining >= 1)
+            val value = input.readUnsignedByte()
+            require(value in 0..1)
+            return value == 1
+        }
+
+        fun layerLayout(type: Int): LayerLayout? = when (type) {
+            7 -> LayerLayout(uniform = boolean())
+            9 -> {
+                val elementType = unsignedInt().toInt()
+                val count = unsignedLong()
+                // Only small layer masks are materialized, with a budget shared across all architectures.
+                require(elementType == 7 && count in 1..4096 && count <= remaining && count <= 16_384 - layerElements)
+                layerElements += count
+                LayerLayout(flags = List(count.toInt()) { boolean() })
+            }
+            else -> { skipValue(type); null }
+        }
 
         fun unsignedInt(): Long {
             require(remaining >= 4)

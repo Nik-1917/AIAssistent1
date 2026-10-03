@@ -64,7 +64,9 @@ class ModelFileBudgetTest {
         assertEquals(0L, budget.copy(capacityBytes = 128 * mib).maximumFileBytes(512, settings))
         assertNull(budget.copy(capacityBytes = -1).maximumFileBytes(512, settings))
         assertNull(budget.maximumFileBytes(0, settings))
-        assertNull(budget.copy(metadata = model.copy(architecture = "unknown")).maximumFileBytes(512, settings))
+        val fallback = requireNotNull(budget.copy(metadata = model.copy(architecture = "unknown")).maximumFileBytes(512, settings))
+        assertTrue(fallback in 1 until requireNotNull(budget.maximumFileBytes(512, settings)))
+        assertNull(budget.copy(metadata = model.copy(architecture = "")).maximumFileBytes(512, settings))
         assertNull(budget.copy(metadata = model.copy(vocabularySize = null)).maximumFileBytes(512, settings))
     }
 

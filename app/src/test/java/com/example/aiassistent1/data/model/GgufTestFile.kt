@@ -24,6 +24,16 @@ internal class GgufTestFile(private val order: ByteOrder = ByteOrder.LITTLE_ENDI
             .forEach { (name, value) -> entry("$architecture.$name", 4, int(value)) }
     }
 
+    /** Scalar metadata of the delivered V12.63 Qwen3.5-2B Q4_K_M, without weights/tokenizer text. */
+    fun qwen35Memory(architecture: String = "qwen35"): GgufTestFile = apply {
+        mapOf("block_count" to 24, "embedding_length" to 2048, "feed_forward_length" to 6144,
+            "attention.head_count" to 8, "attention.head_count_kv" to 2,
+            "attention.key_length" to 256, "attention.value_length" to 256, "vocab_size" to 248320,
+            "ssm.conv_kernel" to 4, "ssm.inner_size" to 2048, "ssm.state_size" to 128,
+            "ssm.time_step_rank" to 16, "ssm.group_count" to 16)
+            .forEach { (name, value) -> entry("$architecture.$name", 4, int(value)) }
+    }
+
     fun bytes(): ByteArray = ByteArrayOutputStream().use { stream ->
         stream.write("GGUF".toByteArray(Charsets.US_ASCII))
         stream.write(int(version))

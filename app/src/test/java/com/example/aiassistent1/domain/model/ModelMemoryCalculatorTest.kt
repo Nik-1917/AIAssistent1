@@ -43,8 +43,8 @@ class ModelMemoryCalculatorTest {
         assertTrue(small.maximumContext > large.maximumContext)
     }
 
-    @Test fun `unknown hybrid or malformed dimensions never claim a safe ceiling`() {
-        for (invalid in listOf(null, model.copy(architecture = "qwen3next"), model.copy(blockCount = null),
+    @Test fun `missing or malformed dimensions never claim a safe ceiling`() {
+        for (invalid in listOf(null, model.copy(architecture = "qwen35"), model.copy(blockCount = null),
             model.copy(kvHeadCount = 0), model.copy(keyLength = -1), model.copy(vocabularySize = null),
             model.copy(embeddingLength = 65, keyLength = null), model.copy(fileBytes = Long.MAX_VALUE),
             model.copy(blockCount = Int.MAX_VALUE, kvHeadCount = Int.MAX_VALUE, headCount = Int.MAX_VALUE,

@@ -2,6 +2,7 @@ package com.example.aiassistent1.data.engine
 
 import com.example.aiassistent1.data.model.GgufTestFile
 import com.example.aiassistent1.data.model.ModelMemoryGuard
+import com.example.aiassistent1.data.model.DeviceModelMemoryGuard
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.model.*
 import com.llamatik.library.platform.GenStream
@@ -22,6 +23,36 @@ import org.junit.rules.TemporaryFolder
 
 class LlamatikMemoryLimitTest {
     @get:Rule val directory = TemporaryFolder()
+
+    @Test fun `real guard accepts qwen35 and limits future architecture before native loading`() = runBlocking {
+        for (architecture in listOf("qwen35", "future-text")) {
+            val data = GgufTestFile().architecture(architecture).context(262144, architecture)
+            if (architecture == "qwen35") data.qwen35Memory() else data.memory(architecture)
+            val file = data.write(directory.newFile())
+            val provider = object : ModelProvider { override suspend fun getModelPath() = Result.success(file.path) }
+            var memory = DeviceMemorySnapshot(8L shl 30, 6L shl 30, 256L shl 20, false)
+            val guard = DeviceModelMemoryGuard { memory }
+            val runtime = RecordingRuntime()
+            val executor = Executors.newSingleThreadExecutor()
+            val engine = LlamatikEngine(provider, GenerationParams(contextSize = 32768, maxTokens = 16384),
+                executor, runtime, memoryGuard = guard)
+            try {
+                engine.ensureLoaded().getOrThrow()
+                assertEquals(ModelState.Ready, engine.state.value)
+                val loaded = runtime.loads.single()
+                assertTrue(requireNotNull(loaded.deviceContextLimit).canLoad)
+                assertEquals(if (architecture == "qwen35") MemoryEstimateProfile.QWEN35 else MemoryEstimateProfile.CONSERVATIVE_FALLBACK,
+                    loaded.deviceContextLimit?.estimateProfile)
+                if (architecture == "future-text") assertEquals(2048, loaded.contextSize)
+                memory = memory.copy(lowMemory = true)
+                assertTrue(engine.ensureLoaded().isFailure)
+                assertEquals(1, runtime.loads.size)
+            } finally {
+                engine.close()
+                assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS))
+            }
+        }
+    }
 
     @Test fun `fresh device limit overrides caller metadata and intersects GGUF with quarter answer`() = runBlocking {
         val fixture = fixture(context = 8192, requested = 32768)
