@@ -346,14 +346,14 @@ class DataStoreSettingsRepository(
             trainedContextLength = readModelContextLength(modelName),
             contextResponseRatio = ContextResponseRatio.fromStored(intValue("contextResponseRatio", defaults.contextResponseRatio.divisor)),
         )
-        return params.copy(deviceContextLimit = readModelMemoryLimit(modelName, params)).normalizedForSettings()
+        return params.copy(deviceContextLimit = readModelMemoryLimit(modelName, params)).normalizedForAutomaticSettings()
     }
 
     override suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams) {
         val normalized = params.copy(
             trainedContextLength = readModelContextLength(modelName),
             deviceContextLimit = readModelMemoryLimit(modelName, params),
-        ).normalizedForSettings()
+        ).normalizedForAutomaticSettings()
         val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
             // A transient memory block must not overwrite the last usable pair with zero.

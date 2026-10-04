@@ -116,6 +116,7 @@ class ChatViewModel(
     private var paramsJob: Job? = null
     private val modelParamsWrites = Mutex()
     private val modelParamsController = ModelParamsController(llmEngine)
+    val automaticGeneration = llmEngine.automaticState
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
     private var isManualMessagePlayback = false
@@ -205,9 +206,7 @@ class ChatViewModel(
             try {
                 session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 session.awaitReady()
-                // Reserve a bounded context for sequential transcript chunks; restore chat settings in finally.
-                llmEngine.unload()
-                modelParamsController.applyForRequest(uiState.value.modelParams.copy(contextSize = 4096, maxTokens = 512))
+                modelParamsController.applyForRequest(uiState.value.modelParams)
                 val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
                     com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
                 mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
@@ -217,7 +216,6 @@ class ChatViewModel(
             } catch (error: Exception) { mutableSummaryState.value = error.message ?: "Ошибка выжимки" }
             finally {
                 summarizing = false
-                llmEngine.unload()
                 modelParamsController.applyForRequest(uiState.value.modelParams)
                 mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
                 session?.close()
@@ -502,10 +500,11 @@ class ChatViewModel(
     private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
         val trimmedText = text.trim()
         val state = mutableUiState.value
+        val messageLimit = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(state.isCalendarMode)
         when {
             trimmedText.isEmpty() -> return false
-            trimmedText.length > MAX_MESSAGE_LENGTH -> {
-                mutableUiState.update { it.copy(error = "Сообщение не должно превышать 3000 символов") }
+            trimmedText.length > messageLimit -> {
+                mutableUiState.update { it.copy(error = "Сообщение не должно превышать $messageLimit символов") }
                 return false
             }
             state.isProcessing || state.isStopping -> return false

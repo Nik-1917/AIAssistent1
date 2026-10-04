@@ -211,8 +211,8 @@ class DataStoreSettingsRepositoryTest {
         val saved = store.data.first()
         assertEquals(4096, saved[intPreferencesKey("model_params/calendar/first/contextSize")])
         assertEquals(2048, saved[intPreferencesKey("model_params/calendar/first/maxTokens")])
-        assertEquals(6144, saved[intPreferencesKey("model_params/chat/first/contextSize")])
-        assertEquals(3072, saved[intPreferencesKey("model_params/chat/first/maxTokens")])
+        assertEquals(8192, saved[intPreferencesKey("model_params/chat/first/contextSize")])
+        assertEquals(2048, saved[intPreferencesKey("model_params/chat/first/maxTokens")])
         assertEquals(40, saved[intPreferencesKey("model_params/chat/first/topK")])
     }
 

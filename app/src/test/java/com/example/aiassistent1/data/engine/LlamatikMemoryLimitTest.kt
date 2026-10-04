@@ -45,7 +45,7 @@ class LlamatikMemoryLimitTest {
                     loaded.deviceContextLimit?.estimateProfile)
                 if (architecture == "future-text") assertEquals(2048, loaded.contextSize)
                 memory = memory.copy(lowMemory = true)
-                assertTrue(engine.ensureLoaded().isFailure)
+                assertTrue(engine.ensureLoaded().isSuccess)
                 assertEquals(1, runtime.loads.size)
             } finally {
                 engine.close()
@@ -65,12 +65,13 @@ class LlamatikMemoryLimitTest {
             assertEquals(fixture.guard.limit, loaded.deviceContextLimit)
             fixture.guard.limit = DeviceContextLimit(32768, MemoryLimitStatus.ESTIMATED)
             fixture.engine.ensureLoaded().getOrThrow()
-            assertEquals(8192, fixture.runtime.loads.last().contextSize)
-            assertEquals(2048, fixture.runtime.loads.last().maxTokens)
+            assertEquals(4096, fixture.runtime.loads.last().contextSize)
+            assertEquals(1024, fixture.runtime.loads.last().maxTokens)
+            assertEquals(1, fixture.runtime.loads.size)
         } finally { fixture.close() }
     }
 
-    @Test fun `loaded model rechecks falling RAM and blocks generation setup on low memory`() = runBlocking {
+    @Test fun `loaded model retains its working allocation when free RAM falls`() = runBlocking {
         val fixture = fixture()
         try {
             fixture.engine.ensureLoaded().getOrThrow()
@@ -78,13 +79,13 @@ class LlamatikMemoryLimitTest {
             assertEquals(1, fixture.runtime.loads.size)
             fixture.guard.limit = DeviceContextLimit(2048, MemoryLimitStatus.ESTIMATED)
             fixture.engine.ensureLoaded().getOrThrow()
-            assertEquals(2048, fixture.runtime.loads.last().contextSize)
-            assertEquals(512, fixture.runtime.loads.last().maxTokens)
+            assertEquals(4096, fixture.runtime.loads.last().contextSize)
+            assertEquals(1024, fixture.runtime.loads.last().maxTokens)
             fixture.guard.limit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)
-            assertTrue(fixture.engine.ensureLoaded().isFailure)
-            assertTrue(fixture.engine.state.value is ModelState.Error)
-            assertFalse(fixture.guard.isLoaded)
-            assertEquals(2, fixture.runtime.loads.size)
+            assertTrue(fixture.engine.ensureLoaded().isSuccess)
+            assertEquals(ModelState.Ready, fixture.engine.state.value)
+            assertTrue(fixture.guard.isLoaded)
+            assertEquals(1, fixture.runtime.loads.size)
             fixture.guard.limit = DeviceContextLimit(4096, MemoryLimitStatus.ESTIMATED)
             fixture.engine.ensureLoaded().getOrThrow()
             assertEquals(4096, fixture.runtime.loads.last().contextSize)

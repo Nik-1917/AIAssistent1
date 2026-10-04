@@ -21,21 +21,22 @@ class ModelMemorySettingsRepositoryTest {
     private val prefix = "model_params/chat/model.gguf/"
     private fun key(name: String) = intPreferencesKey(prefix + name)
 
-    @Test fun `memory caps legacy settings and writes ignore forged device limits`() = runTest {
+    @Test fun `RAM estimate is advisory and writes ignore forged device metadata`() = runTest {
         var device = DeviceContextLimit(4096, MemoryLimitStatus.ESTIMATED)
         val store = TestPreferencesDataStore(preferencesOf(key("contextSize") to 16384))
         val repository = DataStoreSettingsRepository(store, backgroundScope,
             readModelContextLength = { 32768 }, readModelMemoryLimit = { _, _ -> device })
         val read = repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first()
-        assertEquals(4096, read.contextSize)
-        assertEquals(ContextResponseRatio.TWO_TO_ONE, read.contextResponseRatio)
+        assertEquals(16384, read.contextSize)
+        assertEquals(device, read.deviceContextLimit)
+        assertEquals(ContextResponseRatio.FOUR_TO_ONE, read.contextResponseRatio)
         device = device.copy(maximumContext = 1536)
         repository.updateParamsForModel("model.gguf", ModelProfile.CHAT,
             read.copy(contextSize = 16384, deviceContextLimit = device.copy(maximumContext = 131072),
                 contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE))
         val saved = store.data.first()
-        assertEquals(1536, saved[key("contextSize")])
-        assertEquals(384, saved[key("maxTokens")])
+        assertEquals(16384, saved[key("contextSize")])
+        assertEquals(4096, saved[key("maxTokens")])
         assertEquals(4, saved[key("contextResponseRatio")])
         assertFalse(saved.asMap().keys.any { it.name.contains("deviceContextLimit") || it.name.contains("availableBytes") })
     }
@@ -47,11 +48,11 @@ class ModelMemorySettingsRepositoryTest {
         val repository = DataStoreSettingsRepository(store, backgroundScope,
             readModelContextLength = { 32768 }, readModelMemoryLimit = { _, _ -> device })
         val blocked = repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first()
-        assertEquals(0, blocked.contextSize)
+        assertEquals(4096, blocked.contextSize)
         assertFalse(blocked.contextLimits.adjustable)
         assertEquals(1024, blocked.batchSize)
         repository.updateParamsForModel("model.gguf", ModelProfile.CHAT,
-            blocked.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE).copy(temperature = 0.8f))
+            blocked.copy(temperature = 0.8f))
         assertEquals(4096, store.data.first()[key("contextSize")])
         assertEquals(1024, store.data.first()[key("maxTokens")])
         assertEquals(4, store.data.first()[key("contextResponseRatio")])
@@ -71,7 +72,7 @@ class ModelMemorySettingsRepositoryTest {
         repository.updateParamsForModel("model.gguf", ModelProfile.CHAT, quarter)
         assertEquals(ContextResponseRatio.TWO_TO_ONE,
             repository.getParamsForModel("model.gguf", ModelProfile.CALENDAR).first().contextResponseRatio)
-        assertEquals(ContextResponseRatio.TWO_TO_ONE,
+        assertEquals(ContextResponseRatio.FOUR_TO_ONE,
             repository.getParamsForModel("other.gguf", ModelProfile.CHAT).first().contextResponseRatio)
         val file = File(directory.root, "ratio.preferences_pb")
         val job = Job(backgroundScope.coroutineContext[Job])
@@ -104,11 +105,11 @@ class ModelMemorySettingsRepositoryTest {
             readModelContextLength = { 32768 },
             readModelMemoryLimit = { _, _ -> DeviceContextLimit(limit, MemoryLimitStatus.ESTIMATED) },
             memoryChanges = revision, refreshMemory = { revision.value++ })
-        assertEquals(4096, repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first().contextSize)
+        assertEquals(8192, repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first().contextSize)
         limit = 2048
         repository.refreshModelMemory()
         assertEquals(1L, revision.value)
-        assertEquals(2048, repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first().contextSize)
+        assertEquals(8192, repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first().contextSize)
         assertEquals(8192, store.data.first()[key("contextSize")])
         assertEquals(512, repository.getParamsForModel("model.gguf", ModelProfile.CALENDAR).first().contextSize)
     }

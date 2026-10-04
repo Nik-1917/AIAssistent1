@@ -5,7 +5,7 @@ import org.junit.Test
 
 class ContextResponseRatioTest {
     @Test fun `switching ratio keeps context and changes reservation in both directions`() {
-        val half = ModelProfile.CHAT.defaults.withContextSize(4096)
+        val half = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).withContextSize(4096)
         val quarter = half.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE)
         assertEquals(4096, quarter.contextSize)
         assertEquals(1024, quarter.maxTokens)

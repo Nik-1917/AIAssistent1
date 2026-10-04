@@ -19,7 +19,7 @@ class LlamatikContextLimitTest {
     @Test fun `native context is bounded from GGUF before load even when caller limit is stale`() = runBlocking {
         val file = GgufTestFile().architecture().context(4096).write(temporaryFolder.newFile())
         val provider = object : ModelProvider { override suspend fun getModelPath() = Result.success(file.path) }
-        val requested = ModelProfile.CHAT.defaults.copy(contextSize = 32768, maxTokens = 16384, trainedContextLength = 131072)
+        val requested = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(contextSize = 32768, maxTokens = 16384, trainedContextLength = 131072)
         val executor = Executors.newSingleThreadExecutor()
         val runtime = RecordingRuntime()
         val engine = LlamatikEngine(provider, requested, executor, runtime)
@@ -46,7 +46,7 @@ class LlamatikContextLimitTest {
         val small = GgufTestFile().architecture().context(1024).write(temporaryFolder.newFile())
         var selected = large
         val provider = object : ModelProvider { override suspend fun getModelPath() = Result.success(selected.path) }
-        val requested = ModelProfile.CHAT.defaults.copy(contextSize = 16384, maxTokens = 8192)
+        val requested = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(contextSize = 16384, maxTokens = 8192)
         val executor = Executors.newSingleThreadExecutor()
         val runtime = RecordingRuntime()
         val engine = LlamatikEngine(provider, requested, executor, runtime)

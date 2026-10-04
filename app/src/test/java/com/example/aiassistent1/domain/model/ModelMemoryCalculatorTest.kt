@@ -88,7 +88,7 @@ class ModelMemoryCalculatorTest {
 
     @Test fun `settings combine independent GGUF and memory ceilings and block without a fake minimum`() {
         val device = DeviceContextLimit(4096, MemoryLimitStatus.ESTIMATED)
-        val params = ModelProfile.CHAT.defaults.copy(contextSize = 32768, trainedContextLength = 32768, deviceContextLimit = device)
+        val params = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(contextSize = 32768, trainedContextLength = 32768, deviceContextLimit = device)
             .normalizedForSettings()
         assertEquals(4096, params.contextSize)
         assertEquals(2048, params.maxTokens)

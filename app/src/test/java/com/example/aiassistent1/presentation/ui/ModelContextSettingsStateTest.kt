@@ -8,10 +8,10 @@ import org.junit.Test
 class ModelContextSettingsStateTest {
     @Test fun `metadata arriving after dialog creation updates both profile ranges`() {
         for (profile in ModelProfile.entries) {
-            val state = ModelSettingsState(profile.defaults)
-            state.acceptPersisted(profile.defaults.copy(trainedContextLength = 32768))
+            val state = ModelSettingsState(profile.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))
+            state.acceptPersisted(profile.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(trainedContextLength = 32768))
             assertEquals(32768, state.params.contextLimits.maximum)
-            assertEquals(profile.defaults.contextSize, state.params.contextSize)
+            assertEquals(profile.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).contextSize, state.params.contextSize)
             state.update { it.withMaxTokens(16384) }
             assertEquals(32768, state.params.contextSize)
             assertEquals(16384, state.params.maxTokens)
@@ -19,7 +19,7 @@ class ModelContextSettingsStateTest {
     }
 
     @Test fun `smaller new ceiling bounds pending save and newer local changes`() {
-        val initial = ModelProfile.CHAT.defaults.copy(trainedContextLength = 32768)
+        val initial = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(trainedContextLength = 32768)
         val state = ModelSettingsState(initial)
         val writes = mutableListOf<GenerationParams>()
         state.update { it.withContextSize(16384) }

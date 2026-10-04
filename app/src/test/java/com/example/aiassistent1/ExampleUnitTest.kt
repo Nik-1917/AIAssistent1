@@ -49,7 +49,7 @@ class SendMessageUseCaseTest {
 
         val result = useCase(emptyList())
 
-        assertFalse(result.isSuccess)
+        assertFalse(runCatching { result.getOrThrow().toList() }.isSuccess)
         assertEquals(0, engine.generateCalls)
     }
 

@@ -18,7 +18,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelSettingsStateTest {
     @Test fun `ratio selection survives delayed echoes and pairs both token sliders`() {
-        val initial = ModelProfile.CHAT.defaults.withContextSize(4096)
+        val initial = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).withContextSize(4096)
         val state = ModelSettingsState(initial)
         val writes = mutableListOf<GenerationParams>()
         state.update { it.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE) }
@@ -31,34 +31,23 @@ class ModelSettingsStateTest {
         assertEquals(ContextResponseRatio.FOUR_TO_ONE, state.params.contextResponseRatio)
     }
 
-    @Test fun `memory ceiling clamps pending edits and recovery restores stored context after block`() {
-        val initial = ModelProfile.CHAT.defaults.withContextSize(4096)
-            .copy(deviceContextLimit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED))
+    @Test fun `memory refresh retains sizes and pending sampling edits`() {
+        val initial = ModelProfile.CHAT.defaults.copy(contextSize = 4096, maxTokens = 1024,
+            deviceContextLimit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED))
         val state = ModelSettingsState(initial)
         val writes = mutableListOf<GenerationParams>()
-        state.update { it.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE) }
-        state.flush { writes += it }
-        val clamped = writes.single().copy(deviceContextLimit = DeviceContextLimit(2048, MemoryLimitStatus.ESTIMATED))
-            .normalizedForSettings()
-        state.acceptPersisted(clamped)
-        assertEquals(2048, state.params.contextSize)
-        assertEquals(512, state.params.maxTokens)
-        val blocked = clamped.copy(deviceContextLimit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY))
-        state.acceptPersisted(blocked)
-        assertEquals(0, state.params.contextSize)
         state.update { it.copy(temperature = 0.9f) }
         state.flush { writes += it }
-        state.acceptPersisted(writes.last())
-        val recovered = initial.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE).copy(temperature = 0.9f)
-        state.acceptPersisted(recovered)
-        assertEquals(recovered, state.params)
+        state.acceptPersisted(initial.copy(deviceContextLimit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)))
+        assertEquals(4096, state.params.contextSize)
+        assertEquals(1024, state.params.maxTokens)
+        assertEquals(0.9f, state.params.temperature)
         state.flush { writes += it }
-        assertEquals(2, writes.size)
+        assertEquals(1, writes.size)
     }
-
     @Test
     fun `continuous dragging saves the latest pair each second without restarting the timer`() = runTest {
-        val state = ModelSettingsState(ModelProfile.CHAT.defaults)
+        val state = ModelSettingsState(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))
         val writes = mutableListOf<GenerationParams>()
         val timer = backgroundScope.launch { state.saveWhileActive { writes += it } }
         runCurrent()
@@ -88,7 +77,7 @@ class ModelSettingsStateTest {
 
     @Test
     fun `stopping before the tick flushes once and reopening starts a new interval`() = runTest {
-        val state = ModelSettingsState(ModelProfile.CHAT.defaults)
+        val state = ModelSettingsState(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))
         val writes = mutableListOf<GenerationParams>()
         val timer = backgroundScope.launch { state.saveWhileActive { writes += it } }
         runCurrent()
@@ -117,7 +106,7 @@ class ModelSettingsStateTest {
 
     @Test
     fun `unchanged settings and changes reverted before the tick do not write`() = runTest {
-        val state = ModelSettingsState(ModelProfile.CHAT.defaults)
+        val state = ModelSettingsState(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))
         val writes = mutableListOf<GenerationParams>()
         val timer = backgroundScope.launch { state.saveWhileActive { writes += it } }
         runCurrent()
@@ -132,7 +121,7 @@ class ModelSettingsStateTest {
 
     @Test
     fun `delayed saved values never replace newer edits or a pending submission`() {
-        val initial = ModelProfile.CHAT.defaults
+        val initial = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE)
         val state = ModelSettingsState(initial)
         val writes = mutableListOf<GenerationParams>()
         state.update { it.withContextSize(4096) }
@@ -148,14 +137,14 @@ class ModelSettingsStateTest {
         state.flush { writes += it }
         assertEquals(2, writes.size)
 
-        val external = ModelProfile.CHAT.defaults.withContextSize(1024)
+        val external = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).withContextSize(1024)
         state.acceptPersisted(external)
         assertEquals(external, state.params)
     }
 
     @Test
     fun `returning to persisted values still saves when an older edit is in flight`() {
-        val initial = ModelProfile.CHAT.defaults
+        val initial = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE)
         val state = ModelSettingsState(initial)
         val writes = mutableListOf<GenerationParams>()
         state.update { it.withContextSize(8192) }
@@ -168,11 +157,11 @@ class ModelSettingsStateTest {
 
     @Test
     fun `disposal flush does not depend on the periodic coroutine having started`() {
-        val state = ModelSettingsState(ModelProfile.CHAT.defaults)
+        val state = ModelSettingsState(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))
         val writes = mutableListOf<GenerationParams>()
         state.update { it.withMaxTokens(256) }
         state.flush { writes += it }
         state.flush { writes += it }
-        assertEquals(listOf(ModelProfile.CHAT.defaults.copy(contextSize = 512, maxTokens = 256)), writes)
+        assertEquals(listOf(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(contextSize = 512, maxTokens = 256)), writes)
     }
 }

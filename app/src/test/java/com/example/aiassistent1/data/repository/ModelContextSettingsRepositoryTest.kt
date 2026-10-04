@@ -35,12 +35,12 @@ class ModelContextSettingsRepositoryTest {
         for (profile in ModelProfile.entries) {
             val small = repository.getParamsForModel("small.gguf", profile).first()
             assertEquals(1024, small.contextSize)
-            assertEquals(512, small.maxTokens)
+            assertEquals(1024 / profile.defaults.contextResponseRatio.divisor, small.maxTokens)
             assertEquals(1024, small.trainedContextLength)
         }
         val large = repository.getParamsForModel("large.gguf", ModelProfile.CHAT).first()
         assertEquals(16384, large.contextSize)
-        assertEquals(8192, large.maxTokens)
+        assertEquals(4096, large.maxTokens)
         assertEquals(32768, large.trainedContextLength)
         assertEquals(512, repository.getParamsForModel("large.gguf", ModelProfile.CALENDAR).first().contextSize)
     }
@@ -54,7 +54,7 @@ class ModelContextSettingsRepositoryTest {
         repository.updateParamsForModel(file.name, ModelProfile.CHAT, stale)
         val saved = store.data.first()
         assertEquals(1024, saved[intPreferencesKey("model_params/chat/model.gguf/contextSize")])
-        assertEquals(512, saved[intPreferencesKey("model_params/chat/model.gguf/maxTokens")])
+        assertEquals(256, saved[intPreferencesKey("model_params/chat/model.gguf/maxTokens")])
         assertFalse(saved.asMap().keys.any { it.name.contains("trainedContextLength") })
         val calendar = repository.getParamsForModel(file.name, ModelProfile.CALENDAR).first()
         assertEquals(512, calendar.contextSize)
@@ -83,7 +83,7 @@ class ModelContextSettingsRepositoryTest {
         val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
         val snapshot = TestPreferencesDataStore()
         val writer = DataStoreSettingsRepository(snapshot, writerScope, readModelContextLength = readContext)
-        val requested = ModelProfile.CHAT.defaults.copy(contextSize = 16384, maxTokens = 8192)
+        val requested = ModelProfile.CHAT.defaults.copy(contextSize = 16384, maxTokens = 4096)
         writer.updateParamsForModel("large.gguf", ModelProfile.CHAT, requested)
         writerStore.updateData { snapshot.data.first() }
         writerJob.cancelAndJoin()

@@ -14,8 +14,9 @@ class GenerationParamsTest {
     fun `calendar and chat have exact separate defaults`() {
         assertEquals(GenerationParams(contextSize = 512, maxTokens = 256, temperature = 0.36f,
             topP = 0.90f, topK = 20, repeatPenalty = 1.15f), ModelProfile.CALENDAR.defaults)
-        assertEquals(GenerationParams(contextSize = 2048, maxTokens = 1024, temperature = 0.70f,
-            topP = 0.80f, topK = 20, repeatPenalty = 1.15f, batchSize = 512), ModelProfile.CHAT.defaults)
+        assertEquals(GenerationParams(contextSize = 2048, maxTokens = 512, temperature = 0.70f,
+            topP = 0.80f, topK = 20, repeatPenalty = 1.15f, batchSize = 64,
+            contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE), ModelProfile.CHAT.defaults)
     }
 
     @Test

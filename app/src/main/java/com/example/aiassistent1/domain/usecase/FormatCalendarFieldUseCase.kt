@@ -3,6 +3,7 @@ package com.example.aiassistent1.domain.usecase
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
+import com.example.aiassistent1.domain.model.GenerationTask
 import org.json.JSONObject
 
 /**
@@ -18,7 +19,6 @@ class FormatCalendarFieldUseCase(
         expectedFormat: String,
         rawValue: String
     ): Result<String> = runCatching {
-        llmEngine.ensureLoaded().getOrThrow()
         
         val request = ChatMessage(
             role = MessageRole.USER,
@@ -36,7 +36,7 @@ class FormatCalendarFieldUseCase(
         )
 
         var response = ""
-        llmEngine.generate(messages).collect { response += it }
+        llmEngine.generateForTask(messages, GenerationTask.CALENDAR).collect { response += it }
 
         parseResponse(modelName, response)
     }

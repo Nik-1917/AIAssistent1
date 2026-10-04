@@ -10,18 +10,18 @@ import kotlinx.coroutines.isActive
 
 /** One editable snapshot; delayed DataStore echoes must not move a dragged slider back. */
 internal class ModelSettingsState(initialParams: GenerationParams) {
-    var params by mutableStateOf(initialParams.normalizedForSettings())
+    var params by mutableStateOf(initialParams.normalizedForAutomaticSettings())
         private set
 
     private var persisted = params
     private var submitted: GenerationParams? = null
 
     fun update(transform: (GenerationParams) -> GenerationParams) {
-        params = transform(params).normalizedForSettings()
+        params = transform(params).normalizedForAutomaticSettings()
     }
 
     fun acceptPersisted(value: GenerationParams) {
-        val normalized = value.normalizedForSettings()
+        val normalized = value.normalizedForAutomaticSettings()
         if (params.trainedContextLength != normalized.trainedContextLength ||
             params.deviceContextLimit != normalized.deviceContextLimit) {
             val wasBlocked = params.deviceContextLimit?.canLoad == false
@@ -30,7 +30,7 @@ internal class ModelSettingsState(initialParams: GenerationParams) {
                 copy(trainedContextLength = normalized.trainedContextLength,
                     deviceContextLimit = normalized.deviceContextLimit,
                     contextSize = if (wasBlocked) normalized.contextSize else contextSize,
-                    maxTokens = if (wasBlocked) normalized.maxTokens else maxTokens).normalizedForSettings()
+                    maxTokens = if (wasBlocked) normalized.maxTokens else maxTokens).normalizedForAutomaticSettings()
             params = params.withCurrentLimit()
             persisted = persisted.withCurrentLimit()
             submitted = submitted?.withCurrentLimit()

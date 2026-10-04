@@ -20,7 +20,7 @@ class ModelContextLimitsTest {
     }
 
     @Test fun `rounding never crosses an off-grid ceiling and valid existing settings stay unchanged`() {
-        val params = ModelProfile.CHAT.defaults.copy(trainedContextLength = 3000)
+        val params = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(trainedContextLength = 3000)
         assertEquals(2560, params.withContextSize(3000).contextSize)
         assertEquals(params, params.normalizedForSettings())
         assertEquals(512, ModelProfile.CALENDAR.defaults.copy(trainedContextLength = 32768).normalizedForSettings().contextSize)
@@ -35,7 +35,7 @@ class ModelContextLimitsTest {
     }
 
     @Test fun `runtime bounds actual file independently and preserves smaller summary budget`() {
-        val summary = ModelProfile.CHAT.defaults.copy(contextSize = 4096, maxTokens = 512, trainedContextLength = 131072)
+        val summary = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).copy(contextSize = 4096, maxTokens = 512, trainedContextLength = 131072)
         val bounded = summary.boundedForRuntime(1024)
         assertEquals(1024, bounded.contextSize)
         assertEquals(512, bounded.maxTokens)

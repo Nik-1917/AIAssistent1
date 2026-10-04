@@ -154,7 +154,6 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
-import com.example.aiassistent1.domain.model.ContextResponseRatio
 import com.example.aiassistent1.domain.model.ModelContextLimits
 import androidx.compose.material3.FilterChip
 import com.example.aiassistent1.domain.model.CpuThreadSettings
@@ -983,6 +982,7 @@ fun ChatScreen(
                         isProcessing = uiState.isProcessing,
                         isVoiceMode = uiState.isVoiceMode,
                         onSend = viewModel::sendMessage,
+                        maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
                         onStop = viewModel::stopGeneration,
                         onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
                         onVoiceLongPress = { requestMicrophoneAction(MicrophoneAction.LONG_PRESS) },
@@ -1163,6 +1163,7 @@ fun ChatScreen(
                 onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
                 onSpeechRateChange = viewModel::setSpeechRate,
                 onRefreshMemory = viewModel::refreshModelMemory,
+                automaticGeneration = viewModel.automaticGeneration.collectAsStateWithLifecycle().value,
                 keywordControls = viewModel.personalKeywordControls,
                 voiceControls = viewModel.voiceProfileControls,
             )
@@ -1918,7 +1919,7 @@ private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun InputPanel(
+internal fun InputPanel(
     textInputEnabled: Boolean,
     microphoneEnabled: Boolean,
     isProcessing: Boolean,
@@ -1927,9 +1928,10 @@ private fun InputPanel(
     onStop: () -> Unit,
     onVoiceTap: () -> Unit,
     onVoiceLongPress: () -> Unit,
+    maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
 ) {
     var text by remember { mutableStateOf("") }
-    val canSend = textInputEnabled && text.trim().isNotEmpty()
+    val canSend = textInputEnabled && text.trim().isNotEmpty() && text.trim().length <= maximumMessageLength
     val isKeyboardVisible = WindowInsets.isImeVisible
 
     Row(
@@ -1942,11 +1944,12 @@ private fun InputPanel(
     ) {
         OutlinedTextField(
             value = text,
-            onValueChange = { text = it.take(MAX_MESSAGE_LENGTH) },
+            onValueChange = { text = it },
             modifier = Modifier
                 .weight(1f)
                 .offset(y = 0.dp),
             enabled = textInputEnabled,
+            isError = text.trim().length > maximumMessageLength,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1955,7 +1958,8 @@ private fun InputPanel(
             placeholder = { Text("Сообщение") },
             supportingText = {
                 Text(
-                    text = "${text.length}/$MAX_MESSAGE_LENGTH",
+                    text = if (text.trim().length > maximumMessageLength) "Не более $maximumMessageLength символов. Текст сохранён в поле."
+                        else "${text.length}/$maximumMessageLength",
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
                     fontSize = 12.sp,
@@ -2174,6 +2178,7 @@ fun ModelSettingsDialog(
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
     voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
     onRefreshMemory: () -> Unit = {},
+    automaticGeneration: com.example.aiassistent1.domain.model.AutomaticGenerationState? = null,
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2182,10 +2187,9 @@ fun ModelSettingsDialog(
     val editingProfile = selectedProfile
     val modelSettings = if (editingProfile == ModelProfile.CALENDAR) calendarSettings else chatSettings
     val modelParams = modelSettings.params
-    val contextLimits = modelParams.contextLimits
     val defaults = editingProfile.defaults.copy(trainedContextLength = modelParams.trainedContextLength,
         deviceContextLimit = modelParams.deviceContextLimit,
-        contextResponseRatio = modelParams.contextResponseRatio).normalizedForSettings()
+        contextResponseRatio = modelParams.contextResponseRatio).normalizedForAutomaticSettings()
     var modelExpanded by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val saveModelParams by rememberUpdatedState(onParamsChange)
@@ -2290,65 +2294,34 @@ fun ModelSettingsDialog(
                                 )
                             }
                             Text(
-                                text = modelFileSizeDescription(modelParams),
+                                "Свободная память меняется вместе с нагрузкой телефона. Работающая модель сохраняет выделенный контекст.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Text(
-                                text = memory.explanation,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (memory.canLoad) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                            )
-                            if (memory.canLoad) {
-                                Text(
-                                    text = "Максимум в настройках: ${contextLimits.maximum} токенов. " +
-                                        "Предел рассчитан с запасом памяти для системы и приложения.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
                         }
-                        Text("Соотношение контекста и ответа", style = MaterialTheme.typography.bodyMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ContextResponseRatio.entries.forEach { ratio ->
-                                FilterChip(
-                                    selected = modelParams.contextResponseRatio == ratio,
-                                    onClick = { modelSettings.update { it.withContextResponseRatio(ratio) } },
-                                    enabled = (modelParams.trainedContextLength ?: Int.MAX_VALUE) >= ratio.divisor,
-                                    label = { Text(ratio.label) },
-                                )
-                            }
-                        }
-                        SettingSlider(
-                            label = "Размер вопроса: ${modelParams.contextSize} токенов",
-                            value = modelParams.contextSize.toFloat(),
-                            onValueChange = { value -> modelSettings.update { it.withContextSize(value.roundToInt()) } },
-                            valueRange = contextLimits.minimum.toFloat()..contextLimits.maximum.toFloat(),
-                            steps = contextLimits.sliderSteps,
-                            enabled = contextLimits.adjustable,
-                            defaultValue = defaults.contextSize.toFloat(),
-                        )
-
-                        SettingSlider(
-                            label = "Место под ответ: ${modelParams.maxTokens} токенов",
-                            value = modelParams.maxTokens.toFloat(),
-                            onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
-                            valueRange = modelParams.contextResponseRatio.maximumFor(contextLimits.minimum).toFloat()..
-                                modelParams.contextResponseRatio.maximumFor(contextLimits.maximum).toFloat(),
-                            steps = contextLimits.sliderSteps,
-                            enabled = contextLimits.adjustable,
-                            defaultValue = defaults.maxTokens.toFloat(),
-                        )
+                        Text("Память: автоматически", style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            text = "Размер вопроса к модели включает в себя зарезервированное место под ответ. " +
-                                (if (modelParams.contextResponseRatio == ContextResponseRatio.TWO_TO_ONE)
-                                    "Настройки синхронизируются: под ответ выделяется половина размера вопроса. "
-                                else "Настройки синхронизируются: под ответ выделяется четверть размера вопроса. ") +
-                                "Если ответ модели не поместился в карточке ответа, увеличьте место под ответ.",
+                            "Чат начинает с контекста 2 048 и резерва ответа 512 токенов. " +
+                                "Полный запрос измеряется токенизатором. Резерв растёт шагами по 512, " +
+                                "начальный контекст — в четыре раза больше резерва. " +
+                                "Ответ использует всё оставшееся место; при необходимости контекст расширяется, " +
+                                "если хватает памяти. Календарь и выжимка подбирают размеры автоматически.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-
+                        automaticGeneration?.let { actual ->
+                            val taskName = when (actual.task) {
+                                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
+                                com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
+                                com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
+                            }
+                            Text(
+                                "$taskName · текущий контекст: ${actual.contextSize} · пакет: ${actual.batchSize}\n" +
+                                    "Полный вход: ${actual.promptTokens} · доступно под ответ: ${actual.availableAnswerTokens} токенов",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        } ?: Text("Фактические размеры появятся после первого запроса.",
+                            style = MaterialTheme.typography.bodySmall)
                         SettingSlider(
                             label = "Top P: ${String.format("%.2f", modelParams.topP)}",
                             value = modelParams.topP,
@@ -2374,44 +2347,6 @@ fun ModelSettingsDialog(
                             valueRange = 1f..2f,
                             defaultValue = defaults.repeatPenalty,
                             defaultValueDecimals = 2,
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Batch Size")
-                                Text(
-                                    if (modelParams.batchSizeAuto) "Режим: Авто" else "Режим: Вручную",
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                            Switch(
-                                checked = modelParams.batchSizeAuto,
-                                onCheckedChange = { enabled -> modelSettings.update { it.copy(batchSizeAuto = enabled) } },
-                                modifier = Modifier.semantics { contentDescription = "Подбирать Batch Size автоматически" },
-                            )
-                        }
-                        val batchOptions = modelParams.batchSizeOptions
-                        SettingSlider(
-                            label = "Размер пакета: ${modelParams.effectiveBatchSize} токенов",
-                            value = batchOptions.indexOf(modelParams.effectiveBatchSize).coerceAtLeast(0).toFloat(),
-                            onValueChange = { value ->
-                                modelSettings.update { it.copy(batchSize = batchOptions[value.roundToInt()]) }
-                            },
-                            valueRange = 0f..batchOptions.lastIndex.coerceAtLeast(0).toFloat(),
-                            steps = (batchOptions.size - 2).coerceAtLeast(0),
-                            enabled = !modelParams.batchSizeAuto && batchOptions.size > 1,
-                            defaultValue = batchOptions.indexOf(defaults.effectiveBatchSize).coerceAtLeast(0).toFloat(),
-                            defaultValueText = "${defaults.effectiveBatchSize} (Авто)",
-                        )
-                        Text(
-                            "Размер порции токенов при обработке вопроса. В режиме «Авто» — не больше 512 " +
-                                "и объёма, оставшегося после выделения места под ответ. " +
-                                "Новое значение применяется перед следующим запросом.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         Row(
@@ -2673,5 +2608,4 @@ private fun ModelState.label(): String = when (this) {
     is ModelState.Importing -> "Импорт..."
 }
 
-private const val MAX_MESSAGE_LENGTH = 3000
 private const val VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS = 2_000L

@@ -50,9 +50,10 @@ class DeviceModelMemoryGuard(
     override fun loaded(file: File, params: GenerationParams, before: DeviceMemorySnapshot?) {
         val metadata = GgufMetadataReader.readMetadata(file)?.memory
         val cost = metadata?.let { ModelMemoryCalculator.cost(it, params.memoryRuntimeSettings(), params.contextSize) }
-        loaded = if (before != null && cost != null) {
+        val baseline = loaded?.privateDirtyBefore ?: before?.processPrivateDirtyBytes
+        loaded = if (baseline != null && cost != null) {
             // A GPU copy may be private; CPU mmap weights remain in the reclaimable file cache.
-            Loaded(before.processPrivateDirtyBytes.coerceAtLeast(0),
+            Loaded(baseline.coerceAtLeast(0),
                 cost.workingBytes + if (params.gpuLayers != 0) metadata.fileBytes else 0)
         } else null
         refresh()

@@ -82,6 +82,10 @@ data class GenerationParams(
         )
     }
 
+    /** Live RAM is advisory for the UI. Allocation is chosen by the engine per request. */
+    fun normalizedForAutomaticSettings(): GenerationParams =
+        copy(deviceContextLimit = null).normalizedForSettings().copy(deviceContextLimit = deviceContextLimit)
+
     private fun normalizedManualBatchSize(contextLimit: Int): Int =
         MANUAL_BATCH_SIZES.filter { it <= contextLimit }
             .minByOrNull { abs(it.toLong() - batchSize.toLong()) }
