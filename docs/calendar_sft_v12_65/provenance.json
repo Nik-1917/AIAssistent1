@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.65-reply-consistency",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-10-04",
+    "decision_evidence": "Owner confirmed V12.65 data, rules, semantic checks and next-training preparation. Fictional literal conversations and exact reply edits were reviewed and independently audited; no external calendar records."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "366643fe9d6b7221cbed3e6885c6038be6998298e3d4e779774cb8e25ae63067"
+    },
+    "validation": {
+      "sha256": "dd51b70218c9d05bc2b6df0925a2ef616082f0b73f66f9fcc2ac5f6ab858851f"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_64/provenance.json and docs/calendar_v12_65_manual",
+      "rights_evidence": "Inherited authorized fictional examples plus literal authored conversations and reply replacements; scripts do not generate Russian sentences.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

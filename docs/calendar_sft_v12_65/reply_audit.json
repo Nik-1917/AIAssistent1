@@ -1,0 +1,77 @@
+{
+  "calendar_holdout_v12_2": {
+    "known_clock_rows": 4,
+    "no_known_clock_rows": 4,
+    "failures": []
+  },
+  "context_transfer_eval": {
+    "known_clock_rows": 31,
+    "no_known_clock_rows": 42,
+    "failures": []
+  },
+  "half_hour_holdout": {
+    "known_clock_rows": 36,
+    "no_known_clock_rows": 0,
+    "failures": []
+  },
+  "holdout": {
+    "known_clock_rows": 36,
+    "no_known_clock_rows": 0,
+    "failures": []
+  },
+  "input_clock_holdout": {
+    "known_clock_rows": 70,
+    "no_known_clock_rows": 2,
+    "failures": []
+  },
+  "interval_holdout": {
+    "known_clock_rows": 11,
+    "no_known_clock_rows": 0,
+    "failures": []
+  },
+  "last_event_holdout": {
+    "known_clock_rows": 3,
+    "no_known_clock_rows": 3,
+    "failures": []
+  },
+  "offset_reply_holdout": {
+    "known_clock_rows": 44,
+    "no_known_clock_rows": 2,
+    "failures": []
+  },
+  "order_holdout": {
+    "known_clock_rows": 37,
+    "no_known_clock_rows": 6,
+    "failures": []
+  },
+  "regression_holdout": {
+    "known_clock_rows": 17,
+    "no_known_clock_rows": 20,
+    "failures": []
+  },
+  "speech_holdout": {
+    "known_clock_rows": 21,
+    "no_known_clock_rows": 5,
+    "failures": []
+  },
+  "train": {
+    "known_clock_rows": 4648,
+    "no_known_clock_rows": 539,
+    "failures": []
+  },
+  "validation": {
+    "known_clock_rows": 475,
+    "no_known_clock_rows": 100,
+    "failures": []
+  },
+  "reply_consistency_holdout": {
+    "known_clock_rows": 22,
+    "no_known_clock_rows": 1,
+    "failures": []
+  },
+  "generation_dev": {
+    "known_clock_rows": 74,
+    "no_known_clock_rows": 4,
+    "failures": []
+  }
+}

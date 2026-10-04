@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.66-intent-routing",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-10-04",
+    "decision_evidence": "Owner confirmed manual V12.66 preparation and clarified: reminder verbs only in calendar_add, preserve date/time chat and lookup verbs. Literal requests and JSON were reviewed; automated checks cover contracts, routing and temporal arithmetic, not model quality."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "0e0e3e059064d5400ddc57099ab4941f29e0fa5d2cb8c6d344f3b6747e88f310"
+    },
+    "validation": {
+      "sha256": "917f97ffe8fd339aec21d5658dfa77382fdf3c9ff114aed116fc8b3a1fd86878"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_65/provenance.json and docs/calendar_v12_66_manual",
+      "rights_evidence": "Authorized inherited fictional conversations plus handwritten conversations and four literal input replacements; no external calendar records or generated Russian sentences.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

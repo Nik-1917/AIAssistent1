@@ -1,0 +1,38 @@
+[
+  {
+    "split": "train",
+    "line": 1444,
+    "before": "Можешь напоминать мне о главных ценностях?",
+    "after": "Можешь помогать мне помнить о главных ценностях?",
+    "reason": "Preserve the capability question without a reminder verb.",
+    "case_id": null,
+    "assistant_sha256": "e9ea9b9b2d0e4a693b8a3425260494268f6bbe59d36fae2e384938314b404b00"
+  },
+  {
+    "split": "train",
+    "line": 1792,
+    "before": "Напомни вчерашнее число.",
+    "after": "Скажи вчерашнее число.",
+    "reason": "Preserve the date question and its exact answer.",
+    "case_id": "V122T28",
+    "assistant_sha256": "c4ce41c6ef3eae01bf7032870cd0fdce7dc1245e9346464954e68e24216e51ab"
+  },
+  {
+    "split": "train",
+    "line": 5680,
+    "before": "Напомни, какое время получится через одну минуту?",
+    "after": "Скажи, какое время получится через одну минуту?",
+    "reason": "Preserve the time-arithmetic question and its exact answer.",
+    "case_id": "V1264R22",
+    "assistant_sha256": "59a969ae2de6563664312ee6bc6f1a9ace981efdfbf8ea1e868a522d7f48eb9a"
+  },
+  {
+    "split": "offset_reply_holdout",
+    "line": 44,
+    "before": "Напомни мне, сколько получится времени через полчаса?",
+    "after": "Скажи мне, сколько получится времени через полчаса?",
+    "reason": "Preserve the independent time-arithmetic question and its exact answer.",
+    "case_id": "V1264B44",
+    "assistant_sha256": "02c0cd9d6a336c312401ea70ea36ab156919c623a1d1cc299300666f798459d5"
+  }
+]

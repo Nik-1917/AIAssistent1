@@ -1,5 +1,40 @@
 # Calendar Assistant: training contract
 
+## V12.66: reminder creation versus lookup
+
+Apply the [V12.66 intent routing rules](CALENDAR_ASSISTANT_V12_66_INTENT_ROUTING.md)
+to new examples and evaluation. Requests to remind the user about an action
+produce `calendar_add`, including polite questions and incomplete commands.
+In V12.66 authored user requests, the reminder verbs are reserved for creation.
+Use lookup wording such as `найди`, `покажи`, `что у меня` and
+`посмотри в календаре` for existing events. Preserve compound update
+semantics and the meaning of the noun `напоминание` in event titles.
+
+Keep ordinary date/time questions as `chat`; four inherited questions are
+manually reworded without reminder verbs, retaining their responses and intent.
+Do not relabel factual questions as event creation. Missing event fields stay
+missing under the existing partial-command contract. V12.65 reply consistency
+and temporal arithmetic checks remain required. This is a data-authoring
+policy, not a runtime keyword classifier or a new notification feature.
+
+## V12.65: exact agreement between event parameters and reply
+
+Use the [V12.65 reply consistency rules](CALENDAR_ASSISTANT_V12_65_REPLY_CONSISTENCY.md)
+for new training targets and evaluation. The time spoken in `reply` must
+represent the same instant as the resolved parameters, including time updates
+and interval endpoints. In `HH:MM`, elapsed minutes come from `MM`, never
+from `HH`, event duration, value or numbers in the title. For example,
+`12:12` is `в двенадцать минут первого`, whereas `12:15` is `в четверть первого`.
+Correct parameters with an incorrect spoken time fail evaluation.
+
+Known times are spoken even in partial commands with a missing title.
+Unknown times remain absent. Relative offsets are added to the current
+system time before forming both parameters and reply. The V12.62 clock
+style and existing extraction rules remain in force. V12.65 explicitly
+updates legacy reply targets through a reviewed correction register; old
+datasets remain reproducible. These rules describe data preparation and
+are not an additional runtime system prompt.
+
 ## V12.63: interpreting spoken clocks
 
 The [V12.63 input clock rules](CALENDAR_ASSISTANT_V12_63_INPUT_CLOCK.md)

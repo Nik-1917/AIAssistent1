@@ -1,0 +1,30 @@
+[
+  {
+    "split": "train",
+    "line": 1444,
+    "before": "Можешь напоминать мне о главных ценностях?",
+    "after": "Можешь помогать мне помнить о главных ценностях?",
+    "reason": "Preserve the capability question without a reminder verb."
+  },
+  {
+    "split": "train",
+    "line": 1792,
+    "before": "Напомни вчерашнее число.",
+    "after": "Скажи вчерашнее число.",
+    "reason": "Preserve the date question and its exact answer."
+  },
+  {
+    "split": "train",
+    "line": 5680,
+    "before": "Напомни, какое время получится через одну минуту?",
+    "after": "Скажи, какое время получится через одну минуту?",
+    "reason": "Preserve the time-arithmetic question and its exact answer."
+  },
+  {
+    "split": "offset_reply_holdout",
+    "line": 44,
+    "before": "Напомни мне, сколько получится времени через полчаса?",
+    "after": "Скажи мне, сколько получится времени через полчаса?",
+    "reason": "Preserve the independent time-arithmetic question and its exact answer."
+  }
+]

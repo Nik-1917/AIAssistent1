@@ -1,0 +1,3339 @@
+{
+  "V1264C00": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:1",
+    "split": "train"
+  },
+  "V1264C01": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в час пятнадцать",
+    "input_clock": "01:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:2",
+    "split": "train"
+  },
+  "V1264C02": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в два пятнадцать",
+    "input_clock": "02:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:3",
+    "split": "train"
+  },
+  "V1264C03": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в три пятнадцать",
+    "input_clock": "03:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:4",
+    "split": "train"
+  },
+  "V1264C04": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в четыре пятнадцать",
+    "input_clock": "04:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:5",
+    "split": "train"
+  },
+  "V1264C05": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в пять пятнадцать",
+    "input_clock": "05:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:6",
+    "split": "train"
+  },
+  "V1264C06": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в шесть пятнадцать",
+    "input_clock": "06:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:7",
+    "split": "train"
+  },
+  "V1264C07": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в семь пятнадцать",
+    "input_clock": "07:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:8",
+    "split": "train"
+  },
+  "V1264C08": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в восемь пятнадцать",
+    "input_clock": "08:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:9",
+    "split": "train"
+  },
+  "V1264C09": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в девять пятнадцать",
+    "input_clock": "09:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:10",
+    "split": "train"
+  },
+  "V1264C10": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в десять пятнадцать",
+    "input_clock": "10:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:11",
+    "split": "train"
+  },
+  "V1264C11": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:12",
+    "split": "train"
+  },
+  "V1264C12": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:13",
+    "split": "train"
+  },
+  "V1264C13": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в тринадцать пятнадцать",
+    "input_clock": "13:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:14",
+    "split": "train"
+  },
+  "V1264C14": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в четырнадцать пятнадцать",
+    "input_clock": "14:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:15",
+    "split": "train"
+  },
+  "V1264C15": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в пятнадцать пятнадцать",
+    "input_clock": "15:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:16",
+    "split": "train"
+  },
+  "V1264C16": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в шестнадцать пятнадцать",
+    "input_clock": "16:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:17",
+    "split": "train"
+  },
+  "V1264C17": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в семнадцать пятнадцать",
+    "input_clock": "17:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:18",
+    "split": "train"
+  },
+  "V1264C18": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в восемнадцать пятнадцать",
+    "input_clock": "18:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:19",
+    "split": "train"
+  },
+  "V1264C19": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в девятнадцать пятнадцать",
+    "input_clock": "19:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:20",
+    "split": "train"
+  },
+  "V1264C20": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двадцать пятнадцать",
+    "input_clock": "20:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:21",
+    "split": "train"
+  },
+  "V1264C21": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двадцать один пятнадцать",
+    "input_clock": "21:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:22",
+    "split": "train"
+  },
+  "V1264C22": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двадцать два пятнадцать",
+    "input_clock": "22:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:23",
+    "split": "train"
+  },
+  "V1264C23": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двадцать три пятнадцать",
+    "input_clock": "23:15",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:24",
+    "split": "train"
+  },
+  "V1264C24": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в одиннадцать четырнадцать",
+    "input_clock": "11:14",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:25",
+    "split": "train"
+  },
+  "V1264C25": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в одиннадцать шестнадцать",
+    "input_clock": "11:16",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:26",
+    "split": "train"
+  },
+  "V1264C26": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в одиннадцать тридцать",
+    "input_clock": "11:30",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:27",
+    "split": "train"
+  },
+  "V1264C27": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двенадцать тридцать одну",
+    "input_clock": "12:31",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:28",
+    "split": "train"
+  },
+  "V1264C28": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двенадцать тридцать семь",
+    "input_clock": "12:37",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:29",
+    "split": "train"
+  },
+  "V1264C29": {
+    "anchor_time": "2026-10-03T00:00",
+    "temporal_phrase": "@в двенадцать сорок девять",
+    "input_clock": "12:49",
+    "literal_reference": "docs/calendar_v12_64_manual/clock_train.txt:30",
+    "split": "train"
+  },
+  "V1264R01": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:1",
+    "split": "train"
+  },
+  "V1264R02": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "минут через пять",
+    "offset_minutes": 5,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:2",
+    "split": "train"
+  },
+  "V1264R03": {
+    "anchor_time": "2027-01-31T23:40",
+    "temporal_phrase": "часа через два",
+    "offset_minutes": 120,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:3",
+    "split": "train"
+  },
+  "V1264R04": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через полчаса",
+    "offset_minutes": 30,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:4",
+    "split": "train"
+  },
+  "V1264R05": {
+    "anchor_time": "2028-02-29T23:30",
+    "temporal_phrase": "через половину часа",
+    "offset_minutes": 30,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:5",
+    "split": "train"
+  },
+  "V1264R06": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через четверть часа",
+    "offset_minutes": 15,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:6",
+    "split": "train"
+  },
+  "V1264R07": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через полтора часа",
+    "offset_minutes": 90,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:7",
+    "split": "train"
+  },
+  "V1264R08": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через два с половиной часа",
+    "offset_minutes": 150,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:8",
+    "split": "train"
+  },
+  "V1264R09": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через шестьдесят минут",
+    "offset_minutes": 60,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:9",
+    "split": "train"
+  },
+  "V1264R10": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через шестьдесят одну минуту",
+    "offset_minutes": 61,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:10",
+    "split": "train"
+  },
+  "V1264R11": {
+    "anchor_time": "2028-02-29T23:30",
+    "temporal_phrase": "через девяносто минут",
+    "offset_minutes": 90,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:11",
+    "split": "train"
+  },
+  "V1264R12": {
+    "anchor_time": "2027-01-31T23:40",
+    "temporal_phrase": "через сто двадцать минут",
+    "offset_minutes": 120,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:12",
+    "split": "train"
+  },
+  "V1264R13": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через час и пять минут",
+    "offset_minutes": 65,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:13",
+    "split": "train"
+  },
+  "V1264R14": {
+    "anchor_time": "2027-02-28T23:59",
+    "temporal_phrase": "через два часа и одну минуту",
+    "offset_minutes": 121,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:14",
+    "split": "train"
+  },
+  "V1264R15": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут и два часа",
+    "offset_minutes": 125,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:15",
+    "split": "train"
+  },
+  "V1264R16": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через 1 минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:16",
+    "split": "train"
+  },
+  "V1264R17": {
+    "anchor_time": "2028-02-29T23:30",
+    "temporal_phrase": "через 2 часа 7 минут",
+    "offset_minutes": 127,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:17",
+    "split": "train"
+  },
+  "V1264R18": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четыре минуты",
+    "offset_minutes": 4,
+    "field_order": "offset-title-duration-value",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:18",
+    "split": "train"
+  },
+  "V1264R19": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:19",
+    "split": "train"
+  },
+  "V1264R20": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:20",
+    "split": "train"
+  },
+  "V1264R21": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:21",
+    "split": "train"
+  },
+  "V1264R22": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:22",
+    "split": "train"
+  },
+  "V1264R23": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:23",
+    "split": "train"
+  },
+  "V1264R24": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через сорок восемь часов",
+    "offset_minutes": 2880,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:24",
+    "split": "train"
+  },
+  "V1264R25": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:25",
+    "split": "train"
+  },
+  "V1264R26": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-duration-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:26",
+    "split": "train"
+  },
+  "V1264R27": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:27",
+    "split": "train"
+  },
+  "V1264R28": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-duration-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:28",
+    "split": "train"
+  },
+  "V1264R29": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "duration-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:29",
+    "split": "train"
+  },
+  "V1264R30": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "duration-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:30",
+    "split": "train"
+  },
+  "V1264R31": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title-value",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:31",
+    "split": "train"
+  },
+  "V1264R32": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "value-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/contrast_train.txt:32",
+    "split": "train"
+  },
+  "V1264H01": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через час",
+    "offset_minutes": 60,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:1",
+    "split": "train"
+  },
+  "V1264H02": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через два часа",
+    "offset_minutes": 120,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:2",
+    "split": "train"
+  },
+  "V1264H03": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через три часа",
+    "offset_minutes": 180,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:3",
+    "split": "train"
+  },
+  "V1264H04": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через четыре часа",
+    "offset_minutes": 240,
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:4",
+    "split": "train"
+  },
+  "V1264H05": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через пять часов",
+    "offset_minutes": 300,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:5",
+    "split": "train"
+  },
+  "V1264H06": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через шесть часов",
+    "offset_minutes": 360,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:6",
+    "split": "train"
+  },
+  "V1264H07": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через семь часов",
+    "offset_minutes": 420,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:7",
+    "split": "train"
+  },
+  "V1264H08": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через восемь часов",
+    "offset_minutes": 480,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:8",
+    "split": "train"
+  },
+  "V1264H09": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через девять часов",
+    "offset_minutes": 540,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:9",
+    "split": "train"
+  },
+  "V1264H10": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через десять часов",
+    "offset_minutes": 600,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:10",
+    "split": "train"
+  },
+  "V1264H11": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через одиннадцать часов",
+    "offset_minutes": 660,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:11",
+    "split": "train"
+  },
+  "V1264H12": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двенадцать часов",
+    "offset_minutes": 720,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:12",
+    "split": "train"
+  },
+  "V1264H13": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через тринадцать часов",
+    "offset_minutes": 780,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:13",
+    "split": "train"
+  },
+  "V1264H14": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через четырнадцать часов",
+    "offset_minutes": 840,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:14",
+    "split": "train"
+  },
+  "V1264H15": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через пятнадцать часов",
+    "offset_minutes": 900,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:15",
+    "split": "train"
+  },
+  "V1264H16": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через шестнадцать часов",
+    "offset_minutes": 960,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:16",
+    "split": "train"
+  },
+  "V1264H17": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через семнадцать часов",
+    "offset_minutes": 1020,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:17",
+    "split": "train"
+  },
+  "V1264H18": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через восемнадцать часов",
+    "offset_minutes": 1080,
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:18",
+    "split": "train"
+  },
+  "V1264H19": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через девятнадцать часов",
+    "offset_minutes": 1140,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:19",
+    "split": "train"
+  },
+  "V1264H20": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двадцать часов",
+    "offset_minutes": 1200,
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:20",
+    "split": "train"
+  },
+  "V1264H21": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двадцать один час",
+    "offset_minutes": 1260,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:21",
+    "split": "train"
+  },
+  "V1264H22": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двадцать два часа",
+    "offset_minutes": 1320,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:22",
+    "split": "train"
+  },
+  "V1264H23": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двадцать три часа",
+    "offset_minutes": 1380,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:23",
+    "split": "train"
+  },
+  "V1264H24": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через двадцать четыре часа",
+    "offset_minutes": 1440,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:24",
+    "split": "train"
+  },
+  "V1264H48": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок восемь часов",
+    "offset_minutes": 2880,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/hours_train.txt:25",
+    "split": "train"
+  },
+  "V1264M01": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:2",
+    "split": "train"
+  },
+  "V1264M02": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:3",
+    "split": "train"
+  },
+  "V1264M03": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через три минуты",
+    "offset_minutes": 3,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:4",
+    "split": "train"
+  },
+  "V1264M04": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через четыре минуты",
+    "offset_minutes": 4,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:5",
+    "split": "train"
+  },
+  "V1264M05": {
+    "anchor_time": "2027-01-31T23:40",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:6",
+    "split": "train"
+  },
+  "V1264M06": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через шесть минут",
+    "offset_minutes": 6,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:7",
+    "split": "train"
+  },
+  "V1264M07": {
+    "anchor_time": "2028-02-29T23:30",
+    "temporal_phrase": "через семь минут",
+    "offset_minutes": 7,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:8",
+    "split": "train"
+  },
+  "V1264M08": {
+    "anchor_time": "2027-02-28T23:59",
+    "temporal_phrase": "через восемь минут",
+    "offset_minutes": 8,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:9",
+    "split": "train"
+  },
+  "V1264M09": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через девять минут",
+    "offset_minutes": 9,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:10",
+    "split": "train"
+  },
+  "V1264M10": {
+    "anchor_time": "2026-10-03T09:07",
+    "temporal_phrase": "через десять минут",
+    "offset_minutes": 10,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:11",
+    "split": "train"
+  },
+  "V1264M11": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через одиннадцать минут",
+    "offset_minutes": 11,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:12",
+    "split": "train"
+  },
+  "V1264M12": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через двенадцать минут",
+    "offset_minutes": 12,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:13",
+    "split": "train"
+  },
+  "V1264M13": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через тринадцать минут",
+    "offset_minutes": 13,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:14",
+    "split": "train"
+  },
+  "V1264M14": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через четырнадцать минут",
+    "offset_minutes": 14,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:15",
+    "split": "train"
+  },
+  "V1264M15": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пятнадцать минут",
+    "offset_minutes": 15,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:16",
+    "split": "train"
+  },
+  "V1264M16": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:17",
+    "split": "train"
+  },
+  "V1264M17": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через семнадцать минут",
+    "offset_minutes": 17,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:18",
+    "split": "train"
+  },
+  "V1264M18": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через восемнадцать минут",
+    "offset_minutes": 18,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:19",
+    "split": "train"
+  },
+  "V1264M19": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через девятнадцать минут",
+    "offset_minutes": 19,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:20",
+    "split": "train"
+  },
+  "V1264M20": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:21",
+    "split": "train"
+  },
+  "V1264M21": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать одну минуту",
+    "offset_minutes": 21,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:22",
+    "split": "train"
+  },
+  "V1264M22": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать две минуты",
+    "offset_minutes": 22,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:23",
+    "split": "train"
+  },
+  "V1264M23": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать три минуты",
+    "offset_minutes": 23,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:24",
+    "split": "train"
+  },
+  "V1264M24": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать четыре минуты",
+    "offset_minutes": 24,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:25",
+    "split": "train"
+  },
+  "V1264M25": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать пять минут",
+    "offset_minutes": 25,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:26",
+    "split": "train"
+  },
+  "V1264M26": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать шесть минут",
+    "offset_minutes": 26,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:27",
+    "split": "train"
+  },
+  "V1264M27": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать семь минут",
+    "offset_minutes": 27,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:28",
+    "split": "train"
+  },
+  "V1264M28": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать восемь минут",
+    "offset_minutes": 28,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:29",
+    "split": "train"
+  },
+  "V1264M29": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать девять минут",
+    "offset_minutes": 29,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:30",
+    "split": "train"
+  },
+  "V1264M30": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через тридцать минут",
+    "offset_minutes": 30,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:31",
+    "split": "train"
+  },
+  "V1264M31": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать одну минуту",
+    "offset_minutes": 31,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:32",
+    "split": "train"
+  },
+  "V1264M32": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать две минуты",
+    "offset_minutes": 32,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:33",
+    "split": "train"
+  },
+  "V1264M33": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать три минуты",
+    "offset_minutes": 33,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:34",
+    "split": "train"
+  },
+  "V1264M34": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать четыре минуты",
+    "offset_minutes": 34,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:35",
+    "split": "train"
+  },
+  "V1264M35": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать пять минут",
+    "offset_minutes": 35,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:36",
+    "split": "train"
+  },
+  "V1264M36": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать шесть минут",
+    "offset_minutes": 36,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:37",
+    "split": "train"
+  },
+  "V1264M37": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать семь минут",
+    "offset_minutes": 37,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:38",
+    "split": "train"
+  },
+  "V1264M38": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать восемь минут",
+    "offset_minutes": 38,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:39",
+    "split": "train"
+  },
+  "V1264M39": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через тридцать девять минут",
+    "offset_minutes": 39,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:40",
+    "split": "train"
+  },
+  "V1264M40": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через сорок минут",
+    "offset_minutes": 40,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:41",
+    "split": "train"
+  },
+  "V1264M41": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок одну минуту",
+    "offset_minutes": 41,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:42",
+    "split": "train"
+  },
+  "V1264M42": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок две минуты",
+    "offset_minutes": 42,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:43",
+    "split": "train"
+  },
+  "V1264M43": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок три минуты",
+    "offset_minutes": 43,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:44",
+    "split": "train"
+  },
+  "V1264M44": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок четыре минуты",
+    "offset_minutes": 44,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:45",
+    "split": "train"
+  },
+  "V1264M45": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок пять минут",
+    "offset_minutes": 45,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:46",
+    "split": "train"
+  },
+  "V1264M46": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок шесть минут",
+    "offset_minutes": 46,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:47",
+    "split": "train"
+  },
+  "V1264M47": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок семь минут",
+    "offset_minutes": 47,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:48",
+    "split": "train"
+  },
+  "V1264M48": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок восемь минут",
+    "offset_minutes": 48,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:49",
+    "split": "train"
+  },
+  "V1264M49": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через сорок девять минут",
+    "offset_minutes": 49,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:50",
+    "split": "train"
+  },
+  "V1264M50": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через пятьдесят минут",
+    "offset_minutes": 50,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:51",
+    "split": "train"
+  },
+  "V1264M51": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят одну минуту",
+    "offset_minutes": 51,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:52",
+    "split": "train"
+  },
+  "V1264M52": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят две минуты",
+    "offset_minutes": 52,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:53",
+    "split": "train"
+  },
+  "V1264M53": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят три минуты",
+    "offset_minutes": 53,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:54",
+    "split": "train"
+  },
+  "V1264M54": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят четыре минуты",
+    "offset_minutes": 54,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:55",
+    "split": "train"
+  },
+  "V1264M55": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят пять минут",
+    "offset_minutes": 55,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:56",
+    "split": "train"
+  },
+  "V1264M56": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят шесть минут",
+    "offset_minutes": 56,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:57",
+    "split": "train"
+  },
+  "V1264M57": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят семь минут",
+    "offset_minutes": 57,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:58",
+    "split": "train"
+  },
+  "V1264M58": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят восемь минут",
+    "offset_minutes": 58,
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:59",
+    "split": "train"
+  },
+  "V1264M59": {
+    "anchor_time": "2026-10-03T18:42",
+    "temporal_phrase": "через пятьдесят девять минут",
+    "offset_minutes": 59,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/minutes_train.txt:60",
+    "split": "train"
+  },
+  "V1264X01": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через час одну минуту",
+    "offset_minutes": 61,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:1",
+    "split": "train"
+  },
+  "V1264X02": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через два часа две минуты",
+    "offset_minutes": 122,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:2",
+    "split": "train"
+  },
+  "V1264X03": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через три часа три минуты",
+    "offset_minutes": 183,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:3",
+    "split": "train"
+  },
+  "V1264X04": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четыре часа четыре минуты",
+    "offset_minutes": 244,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:4",
+    "split": "train"
+  },
+  "V1264X05": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через пять часов пять минут",
+    "offset_minutes": 305,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:5",
+    "split": "train"
+  },
+  "V1264X06": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через шесть часов шесть минут",
+    "offset_minutes": 366,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:6",
+    "split": "train"
+  },
+  "V1264X07": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через семь часов семь минут",
+    "offset_minutes": 427,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:7",
+    "split": "train"
+  },
+  "V1264X08": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через восемь часов восемь минут",
+    "offset_minutes": 488,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:8",
+    "split": "train"
+  },
+  "V1264X09": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через девять часов девять минут",
+    "offset_minutes": 549,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:9",
+    "split": "train"
+  },
+  "V1264X10": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через десять часов десять минут",
+    "offset_minutes": 610,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:10",
+    "split": "train"
+  },
+  "V1264X11": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через одиннадцать часов одиннадцать минут",
+    "offset_minutes": 671,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:11",
+    "split": "train"
+  },
+  "V1264X12": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двенадцать часов двенадцать минут",
+    "offset_minutes": 732,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:12",
+    "split": "train"
+  },
+  "V1264X13": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через тринадцать часов тринадцать минут",
+    "offset_minutes": 793,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:13",
+    "split": "train"
+  },
+  "V1264X14": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четырнадцать часов четырнадцать минут",
+    "offset_minutes": 854,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:14",
+    "split": "train"
+  },
+  "V1264X15": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через пятнадцать часов пятнадцать минут",
+    "offset_minutes": 915,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:15",
+    "split": "train"
+  },
+  "V1264X16": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через шестнадцать часов шестнадцать минут",
+    "offset_minutes": 976,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:16",
+    "split": "train"
+  },
+  "V1264X17": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через семнадцать часов семнадцать минут",
+    "offset_minutes": 1037,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:17",
+    "split": "train"
+  },
+  "V1264X18": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через восемнадцать часов восемнадцать минут",
+    "offset_minutes": 1098,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:18",
+    "split": "train"
+  },
+  "V1264X19": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через девятнадцать часов девятнадцать минут",
+    "offset_minutes": 1159,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:19",
+    "split": "train"
+  },
+  "V1264X20": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать часов двадцать минут",
+    "offset_minutes": 1220,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:20",
+    "split": "train"
+  },
+  "V1264X21": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать один час двадцать одну минуту",
+    "offset_minutes": 1281,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:21",
+    "split": "train"
+  },
+  "V1264X22": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать два часа двадцать две минуты",
+    "offset_minutes": 1342,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:22",
+    "split": "train"
+  },
+  "V1264X23": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать три часа двадцать три минуты",
+    "offset_minutes": 1403,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:23",
+    "split": "train"
+  },
+  "V1264X24": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать четыре часа двадцать четыре минуты",
+    "offset_minutes": 1464,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:24",
+    "split": "train"
+  },
+  "V1264X25": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через час двадцать пять минут",
+    "offset_minutes": 85,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:25",
+    "split": "train"
+  },
+  "V1264X26": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через два часа двадцать шесть минут",
+    "offset_minutes": 146,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:26",
+    "split": "train"
+  },
+  "V1264X27": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через три часа двадцать семь минут",
+    "offset_minutes": 207,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:27",
+    "split": "train"
+  },
+  "V1264X28": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четыре часа двадцать восемь минут",
+    "offset_minutes": 268,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:28",
+    "split": "train"
+  },
+  "V1264X29": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через пять часов двадцать девять минут",
+    "offset_minutes": 329,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:29",
+    "split": "train"
+  },
+  "V1264X30": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через шесть часов тридцать минут",
+    "offset_minutes": 390,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:30",
+    "split": "train"
+  },
+  "V1264X31": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через семь часов тридцать одну минуту",
+    "offset_minutes": 451,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:31",
+    "split": "train"
+  },
+  "V1264X32": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через восемь часов тридцать две минуты",
+    "offset_minutes": 512,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:32",
+    "split": "train"
+  },
+  "V1264X33": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через девять часов тридцать три минуты",
+    "offset_minutes": 573,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:33",
+    "split": "train"
+  },
+  "V1264X34": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через десять часов тридцать четыре минуты",
+    "offset_minutes": 634,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:34",
+    "split": "train"
+  },
+  "V1264X35": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через одиннадцать часов тридцать пять минут",
+    "offset_minutes": 695,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:35",
+    "split": "train"
+  },
+  "V1264X36": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двенадцать часов тридцать шесть минут",
+    "offset_minutes": 756,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:36",
+    "split": "train"
+  },
+  "V1264X37": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через тринадцать часов тридцать семь минут",
+    "offset_minutes": 817,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:37",
+    "split": "train"
+  },
+  "V1264X38": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четырнадцать часов тридцать восемь минут",
+    "offset_minutes": 878,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:38",
+    "split": "train"
+  },
+  "V1264X39": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через пятнадцать часов тридцать девять минут",
+    "offset_minutes": 939,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:39",
+    "split": "train"
+  },
+  "V1264X40": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через шестнадцать часов сорок минут",
+    "offset_minutes": 1000,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:40",
+    "split": "train"
+  },
+  "V1264X41": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через семнадцать часов сорок одну минуту",
+    "offset_minutes": 1061,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:41",
+    "split": "train"
+  },
+  "V1264X42": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через восемнадцать часов сорок две минуты",
+    "offset_minutes": 1122,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:42",
+    "split": "train"
+  },
+  "V1264X43": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через девятнадцать часов сорок три минуты",
+    "offset_minutes": 1183,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:43",
+    "split": "train"
+  },
+  "V1264X44": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать часов сорок четыре минуты",
+    "offset_minutes": 1244,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:44",
+    "split": "train"
+  },
+  "V1264X45": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать один час сорок пять минут",
+    "offset_minutes": 1305,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:45",
+    "split": "train"
+  },
+  "V1264X46": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать два часа сорок шесть минут",
+    "offset_minutes": 1366,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:46",
+    "split": "train"
+  },
+  "V1264X47": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать три часа сорок семь минут",
+    "offset_minutes": 1427,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:47",
+    "split": "train"
+  },
+  "V1264X48": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через двадцать четыре часа сорок восемь минут",
+    "offset_minutes": 1488,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:48",
+    "split": "train"
+  },
+  "V1264X49": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через час сорок девять минут",
+    "offset_minutes": 109,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:49",
+    "split": "train"
+  },
+  "V1264X50": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через два часа пятьдесят минут",
+    "offset_minutes": 170,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:50",
+    "split": "train"
+  },
+  "V1264X51": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через три часа пятьдесят одну минуту",
+    "offset_minutes": 231,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:51",
+    "split": "train"
+  },
+  "V1264X52": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через четыре часа пятьдесят две минуты",
+    "offset_minutes": 292,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:52",
+    "split": "train"
+  },
+  "V1264X53": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через пять часов пятьдесят три минуты",
+    "offset_minutes": 353,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:53",
+    "split": "train"
+  },
+  "V1264X54": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через шесть часов пятьдесят четыре минуты",
+    "offset_minutes": 414,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:54",
+    "split": "train"
+  },
+  "V1264X55": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через семь часов пятьдесят пять минут",
+    "offset_minutes": 475,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:55",
+    "split": "train"
+  },
+  "V1264X56": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через восемь часов пятьдесят шесть минут",
+    "offset_minutes": 536,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:56",
+    "split": "train"
+  },
+  "V1264X57": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через девять часов пятьдесят семь минут",
+    "offset_minutes": 597,
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:57",
+    "split": "train"
+  },
+  "V1264X58": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через десять часов пятьдесят восемь минут",
+    "offset_minutes": 658,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:58",
+    "split": "train"
+  },
+  "V1264X59": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через одиннадцать часов пятьдесят девять минут",
+    "offset_minutes": 719,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/mixed_train.txt:59",
+    "split": "train"
+  },
+  "V1264O01": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset-duration-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:1",
+    "split": "train"
+  },
+  "V1264O02": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset-value-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:2",
+    "split": "train"
+  },
+  "V1264O03": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-duration-offset-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:3",
+    "split": "train"
+  },
+  "V1264O04": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-duration-value-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:4",
+    "split": "train"
+  },
+  "V1264O05": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-value-offset-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:5",
+    "split": "train"
+  },
+  "V1264O06": {
+    "anchor_time": "2026-10-03T10:00",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-value-duration-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:6",
+    "split": "train"
+  },
+  "V1264O07": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title-duration-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:7",
+    "split": "train"
+  },
+  "V1264O08": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title-value-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:8",
+    "split": "train"
+  },
+  "V1264O09": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-duration-title-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:9",
+    "split": "train"
+  },
+  "V1264O10": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-duration-value-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:10",
+    "split": "train"
+  },
+  "V1264O11": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-value-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:11",
+    "split": "train"
+  },
+  "V1264O12": {
+    "anchor_time": "2026-10-03T11:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-value-duration-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:12",
+    "split": "train"
+  },
+  "V1264O13": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-title-offset-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:13",
+    "split": "train"
+  },
+  "V1264O14": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-title-value-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:14",
+    "split": "train"
+  },
+  "V1264O15": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-offset-title-value",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:15",
+    "split": "train"
+  },
+  "V1264O16": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-offset-value-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:16",
+    "split": "train"
+  },
+  "V1264O17": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-value-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:17",
+    "split": "train"
+  },
+  "V1264O18": {
+    "anchor_time": "2026-10-03T23:50",
+    "temporal_phrase": "через двадцать минут",
+    "offset_minutes": 20,
+    "field_order": "duration-value-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:18",
+    "split": "train"
+  },
+  "V1264O19": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-title-offset-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:19",
+    "split": "train"
+  },
+  "V1264O20": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-title-duration-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:20",
+    "split": "train"
+  },
+  "V1264O21": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:21",
+    "split": "train"
+  },
+  "V1264O22": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-offset-duration-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:22",
+    "split": "train"
+  },
+  "V1264O23": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-duration-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:23",
+    "split": "train"
+  },
+  "V1264O24": {
+    "anchor_time": "2026-10-03T10:58",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "value-duration-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/order_train.txt:24",
+    "split": "train"
+  },
+  "V1264V01": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:1",
+    "split": "validation"
+  },
+  "V1264V02": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:2",
+    "split": "validation"
+  },
+  "V1264V03": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через тринадцать минут",
+    "offset_minutes": 13,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:3",
+    "split": "validation"
+  },
+  "V1264V04": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через двадцать девять минут",
+    "offset_minutes": 29,
+    "field_order": "duration-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:4",
+    "split": "validation"
+  },
+  "V1264V05": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через пятьдесят девять минут",
+    "offset_minutes": 59,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:5",
+    "split": "validation"
+  },
+  "V1264V06": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через шестьдесят минут",
+    "offset_minutes": 60,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:6",
+    "split": "validation"
+  },
+  "V1264V07": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через шестьдесят одну минуту",
+    "offset_minutes": 61,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:7",
+    "split": "validation"
+  },
+  "V1264V08": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через полтора часа",
+    "offset_minutes": 90,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:8",
+    "split": "validation"
+  },
+  "V1264V09": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через сто двадцать минут",
+    "offset_minutes": 120,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:9",
+    "split": "validation"
+  },
+  "V1264V10": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через двадцать четыре часа",
+    "offset_minutes": 1440,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:10",
+    "split": "validation"
+  },
+  "V1264V11": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через сорок восемь часов",
+    "offset_minutes": 2880,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:11",
+    "split": "validation"
+  },
+  "V1264V12": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:12",
+    "split": "validation"
+  },
+  "V1264V13": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через 2 минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:13",
+    "split": "validation"
+  },
+  "V1264V14": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через четыре минуты",
+    "offset_minutes": 4,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:14",
+    "split": "validation"
+  },
+  "V1264V15": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "минут через семнадцать",
+    "offset_minutes": 17,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:15",
+    "split": "validation"
+  },
+  "V1264V16": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через тридцать одну минуту",
+    "offset_minutes": 31,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:16",
+    "split": "validation"
+  },
+  "V1264V17": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через сорок пять минут",
+    "offset_minutes": 45,
+    "field_order": "offset-title-value",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:17",
+    "split": "validation"
+  },
+  "V1264V18": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через час и семь минут",
+    "offset_minutes": 67,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:18",
+    "split": "validation"
+  },
+  "V1264V19": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через два часа четыре минуты",
+    "offset_minutes": 124,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:19",
+    "split": "validation"
+  },
+  "V1264V20": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через три часа пятьдесят девять минут",
+    "offset_minutes": 239,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:20",
+    "split": "validation"
+  },
+  "V1264V21": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через двадцать три часа одну минуту",
+    "offset_minutes": 1381,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:21",
+    "split": "validation"
+  },
+  "V1264V22": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через двадцать четыре часа пять минут",
+    "offset_minutes": 1445,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:22",
+    "split": "validation"
+  },
+  "V1264V23": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "@в одиннадцать часов пятнадцать минут",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:23",
+    "split": "validation"
+  },
+  "V1264V24": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "@в десять пятнадцать",
+    "input_clock": "10:15",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:24",
+    "split": "validation"
+  },
+  "V1264V25": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "@в двенадцать тридцать одну",
+    "input_clock": "12:31",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:25",
+    "split": "validation"
+  },
+  "V1264V26": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "@в двадцать три пятьдесят девять",
+    "input_clock": "23:59",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:26",
+    "split": "validation"
+  },
+  "V1264V27": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через четверть часа",
+    "offset_minutes": 15,
+    "field_order": "value-duration-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:27",
+    "split": "validation"
+  },
+  "V1264V28": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через полчаса",
+    "offset_minutes": 30,
+    "field_order": "title-value-offset-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:28",
+    "split": "validation"
+  },
+  "V1264V29": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:29",
+    "split": "validation"
+  },
+  "V1264V30": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:30",
+    "split": "validation"
+  },
+  "V1264V31": {
+    "anchor_time": "2029-04-30T23:47",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:31",
+    "split": "validation"
+  },
+  "V1264V32": {
+    "anchor_time": "2032-02-29T21:56",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-title-duration-value",
+    "literal_reference": "docs/calendar_v12_64_manual/validation.txt:32",
+    "split": "validation"
+  },
+  "V1264B01": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:1",
+    "split": "holdout"
+  },
+  "V1264B02": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:2",
+    "split": "holdout"
+  },
+  "V1264B03": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через три минуты",
+    "offset_minutes": 3,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:3",
+    "split": "holdout"
+  },
+  "V1264B04": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "минут через семь",
+    "offset_minutes": 7,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:4",
+    "split": "holdout"
+  },
+  "V1264B05": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через двадцать одну минуту",
+    "offset_minutes": 21,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:5",
+    "split": "holdout"
+  },
+  "V1264B06": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через тридцать одну минуту",
+    "offset_minutes": 31,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:6",
+    "split": "holdout"
+  },
+  "V1264B07": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через тридцать две минуты",
+    "offset_minutes": 32,
+    "field_order": "duration-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:7",
+    "split": "holdout"
+  },
+  "V1264B08": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через тридцать три минуты",
+    "offset_minutes": 33,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:8",
+    "split": "holdout"
+  },
+  "V1264B09": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через сорок семь минут",
+    "offset_minutes": 47,
+    "field_order": "value-offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:9",
+    "split": "holdout"
+  },
+  "V1264B10": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через пятьдесят девять минут",
+    "offset_minutes": 59,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:10",
+    "split": "holdout"
+  },
+  "V1264B11": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через шестьдесят одну минуту",
+    "offset_minutes": 61,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:11",
+    "split": "holdout"
+  },
+  "V1264B12": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через шестьдесят две минуты",
+    "offset_minutes": 62,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:12",
+    "split": "holdout"
+  },
+  "V1264B13": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через девяносто минут",
+    "offset_minutes": 90,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:13",
+    "split": "holdout"
+  },
+  "V1264B14": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через два часа",
+    "offset_minutes": 120,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:14",
+    "split": "holdout"
+  },
+  "V1264B15": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через двадцать четыре часа",
+    "offset_minutes": 1440,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:15",
+    "split": "holdout"
+  },
+  "V1264B16": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через сорок восемь часов",
+    "offset_minutes": 2880,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:16",
+    "split": "holdout"
+  },
+  "V1264B17": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:17",
+    "split": "holdout"
+  },
+  "V1264B18": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через 2 минуты",
+    "offset_minutes": 2,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:18",
+    "split": "holdout"
+  },
+  "V1264B19": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через четыре минуты",
+    "offset_minutes": 4,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:19",
+    "split": "holdout"
+  },
+  "V1264B20": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через пять минут",
+    "offset_minutes": 5,
+    "field_order": "title-offset-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:20",
+    "split": "holdout"
+  },
+  "V1264B21": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через девятнадцать минут",
+    "offset_minutes": 19,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:21",
+    "split": "holdout"
+  },
+  "V1264B22": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через тридцать четыре минуты",
+    "offset_minutes": 34,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:22",
+    "split": "holdout"
+  },
+  "V1264B23": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через тридцать семь минут",
+    "offset_minutes": 37,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:23",
+    "split": "holdout"
+  },
+  "V1264B24": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через сорок пять минут",
+    "offset_minutes": 45,
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:24",
+    "split": "holdout"
+  },
+  "V1264B25": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через час девятнадцать минут",
+    "offset_minutes": 79,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:25",
+    "split": "holdout"
+  },
+  "V1264B26": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через два часа и тридцать четыре минуты",
+    "offset_minutes": 154,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:26",
+    "split": "holdout"
+  },
+  "V1264B27": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через пять часов семнадцать минут",
+    "offset_minutes": 317,
+    "field_order": "duration-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:27",
+    "split": "holdout"
+  },
+  "V1264B28": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через одиннадцать часов сорок одну минуту",
+    "offset_minutes": 701,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:28",
+    "split": "holdout"
+  },
+  "V1264B29": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через пятнадцать часов тридцать пять минут",
+    "offset_minutes": 935,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:29",
+    "split": "holdout"
+  },
+  "V1264B30": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через двадцать три часа пятьдесят девять минут",
+    "offset_minutes": 1439,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:30",
+    "split": "holdout"
+  },
+  "V1264B31": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через двадцать четыре часа одну минуту",
+    "offset_minutes": 1441,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:31",
+    "split": "holdout"
+  },
+  "V1264B32": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через два с половиной часа",
+    "offset_minutes": 150,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:32",
+    "split": "holdout"
+  },
+  "V1264B33": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:33",
+    "split": "holdout"
+  },
+  "V1264B34": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в двадцать два часа пятнадцать минут",
+    "input_clock": "22:15",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:34",
+    "split": "holdout"
+  },
+  "V1264B35": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:35",
+    "split": "holdout"
+  },
+  "V1264B36": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в двенадцать сорок девять",
+    "input_clock": "12:49",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:36",
+    "split": "holdout"
+  },
+  "V1264B37": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в восемнадцать восемнадцать",
+    "input_clock": "18:18",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:37",
+    "split": "holdout"
+  },
+  "V1264B38": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в шестнадцать часов",
+    "input_clock": "16:00",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:38",
+    "split": "holdout"
+  },
+  "V1264B39": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в час тридцать одну",
+    "input_clock": "01:31",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:39",
+    "split": "holdout"
+  },
+  "V1264B40": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "@в двадцать три пятьдесят девять",
+    "input_clock": "23:59",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:40",
+    "split": "holdout"
+  },
+  "V1264B41": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:41",
+    "split": "holdout"
+  },
+  "V1264B42": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:42",
+    "split": "holdout"
+  },
+  "V1264B43": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:43",
+    "split": "holdout"
+  },
+  "V1264B44": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:44",
+    "split": "holdout"
+  },
+  "V1264B45": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через семь минут",
+    "offset_minutes": 7,
+    "field_order": "offset-title-duration-value",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:45",
+    "split": "holdout"
+  },
+  "V1264B46": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "value-offset-duration-title",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:46",
+    "split": "holdout"
+  },
+  "V1264B47": {
+    "anchor_time": "2030-06-30T08:26",
+    "temporal_phrase": "через половину часа",
+    "offset_minutes": 30,
+    "field_order": "duration-value-title-offset",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:47",
+    "split": "holdout"
+  },
+  "V1264B48": {
+    "anchor_time": "2029-12-31T23:58",
+    "temporal_phrase": "через 1 час 2 минуты",
+    "offset_minutes": 62,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_64_manual/holdout.txt:48",
+    "split": "holdout"
+  },
+  "V1265C001": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в ноль двенадцать",
+    "input_clock": "00:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:1",
+    "split": "train"
+  },
+  "V1265C002": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в ноль четырнадцать",
+    "input_clock": "00:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:2",
+    "split": "train"
+  },
+  "V1265C003": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:3",
+    "split": "train"
+  },
+  "V1265C004": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в ноль шестнадцать",
+    "input_clock": "00:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:4",
+    "split": "train"
+  },
+  "V1265C005": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в час двенадцать",
+    "input_clock": "01:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:5",
+    "split": "train"
+  },
+  "V1265C006": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в час четырнадцать",
+    "input_clock": "01:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:6",
+    "split": "train"
+  },
+  "V1265C007": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в час пятнадцать",
+    "input_clock": "01:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:7",
+    "split": "train"
+  },
+  "V1265C008": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в час шестнадцать",
+    "input_clock": "01:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:8",
+    "split": "train"
+  },
+  "V1265C009": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в три двенадцать",
+    "input_clock": "03:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:9",
+    "split": "train"
+  },
+  "V1265C010": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в три четырнадцать",
+    "input_clock": "03:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:10",
+    "split": "train"
+  },
+  "V1265C011": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в три пятнадцать",
+    "input_clock": "03:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:11",
+    "split": "train"
+  },
+  "V1265C012": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в три шестнадцать",
+    "input_clock": "03:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:12",
+    "split": "train"
+  },
+  "V1265C013": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в шесть двенадцать",
+    "input_clock": "06:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:13",
+    "split": "train"
+  },
+  "V1265C014": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в шесть четырнадцать",
+    "input_clock": "06:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:14",
+    "split": "train"
+  },
+  "V1265C015": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в шесть пятнадцать",
+    "input_clock": "06:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:15",
+    "split": "train"
+  },
+  "V1265C016": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в шесть шестнадцать",
+    "input_clock": "06:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:16",
+    "split": "train"
+  },
+  "V1265C017": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в десять двенадцать",
+    "input_clock": "10:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:17",
+    "split": "train"
+  },
+  "V1265C018": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в десять четырнадцать",
+    "input_clock": "10:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:18",
+    "split": "train"
+  },
+  "V1265C019": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в десять пятнадцать",
+    "input_clock": "10:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:19",
+    "split": "train"
+  },
+  "V1265C020": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в десять шестнадцать",
+    "input_clock": "10:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:20",
+    "split": "train"
+  },
+  "V1265C021": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в одиннадцать двенадцать",
+    "input_clock": "11:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:21",
+    "split": "train"
+  },
+  "V1265C022": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в одиннадцать четырнадцать",
+    "input_clock": "11:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:22",
+    "split": "train"
+  },
+  "V1265C023": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:23",
+    "split": "train"
+  },
+  "V1265C024": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в одиннадцать шестнадцать",
+    "input_clock": "11:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:24",
+    "split": "train"
+  },
+  "V1265C025": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:25",
+    "split": "train"
+  },
+  "V1265C026": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать четырнадцать",
+    "input_clock": "12:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:26",
+    "split": "train"
+  },
+  "V1265C027": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:27",
+    "split": "train"
+  },
+  "V1265C028": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать шестнадцать",
+    "input_clock": "12:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:28",
+    "split": "train"
+  },
+  "V1265C029": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в тринадцать двенадцать",
+    "input_clock": "13:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:29",
+    "split": "train"
+  },
+  "V1265C030": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в тринадцать четырнадцать",
+    "input_clock": "13:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:30",
+    "split": "train"
+  },
+  "V1265C031": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в тринадцать пятнадцать",
+    "input_clock": "13:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:31",
+    "split": "train"
+  },
+  "V1265C032": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в тринадцать шестнадцать",
+    "input_clock": "13:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:32",
+    "split": "train"
+  },
+  "V1265C033": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в пятнадцать двенадцать",
+    "input_clock": "15:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:33",
+    "split": "train"
+  },
+  "V1265C034": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в пятнадцать четырнадцать",
+    "input_clock": "15:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:34",
+    "split": "train"
+  },
+  "V1265C035": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в пятнадцать пятнадцать",
+    "input_clock": "15:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:35",
+    "split": "train"
+  },
+  "V1265C036": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в пятнадцать шестнадцать",
+    "input_clock": "15:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:36",
+    "split": "train"
+  },
+  "V1265C037": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в восемнадцать двенадцать",
+    "input_clock": "18:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:37",
+    "split": "train"
+  },
+  "V1265C038": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в восемнадцать четырнадцать",
+    "input_clock": "18:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:38",
+    "split": "train"
+  },
+  "V1265C039": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в восемнадцать пятнадцать",
+    "input_clock": "18:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:39",
+    "split": "train"
+  },
+  "V1265C040": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в восемнадцать шестнадцать",
+    "input_clock": "18:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:40",
+    "split": "train"
+  },
+  "V1265C041": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать два двенадцать",
+    "input_clock": "22:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:41",
+    "split": "train"
+  },
+  "V1265C042": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать два четырнадцать",
+    "input_clock": "22:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:42",
+    "split": "train"
+  },
+  "V1265C043": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать два пятнадцать",
+    "input_clock": "22:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:43",
+    "split": "train"
+  },
+  "V1265C044": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать два шестнадцать",
+    "input_clock": "22:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:44",
+    "split": "train"
+  },
+  "V1265C045": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать три двенадцать",
+    "input_clock": "23:12",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:45",
+    "split": "train"
+  },
+  "V1265C046": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать три четырнадцать",
+    "input_clock": "23:14",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:46",
+    "split": "train"
+  },
+  "V1265C047": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать три пятнадцать",
+    "input_clock": "23:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:47",
+    "split": "train"
+  },
+  "V1265C048": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать три шестнадцать",
+    "input_clock": "23:16",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:48",
+    "split": "train"
+  },
+  "V1265C049": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в два пятнадцать",
+    "input_clock": "02:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:49",
+    "split": "train"
+  },
+  "V1265C050": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в четыре пятнадцать",
+    "input_clock": "04:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:50",
+    "split": "train"
+  },
+  "V1265C051": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в пять пятнадцать",
+    "input_clock": "05:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:51",
+    "split": "train"
+  },
+  "V1265C052": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в семь пятнадцать",
+    "input_clock": "07:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:52",
+    "split": "train"
+  },
+  "V1265C053": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в восемь пятнадцать",
+    "input_clock": "08:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:53",
+    "split": "train"
+  },
+  "V1265C054": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в девять пятнадцать",
+    "input_clock": "09:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:54",
+    "split": "train"
+  },
+  "V1265C055": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в четырнадцать пятнадцать",
+    "input_clock": "14:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:55",
+    "split": "train"
+  },
+  "V1265C056": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в шестнадцать пятнадцать",
+    "input_clock": "16:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:56",
+    "split": "train"
+  },
+  "V1265C057": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в семнадцать пятнадцать",
+    "input_clock": "17:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:57",
+    "split": "train"
+  },
+  "V1265C058": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в девятнадцать пятнадцать",
+    "input_clock": "19:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:58",
+    "split": "train"
+  },
+  "V1265C059": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать пятнадцать",
+    "input_clock": "20:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:59",
+    "split": "train"
+  },
+  "V1265C060": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двадцать один пятнадцать",
+    "input_clock": "21:15",
+    "literal_reference": "docs/calendar_v12_65_manual/clock_train.txt:60",
+    "split": "train"
+  },
+  "V1265R01": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:1",
+    "split": "train"
+  },
+  "V1265R02": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:2",
+    "split": "train"
+  },
+  "V1265R03": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через 1 минуту",
+    "offset_minutes": 1,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:3",
+    "split": "train"
+  },
+  "V1265R04": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:4",
+    "split": "train"
+  },
+  "V1265R05": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:5",
+    "split": "train"
+  },
+  "V1265R06": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "title-offset-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:6",
+    "split": "train"
+  },
+  "V1265R07": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "title-duration-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:7",
+    "split": "train"
+  },
+  "V1265R08": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-duration-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:8",
+    "split": "train"
+  },
+  "V1265R09": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "duration-title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:9",
+    "split": "train"
+  },
+  "V1265R10": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "duration-offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:10",
+    "split": "train"
+  },
+  "V1265R11": {
+    "anchor_time": "2026-10-04T11:59",
+    "temporal_phrase": "через тринадцать минут",
+    "offset_minutes": 13,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:11",
+    "split": "train"
+  },
+  "V1265R12": {
+    "anchor_time": "2026-10-04T11:59",
+    "temporal_phrase": "через пятнадцать минут",
+    "offset_minutes": 15,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:12",
+    "split": "train"
+  },
+  "V1265R13": {
+    "anchor_time": "2026-10-04T11:59",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:13",
+    "split": "train"
+  },
+  "V1265R14": {
+    "anchor_time": "2026-10-04T11:59",
+    "temporal_phrase": "через семнадцать минут",
+    "offset_minutes": 17,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:14",
+    "split": "train"
+  },
+  "V1265R15": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через час и одну минуту",
+    "offset_minutes": 61,
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:15",
+    "split": "train"
+  },
+  "V1265R16": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через одну минуту и один час",
+    "offset_minutes": 61,
+    "field_order": "title-offset-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:16",
+    "split": "train"
+  },
+  "V1265R17": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:17",
+    "split": "train"
+  },
+  "V1265R18": {
+    "anchor_time": "2026-12-31T23:59",
+    "temporal_phrase": "через минуту",
+    "offset_minutes": 1,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:18",
+    "split": "train"
+  },
+  "V1265R19": {
+    "anchor_time": "2028-02-28T23:45",
+    "temporal_phrase": "через полчаса",
+    "offset_minutes": 30,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:19",
+    "split": "train"
+  },
+  "V1265R20": {
+    "anchor_time": "2026-10-04T10:45",
+    "temporal_phrase": "через полтора часа",
+    "offset_minutes": 90,
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:20",
+    "split": "train"
+  },
+  "V1265R21": {
+    "anchor_time": "2026-10-04T10:45",
+    "temporal_phrase": "через час и тридцать минут",
+    "offset_minutes": 90,
+    "field_order": "title-duration-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:21",
+    "split": "train"
+  },
+  "V1265R22": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "через двадцать четыре часа и одну минуту",
+    "offset_minutes": 1441,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:22",
+    "split": "train"
+  },
+  "V1265R23": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:23",
+    "split": "train"
+  },
+  "V1265R24": {
+    "anchor_time": "2026-10-04T12:14",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_65_manual/offset_train.txt:24",
+    "split": "train"
+  },
+  "V1265U01": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:1",
+    "split": "train"
+  },
+  "V1265U02": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать четырнадцать",
+    "input_clock": "12:14",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:2",
+    "split": "train"
+  },
+  "V1265U03": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:3",
+    "split": "train"
+  },
+  "V1265U04": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать шестнадцать",
+    "input_clock": "12:16",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:4",
+    "split": "train"
+  },
+  "V1265U05": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:5",
+    "split": "train"
+  },
+  "V1265U06": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:6",
+    "split": "train"
+  },
+  "V1265U07": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:7",
+    "split": "train"
+  },
+  "V1265U08": {
+    "anchor_time": "2026-10-04T03:52",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/update_train.txt:8",
+    "split": "train"
+  },
+  "V1265V01": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:1",
+    "split": "validation"
+  },
+  "V1265V02": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:2",
+    "split": "validation"
+  },
+  "V1265V03": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать четырнадцать",
+    "input_clock": "12:14",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:3",
+    "split": "validation"
+  },
+  "V1265V04": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать шестнадцать",
+    "input_clock": "12:16",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:4",
+    "split": "validation"
+  },
+  "V1265V05": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:5",
+    "split": "validation"
+  },
+  "V1265V06": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:6",
+    "split": "validation"
+  },
+  "V1265V07": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:7",
+    "split": "validation"
+  },
+  "V1265V08": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "через две минуты",
+    "offset_minutes": 2,
+    "field_order": "offset-duration-title",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:8",
+    "split": "validation"
+  },
+  "V1265V09": {
+    "anchor_time": "2029-04-30T23:59",
+    "temporal_phrase": "через тринадцать минут",
+    "offset_minutes": 13,
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:9",
+    "split": "validation"
+  },
+  "V1265V10": {
+    "anchor_time": "2029-04-30T23:59",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:10",
+    "split": "validation"
+  },
+  "V1265V11": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "через час и одну минуту",
+    "offset_minutes": 61,
+    "field_order": "title-offset-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:11",
+    "split": "validation"
+  },
+  "V1265V12": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:12",
+    "split": "validation"
+  },
+  "V1265V13": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:13",
+    "split": "validation"
+  },
+  "V1265V14": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:14",
+    "split": "validation"
+  },
+  "V1265V15": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:15",
+    "split": "validation"
+  },
+  "V1265V16": {
+    "anchor_time": "2029-04-30T12:14",
+    "temporal_phrase": "@в двадцать три пятнадцать",
+    "input_clock": "23:15",
+    "literal_reference": "docs/calendar_v12_65_manual/validation.txt:16",
+    "split": "validation"
+  },
+  "V1265H01": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:1",
+    "split": "holdout"
+  },
+  "V1265H02": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:2",
+    "split": "holdout"
+  },
+  "V1265H03": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать четырнадцать",
+    "input_clock": "12:14",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:3",
+    "split": "holdout"
+  },
+  "V1265H04": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать шестнадцать",
+    "input_clock": "12:16",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:4",
+    "split": "holdout"
+  },
+  "V1265H05": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:5",
+    "split": "holdout"
+  },
+  "V1265H06": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в ноль пятнадцать",
+    "input_clock": "00:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:6",
+    "split": "holdout"
+  },
+  "V1265H07": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в 12:15",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:7",
+    "split": "holdout"
+  },
+  "V1265H08": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать часов пятнадцать минут",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:8",
+    "split": "holdout"
+  },
+  "V1265H09": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в четверть первого дня",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:9",
+    "split": "holdout"
+  },
+  "V1265H10": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "через четырнадцать минут",
+    "offset_minutes": 14,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:10",
+    "split": "holdout"
+  },
+  "V1265H11": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "через семнадцать минут",
+    "offset_minutes": 17,
+    "field_order": "offset-title",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:11",
+    "split": "holdout"
+  },
+  "V1265H12": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:12",
+    "split": "holdout"
+  },
+  "V1265H13": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "через восемнадцать минут",
+    "offset_minutes": 18,
+    "field_order": "offset-title-duration",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:13",
+    "split": "holdout"
+  },
+  "V1265H14": {
+    "anchor_time": "2032-02-29T23:59",
+    "temporal_phrase": "через одну минуту",
+    "offset_minutes": 1,
+    "field_order": "title-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:14",
+    "split": "holdout"
+  },
+  "V1265H15": {
+    "anchor_time": "2032-02-29T23:59",
+    "temporal_phrase": "через шестнадцать минут",
+    "offset_minutes": 16,
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:15",
+    "split": "holdout"
+  },
+  "V1265H16": {
+    "anchor_time": "2032-02-29T23:59",
+    "temporal_phrase": "через час и шестнадцать минут",
+    "offset_minutes": 76,
+    "field_order": "title-duration-offset",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:16",
+    "split": "holdout"
+  },
+  "V1265H17": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:17",
+    "split": "holdout"
+  },
+  "V1265H18": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать двенадцать",
+    "input_clock": "12:12",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:18",
+    "split": "holdout"
+  },
+  "V1265H19": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в одиннадцать пятнадцать",
+    "input_clock": "11:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:19",
+    "split": "holdout"
+  },
+  "V1265H20": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двадцать три пятнадцать",
+    "input_clock": "23:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:20",
+    "split": "holdout"
+  },
+  "V1265H21": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:21",
+    "split": "holdout"
+  },
+  "V1265H22": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "?",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:22",
+    "split": "holdout"
+  },
+  "V1265H23": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "chat",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:23",
+    "split": "holdout"
+  },
+  "V1265H24": {
+    "anchor_time": "2032-02-29T11:58",
+    "temporal_phrase": "@в двенадцать пятнадцать",
+    "input_clock": "12:15",
+    "literal_reference": "docs/calendar_v12_65_manual/holdout.txt:24",
+    "split": "holdout"
+  }
+}

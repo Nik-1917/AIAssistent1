@@ -1,0 +1,1367 @@
+[
+  {
+    "split": "context_transfer_eval",
+    "line": 1,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 5,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 7,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 42,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 56,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 72,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 77,
+    "before": "Событие изменено: новое время для Визит к подопечной в шесть часов тридцать минут.",
+    "after": "Событие изменено: новое время для Визит к подопечной в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 6,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 83,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 97,
+    "before": "Событие изменено: новое время для Запись клиентки на маникюр в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: новое время для Запись клиентки на маникюр в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 8,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 98,
+    "before": "Событие изменено: новое время для Стрижка клиента в девять часов тридцать минут.",
+    "after": "Событие изменено: новое время для Стрижка клиента в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 9,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 105,
+    "before": "Событие изменено: новое время для Тренировка в бассейне в три часа сорок пять минут.",
+    "after": "Событие изменено: новое время для Тренировка в бассейне без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 10,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 111,
+    "before": "Событие изменено: новое время для Техосмотр такси в десять часов пятнадцать минут.",
+    "after": "Событие изменено: новое время для Техосмотр такси в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 11,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 123,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "context_transfer_eval",
+    "line": 129,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "regression_holdout",
+    "line": 42,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в четырнадцать часов.",
+    "clocks": [
+      "14:00"
+    ],
+    "manual_line": 12,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 16,
+    "before": "Событие изменено: время последнего добавленного события, двенадцать часов.",
+    "after": "Событие изменено: время последнего добавленного события в двенадцать часов.",
+    "clocks": [
+      "12:00"
+    ],
+    "manual_line": 13,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 19,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 21,
+    "before": "Событие изменено: новое время для Приём граждан в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: новое время для Приём граждан в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 14,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 27,
+    "before": "Событие изменено: новое время для Приём пациента в десять часов пятнадцать минут.",
+    "after": "Событие изменено: новое время для Приём пациента в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 15,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 46,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 61,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 64,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 66,
+    "before": "Событие изменено: новое время для Консультация по курсовой в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: новое время для Консультация по курсовой в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 16,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 98,
+    "before": "Событие изменено: новое время для Рейс в Тольятти в девять часов тридцать минут.",
+    "after": "Событие изменено: новое время для Рейс в Тольятти в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 17,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 102,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 113,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 128,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 129,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 138,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 144,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 151,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 155,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 161,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 164,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 174,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 186,
+    "before": "Событие изменено: новое время для Смена на стройке в девять часов тридцать минут.",
+    "after": "Событие изменено: новое время для Смена на стройке в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 18,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 190,
+    "before": "Событие изменено: новое время для Рейс в Тольятти в шесть часов тридцать минут.",
+    "after": "Событие изменено: новое время для Рейс в Тольятти в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 19,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 196,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 259,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 269,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 297,
+    "before": "Событие изменено: новое время для Уборка подъезда в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: новое время для Уборка подъезда в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 20,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 319,
+    "before": "Событие изменено: новое время для Смена на стройке в шесть часов тридцать минут.",
+    "after": "Событие изменено: новое время для Смена на стройке в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 21,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 324,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 330,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 343,
+    "before": "Событие изменено: новое время для Выезд в поле в десять часов пятнадцать минут.",
+    "after": "Событие изменено: новое время для Выезд в поле в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 22,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 386,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 390,
+    "before": "Событие изменено: новое время для Визит к подопечной в шесть часов тридцать минут.",
+    "after": "Событие изменено: новое время для Визит к подопечной в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 6,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 426,
+    "before": "Событие изменено: новое время для Техосмотр такси в десять часов пятнадцать минут.",
+    "after": "Событие изменено: новое время для Техосмотр такси в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 11,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 441,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 470,
+    "before": "Событие изменено: новое время для Запись клиентки на маникюр в три часа сорок пять минут.",
+    "after": "Событие изменено: новое время для Запись клиентки на маникюр без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 23,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 480,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 482,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 489,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 492,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 538,
+    "before": "Событие изменено: новое время для Тренировка в бассейне в три часа сорок пять минут.",
+    "after": "Событие изменено: новое время для Тренировка в бассейне без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 10,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 539,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 547,
+    "before": "Событие изменено: новое время для Приём граждан в три часа сорок пять минут.",
+    "after": "Событие изменено: новое время для Приём граждан без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 24,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 606,
+    "before": "Событие изменено: новое время для Визит к подопечной в девять часов тридцать минут.",
+    "after": "Событие изменено: новое время для Визит к подопечной в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 25,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 609,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 624,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 632,
+    "before": "Событие изменено: новое время для Стрижка клиента в девять часов тридцать минут.",
+    "after": "Событие изменено: новое время для Стрижка клиента в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 9,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 661,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 685,
+    "before": "Событие изменено: время последнего добавленного события в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 5,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 689,
+    "before": "Событие изменено: новое время для Созвон с отделом в шесть часов тридцать минут.",
+    "after": "Событие изменено: новое время для Созвон с отделом в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 26,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 709,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 731,
+    "before": "Событие изменено: новое время для Урок алгебры в десять часов пятнадцать минут.",
+    "after": "Событие изменено: новое время для Урок алгебры в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 27,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 745,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 748,
+    "before": "Событие изменено: время последнего добавленного события в девять часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине десятого.",
+    "clocks": [
+      "09:30"
+    ],
+    "manual_line": 3,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 749,
+    "before": "Событие изменено: время последнего добавленного события в десять часов пятнадцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в четверть одиннадцатого.",
+    "clocks": [
+      "10:15"
+    ],
+    "manual_line": 2,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 752,
+    "before": "Событие изменено: время последнего добавленного события в шесть часов тридцать минут.",
+    "after": "Событие изменено: время последнего добавленного события в половине седьмого.",
+    "clocks": [
+      "18:30"
+    ],
+    "manual_line": 7,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 756,
+    "before": "Событие изменено: время последнего добавленного события в три часа сорок пять минут.",
+    "after": "Событие изменено: время последнего добавленного события без четверти четыре.",
+    "clocks": [
+      "15:45"
+    ],
+    "manual_line": 4,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 769,
+    "before": "Событие изменено: новое время для Запись клиентки на маникюр в одиннадцать часов двадцать минут.",
+    "after": "Событие изменено: новое время для Запись клиентки на маникюр в двадцать минут двенадцатого.",
+    "clocks": [
+      "11:20"
+    ],
+    "manual_line": 8,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 803,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: без двадцати минут семь.",
+    "clocks": [
+      "06:40"
+    ],
+    "manual_line": 28,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 889,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в шестнадцать часов.",
+    "clocks": [
+      "16:00"
+    ],
+    "manual_line": 29,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 890,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в девять часов.",
+    "clocks": [
+      "09:00"
+    ],
+    "manual_line": 30,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 891,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в девятнадцать часов.",
+    "clocks": [
+      "19:00"
+    ],
+    "manual_line": 31,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 892,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в семнадцать часов.",
+    "clocks": [
+      "17:00"
+    ],
+    "manual_line": 32,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 893,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в одиннадцать часов.",
+    "clocks": [
+      "11:00"
+    ],
+    "manual_line": 33,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 894,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: без десяти девять.",
+    "clocks": [
+      "08:50"
+    ],
+    "manual_line": 34,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 895,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двадцать три часа.",
+    "clocks": [
+      "23:00"
+    ],
+    "manual_line": 35,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 896,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двадцать два часа.",
+    "clocks": [
+      "22:00"
+    ],
+    "manual_line": 36,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1037,
+    "before": "Событие изменено: время отчёта по датчикам установлено на четыре часа.",
+    "after": "Событие изменено: время отчёта по датчикам в шестнадцать часов.",
+    "clocks": [
+      "16:00"
+    ],
+    "manual_line": 37,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1041,
+    "before": "Событие изменено: время контроля отчётности установлено на одиннадцать часов.",
+    "after": "Событие изменено: время контроля отчётности в одиннадцать часов.",
+    "clocks": [
+      "11:00"
+    ],
+    "manual_line": 38,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1064,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в девятнадцать часов.",
+    "clocks": [
+      "19:00"
+    ],
+    "manual_line": 31,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1068,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в восемь часов.",
+    "clocks": [
+      "08:00"
+    ],
+    "manual_line": 39,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1098,
+    "before": "Событие изменено: время выдачи спецодежды установлено на шесть часов.",
+    "after": "Событие изменено: время выдачи спецодежды в восемнадцать часов.",
+    "clocks": [
+      "18:00"
+    ],
+    "manual_line": 40,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1111,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в одиннадцать часов.",
+    "clocks": [
+      "11:00"
+    ],
+    "manual_line": 33,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1265,
+    "before": "Событие изменено: время консультации по договору аренды склада установлено на три часа.",
+    "after": "Событие изменено: время консультации по договору аренды склада в пятнадцать часов.",
+    "clocks": [
+      "15:00"
+    ],
+    "manual_line": 41,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1576,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в восемнадцать часов.",
+    "clocks": [
+      "18:00"
+    ],
+    "manual_line": 42,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1577,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в девять часов.",
+    "clocks": [
+      "09:00"
+    ],
+    "manual_line": 30,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1578,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двадцать минут второго.",
+    "clocks": [
+      "13:20"
+    ],
+    "manual_line": 43,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1579,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двадцать три часа.",
+    "clocks": [
+      "23:00"
+    ],
+    "manual_line": 35,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1580,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в половине седьмого.",
+    "clocks": [
+      "06:30"
+    ],
+    "manual_line": 44,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1590,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в семнадцать часов.",
+    "clocks": [
+      "17:00"
+    ],
+    "manual_line": 32,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1591,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в девять часов.",
+    "clocks": [
+      "09:00"
+    ],
+    "manual_line": 30,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1592,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двенадцать часов.",
+    "clocks": [
+      "12:00"
+    ],
+    "manual_line": 45,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "train",
+    "line": 1593,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в половине восьмого.",
+    "clocks": [
+      "07:30"
+    ],
+    "manual_line": 46,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 10,
+    "before": "Событие изменено: новое время для созвона с дизайнером в двенадцать ноль ноль.",
+    "after": "Событие изменено: новое время для созвона с дизайнером в двенадцать часов.",
+    "clocks": [
+      "12:00"
+    ],
+    "manual_line": 47,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 103,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в тринадцать часов.",
+    "clocks": [
+      "13:00"
+    ],
+    "manual_line": 48,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 107,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в семь часов.",
+    "clocks": [
+      "07:00"
+    ],
+    "manual_line": 49,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 148,
+    "before": "Событие изменено: время реставрации мозаики установлено на четыре часа.",
+    "after": "Событие изменено: время реставрации мозаики в шестнадцать часов.",
+    "clocks": [
+      "16:00"
+    ],
+    "manual_line": 50,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 221,
+    "before": "Событие изменено: время встречи с главным инженером по реконструкции установлено на шесть часов.",
+    "after": "Событие изменено: время встречи с главным инженером по реконструкции в восемнадцать часов.",
+    "clocks": [
+      "18:00"
+    ],
+    "manual_line": 51,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 322,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в двадцать часов.",
+    "clocks": [
+      "20:00"
+    ],
+    "manual_line": 52,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 326,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в пятнадцать часов.",
+    "clocks": [
+      "15:00"
+    ],
+    "manual_line": 53,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  },
+  {
+    "split": "validation",
+    "line": 375,
+    "before": "Название события не указано.",
+    "after": "Название события не указано. Время: в семь часов.",
+    "clocks": [
+      "07:00"
+    ],
+    "manual_line": 49,
+    "contract_before": "v12.1",
+    "contract_after": "v12.57",
+    "reason": "known_clock_omitted_or_legacy_wording"
+  }
+]

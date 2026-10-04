@@ -1,0 +1,195 @@
+{
+  "calendar_holdout_v12_2": {
+    "intents": {
+      "calendar_add": 8
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "context_transfer_eval": {
+    "intents": {
+      "calendar_add": 3,
+      "calendar_delete": 21,
+      "calendar_search": 35,
+      "calendar_update": 70,
+      "chat": 3
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {
+      "calendar_search": 6
+    },
+    "violations": []
+  },
+  "half_hour_holdout": {
+    "intents": {
+      "calendar_add": 36
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "holdout": {
+    "intents": {
+      "calendar_add": 36
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "input_clock_holdout": {
+    "intents": {
+      "calendar_add": 72
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "interval_holdout": {
+    "intents": {
+      "calendar_add": 11,
+      "calendar_search": 1
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "last_event_holdout": {
+    "intents": {
+      "calendar_update": 6
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {
+      "calendar_update": 3
+    },
+    "violations": []
+  },
+  "offset_reply_holdout": {
+    "intents": {
+      "calendar_add": 46,
+      "chat": 2
+    },
+    "reminder_verbs": {
+      "calendar_add": 36
+    },
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "order_holdout": {
+    "intents": {
+      "calendar_add": 39,
+      "calendar_update": 4
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "regression_holdout": {
+    "intents": {
+      "calendar_add": 22,
+      "calendar_delete": 5,
+      "calendar_search": 13,
+      "calendar_sum": 4,
+      "calendar_update": 15,
+      "chat": 1
+    },
+    "reminder_verbs": {
+      "calendar_add": 1
+    },
+    "lookup_verbs": {
+      "calendar_search": 4
+    },
+    "violations": []
+  },
+  "reply_consistency_holdout": {
+    "intents": {
+      "calendar_add": 20,
+      "calendar_update": 3,
+      "chat": 1
+    },
+    "reminder_verbs": {
+      "calendar_add": 7
+    },
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "speech_holdout": {
+    "intents": {
+      "calendar_add": 25,
+      "calendar_search": 1,
+      "calendar_update": 1,
+      "chat": 1
+    },
+    "reminder_verbs": {},
+    "lookup_verbs": {},
+    "violations": []
+  },
+  "train": {
+    "intents": {
+      "calendar_add": 4749,
+      "calendar_delete": 128,
+      "calendar_search": 354,
+      "calendar_sum": 88,
+      "calendar_update": 468,
+      "chat": 222
+    },
+    "reminder_verbs": {
+      "calendar_add": 233
+    },
+    "lookup_verbs": {
+      "calendar_search": 126,
+      "calendar_update": 11,
+      "chat": 1
+    },
+    "violations": []
+  },
+  "validation": {
+    "intents": {
+      "calendar_add": 522,
+      "calendar_delete": 12,
+      "calendar_search": 70,
+      "calendar_sum": 32,
+      "calendar_update": 61,
+      "chat": 65
+    },
+    "reminder_verbs": {
+      "calendar_add": 38
+    },
+    "lookup_verbs": {
+      "calendar_search": 27,
+      "calendar_update": 2
+    },
+    "violations": []
+  },
+  "intent_holdout": {
+    "intents": {
+      "calendar_add": 12,
+      "calendar_search": 12,
+      "chat": 4
+    },
+    "reminder_verbs": {
+      "calendar_add": 12
+    },
+    "lookup_verbs": {
+      "calendar_search": 4
+    },
+    "violations": []
+  },
+  "generation_dev": {
+    "intents": {
+      "calendar_add": 80,
+      "calendar_delete": 4,
+      "calendar_search": 12,
+      "calendar_sum": 4,
+      "calendar_update": 6,
+      "chat": 10
+    },
+    "reminder_verbs": {
+      "calendar_add": 38
+    },
+    "lookup_verbs": {
+      "calendar_search": 3
+    },
+    "violations": []
+  }
+}
