@@ -9,7 +9,7 @@ import org.junit.Test
 
 class LlamatikEnginePromptTest {
     @Test
-    fun `chat prompt retains last assistant reply between two recent user messages`() {
+    fun `chat prompt retains full history and excludes only selected complete turns`() {
         val engine = LlamatikEngine(
             memoryGuard = com.example.aiassistent1.data.model.DeviceModelMemoryGuard { null },
             modelProvider = object : ModelProvider {
@@ -27,11 +27,19 @@ class LlamatikEnginePromptTest {
         val prompt = engine.buildPrompt(ModelContextBuilder().build(history))
 
         assertEquals(
-            "<|im_start|>user\nПредыдущий вопрос\n<|im_end|>\n" +
+            "<|im_start|>user\nСтарый вопрос\n<|im_end|>\n" +
+                "<|im_start|>assistant\nСтарый ответ\n<|im_end|>\n" +
+                "<|im_start|>user\nПредыдущий вопрос\n<|im_end|>\n" +
                 "<|im_start|>assistant\nПоследний ответ модели\n<|im_end|>\n" +
                 "<|im_start|>user\nТекущий вопрос\n<|im_end|>\n" +
                 "<|im_start|>assistant\n",
             prompt,
+        )
+        assertEquals(
+            "<|im_start|>user\nПредыдущий вопрос\n<|im_end|>\n" +
+                "<|im_start|>assistant\nПоследний ответ модели\n<|im_end|>\n" +
+                "<|im_start|>user\nТекущий вопрос\n<|im_end|>\n<|im_start|>assistant\n",
+            engine.buildPrompt(ModelContextBuilder().build(history, excludedTurnIds = setOf(history.first().id))),
         )
     }
 

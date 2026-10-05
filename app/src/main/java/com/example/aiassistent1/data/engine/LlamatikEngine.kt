@@ -15,6 +15,7 @@ import com.example.aiassistent1.domain.model.GenerationTask
 import com.example.aiassistent1.domain.model.GenerationStopReason
 import com.example.aiassistent1.domain.model.ModelContextLimits
 import com.example.aiassistent1.domain.model.PromptCapacityException
+import com.example.aiassistent1.domain.model.ContextCapacityReason
 import com.example.aiassistent1.domain.model.ContextResponseRatio
 import com.llamatik.library.platform.GenStream
 import java.util.concurrent.ExecutorService
@@ -163,7 +164,13 @@ class LlamatikEngine internal constructor(
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
                 val candidate = automaticConfiguration(file, params, 0, task, 4096)
-                AutomaticContextPolicy.promptBudget(candidate.contextSize)
+                val current = appliedParams
+                val usableExisting = task != GenerationTask.CALENDAR && state.value is ModelState.Ready &&
+                    loadedModelPath == file.path && current != null && current.gpuLayers == params.gpuLayers &&
+                    current.effectiveCpuThreads(processorCount) == params.effectiveCpuThreads(processorCount)
+                val context = if (usableExisting) maxOf(candidate.contextSize, minOf(4096, current!!.contextSize))
+                    else candidate.contextSize
+                AutomaticContextPolicy.promptBudget(context, task)
             }
         }
     }
@@ -208,9 +215,10 @@ class LlamatikEngine internal constructor(
                         // If growth is currently unavailable, the already allocated context can still serve the input.
                         if (state.value is ModelState.Ready && loadedModelPath == path && current != null &&
                             (sameTask || planned.deviceContextLimit?.canLoad == false ||
-                                AutomaticContextPolicy.availableAnswer(planned.contextSize, inputTokens) < AutomaticContextPolicy.MINIMUM_ANSWER) &&
+                                AutomaticContextPolicy.availableAnswer(planned.contextSize, inputTokens) < AutomaticContextPolicy.minimumAnswer(task)) &&
                             current.contextSize >= planned.contextSize &&
-                            AutomaticContextPolicy.availableAnswer(current.contextSize, inputTokens) >= AutomaticContextPolicy.MINIMUM_ANSWER &&
+                            (task != GenerationTask.CALENDAR ||
+                                AutomaticContextPolicy.availableAnswer(current.contextSize, inputTokens) >= AutomaticContextPolicy.MINIMUM_ANSWER) &&
                             current.gpuLayers == requestSettings.gpuLayers &&
                             current.effectiveCpuThreads(processorCount) == requestSettings.effectiveCpuThreads(processorCount)) {
                             requestSettings.copy(contextSize = current.contextSize, batchSizeAuto = false,
@@ -219,14 +227,18 @@ class LlamatikEngine internal constructor(
                         } else planned
                     }
                     val available = AutomaticContextPolicy.availableAnswer(effective.contextSize, inputTokens)
-                    if (available < AutomaticContextPolicy.MINIMUM_ANSWER) {
-                        throw PromptCapacityException(AutomaticContextPolicy.promptBudget(effective.contextSize))
+                    if (available < AutomaticContextPolicy.minimumAnswer(task)) {
+                        val trained = effective.trainedContextLength ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
+                        throw PromptCapacityException(AutomaticContextPolicy.promptBudget(effective.contextSize, task),
+                            if (AutomaticContextPolicy.availableAnswer(trained, inputTokens) < AutomaticContextPolicy.minimumAnswer(task))
+                                ContextCapacityReason.MODEL_LIMIT else ContextCapacityReason.MEMORY)
                     }
                     effective = effective.copy(maxTokens = available)
                     automaticSession = true
                     generationActive = true
                     val nativeConfig = NativeConfiguration(effective, processorCount)
                     if (state.value !is ModelState.Ready || loadedModelPath != path || loadedConfiguration != nativeConfig) {
+                        val previousContext = loadedConfiguration?.contextSize
                         mutableState.value = ModelState.Loading
                         val before = memoryGuard?.beforeLoad()
                         runtime.updateParams(effective, effective.effectiveCpuThreads(processorCount), effective.batchSize)
@@ -234,13 +246,21 @@ class LlamatikEngine internal constructor(
                         // A failed larger allocation is retried with a small batch and the smallest usable context.
                         if (!loaded) {
                             requestContext.ensureActive()
-                            val minimum = AutomaticContextPolicy.minimumContext(inputTokens)
+                            val minimum = AutomaticContextPolicy.minimumContext(inputTokens, task)
                             val metadataCap = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
                             check(minimum <= metadataCap) { "Запрос превышает предел контекста модели" }
                             effective = effective.copy(contextSize = minimum, batchSize = 64,
                                 maxTokens = AutomaticContextPolicy.availableAnswer(minimum, inputTokens))
                             runtime.updateParams(effective, effective.effectiveCpuThreads(processorCount), 64)
                             loaded = runtime.load(path)
+                        }
+                        if (!loaded && task != GenerationTask.CALENDAR) {
+                            // The failed load may have freed the old native context. Release its RAM credit.
+                            // A smaller prompt can retry a smaller allocation, never the same failing budget.
+                            val retryContext = minOf(previousContext ?: effective.contextSize,
+                                effective.contextSize - AutomaticContextPolicy.STEP).coerceAtLeast(0)
+                            releaseModel()
+                            throw PromptCapacityException(AutomaticContextPolicy.promptBudget(retryContext, task))
                         }
                         check(loaded) { "Не удалось выделить память даже для минимальной конфигурации модели" }
                         loadedModelPath = path
@@ -255,7 +275,11 @@ class LlamatikEngine internal constructor(
                     taskContexts[task] = effective.contextSize
                     mutableAutomaticState.value = AutomaticGenerationState(task, effective.contextSize,
                         effective.batchSize, inputTokens,
-                        if (task == GenerationTask.CALENDAR) 256 else AutomaticContextPolicy.answerReserve(inputTokens),
+                        when (task) {
+                            GenerationTask.CALENDAR -> 256
+                            GenerationTask.CHAT -> AutomaticContextPolicy.answerReserve(inputTokens)
+                            GenerationTask.SUMMARY -> AutomaticContextPolicy.CHAT_SUMMARY_ANSWER
+                        },
                         AutomaticContextPolicy.availableAnswer(effective.contextSize, inputTokens))
                 }
                 currentCoroutineContext().ensureActive()

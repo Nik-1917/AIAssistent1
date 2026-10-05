@@ -73,7 +73,8 @@ class AutomaticGenerationTest {
             runtime.failFirstLoad = true
             engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
             assertEquals(2, runtime.loads)
-            assertEquals(512, runtime.params.contextSize)
+            assertEquals(1536, runtime.params.contextSize)
+            assertTrue(runtime.params.maxTokens >= 1024)
             assertEquals(64, runtime.params.batchSize)
         }
     }
@@ -147,6 +148,85 @@ class AutomaticGenerationTest {
         }
     }
 
+    @Test fun `1023 is blocked and 1024 and 1025 are accepted before chat or summary decoding`() = runBlocking {
+        for (task in listOf(GenerationTask.CHAT, GenerationTask.SUMMARY)) {
+            for (remaining in listOf(1023, 1024, 1025)) fixture { engine, runtime, guard ->
+                guard.limit = DeviceContextLimit(2048, MemoryLimitStatus.ESTIMATED)
+                runtime.tokens = 2048 - 16 - remaining
+                val failure = runCatching { engine.generateForTask(emptyList(), task).toList() }.exceptionOrNull()
+                if (remaining < 1024) {
+                    assertTrue(failure is PromptCapacityException)
+                    assertEquals(1008, (failure as PromptCapacityException).promptBudget)
+                    assertEquals(0, runtime.generations)
+                } else {
+                    assertNull(failure)
+                    assertEquals(remaining, runtime.params.maxTokens)
+                }
+            }
+        }
+    }
+
+    @Test fun `growing history expands chat before decoding when memory permits`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            runtime.tokens = 1009
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(4096, runtime.params.contextSize)
+            assertEquals(3071, runtime.params.maxTokens)
+            assertEquals(2, runtime.generations)
+        }
+    }
+
+    @Test fun `existing allocation under pressure cannot bypass the chat answer reserve`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)
+            runtime.tokens = 1009
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
+            assertTrue(failure is PromptCapacityException)
+            assertEquals(1008, (failure as PromptCapacityException).promptBudget)
+            assertEquals(ContextCapacityReason.MEMORY, failure.reason)
+            assertEquals(1, runtime.generations)
+            assertEquals(1, runtime.loads)
+            runtime.tokens = 100
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(1, runtime.loads)
+            assertEquals(1008, engine.promptTokenBudget(GenerationTask.SUMMARY))
+        }
+    }
+
+    @Test fun `summary chunk budget reserves 1024 with the technical margin`() = runBlocking {
+        fixture { engine, _, guard ->
+            guard.limit = DeviceContextLimit(2048, MemoryLimitStatus.ESTIMATED)
+            assertEquals(1008, engine.promptTokenBudget(GenerationTask.SUMMARY))
+            assertEquals(1520, engine.promptTokenBudget(GenerationTask.CALENDAR))
+        }
+    }
+
+    @Test fun `GGUF limit is reported separately from memory pressure`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.tokens = 7153
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
+            assertTrue(failure is PromptCapacityException)
+            assertEquals(ContextCapacityReason.MODEL_LIMIT, (failure as PromptCapacityException).reason)
+            assertEquals(7152, failure.promptBudget)
+            assertEquals(0, runtime.generations)
+        }
+    }
+
+    @Test fun `failed native allocations release stale configuration and offer a smaller budget`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            runtime.failAllLoads = true
+            runtime.tokens = 600
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
+            assertTrue(failure is PromptCapacityException)
+            assertEquals(496, (failure as PromptCapacityException).promptBudget)
+            assertEquals(ModelState.Unloaded, engine.state.value)
+            assertEquals(1, runtime.generations)
+        }
+    }
+
     private suspend fun fixture(block: suspend (LlamatikEngine, Runtime, Guard) -> Unit) {
         val file = GgufTestFile().architecture().context(8192).memory().write(folder.newFile())
         val provider = object : ModelProvider { override suspend fun getModelPath() = Result.success(file.path) }
@@ -177,13 +257,14 @@ class AutomaticGenerationTest {
         var limitFirst = false
         var resizeSucceeds = true
         var failFirstLoad = false
+        var failAllLoads = false
         var beforeGeneration: () -> Unit = {}
         var beforeLoad: () -> Unit = {}
         var onCancel: () -> Unit = {}
         val resizes = mutableListOf<Int>()
         override var lastGeneration: GenerationResult? = null
         override fun updateParams(params: GenerationParams, threads: Int, batchSize: Int) { this.params = params }
-        override fun load(path: String): Boolean { loads++; beforeLoad(); return !failFirstLoad || loads > 1 }
+        override fun load(path: String): Boolean { loads++; beforeLoad(); return !failAllLoads && (!failFirstLoad || loads > 1) }
         override fun countTokens(prompt: String) = tokens
         override fun generateStream(prompt: String, stream: GenStream) {
             generations++

@@ -2,9 +2,10 @@ package com.example.aiassistent1.domain.context
 
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
+import com.example.aiassistent1.domain.model.ChatContextHistory
 
 class ModelContextBuilder(
-    private val maximumUserMessages: Int = 2,
+    private val maximumUserMessages: Int = Int.MAX_VALUE,
 ) {
     init {
         require(maximumUserMessages > 0) { "The user-message limit must be positive." }
@@ -14,17 +15,17 @@ class ModelContextBuilder(
         chatHistory: List<ChatMessage>,
         appendChatStyleInstruction: Boolean = false,
         isCalendarMode: Boolean = false,
+        excludedTurnIds: Set<String> = emptySet(),
     ): List<ChatMessage> {
-        val userIndices = chatHistory.indices
-            .filter { chatHistory[it].role == MessageRole.USER }
-            .takeLast(if (isCalendarMode) 1 else maximumUserMessages)
-            .toSet()
-        val assistantIndex = if (isCalendarMode) -1 else {
-            chatHistory.indexOfLast { it.role == MessageRole.ASSISTANT }
+        val selected = if (isCalendarMode) {
+            listOfNotNull(chatHistory.lastOrNull { it.role == MessageRole.USER })
+        } else {
+            val turns = ChatContextHistory.turns(chatHistory)
+            val currentRequest = turns.lastOrNull()?.id
+            turns.filter { it.id == currentRequest || it.id !in excludedTurnIds }
+                .takeLast(maximumUserMessages).flatMap { it.messages }
         }
-
-        return chatHistory.mapIndexedNotNull { index, message ->
-            if (index !in userIndices && index != assistantIndex) return@mapIndexedNotNull null
+        return selected.map { message ->
             if (appendChatStyleInstruction && message.role == MessageRole.USER) {
                 message.copy(content = message.content + CHAT_STYLE_INSTRUCTION_SUFFIX)
             } else {

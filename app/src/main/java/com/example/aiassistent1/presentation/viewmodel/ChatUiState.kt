@@ -53,6 +53,8 @@ data class ChatUiState(
     val selectedModel: String = "",
     val modelProfiles: ModelParameterProfiles = ModelParameterProfiles(),
     val areModelParamsLoaded: Boolean = false,
+    val chatHistoryPolicy: com.example.aiassistent1.domain.model.ChatHistoryPolicy = com.example.aiassistent1.domain.model.ChatHistoryPolicy.ASK,
+    val chatContextPressure: com.example.aiassistent1.domain.model.ChatContextPressure? = null,
 ) {
     val isCalendarMode: Boolean get() = activeChatId == "calendar"
     val modelProfile: ModelProfile get() = ModelProfile.forCalendarMode(isCalendarMode)

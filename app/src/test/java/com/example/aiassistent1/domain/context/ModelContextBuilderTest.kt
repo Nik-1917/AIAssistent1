@@ -8,8 +8,18 @@ import org.junit.Test
 class ModelContextBuilderTest {
     private val builder = ModelContextBuilder()
 
+    @Test fun `excludes a whole turn but protects current request and ignores orphan answers`() {
+        val oldUser = message(MessageRole.USER, "Первый")
+        val current = message(MessageRole.USER, "Текущий")
+        val history = listOf(message(MessageRole.ASSISTANT, "Без вопроса"), oldUser,
+            message(MessageRole.ASSISTANT, "Первый ответ"), message(MessageRole.ASSISTANT, "Дополнение"), current)
+        assertEquals(listOf(current), builder.build(history, excludedTurnIds = setOf(oldUser.id, current.id)))
+        assertEquals(listOf(current), builder.build(history, isCalendarMode = true, excludedTurnIds = setOf(current.id)))
+        assertEquals(5, history.size)
+    }
+
     @Test
-    fun `keeps two recent user messages and last assistant reply in chronological order`() {
+    fun `keeps all user and assistant turns in chronological order`() {
         val context = builder.build(
             listOf(
                 message(MessageRole.USER, "Первое"),
@@ -21,9 +31,9 @@ class ModelContextBuilderTest {
             ),
         )
 
-        assertEquals(listOf("Второе", "Ответ на второе", "Третье"), context.map(ChatMessage::content))
+        assertEquals(listOf("Первое", "Ответ на первое", "Второе", "Ответ на второе", "Третье"), context.map(ChatMessage::content))
         assertEquals(
-            listOf(MessageRole.USER, MessageRole.ASSISTANT, MessageRole.USER),
+            listOf(MessageRole.USER, MessageRole.ASSISTANT, MessageRole.USER, MessageRole.ASSISTANT, MessageRole.USER),
             context.map(ChatMessage::role),
         )
     }
@@ -55,7 +65,7 @@ class ModelContextBuilderTest {
     }
 
     @Test
-    fun `keeps only recent user messages before appending chat style instruction`() {
+    fun `appends chat style instruction to every included request`() {
         val context = builder.build(
             chatHistory = listOf(
                 message(MessageRole.USER, "Первое"),
@@ -67,6 +77,7 @@ class ModelContextBuilderTest {
 
         assertEquals(
             listOf(
+                "Первое\n\nотвечай очень вежливо используй эмодзи",
                 "Второе\n\nотвечай очень вежливо используй эмодзи",
                 "Третье\n\nотвечай очень вежливо используй эмодзи",
             ),
@@ -116,6 +127,6 @@ class ModelContextBuilderTest {
             message(MessageRole.ASSISTANT, "Первый ответ"),
             message(MessageRole.ASSISTANT, "Последний ответ"),
         )
-        assertEquals(listOf(history[0], history[2]), builder.build(history))
+        assertEquals(history, builder.build(history))
     }
 }

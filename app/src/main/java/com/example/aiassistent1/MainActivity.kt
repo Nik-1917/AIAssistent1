@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
                     context = applicationContext,
                     chatRepository = AppModule.provideChatRepository(applicationContext),
                     sendMessage = AppModule.provideSendMessageUseCase(llmEngine),
+                    chatContextRepository = AppModule.provideChatContextRepository(applicationContext),
                     calendarUpdateCommandMapper = AppModule.provideCalendarUpdateCommandMapper(),
                     resolveCalendarUpdateTarget = AppModule.provideResolveCalendarUpdateTargetUseCase(applicationContext),
                     prepareCalendarEventUpdate = AppModule.providePrepareCalendarEventUpdateUseCase(),

@@ -4,6 +4,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AutomaticContextPolicyTest {
+    @Test fun `chat and summary require 1024 while calendar keeps its existing thresholds`() {
+        for (task in listOf(GenerationTask.CHAT, GenerationTask.SUMMARY)) {
+            assertEquals(1024, AutomaticContextPolicy.minimumAnswer(task))
+            assertEquals(1008, AutomaticContextPolicy.promptBudget(2048, task))
+            assertEquals(1536, AutomaticContextPolicy.minimumContext(100, task))
+        }
+        assertEquals(64, AutomaticContextPolicy.minimumAnswer(GenerationTask.CALENDAR))
+        assertEquals(512, AutomaticContextPolicy.minimumContext(100, GenerationTask.CALENDAR))
+        assertEquals(512, AutomaticContextPolicy.desiredContext(100, GenerationTask.CALENDAR))
+        assertEquals(368, AutomaticContextPolicy.promptBudget(512, GenerationTask.CALENDAR))
+        assertEquals(2048, AutomaticContextPolicy.desiredContext(1008, GenerationTask.SUMMARY))
+        assertEquals(2560, AutomaticContextPolicy.desiredContext(1009, GenerationTask.SUMMARY))
+        assertEquals(0, AutomaticContextPolicy.promptBudget(512, GenerationTask.SUMMARY))
+    }
     @Test fun `512 is an initial reserve and a 1200 token answer fits after 100 input tokens`() {
         assertEquals(2048, AutomaticContextPolicy.desiredContext(100, GenerationTask.CHAT))
         assertEquals(512, AutomaticContextPolicy.answerReserve(100))

@@ -4,7 +4,12 @@ enum class GenerationTask { CALENDAR, CHAT, SUMMARY }
 
 enum class GenerationStopReason { EOS, CONTEXT_LIMIT, CANCELLED }
 
-class PromptCapacityException(val promptBudget: Int) :
+enum class ContextCapacityReason { MEMORY, MODEL_LIMIT }
+
+class PromptCapacityException(
+    val promptBudget: Int,
+    val reason: ContextCapacityReason = ContextCapacityReason.MEMORY,
+) :
     IllegalStateException("Полный запрос не помещается в доступный контекст; требуется обработка по частям.")
 
 data class GenerationResult(
@@ -30,10 +35,15 @@ object AutomaticContextPolicy {
     const val STEP = 512
     const val TECHNICAL_RESERVE = 16
     const val MINIMUM_ANSWER = 64
+    const val CHAT_SUMMARY_ANSWER = 1024
     const val MINIMUM_BATCH = 64
 
-    fun promptBudget(context: Int): Int =
-        (context - minOf(512, context / 4) - TECHNICAL_RESERVE).coerceAtLeast(0)
+    fun minimumAnswer(task: GenerationTask): Int =
+        if (task == GenerationTask.CALENDAR) MINIMUM_ANSWER else CHAT_SUMMARY_ANSWER
+
+    fun promptBudget(context: Int, task: GenerationTask = GenerationTask.CALENDAR): Int =
+        (context - (if (task == GenerationTask.CALENDAR) minOf(512, context / 4)
+            else CHAT_SUMMARY_ANSWER) - TECHNICAL_RESERVE).coerceAtLeast(0)
 
     fun answerReserve(promptTokens: Int): Int {
         require(promptTokens >= 0)
@@ -45,12 +55,12 @@ object AutomaticContextPolicy {
         return when (task) {
             GenerationTask.CHAT -> Math.multiplyExact(answerReserve(promptTokens), 4)
             GenerationTask.CALENDAR -> roundUp(promptTokens.toLong() + 256 + TECHNICAL_RESERVE)
-            GenerationTask.SUMMARY -> roundUp(maxOf(2048L, promptTokens.toLong() + STEP + TECHNICAL_RESERVE))
+            GenerationTask.SUMMARY -> roundUp(maxOf(2048L, promptTokens.toLong() + CHAT_SUMMARY_ANSWER + TECHNICAL_RESERVE))
         }
     }
 
-    fun minimumContext(promptTokens: Int): Int =
-        roundUp(promptTokens.toLong() + MINIMUM_ANSWER + TECHNICAL_RESERVE)
+    fun minimumContext(promptTokens: Int, task: GenerationTask = GenerationTask.CALENDAR): Int =
+        roundUp(promptTokens.toLong() + minimumAnswer(task) + TECHNICAL_RESERVE)
 
     fun availableAnswer(context: Int, promptTokens: Int): Int =
         (context.toLong() - promptTokens - TECHNICAL_RESERVE).coerceIn(0, Int.MAX_VALUE.toLong()).toInt()

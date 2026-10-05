@@ -65,6 +65,13 @@ object AppModule {
 	@Volatile
 	private var calendarDraftRepository: CalendarDraftRepository? = null
 
+    @Volatile private var chatContextRepository: ChatContextRepository? = null
+
+    fun provideChatContextRepository(context: Context): ChatContextRepository = chatContextRepository ?: synchronized(this) {
+        chatContextRepository ?: DataStoreChatContextRepository(context.applicationContext.chatContextStore())
+            .also { chatContextRepository = it }
+    }
+
 	@Volatile
 	private var settingsRepository: SettingsRepository? = null
 

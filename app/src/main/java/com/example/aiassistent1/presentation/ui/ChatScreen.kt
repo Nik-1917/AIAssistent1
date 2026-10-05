@@ -1164,6 +1164,8 @@ fun ChatScreen(
                 onSpeechRateChange = viewModel::setSpeechRate,
                 onRefreshMemory = viewModel::refreshModelMemory,
                 automaticGeneration = viewModel.automaticGeneration.collectAsStateWithLifecycle().value,
+                chatHistoryPolicy = uiState.chatHistoryPolicy,
+                onChatHistoryPolicyChange = viewModel::setChatHistoryPolicy,
                 keywordControls = viewModel.personalKeywordControls,
                 voiceControls = viewModel.voiceProfileControls,
             )
@@ -1191,6 +1193,9 @@ fun ChatScreen(
                 storageError = uiState.calendarDrafts.storageError,
             )
         }
+    }
+    uiState.chatContextPressure?.takeIf { !uiState.isCalendarMode }?.let { pressure ->
+        ChatContextDialog(pressure, viewModel::resolveChatContext)
     }
     if (uiState.calendarDrafts.showList) {
         CalendarDraftListSheet(
@@ -2179,6 +2184,8 @@ fun ModelSettingsDialog(
     voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
     onRefreshMemory: () -> Unit = {},
     automaticGeneration: com.example.aiassistent1.domain.model.AutomaticGenerationState? = null,
+    chatHistoryPolicy: com.example.aiassistent1.domain.model.ChatHistoryPolicy = com.example.aiassistent1.domain.model.ChatHistoryPolicy.ASK,
+    onChatHistoryPolicyChange: (com.example.aiassistent1.domain.model.ChatHistoryPolicy) -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2300,6 +2307,9 @@ fun ModelSettingsDialog(
                             )
                         }
                         Text("Память: автоматически", style = MaterialTheme.typography.bodyMedium)
+                        if (editingProfile == ModelProfile.CHAT) {
+                            ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange)
+                        }
                         Text(
                             "Чат начинает с контекста 2 048 и резерва ответа 512 токенов. " +
                                 "Полный запрос измеряется токенизатором. Резерв растёт шагами по 512, " +

@@ -22,6 +22,10 @@ import com.example.aiassistent1.calendar.core.domain.CalendarCommand
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandResult
 import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
 import com.example.aiassistent1.domain.interfaces.ChatRepository
+import com.example.aiassistent1.domain.interfaces.ChatContextRepository
+import com.example.aiassistent1.domain.model.ChatContextChoice
+import com.example.aiassistent1.domain.model.ChatHistoryPolicy
+import com.example.aiassistent1.domain.usecase.ChatContextSession
 import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.LLMEngine
@@ -98,6 +102,7 @@ class ChatViewModel(
     private val calendarCommandExecutor: CalendarCommandExecutor,
     private val calendarCommandMapper: CalendarCommandMapper,
     calendarDraftRepository: CalendarDraftRepository,
+    private val chatContextRepository: ChatContextRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private val calendarDraftController = CalendarDraftController(calendarDraftRepository, viewModelScope)
@@ -106,6 +111,8 @@ class ChatViewModel(
         SpeechPlaybackController(context, it)
     }
     private var generationJob: Job? = null
+    private val contextDecisions = ChatContextDecisionGate()
+    private val chatContextSession = ChatContextSession(llmEngine, chatContextRepository, modelContextBuilder)
     private val pendingChatMessages = PendingChatMessages()
     private var activeChatJob: Job? = null
     private var voiceDraftRestored = false
@@ -135,6 +142,21 @@ class ChatViewModel(
     val assistantDisplayName = settingsRepository.assistantDisplayName
 
     init {
+        viewModelScope.launch {
+            contextDecisions.pressure.collect { pressure ->
+                mutableUiState.update { it.copy(chatContextPressure = pressure) }
+            }
+        }
+        viewModelScope.launch {
+            try {
+                chatContextRepository.observe("general").collect { settings ->
+                    mutableUiState.update { it.copy(chatHistoryPolicy = settings.policy) }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
         viewModelScope.launch {
             calendarDraftController.state.collect { drafts ->
                 mutableUiState.update { it.copy(calendarDrafts = drafts) }
@@ -497,6 +519,23 @@ class ChatViewModel(
         }
     }
 
+    fun resolveChatContext(id: String, choice: ChatContextChoice) {
+        if (contextDecisions.pressure.value?.id != id) return
+        contextDecisions.resolve(id, choice)
+        // Match the existing Stop action, including resuming dialogue listening when enabled.
+        if (choice == ChatContextChoice.Cancel) stopGeneration()
+    }
+
+    fun setChatHistoryPolicy(policy: ChatHistoryPolicy) {
+        viewModelScope.launch {
+            try { chatContextRepository.update("general", policy = policy) }
+            catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
+    }
+
     private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
         val trimmedText = text.trim()
         val state = mutableUiState.value
@@ -549,7 +588,7 @@ class ChatViewModel(
                 val currentState = requestState
                 modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
-                val responseFlowResult = sendMessage(
+                val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
                     modelContextBuilder.build(
                         currentState.messages,
                         appendChatStyleInstruction = !currentState.isCalendarMode,
@@ -557,7 +596,25 @@ class ChatViewModel(
                     ),
                     useSystemPrompt = true,
                     isCalendarMode = currentState.isCalendarMode,
-                )
+                ) else Result.success(chatContextSession.respond(currentState.activeChatId, currentState.messages) { pressure ->
+                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                        uiState.value.selectedModel != currentState.selectedModel) {
+                        throw CancellationException("Чат или модель изменились")
+                    }
+                    // Release the generation session while the user chooses history; the engine mutex is already free.
+                    backgroundSession?.close()
+                    backgroundSession = null
+                    val choice = contextDecisions.await(pressure)
+                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                        uiState.value.selectedModel != currentState.selectedModel) {
+                        throw CancellationException("Чат или модель изменились")
+                    }
+                    if (choice != ChatContextChoice.Cancel) {
+                        backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                        backgroundSession?.awaitReady()
+                    }
+                    choice
+                })
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                     return@launch
@@ -867,6 +924,7 @@ class ChatViewModel(
             activeGeneration?.join()
             pendingChatMessages.clear(state.activeChatId)
             withContext(Dispatchers.IO) { chatRepository.deleteAllMessages(state.activeChatId) }
+            if (!state.isCalendarMode) chatContextRepository.update(state.activeChatId, excludedTurnIds = emptySet())
             settingsRepository.setChatScrollPosition(ChatScrollPosition())
             mutableUiState.update {
                 it.copy(
@@ -1828,6 +1886,9 @@ class ChatViewModel(
         activeChatJob = viewModelScope.launch {
             try {
                 ObserveAppSessionUseCase(settingsRepository, chatRepository)().collect { session ->
+                    if (uiState.value.activeChatId != session.navigation.chatId && contextDecisions.pressure.value != null) {
+                        stopGeneration(resumeDialogue = false)
+                    }
                     if (uiState.value.activeChatId != session.navigation.chatId) closeCalendarDraftEditor()
                     val messages = pendingChatMessages.merge(session.navigation.chatId, session.messages)
                     mutableUiState.update { state ->
