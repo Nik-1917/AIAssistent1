@@ -1,0 +1,354 @@
+{
+  "status": "AWAITING_DELETION_CONFIRMATION",
+  "prepared_at_utc": "2026-10-06 11:15:43 UTC",
+  "source_root": "C:\\Users\\007",
+  "source_scope_confirmed_by_user": true,
+  "rule": "All regular .gguf files except V12.66; includes llama.cpp vocabulary GGUF files",
+  "delete_count": 34,
+  "delete_bytes": 59319966040,
+  "other_model_count": 15,
+  "other_model_bytes": 59242409888,
+  "vocabulary_count": 19,
+  "vocabulary_bytes": 77556152,
+  "preserve_count": 4,
+  "preserve_bytes": 6644968128,
+  "deletion_candidates": [
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\ai-asisntnt\\ai-models\\Phi-3.5-mini-instruct-Q4_K_M.gguf",
+      "Bytes": 2393232672,
+      "GiB": 2.2289,
+      "LastWriteTimeUtc": "2026-07-19T11:46:26.7364729Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_6_gguf_20260914\\calendar-assistant-v12.6-Q4_K_M.gguf",
+      "Bytes": 2497278816,
+      "GiB": 2.3258,
+      "LastWriteTimeUtc": "2026-09-14T15:52:59.3803747Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_61_gguf_20260928\\calendar-assistant-v12.61-Q4_K_M.gguf",
+      "Bytes": 2497278816,
+      "GiB": 2.3258,
+      "LastWriteTimeUtc": "2026-09-28T22:57:03.4294222Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_62_gguf_20260929\\calendar-assistant-v12.62-Q4_K_M.gguf",
+      "Bytes": 2497278816,
+      "GiB": 2.3258,
+      "LastWriteTimeUtc": "2026-09-29T03:27:26.2777904Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_63_gguf_20261001\\calendar-assistant-v12.63-Q4_K_M.gguf",
+      "Bytes": 2497278816,
+      "GiB": 2.3258,
+      "LastWriteTimeUtc": "2026-10-01T14:44:57.6940639Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_6_q4_work_20260914\\calendar-assistant-v12.6-F16.gguf",
+      "Bytes": 8051283296,
+      "GiB": 7.4983,
+      "LastWriteTimeUtc": "2026-09-14T15:50:40.7178061Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_61_q4_work_20260928\\calendar-assistant-v12.61-F16.gguf",
+      "Bytes": 8051283296,
+      "GiB": 7.4983,
+      "LastWriteTimeUtc": "2026-09-28T22:54:49.7007705Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_62_q4_work_20260929\\calendar-assistant-v12.62-F16.gguf",
+      "Bytes": 8051283296,
+      "GiB": 7.4983,
+      "LastWriteTimeUtc": "2026-09-29T03:25:11.2628821Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_63_q4_work_20261001\\calendar-assistant-v12.63-F16.gguf",
+      "Bytes": 8051283296,
+      "GiB": 7.4983,
+      "LastWriteTimeUtc": "2026-10-01T14:42:38.4362764Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen3_1_7b\\build\\calendar-assistant-v12.63-Qwen3-1.7B-F16.gguf",
+      "Bytes": 3447345024,
+      "GiB": 3.2106,
+      "LastWriteTimeUtc": "2026-10-03T01:28:10.3798586Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen3_1_7b\\release\\calendar-assistant-v12.63-Qwen3-1.7B-Q4_K_M.gguf",
+      "Bytes": 1107404672,
+      "GiB": 1.0314,
+      "LastWriteTimeUtc": "2026-10-03T01:28:36.9118777Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen35_2b\\build_text_only\\calendar-assistant-v12.63-Qwen3.5-2B-F16.gguf",
+      "Bytes": 3775700992,
+      "GiB": 3.5164,
+      "LastWriteTimeUtc": "2026-10-03T06:42:39.0757102Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen35_2b\\build\\calendar-assistant-v12.63-Qwen3.5-2B-F16.gguf",
+      "Bytes": 3775701056,
+      "GiB": 3.5164,
+      "LastWriteTimeUtc": "2026-10-03T06:30:53.1604711Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen35_2b\\release_failed_mtp\\calendar-assistant-v12.63-Qwen3.5-2B-Q4_K_M.gguf",
+      "Bytes": 1274388544,
+      "GiB": 1.1869,
+      "LastWriteTimeUtc": "2026-10-03T06:31:20.5255958Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_MODEL_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2\\qwen35_2b\\release\\calendar-assistant-v12.63-Qwen3.5-2B-Q4_K_M.gguf",
+      "Bytes": 1274388480,
+      "GiB": 1.1869,
+      "LastWriteTimeUtc": "2026-10-03T06:43:06.1287042Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-aquila.gguf",
+      "Bytes": 4825676,
+      "GiB": 0.0045,
+      "LastWriteTimeUtc": "2026-08-28T23:44:20.8850967Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-baichuan.gguf",
+      "Bytes": 1340998,
+      "GiB": 0.0012,
+      "LastWriteTimeUtc": "2026-08-28T23:44:20.8950955Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-bert-bge.gguf",
+      "Bytes": 627549,
+      "GiB": 0.0006,
+      "LastWriteTimeUtc": "2026-08-28T23:44:20.8990976Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-command-r.gguf",
+      "Bytes": 10874545,
+      "GiB": 0.0101,
+      "LastWriteTimeUtc": "2026-08-28T23:44:20.9830968Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-deepseek-coder.gguf",
+      "Bytes": 1156067,
+      "GiB": 0.0011,
+      "LastWriteTimeUtc": "2026-08-28T23:44:20.9940970Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-deepseek-llm.gguf",
+      "Bytes": 3970167,
+      "GiB": 0.0037,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.0250955Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-falcon.gguf",
+      "Bytes": 2287728,
+      "GiB": 0.0021,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.0480972Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-gemma-4.gguf",
+      "Bytes": 15776467,
+      "GiB": 0.0147,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.1810945Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-gpt-2.gguf",
+      "Bytes": 1766807,
+      "GiB": 0.0016,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.1950946Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-gpt-neox.gguf",
+      "Bytes": 1771431,
+      "GiB": 0.0016,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.2100973Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-llama-bpe.gguf",
+      "Bytes": 7818140,
+      "GiB": 0.0073,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.2641169Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-llama-spm.gguf",
+      "Bytes": 723869,
+      "GiB": 0.0007,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.2720954Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-mpt.gguf",
+      "Bytes": 1771393,
+      "GiB": 0.0016,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.2881177Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-nomic-bert-moe.gguf",
+      "Bytes": 6821877,
+      "GiB": 0.0064,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.3630962Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-phi-3.gguf",
+      "Bytes": 726019,
+      "GiB": 0.0007,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.3681304Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-qwen2.gguf",
+      "Bytes": 5928681,
+      "GiB": 0.0055,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.4081189Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-qwen35.gguf",
+      "Bytes": 5928682,
+      "GiB": 0.0055,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.4521176Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-refact.gguf",
+      "Bytes": 1720710,
+      "GiB": 0.0016,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.4681009Z",
+      "Attributes": "Archive"
+    },
+    {
+      "Category": "OTHER_VOCAB_GGUF",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0\\models\\ggml-vocab-starcoder.gguf",
+      "Bytes": 1719346,
+      "GiB": 0.0016,
+      "LastWriteTimeUtc": "2026-08-28T23:44:21.4861191Z",
+      "Attributes": "Archive"
+    }
+  ],
+  "preserved_v12_66": [
+    {
+      "Category": "KEEP_V12_66",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_06b\\qwen3_0_6b\\build\\calendar-assistant-v12.66-Qwen3-0.6B-F16.gguf",
+      "Bytes": 1198178144,
+      "GiB": 1.1159,
+      "LastWriteTimeUtc": "2026-10-06T10:49:06.4034438Z",
+      "Attributes": "Archive",
+      "Sha256": "f915bc51c6ee4ddc5673cb6217497fcf8caac21a996a42ed8d9aae07646482b9",
+      "ManifestMatch": true
+    },
+    {
+      "Category": "KEEP_V12_66",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_06b\\qwen3_0_6b\\release\\calendar-assistant-v12.66-Qwen3-0.6B-Q4_K_M.gguf",
+      "Bytes": 396700512,
+      "GiB": 0.3695,
+      "LastWriteTimeUtc": "2026-10-06T10:49:16.7837773Z",
+      "Attributes": "Archive",
+      "Sha256": "275179e2b0de7eee8c233b119bec9df368b501df948e1f6bb498e75779371bdd",
+      "ManifestMatch": true
+    },
+    {
+      "Category": "KEEP_V12_66",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen35\\qwen35_2b\\build\\calendar-assistant-v12.66-Qwen3.5-2B-F16.gguf",
+      "Bytes": 3775700992,
+      "GiB": 3.5164,
+      "LastWriteTimeUtc": "2026-10-05T11:54:34.6933029Z",
+      "Attributes": "Archive",
+      "Sha256": "b5290d7164ee65b09068b4cdff135e8cc3528cb18463f018c9d98f75a027d910",
+      "ManifestMatch": true
+    },
+    {
+      "Category": "KEEP_V12_66",
+      "Path": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen35\\qwen35_2b\\release\\calendar-assistant-v12.66-Qwen3.5-2B-Q4_K_M.gguf",
+      "Bytes": 1274388480,
+      "GiB": 1.1869,
+      "LastWriteTimeUtc": "2026-10-05T11:55:01.6995340Z",
+      "Attributes": "Archive",
+      "Sha256": "70d9525a18b9495ec2ed7f9ea66036bd20caaab6c05e30cd871af40f4c51ed50",
+      "ManifestMatch": true
+    }
+  ],
+  "preserve_other_materials": [
+    "All non-GGUF files",
+    "Datasets",
+    "Training logs, metrics and reports",
+    "Manifests",
+    "Adapters and checkpoints",
+    "Safetensors",
+    "Source code and rules",
+    "Files ending .gguf.inp and .gguf.out"
+  ],
+  "scan_limitations": [
+    "C:\\Users\\007\\AppData\\Local\\ElevatedDiagnostics could not be enumerated",
+    "Directory reparse points were not followed"
+  ],
+  "execution_rules": [
+    "Wait for explicit user confirmation of this exact list",
+    "No recursive directory deletion",
+    "Remove only approved literal paths inside C:\\Users\\007",
+    "Reject reparse points in each file path and ancestors",
+    "Recheck size and modification time; compute candidate SHA-256 immediately before deletion",
+    "Verify absence of deleted targets and SHA-256 of retained V12.66 files",
+    "Write final audit with actual deletion and verification results"
+  ]
+}

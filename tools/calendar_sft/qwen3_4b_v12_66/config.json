@@ -1,0 +1,38 @@
+{
+  "version": "v12.66",
+  "model": "qwen3_4b",
+  "repository": "Qwen/Qwen3-4B-Instruct-2507",
+  "dataset": "docs/calendar_sft_v12_66",
+  "source_lock": "build/calendar_v12_66_qwen3_4b/Qwen3-4B-Instruct-2507_source_lock.json",
+  "work_directory": "build/calendar_v12_66_qwen3_4b",
+  "grader_version": "v12.66-intent-routing-1",
+  "seed": 20261004,
+  "epochs": 3,
+  "effective_batch_size": 16,
+  "default_micro_batch": 2,
+  "max_length": 384,
+  "max_new_tokens": 192,
+  "learning_rate": 0.0001,
+  "warmup_ratio": 0.03,
+  "lora_rank": 32,
+  "lora_alpha": 64,
+  "lora_dropout": 0.05,
+  "checkpoint_interval": 44,
+  "development_evaluations_per_epoch": 2,
+  "amp_initial_scale": 128.0,
+  "amp_max_retries": 12,
+  "cuda_memory_fraction": 0.8,
+  "selection": "Macro full pass including intent, spoken time and reply/params agreement; then macro intent accuracy; then clock agreement; then macro exact params. Earlier checkpoint wins ties.",
+  "training_transports": [
+    "standard_chatml",
+    "android_transport",
+    "android_runtime"
+  ],
+  "holdout_used_for_selection": false,
+  "gpu_power": {
+    "uuid": "GPU-714647df-5bb1-f567-fe10-efc38ecef002",
+    "percent_of_default": 60,
+    "limit_watts": 150.0,
+    "check_interval_seconds": 30.0
+  }
+}
