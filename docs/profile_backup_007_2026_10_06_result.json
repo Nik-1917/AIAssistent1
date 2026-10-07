@@ -1,0 +1,725 @@
+{
+  "VerifiedAtUtc": "2026-10-06T20:37:54.7128596Z",
+  "Initial": {
+    "Status": "COMPLETE",
+    "Stage": "READY",
+    "StartedAtUtc": "2026-10-06T15:34:47.1248824Z",
+    "UpdatedAtUtc": "2026-10-06T19:11:30.0643937Z",
+    "Mode": "Initial",
+    "Source": "C:\\Users\\007",
+    "Repository": "D:\\Backups\\007-restic",
+    "ProcessId": null,
+    "Progress": null,
+    "FreeDBytes": 154150359040,
+    "Error": null,
+    "DryRun": {
+      "message_type": "summary",
+      "files_new": 699899,
+      "files_changed": 0,
+      "files_unmodified": 0,
+      "dirs_new": 141672,
+      "dirs_changed": 0,
+      "dirs_unmodified": 0,
+      "data_blobs": 678643,
+      "tree_blobs": 132650,
+      "data_added": 318111356697,
+      "data_added_packed": 221721371395,
+      "total_files_processed": 699899,
+      "total_bytes_processed": 438570806038,
+      "total_duration": 7336.3332515,
+      "backup_start": "2026-10-06T17:21:47.1337489+04:00",
+      "backup_end": "2026-10-06T19:24:03.4670004+04:00",
+      "snapshot_id": "ca5e641f29d2fd7fa0015875c09dff56dd6a73284d986cd58c5b8e1c1c591f45",
+      "dry_run": true
+    },
+    "Backup": {
+      "message_type": "summary",
+      "files_new": 663272,
+      "files_changed": 0,
+      "files_unmodified": 0,
+      "dirs_new": 137968,
+      "dirs_changed": 0,
+      "dirs_unmodified": 0,
+      "data_blobs": 639642,
+      "tree_blobs": 121257,
+      "data_added": 308733568318,
+      "data_added_packed": 217155819744,
+      "total_files_processed": 663272,
+      "total_bytes_processed": 394795062881,
+      "total_duration": 7860.0525852,
+      "backup_start": "2026-10-06T19:35:12.6303256+04:00",
+      "backup_end": "2026-10-06T21:46:12.6829108+04:00",
+      "snapshot_id": "d046cca14b1436b6badb373d42161a66dd6e9f607f7deb32ac41b5585683ae70"
+    },
+    "FullCheckPassed": true,
+    "RestorePassed": true,
+    "NewPacksVerified": 0,
+    "ScheduledTask": "ProfileBackup007-Hourly",
+    "VerifiedSnapshotId": "d046cca14b1436b6badb373d42161a66dd6e9f607f7deb32ac41b5585683ae70",
+    "SpecialMetadata": {
+      "Manifest": "C:\\ProgramData\\ProfileBackup007\\source-metadata\\profile-special.json",
+      "ExcludeFile": "C:\\ProgramData\\ProfileBackup007\\source-metadata\\special-exclusions.txt",
+      "Records": 115,
+      "ExcludedAliases": 86,
+      "ExcludedSockets": 5,
+      "ManifestSha256": "70de49f1fe3767f51725c4a898619bb0cd5ba63466a9cf9dac9691b3c38d37eb"
+    },
+    "SpecialMetadataRestorePassed": true,
+    "ReusedMeasuredProbe": true
+  },
+  "RestoreVerification": {
+    "SnapshotId": "d046cca14b1436b6badb373d42161a66dd6e9f607f7deb32ac41b5585683ae70",
+    "CheckedAtUtc": "2026-10-06T19:11:28.3087279Z",
+    "ResticRestoreVerify": true,
+    "GgufHashes": [
+      {
+        "SnapshotPath": "/C/Users/007/AndroidStudioProjects/AIAssistent1/build/calendar_v12_66_qwen3_06b/qwen3_0_6b/build/calendar-assistant-v12.66-Qwen3-0.6B-F16.gguf",
+        "Sha256": "f915bc51c6ee4ddc5673cb6217497fcf8caac21a996a42ed8d9aae07646482b9",
+        "Matches": true
+      },
+      {
+        "SnapshotPath": "/C/Users/007/AndroidStudioProjects/AIAssistent1/build/calendar_v12_66_qwen3_06b/qwen3_0_6b/release/calendar-assistant-v12.66-Qwen3-0.6B-Q4_K_M.gguf",
+        "Sha256": "275179e2b0de7eee8c233b119bec9df368b501df948e1f6bb498e75779371bdd",
+        "Matches": true
+      },
+      {
+        "SnapshotPath": "/C/Users/007/AndroidStudioProjects/AIAssistent1/build/calendar_v12_66_qwen35/qwen35_2b/build/calendar-assistant-v12.66-Qwen3.5-2B-F16.gguf",
+        "Sha256": "b5290d7164ee65b09068b4cdff135e8cc3528cb18463f018c9d98f75a027d910",
+        "Matches": true
+      },
+      {
+        "SnapshotPath": "/C/Users/007/AndroidStudioProjects/AIAssistent1/build/calendar_v12_66_qwen35/qwen35_2b/release/calendar-assistant-v12.66-Qwen3.5-2B-Q4_K_M.gguf",
+        "Sha256": "70d9525a18b9495ec2ed7f9ea66036bd20caaab6c05e30cd871af40f4c51ed50",
+        "Matches": true
+      }
+    ],
+    "RawReparseManifestSha256": "70de49f1fe3767f51725c4a898619bb0cd5ba63466a9cf9dac9691b3c38d37eb",
+    "RawReparseManifestMatches": true
+  },
+  "Health": {
+    "CheckedAtUtc": "2026-10-06T20:11:34.1731457Z",
+    "Model": "TOSHIBA MQ01ABF050",
+    "PowerOnHours": 5641,
+    "NativeReliability": {
+      "Temperature": 33,
+      "TemperatureMax": 0,
+      "PowerOnHours": 5641,
+      "ReadErrorsTotal": 0,
+      "ReadErrorsUncorrected": null,
+      "WriteErrorsTotal": null,
+      "WriteErrorsUncorrected": null,
+      "Wear": 0
+    },
+    "AtaAttributes": [
+      {
+        "Id": 1,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      },
+      {
+        "Id": 3,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 1350
+      },
+      {
+        "Id": 5,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      },
+      {
+        "Id": 9,
+        "Normalized": 86,
+        "Worst": 86,
+        "Raw48": 5641
+      },
+      {
+        "Id": 12,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 1112
+      },
+      {
+        "Id": 191,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 31
+      },
+      {
+        "Id": 192,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 275
+      },
+      {
+        "Id": 193,
+        "Normalized": 93,
+        "Worst": 93,
+        "Raw48": 74228
+      },
+      {
+        "Id": 194,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 210454118433
+      },
+      {
+        "Id": 199,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 85675841
+      },
+      {
+        "Id": 200,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 369403280
+      },
+      {
+        "Id": 240,
+        "Normalized": 88,
+        "Worst": 88,
+        "Raw48": 5174
+      },
+      {
+        "Id": 241,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 26594210761
+      },
+      {
+        "Id": 242,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 17337838338
+      },
+      {
+        "Id": 254,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      }
+    ],
+    "PredictFailure": false,
+    "Errors": []
+  },
+  "SourceVolumeGiB": 367.68155440781265,
+  "PackedDataGiB": 202.24211713671684,
+  "HourlyTaskXmlSha256": "b8d2818a195ae4ecef95266caeb54f7308b15a3596a22595e6c94dc681a9f186",
+  "LatestStatePath": "C:\\ProgramData\\ProfileBackup007\\state.json",
+  "RecoveryInstruction": "D:\\Backups\\007-restic-recovery\\RECOVERY.txt",
+  "IndependentSmartQuery": "Performed successfully after user authorized retry; smartctl --all --json /dev/pd1 only, no self-test or surface scan started.",
+  "EarlierHealthMeasurement": {
+    "CheckedAtUtc": "2026-10-06T15:34:49.414886Z",
+    "Model": "TOSHIBA MQ01ABF050",
+    "PowerOnHours": 5637,
+    "NativeReliability": {
+      "Temperature": 31,
+      "TemperatureMax": 0,
+      "PowerOnHours": 5637,
+      "ReadErrorsTotal": 0,
+      "ReadErrorsUncorrected": null,
+      "WriteErrorsTotal": null,
+      "WriteErrorsUncorrected": null,
+      "Wear": 0
+    },
+    "AtaAttributes": [
+      {
+        "Id": 1,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      },
+      {
+        "Id": 3,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 1350
+      },
+      {
+        "Id": 5,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      },
+      {
+        "Id": 9,
+        "Normalized": 86,
+        "Worst": 86,
+        "Raw48": 5637
+      },
+      {
+        "Id": 12,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 1112
+      },
+      {
+        "Id": 191,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 31
+      },
+      {
+        "Id": 192,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 275
+      },
+      {
+        "Id": 193,
+        "Normalized": 93,
+        "Worst": 93,
+        "Raw48": 74149
+      },
+      {
+        "Id": 194,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 210454118431
+      },
+      {
+        "Id": 199,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 85184816
+      },
+      {
+        "Id": 200,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 369110938
+      },
+      {
+        "Id": 240,
+        "Normalized": 88,
+        "Worst": 88,
+        "Raw48": 5170
+      },
+      {
+        "Id": 241,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 26168746493
+      },
+      {
+        "Id": 242,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 16903267678
+      },
+      {
+        "Id": 254,
+        "Normalized": 100,
+        "Worst": 100,
+        "Raw48": 0
+      }
+    ],
+    "PredictFailure": false,
+    "Errors": []
+  },
+  "HourlyFirst": {
+    "Status": "COMPLETE",
+    "Stage": "READY",
+    "StartedAtUtc": "2026-10-06T20:11:30.1283534Z",
+    "UpdatedAtUtc": "2026-10-06T20:33:12.7901711Z",
+    "Mode": "Hourly",
+    "Source": "C:\\Users\\007",
+    "Repository": "D:\\Backups\\007-restic",
+    "ProcessId": null,
+    "Progress": null,
+    "FreeDBytes": 145569423360,
+    "Error": null,
+    "DryRun": {
+      "message_type": "summary",
+      "files_new": 5321,
+      "files_changed": 1505,
+      "files_unmodified": 652804,
+      "dirs_new": 889,
+      "dirs_changed": 1030,
+      "dirs_unmodified": 135835,
+      "data_blobs": 8626,
+      "tree_blobs": 1626,
+      "data_added": 10128304294,
+      "data_added_packed": 8583850509,
+      "total_files_processed": 659630,
+      "total_bytes_processed": 403324346387,
+      "total_duration": 450.7383732,
+      "backup_start": "2026-10-07T00:12:00.2954471+04:00",
+      "backup_end": "2026-10-07T00:19:31.0338203+04:00",
+      "snapshot_id": "2c57f438f10a835edcfd107621229b0d4baa64c02512b90815291725b6f80a3e",
+      "dry_run": true
+    },
+    "Backup": {
+      "message_type": "summary",
+      "files_new": 5377,
+      "files_changed": 1512,
+      "files_unmodified": 652797,
+      "dirs_new": 909,
+      "dirs_changed": 1040,
+      "dirs_unmodified": 135823,
+      "data_blobs": 8669,
+      "tree_blobs": 1638,
+      "data_added": 10132313671,
+      "data_added_packed": 8584438402,
+      "total_files_processed": 659686,
+      "total_bytes_processed": 403326913909,
+      "total_duration": 702.728941,
+      "backup_start": "2026-10-07T00:19:36.9517364+04:00",
+      "backup_end": "2026-10-07T00:31:19.6806774+04:00",
+      "snapshot_id": "6f644dfd10f971ae0b64127a65b61a38420e944819f4dd2c9ce040a15cc24d0a"
+    },
+    "FullCheckPassed": false,
+    "RestorePassed": false,
+    "NewPacksVerified": 484,
+    "ScheduledTask": "ProfileBackup007-Hourly",
+    "VerifiedSnapshotId": "6f644dfd10f971ae0b64127a65b61a38420e944819f4dd2c9ce040a15cc24d0a",
+    "SpecialMetadata": {
+      "Manifest": "C:\\ProgramData\\ProfileBackup007\\source-metadata\\profile-special.json",
+      "ExcludeFile": "C:\\ProgramData\\ProfileBackup007\\source-metadata\\special-exclusions.txt",
+      "Records": 115,
+      "ExcludedAliases": 86,
+      "ExcludedSockets": 5,
+      "ManifestSha256": "194ec02ffd87206989aed58d1c78336856cedd1c3a184c422ce0dc8cd9bc2774"
+    },
+    "SpecialMetadataRestorePassed": false,
+    "ReusedMeasuredProbe": false
+  },
+  "HourlyHistoryPath": "C:\\ProgramData\\ProfileBackup007\\history\\20261006T201130138Z-6484d77e.json",
+  "RepositoryBytes": 225778123839,
+  "RepositoryGiB": 210.27226358558983,
+  "RepositoryFiles": 12790,
+  "FreeDBytes": 145569423360,
+  "FreeDGiB": 135.57209014892578,
+  "LatestVerifiedSnapshotId": "6f644dfd10f971ae0b64127a65b61a38420e944819f4dd2c9ce040a15cc24d0a",
+  "LatestSourceVolumeGiB": 375.62745987344533,
+  "HourlyAddedPackedGiB": 7.994881274178624,
+  "WindowsAta199IncreaseFromEarlier": 491025,
+  "PowerOnDays": 235.08333333333334,
+  "PowerOnAverageMonths": 7.723477070499658,
+  "HourlyVerificationScope": "Repository structure and SHA-256 of all 484 newly written packs passed. FullReadCheck and RestoreTest were performed for Initial, not repeated for Hourly.",
+  "Schedule": {
+    "TaskName": "ProfileBackup007-Hourly",
+    "User": "SYSTEM",
+    "Interval": "PT1H",
+    "FirstStartSamara": "2026-10-07T00:11:29+04:00",
+    "FirstActualStartUtc": "2026-10-06T20:11:30.1283534Z",
+    "FirstCompletionUtc": "2026-10-06T20:33:12.7901711Z",
+    "NextScheduledStartSamara": "2026-10-07T01:11:29+04:00",
+    "PreviousSnapshotsRetained": true,
+    "ReserveGiB": 10,
+    "StopBufferGiB": 11
+  },
+  "IndependentSmartDirect": {
+    "CheckedAtUtc": "2026-10-06T21:01:30.7884305Z",
+    "ReadOnlyCommand": "--all --json /dev/pd1",
+    "ExitCode": 0,
+    "Report": "C:\\ProgramData\\ProfileBackup007\\smart-audit-4bc6313b4617410eaea6f0fa582dc748\\smartctl-all.json",
+    "ExecutableSha256": "246de44bcd1ba9890e949f6b3692b6fd196c7d47f5f7eb46aea194cd765b9e26",
+    "DatabaseSha256": "88ff8608a5e20de4ab2d4b75e56cabe916ee649770575f494a41fd2935f42890",
+    "Tool": "Official CI build pre-8.0-585; extracted without installing or launching the installer",
+    "Model": "TOSHIBA MQ01ABF050",
+    "SmartPassed": true,
+    "PowerOnHours": 5642,
+    "Temperature": 35,
+    "Attributes": [
+      {
+        "id": 1,
+        "name": "Raw_Read_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 50,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      },
+      {
+        "id": 3,
+        "name": "Spin_Up_Time",
+        "value": 100,
+        "worst": 100,
+        "thresh": 1,
+        "when_failed": "",
+        "raw": {
+          "value": 1350,
+          "string": "1350"
+        }
+      },
+      {
+        "id": 5,
+        "name": "Reallocated_Sector_Ct",
+        "value": 100,
+        "worst": 100,
+        "thresh": 50,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      },
+      {
+        "id": 9,
+        "name": "Power_On_Hours",
+        "value": 86,
+        "worst": 86,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 5642,
+          "string": "5642"
+        }
+      },
+      {
+        "id": 12,
+        "name": "Power_Cycle_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 1112,
+          "string": "1112"
+        }
+      },
+      {
+        "id": 191,
+        "name": "G-Sense_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 31,
+          "string": "31"
+        }
+      },
+      {
+        "id": 192,
+        "name": "Power-Off_Retract_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 275,
+          "string": "275"
+        }
+      },
+      {
+        "id": 193,
+        "name": "Load_Cycle_Count",
+        "value": 93,
+        "worst": 93,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 74228,
+          "string": "74228"
+        }
+      },
+      {
+        "id": 194,
+        "name": "Temperature_Celsius",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 210454118435,
+          "string": "35 (Min/Max 11/49)"
+        }
+      },
+      {
+        "id": 199,
+        "name": "UDMA_CRC_Error_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 85746723,
+          "string": "85746723"
+        }
+      },
+      {
+        "id": 200,
+        "name": "Multi_Zone_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 369616762,
+          "string": "369616762"
+        }
+      },
+      {
+        "id": 240,
+        "name": "Head_Flying_Hours",
+        "value": 88,
+        "worst": 88,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 5175,
+          "string": "5175"
+        }
+      },
+      {
+        "id": 241,
+        "name": "Total_LBAs_Written",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 26613155977,
+          "string": "26613155977"
+        }
+      },
+      {
+        "id": 242,
+        "name": "Total_LBAs_Read",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 17359539912,
+          "string": "17359539912"
+        }
+      },
+      {
+        "id": 254,
+        "name": "Free_Fall_Sensor",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      }
+    ],
+    "ErrorLog": {
+      "summary": {
+        "revision": 1,
+        "count": 0
+      }
+    },
+    "SelfTests": {
+      "standard": {
+        "revision": 1,
+        "table": [
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2682
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2357
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2001
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 976
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 844
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 495
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 51
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 1
+          }
+        ],
+        "count": 8,
+        "error_count_total": 0,
+        "error_count_outdated": 0
+      }
+    }
+  },
+  "DirectAta199IncreaseFromWindows": 70882,
+  "PowerOnMeasurementSource": "Direct smartctl reading 2026-10-06T21:01:30.7884305Z",
+  "DirectSmartProofPath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\docs\\profile_backup_007_2026_10_07_smart.json"
+}

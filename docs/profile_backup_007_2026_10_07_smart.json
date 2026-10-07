@@ -1,0 +1,337 @@
+{
+  "CheckedAtUtc": "2026-10-06T21:01:30.7884305Z",
+  "Direct": {
+    "CheckedAtUtc": "2026-10-06T21:01:30.7884305Z",
+    "ReadOnlyCommand": "--all --json /dev/pd1",
+    "ExitCode": 0,
+    "Report": "C:\\ProgramData\\ProfileBackup007\\smart-audit-4bc6313b4617410eaea6f0fa582dc748\\smartctl-all.json",
+    "ExecutableSha256": "246de44bcd1ba9890e949f6b3692b6fd196c7d47f5f7eb46aea194cd765b9e26",
+    "DatabaseSha256": "88ff8608a5e20de4ab2d4b75e56cabe916ee649770575f494a41fd2935f42890",
+    "Tool": "Official CI build pre-8.0-585; extracted without installing or launching the installer",
+    "Model": "TOSHIBA MQ01ABF050",
+    "SmartPassed": true,
+    "PowerOnHours": 5642,
+    "Temperature": 35,
+    "Attributes": [
+      {
+        "id": 1,
+        "name": "Raw_Read_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 50,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      },
+      {
+        "id": 3,
+        "name": "Spin_Up_Time",
+        "value": 100,
+        "worst": 100,
+        "thresh": 1,
+        "when_failed": "",
+        "raw": {
+          "value": 1350,
+          "string": "1350"
+        }
+      },
+      {
+        "id": 5,
+        "name": "Reallocated_Sector_Ct",
+        "value": 100,
+        "worst": 100,
+        "thresh": 50,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      },
+      {
+        "id": 9,
+        "name": "Power_On_Hours",
+        "value": 86,
+        "worst": 86,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 5642,
+          "string": "5642"
+        }
+      },
+      {
+        "id": 12,
+        "name": "Power_Cycle_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 1112,
+          "string": "1112"
+        }
+      },
+      {
+        "id": 191,
+        "name": "G-Sense_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 31,
+          "string": "31"
+        }
+      },
+      {
+        "id": 192,
+        "name": "Power-Off_Retract_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 275,
+          "string": "275"
+        }
+      },
+      {
+        "id": 193,
+        "name": "Load_Cycle_Count",
+        "value": 93,
+        "worst": 93,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 74228,
+          "string": "74228"
+        }
+      },
+      {
+        "id": 194,
+        "name": "Temperature_Celsius",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 210454118435,
+          "string": "35 (Min/Max 11/49)"
+        }
+      },
+      {
+        "id": 199,
+        "name": "UDMA_CRC_Error_Count",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 85746723,
+          "string": "85746723"
+        }
+      },
+      {
+        "id": 200,
+        "name": "Multi_Zone_Error_Rate",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 369616762,
+          "string": "369616762"
+        }
+      },
+      {
+        "id": 240,
+        "name": "Head_Flying_Hours",
+        "value": 88,
+        "worst": 88,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 5175,
+          "string": "5175"
+        }
+      },
+      {
+        "id": 241,
+        "name": "Total_LBAs_Written",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 26613155977,
+          "string": "26613155977"
+        }
+      },
+      {
+        "id": 242,
+        "name": "Total_LBAs_Read",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 17359539912,
+          "string": "17359539912"
+        }
+      },
+      {
+        "id": 254,
+        "name": "Free_Fall_Sensor",
+        "value": 100,
+        "worst": 100,
+        "thresh": 0,
+        "when_failed": "",
+        "raw": {
+          "value": 0,
+          "string": "0"
+        }
+      }
+    ],
+    "ErrorLog": {
+      "summary": {
+        "revision": 1,
+        "count": 0
+      }
+    },
+    "SelfTests": {
+      "standard": {
+        "revision": 1,
+        "table": [
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2682
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2357
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 2001
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 976
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 844
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 495
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 51
+          },
+          {
+            "type": {
+              "value": 1,
+              "string": "Short offline"
+            },
+            "status": {
+              "value": 0,
+              "string": "Completed without error",
+              "passed": true
+            },
+            "lifetime_hours": 1
+          }
+        ],
+        "count": 8,
+        "error_count_total": 0,
+        "error_count_outdated": 0
+      }
+    }
+  },
+  "PreviousWindowsMeasurementUtc": "2026-10-06T20:11:34.1731457Z",
+  "PreviousWindowsAta199": 85675841,
+  "DirectAta199": 85746723,
+  "Increase": 70882,
+  "PowerOnDays": 235.08333333333334,
+  "PowerOnAverageMonths": 7.723477070499658,
+  "MissingAttributes": [
+    197,
+    198
+  ],
+  "ThresholdExceededAttributes": [],
+  "NewSelfTestStarted": false,
+  "SystemEvents": {
+    "Status": "ReadSucceeded",
+    "SinceUtc": "2026-10-06T12:00:00Z",
+    "EventIds": [
+      7,
+      11,
+      51,
+      55,
+      129,
+      153,
+      157
+    ],
+    "Matches": [],
+    "Error": null
+  }
+}
