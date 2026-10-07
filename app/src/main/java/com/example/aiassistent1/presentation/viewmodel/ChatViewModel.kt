@@ -59,6 +59,8 @@ import com.example.aiassistent1.presentation.playback.SpeechStopReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -562,6 +564,7 @@ class ChatViewModel(
             currentState.copy(
                 messages = currentState.messages + userMessage,
                 isProcessing = true,
+                isCheckingRequest = true,
                 isStopping = false,
                 isVoiceMode = preserveVoiceMode,
                 voiceDraft = currentState.voiceDraft.copy(isVisible = false, isRecording = false),
@@ -581,12 +584,26 @@ class ChatViewModel(
             var assistantMessage: ChatMessage? = null
             var responseWriter: ChatResponseWriter? = null
             var backgroundSession: GenerationForegroundService.Session? = null
+            var generationStarted = false
+            val onReady: suspend () -> Unit = {
+                withContext(Dispatchers.Main.immediate) {
+                    currentCoroutineContext().ensureActive()
+                    if (!generationStarted) {
+                        generationStarted = true
+                        mutableUiState.update { it.copy(isCheckingRequest = false) }
+                        assistantMessage?.let { updateMessage(it, isStreaming = true) }
+                    }
+                }
+            }
             try {
-                backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
-                backgroundSession.awaitReady()
-                if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
                 val currentState = requestState
                 modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
+                if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
+                llmEngine.checkModelAvailability(if (currentState.isCalendarMode)
+                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR
+                    else com.example.aiassistent1.domain.model.GenerationTask.CHAT)
+                backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                backgroundSession.awaitReady()
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
                     modelContextBuilder.build(
@@ -596,7 +613,8 @@ class ChatViewModel(
                     ),
                     useSystemPrompt = true,
                     isCalendarMode = currentState.isCalendarMode,
-                ) else Result.success(chatContextSession.respond(currentState.activeChatId, currentState.messages) { pressure ->
+                    onReady = onReady,
+                ) else Result.success(chatContextSession.respond(currentState.activeChatId, currentState.messages, onReady) { pressure ->
                     if (uiState.value.activeChatId != currentState.activeChatId ||
                         uiState.value.selectedModel != currentState.selectedModel) {
                         throw CancellationException("Чат или модель изменились")
@@ -625,7 +643,6 @@ class ChatViewModel(
                     content = "",
                     chatId = currentState.activeChatId
                 )
-                updateMessage(assistantMessage!!, isStreaming = true)
                 val writer = ChatResponseWriter(
                     initialMessage = assistantMessage!!,
                     saveMessage = { message ->
@@ -633,7 +650,7 @@ class ChatViewModel(
                     },
                     onMessageChanged = { message, isStreaming ->
                         assistantMessage = message
-                        updateMessage(message, isStreaming)
+                        if (generationStarted) updateMessage(message, isStreaming)
                     },
                 )
                 responseWriter = writer
@@ -734,7 +751,7 @@ class ChatViewModel(
                         }
                     }
                 }
-                mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                mutableUiState.update { it.copy(isProcessing = false, isCheckingRequest = false, isStopping = false) }
                 applyCurrentModelParamsIfIdle()
                 backgroundSession?.close()
             }
@@ -754,7 +771,7 @@ class ChatViewModel(
             previousGeneration?.join()
             llmEngine.unload()
             // Принудительно сбрасываем флаги при смене модели
-            mutableUiState.update { it.copy(isStopping = false, isProcessing = false) }
+            mutableUiState.update { it.copy(isStopping = false, isProcessing = false, isCheckingRequest = false) }
             settingsRepository.setSelectedModel(modelName)
         }
     }
@@ -815,6 +832,7 @@ class ChatViewModel(
             mutableUiState.update { it.copy(
                 messages = historyToRetry,
                 isProcessing = true,
+                isCheckingRequest = true,
                 isStopping = false, // Сбрасываем флаг остановки при повторе
                 error = null,
             ) }
@@ -899,7 +917,7 @@ class ChatViewModel(
         // Отменяем корутину генерации
         activeGeneration?.cancel()
         // Возвращаем немедленный сброс флага обработки, как было раньше
-        mutableUiState.update { it.copy(isProcessing = false) }
+        mutableUiState.update { it.copy(isProcessing = false, isCheckingRequest = false) }
         // The generation coroutine releases its own session in finally.
         if (resumeDialogue) {
             viewModelScope.launch {
@@ -930,6 +948,7 @@ class ChatViewModel(
                 it.copy(
                     messages = if (it.activeChatId == state.activeChatId) emptyList() else it.messages,
                     isProcessing = false,
+                    isCheckingRequest = false,
                     isVoiceMode = false,
                     voiceDraft = it.voiceDraft.copy(isVisible = false, isRecording = false),
                     error = null,

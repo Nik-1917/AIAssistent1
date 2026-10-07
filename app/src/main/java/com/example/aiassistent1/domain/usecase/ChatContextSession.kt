@@ -21,6 +21,7 @@ class ChatContextSession(
     fun respond(
         chatId: String,
         history: List<ChatMessage>,
+        onReady: suspend () -> Unit = {},
         onPressure: suspend (ChatContextPressure) -> ChatContextChoice,
     ) = flow {
         require(chatId != "calendar")
@@ -39,7 +40,7 @@ class ChatContextSession(
             currentCoroutineContext().ensureActive()
             var emitted = false
             try {
-                engine.generateForTask(prompt(excluded), GenerationTask.CHAT).collect {
+                engine.generateForTask(prompt(excluded), GenerationTask.CHAT, onReady).collect {
                     emitted = true
                     emit(it)
                 }
@@ -47,9 +48,17 @@ class ChatContextSession(
             } catch (capacity: PromptCapacityException) {
                 if (emitted) throw capacity // Never restart an answer that has already been displayed.
                 val candidates = turns.dropLast(1).filter { it.id !in excluded }
-                if (candidates.isEmpty()) throw IllegalStateException(
-                    "Даже текущий запрос без старых диалогов не оставляет 1024 токена для ответа. " +
-                        "Сократите запрос или освободите память. Сообщения сохранены.", capacity)
+                // Excluding history is useful only if the protected request can use this real budget.
+                val currentTokens = engine.countTokens(prompt(turns.dropLast(1).map { it.id }.toSet()))
+                if (currentTokens > capacity.promptBudget || candidates.isEmpty()) {
+                    val explanation = when (capacity.reason) {
+                        ContextCapacityReason.MODEL_LIMIT ->
+                            "Даже текущий запрос с системной инструкцией и резервом ответа превышает предел контекста модели. Сократите запрос."
+                        ContextCapacityReason.MEMORY ->
+                            "По оценке оперативной памяти даже текущий запрос с системной инструкцией и резервом ответа не помещается. Освободите память или выберите модель меньшего размера."
+                    }
+                    throw IllegalStateException("$explanation Сообщения сохранены.", capacity)
+                }
                 val choice = if (policy == ChatHistoryPolicy.AUTOMATIC) ChatContextChoice.Automatic()
                     else onPressure(ChatContextPressure(requestId, candidates, capacity.reason))
                 currentCoroutineContext().ensureActive()

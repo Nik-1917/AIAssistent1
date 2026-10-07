@@ -92,6 +92,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -403,7 +404,11 @@ fun ChatScreen(
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = "Закрыть",
+                duration = SnackbarDuration.Indefinite,
+            )
             viewModel.clearError()
         }
     }
@@ -487,6 +492,7 @@ fun ChatScreen(
                 assistantName = assistantName,
                 modelState = uiState.modelState,
                 isProcessing = uiState.isProcessing,
+                isCheckingRequest = uiState.isCheckingRequest,
                 hasMessages = uiState.messages.isNotEmpty(),
                 modelAvailability = uiState.modelAvailability,
                 selectedModel = uiState.selectedModel,
@@ -917,7 +923,7 @@ fun ChatScreen(
                                 MessageBubble(
                                     message = message,
                                     isStopping = uiState.isStopping,
-                                    isStreaming = !uiState.isStopping && uiState.isProcessing &&
+                                    isStreaming = !uiState.isStopping && uiState.isGenerating &&
                                         isLast && message.role == MessageRole.ASSISTANT,
                                     smoothResponseEnabled = uiState.smoothResponseEnabled,
                                     onRetry = if (showRetry) viewModel::retry else null,
@@ -980,6 +986,7 @@ fun ChatScreen(
                             uiState.modelState !is ModelState.Loading &&
                             uiState.modelAvailability == ModelAvailability.Available,
                         isProcessing = uiState.isProcessing,
+                        isCheckingRequest = uiState.isCheckingRequest,
                         isVoiceMode = uiState.isVoiceMode,
                         onSend = viewModel::sendMessage,
                         maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
@@ -1114,7 +1121,7 @@ fun ChatScreen(
                 }
             }
 
-            // Уведомление о копировании
+            // Информационное уведомление
             androidx.compose.animation.AnimatedVisibility(
                 visible = uiState.snackbarMessage != null,
                 enter = fadeIn() + expandVertically(),
@@ -1131,11 +1138,19 @@ fun ChatScreen(
                     shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        text = uiState.snackbarMessage ?: "",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = uiState.snackbarMessage ?: "",
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        TextButton(onClick = viewModel::clearSnackbar) {
+                            Text("Закрыть")
+                        }
+                    }
                 }
             }
         }
@@ -1537,6 +1552,7 @@ internal fun ChatTopBar(
     audioStatus: String?,
     isCalendarMode: Boolean,
     onModeToggle: (Boolean) -> Unit,
+    isCheckingRequest: Boolean = false,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -1626,7 +1642,11 @@ internal fun ChatTopBar(
                     )
                 }
             }
-            if (isProcessing) {
+            if (isCheckingRequest) {
+                IconButton(onClick = onStop) {
+                    Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
+                }
+            } else if (isProcessing) {
                 IconButton(onClick = onStop) {
                     Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
                 }
@@ -1934,6 +1954,7 @@ internal fun InputPanel(
     onVoiceTap: () -> Unit,
     onVoiceLongPress: () -> Unit,
     maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
+    isCheckingRequest: Boolean = false,
 ) {
     var text by remember { mutableStateOf("") }
     val canSend = textInputEnabled && text.trim().isNotEmpty() && text.trim().length <= maximumMessageLength
@@ -1991,7 +2012,11 @@ internal fun InputPanel(
                 onTap = onVoiceTap,
                 onLongPress = onVoiceLongPress,
             )
-            if (isProcessing) {
+            if (isCheckingRequest) {
+                IconButton(onClick = onStop) {
+                    Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
+                }
+            } else if (isProcessing) {
                 IconButton(
                     onClick = onStop,
                 ) {

@@ -39,7 +39,7 @@ class ChatContextSessionTest {
         }.toList()
         assertEquals(listOf("ответ"), result)
         assertEquals(1, prompts)
-        assertEquals(listOf(listOf("u2", "a2", "u3", "a3", "u4"), listOf("u3", "a3", "u4")), engine.counted)
+        assertEquals(listOf(listOf("u4"), listOf("u2", "a2", "u3", "a3", "u4"), listOf("u3", "a3", "u4")), engine.counted)
         assertEquals(setOf("u1", "u2"), store.value.value.excludedTurnIds)
         assertEquals(ChatHistoryPolicy.AUTOMATIC, store.value.value.policy)
         assertEquals(7, source.size)
@@ -53,7 +53,7 @@ class ChatContextSessionTest {
         ChatContextSession(engine, store).respond("general", history()) {
             ChatContextChoice.Manual(setOf("u2"))
         }.toList()
-        assertEquals(listOf("u1", "a1", "u3", "a3", "u4"), engine.counted.single())
+        assertEquals(listOf(listOf("u4"), listOf("u1", "a1", "u3", "a3", "u4")), engine.counted)
         assertEquals(setOf("u2"), store.value.value.excludedTurnIds)
         assertEquals(ChatHistoryPolicy.ASK, store.value.value.policy)
     }
@@ -124,6 +124,35 @@ class ChatContextSessionTest {
         assertEquals("Текущий вопрос", source.single().content)
     }
 
+    @Test fun `an oversized protected request never asks to exclude history or saves exclusions`() = runBlocking {
+        for (policy in ChatHistoryPolicy.entries) for (reason in ContextCapacityReason.entries) {
+            val source = history()
+            val engine = Engine().apply { budget = 50; capacityReason = reason }
+            val store = Store().apply { value.value = ChatContextSettings(policy = policy) }
+            val failure = runCatching { ChatContextSession(engine, store).respond("general", source) {
+                error("Excluding history cannot help the protected request")
+            }.toList() }.exceptionOrNull()
+            assertTrue(failure is IllegalStateException)
+            assertTrue(failure!!.message!!.contains(if (reason == ContextCapacityReason.MODEL_LIMIT)
+                "предел контекста модели" else "оценке оперативной памяти"))
+            assertEquals(listOf(listOf("u4")), engine.counted)
+            assertTrue(store.writes.isEmpty())
+            assertEquals(7, source.size)
+        }
+    }
+
+    @Test fun `model allocation failure preserves its cause and never changes history exclusions`() = runBlocking {
+        val original = ModelAllocationException(ModelAllocationFailure.METADATA_UNAVAILABLE, 1536)
+        val engine = Engine().apply { allocationFailure = original }
+        val store = Store()
+        val failure = runCatching { ChatContextSession(engine, store).respond("general", history()) {
+            error("Metadata failure is not history pressure")
+        }.toList() }.exceptionOrNull()
+        assertSame(original, failure)
+        assertTrue(store.writes.isEmpty())
+        assertTrue(engine.counted.isEmpty())
+    }
+
     @Test fun `an already streamed partial answer is never restarted`() = runBlocking {
         val engine = Engine().apply { partial = true }
         val received = mutableListOf<String>()
@@ -157,6 +186,8 @@ class ChatContextSessionTest {
         var budget = 300
         var partial = false
         var shrinkOnRetry = false
+        var capacityReason = ContextCapacityReason.MEMORY
+        var allocationFailure: ModelAllocationException? = null
         val inputs = mutableListOf<List<ChatMessage>>()
         val counted = mutableListOf<List<String>>()
         override val state = MutableStateFlow<ModelState>(ModelState.Ready)
@@ -172,9 +203,10 @@ class ChatContextSessionTest {
         override fun generateForTask(messages: List<ChatMessage>, task: GenerationTask) = flow {
             assertEquals(GenerationTask.CHAT, task)
             inputs += messages
+            allocationFailure?.let { throw it }
             if (shrinkOnRetry && inputs.size == 2) budget = 120
             if (partial) emit("часть")
-            if (partial || count(messages) > budget) throw PromptCapacityException(budget)
+            if (partial || count(messages) > budget) throw PromptCapacityException(budget, capacityReason)
             emit("ответ")
         }
         override fun generate(messages: List<ChatMessage>): Flow<String> = error("Legacy generation")

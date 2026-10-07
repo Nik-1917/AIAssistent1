@@ -40,7 +40,7 @@ class AutomaticGenerationInstrumentedTest {
                 assessments++
                 if (smallFirst) {
                     smallFirst = false
-                    return DeviceContextLimit(256, MemoryLimitStatus.ESTIMATED)
+                    return DeviceContextLimit(512, MemoryLimitStatus.ESTIMATED)
                 }
                 return if (low) DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY) else real.assess(file, params)
             }
@@ -91,7 +91,7 @@ class AutomaticGenerationInstrumentedTest {
             if (args.getString("nativeGrowth") == "true") {
                 engine.unload()
                 low = false
-                var instruction = "Выведи числа от 1 до 80 по порядку, каждое число с новой строки. /no_think"
+                var instruction = "Выведи числа от 1 до 200 по порядку, каждое число с новой строки. /no_think"
                 while (engine.countTokens(listOf(ChatMessage(role = MessageRole.USER, content = instruction))) < 130) {
                     instruction += " Не пропускай числа."
                 }
@@ -101,10 +101,10 @@ class AutomaticGenerationInstrumentedTest {
                 val actual = requireNotNull(engine.automaticState.value)
                 report.put("grownResponse", grown).put("grownContext", actual.contextSize)
                     .put("grownTokens", actual.generatedTokens).put("grownPromptTokens", actual.promptTokens)
-                assertTrue("Native context was not expanded", actual.contextSize > 256)
+                assertTrue("Native context was not expanded", actual.contextSize > 512)
                 assertEquals(GenerationStopReason.EOS, actual.stopReason)
                 val numbers = grown.lineSequence().mapNotNull { it.trim().toIntOrNull() }.toList()
-                assertEquals((1..80).toList(), numbers)
+                assertEquals((1..200).toList(), numbers)
             }
             if (args.getString("calendar") == "true") {
                 low = false

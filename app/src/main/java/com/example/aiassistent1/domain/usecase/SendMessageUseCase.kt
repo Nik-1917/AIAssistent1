@@ -16,6 +16,7 @@ class SendMessageUseCase(
         messages: List<ChatMessage>,
         useSystemPrompt: Boolean = false,
         isCalendarMode: Boolean = true,
+        onReady: suspend () -> Unit = {},
     ): Result<Flow<String>> {
         val systemMessage = ChatMessage(
             role = MessageRole.SYSTEM,
@@ -24,7 +25,7 @@ class SendMessageUseCase(
         val modelMessages = if (useSystemPrompt) listOf(systemMessage) + messages else messages
         return Result.success(flow {
             llmEngine.generateForTask(modelMessages,
-                if (isCalendarMode) GenerationTask.CALENDAR else GenerationTask.CHAT).collect {
+                if (isCalendarMode) GenerationTask.CALENDAR else GenerationTask.CHAT, onReady).collect {
                 emit(it)
             }
         })

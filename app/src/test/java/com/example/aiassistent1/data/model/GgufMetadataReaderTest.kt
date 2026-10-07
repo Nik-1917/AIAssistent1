@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.model
 
 import java.io.File
+import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 import com.example.aiassistent1.domain.model.*
 import org.junit.Assert.*
@@ -162,6 +163,37 @@ class GgufMetadataReaderTest {
             fixture.string("Привет") + fixture.string("") + fixture.string("😀"))
         fixture.architecture("llama").context(4096, "llama")
         assertEquals(4096, GgufMetadataReader.readContextLength(fixture.write(temporaryFolder.newFile())))
+    }
+
+    @Test fun `buffer boundaries and long skipped strings preserve metadata in either byte order`() {
+        for (order in listOf(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            val fixture = GgufTestFile(order)
+            val strings = ByteArrayOutputStream()
+            repeat(5_000) { index ->
+                strings.write(fixture.string(when {
+                    index == 1_234 -> "длинная строка".repeat(10_000)
+                    index % 3 == 0 -> ""
+                    else -> "Токен $index 😀 граница буфера"
+                }))
+            }
+            fixture.entry("tokenizer.ggml.tokens", 9, fixture.int(8) + fixture.long(5_000) + strings.toByteArray())
+                .entry("unused.large", 9, fixture.int(4) + fixture.long(40_000) + ByteArray(160_000))
+                .architecture().context(32768)
+            val metadata = requireNotNull(GgufMetadataReader.readMetadata(fixture.write(temporaryFolder.newFile())))
+            assertEquals(32768, metadata.contextLength)
+            assertEquals(5_000, metadata.memory?.vocabularySize)
+        }
+    }
+
+    @Test fun `truncation after a buffer boundary remains rejected`() {
+        val fixture = GgufTestFile().entry("unused.padding", 8,
+            GgufTestFile().long(70_000) + ByteArray(70_000)).architecture().context(32768)
+        val bytes = fixture.bytes()
+        for (cut in listOf(1, 4, 8, 12)) {
+            assertNull(GgufMetadataReader.readMetadata(temporaryFolder.newFile().also {
+                it.writeBytes(bytes.copyOf(bytes.size - cut))
+            }))
+        }
     }
 
     @Test fun `missing metadata unsupported versions invalid lengths and wrong types remain unknown`() {

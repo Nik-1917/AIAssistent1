@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.collect
 
 private val emptyAutomaticState = MutableStateFlow<AutomaticGenerationState?>(null).asStateFlow()
 
@@ -22,6 +23,18 @@ interface LLMEngine : AutoCloseable {
     fun generateForTask(messages: List<ChatMessage>, task: GenerationTask): Flow<String> = flow {
         ensureLoaded().getOrThrow()
         emitAll(generate(messages))
+    }
+    /** Cheap rejection only; the actual request still validates fresh RAM and its complete input. */
+    suspend fun checkModelAvailability(task: GenerationTask) = Unit
+
+    /** Notify after validation. Legacy engines notify with their first actual output. */
+    fun generateForTask(messages: List<ChatMessage>, task: GenerationTask,
+        onReady: suspend () -> Unit): Flow<String> = flow {
+        var started = false
+        generateForTask(messages, task).collect {
+            if (!started) { onReady(); started = true }
+            emit(it)
+        }
     }
     suspend fun countTokens(messages: List<ChatMessage>): Int = error("Точный токенизатор недоступен")
     suspend fun promptTokenBudget(task: GenerationTask): Int = error("Автоматический бюджет недоступен")

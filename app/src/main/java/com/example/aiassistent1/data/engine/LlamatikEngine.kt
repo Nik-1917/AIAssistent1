@@ -16,6 +16,9 @@ import com.example.aiassistent1.domain.model.GenerationStopReason
 import com.example.aiassistent1.domain.model.ModelContextLimits
 import com.example.aiassistent1.domain.model.PromptCapacityException
 import com.example.aiassistent1.domain.model.ContextCapacityReason
+import com.example.aiassistent1.domain.model.ModelAllocationException
+import com.example.aiassistent1.domain.model.ModelAllocationFailure
+import com.example.aiassistent1.domain.model.MemoryLimitStatus
 import com.example.aiassistent1.domain.model.ContextResponseRatio
 import com.llamatik.library.platform.GenStream
 import java.util.concurrent.ExecutorService
@@ -24,6 +27,7 @@ import java.io.File
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
@@ -168,30 +172,65 @@ class LlamatikEngine internal constructor(
                 val usableExisting = task != GenerationTask.CALENDAR && state.value is ModelState.Ready &&
                     loadedModelPath == file.path && current != null && current.gpuLayers == params.gpuLayers &&
                     current.effectiveCpuThreads(processorCount) == params.effectiveCpuThreads(processorCount)
-                val context = if (usableExisting) maxOf(candidate.contextSize, minOf(4096, current!!.contextSize))
+                val useExisting = usableExisting && (candidate.deviceContextLimit?.canLoad == false ||
+                    current!!.contextSize >= candidate.contextSize)
+                val context = if (useExisting) minOf(4096, current!!.contextSize)
                     else candidate.contextSize
+                if (!useExisting) checkAllocationAssessment(candidate.deviceContextLimit,
+                    AutomaticContextPolicy.minimumContext(0, task))
+                if (context < AutomaticContextPolicy.minimumContext(0, task)) throw capacityFailure(
+                    0, task, context, candidate.trainedContextLength ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE)
                 AutomaticContextPolicy.promptBudget(context, task)
             }
         }
     }
 
+    override suspend fun checkModelAvailability(task: GenerationTask) = modelMutex.withLock {
+        withContext(engineDispatcher) {
+            val file = File(modelProvider.getModelPath().getOrThrow())
+            val requestContext = currentCoroutineContext()
+            synchronized(lifecycleLock) {
+                check(!closed) { "Движок закрыт" }
+                requestContext.ensureActive()
+                rejectUnavailableAllocation(file, params)
+            }
+        }
+    }
+
+    /** This gate neither initializes the native library nor reads/materializes tokenizer arrays. */
+    private fun rejectUnavailableAllocation(file: File, settings: GenerationParams) {
+        val current = appliedParams
+        if (state.value is ModelState.Ready && loadedModelPath == file.path && current != null &&
+            current.gpuLayers == settings.gpuLayers &&
+            current.effectiveCpuThreads(processorCount) == settings.effectiveCpuThreads(processorCount)) return
+        val assessment = memoryGuard?.assess(file, settings.copy(batchSizeAuto = false, batchSize = 64))
+        // No input was tokenized, so its required context is deliberately unknown.
+        checkAllocationAssessment(assessment, null)
+    }
+
+    override fun generateForTask(messages: List<ChatMessage>, task: GenerationTask): Flow<String> =
+        generateForTask(messages, task) {}
+
     /** One request owns its tokenizer, allocation and sampler until natural completion or cancellation. */
-    override fun generateForTask(messages: List<ChatMessage>, task: GenerationTask): Flow<String> = channelFlow<AutomaticEmission> {
+    override fun generateForTask(messages: List<ChatMessage>, task: GenerationTask,
+        onReady: suspend () -> Unit): Flow<String> = channelFlow<AutomaticEmission> {
         modelMutex.withLock {
             check(!closed) { "Движок закрыт" }
             val requestContext = currentCoroutineContext()
             val requestSettings = synchronized(lifecycleLock) { params }
             val path = modelProvider.getModelPath().getOrThrow()
-            synchronized(lifecycleLock) {
-                if (loadedModelPath != null && loadedModelPath != path) releaseModel()
-                requestContext.ensureActive()
-                runtime.beginRequest()
-            }
-            val cancelHook = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
-                try { awaitCancellation() } finally { runtime.cancel() }
-            }
+            var cancelHook: Job? = null
             try {
                 val file = File(path)
+                synchronized(lifecycleLock) {
+                    if (loadedModelPath != null && loadedModelPath != path) releaseModel()
+                    requestContext.ensureActive()
+                    rejectUnavailableAllocation(file, requestSettings)
+                    runtime.beginRequest()
+                }
+                cancelHook = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+                    try { awaitCancellation() } finally { runtime.cancel() }
+                }
                 val prompt = buildPrompt(messages)
                 val inputTokens: Int
                 var effective: GenerationParams
@@ -199,6 +238,8 @@ class LlamatikEngine internal constructor(
                     check(!closed) { "Движок закрыт" }
                     runtime.prepareTokenizer(path)
                     inputTokens = runtime.countTokens(prompt)
+                    val minimum = AutomaticContextPolicy.minimumContext(inputTokens, task)
+                    val trained = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
                     val desired = maxOf(AutomaticContextPolicy.desiredContext(inputTokens, task), taskContexts[task] ?: 0)
                     val current = appliedParams
                     val sameTask = mutableAutomaticState.value?.task == task
@@ -216,9 +257,7 @@ class LlamatikEngine internal constructor(
                         if (state.value is ModelState.Ready && loadedModelPath == path && current != null &&
                             (sameTask || planned.deviceContextLimit?.canLoad == false ||
                                 AutomaticContextPolicy.availableAnswer(planned.contextSize, inputTokens) < AutomaticContextPolicy.minimumAnswer(task)) &&
-                            current.contextSize >= planned.contextSize &&
-                            (task != GenerationTask.CALENDAR ||
-                                AutomaticContextPolicy.availableAnswer(current.contextSize, inputTokens) >= AutomaticContextPolicy.MINIMUM_ANSWER) &&
+                            (current.contextSize >= planned.contextSize || planned.deviceContextLimit?.canLoad == false) &&
                             current.gpuLayers == requestSettings.gpuLayers &&
                             current.effectiveCpuThreads(processorCount) == requestSettings.effectiveCpuThreads(processorCount)) {
                             requestSettings.copy(contextSize = current.contextSize, batchSizeAuto = false,
@@ -226,43 +265,59 @@ class LlamatikEngine internal constructor(
                                 deviceContextLimit = loadedMemoryLimit)
                         } else planned
                     }
+                    val nativeConfig = NativeConfiguration(effective, processorCount)
+                    val reuseAllocation = state.value is ModelState.Ready && loadedModelPath == path &&
+                        loadedConfiguration == nativeConfig
+                    if (!reuseAllocation) checkAllocationAssessment(effective.deviceContextLimit, minimum)
                     val available = AutomaticContextPolicy.availableAnswer(effective.contextSize, inputTokens)
-                    if (available < AutomaticContextPolicy.minimumAnswer(task)) {
-                        val trained = effective.trainedContextLength ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
-                        throw PromptCapacityException(AutomaticContextPolicy.promptBudget(effective.contextSize, task),
-                            if (AutomaticContextPolicy.availableAnswer(trained, inputTokens) < AutomaticContextPolicy.minimumAnswer(task))
-                                ContextCapacityReason.MODEL_LIMIT else ContextCapacityReason.MEMORY)
+                    if (effective.contextSize < minimum || available < AutomaticContextPolicy.minimumAnswer(task)) {
+                        throw capacityFailure(inputTokens, task, effective.contextSize, trained)
                     }
                     effective = effective.copy(maxTokens = available)
                     automaticSession = true
                     generationActive = true
-                    val nativeConfig = NativeConfiguration(effective, processorCount)
-                    if (state.value !is ModelState.Ready || loadedModelPath != path || loadedConfiguration != nativeConfig) {
-                        val previousContext = loadedConfiguration?.contextSize
+                    if (!reuseAllocation) {
                         mutableState.value = ModelState.Loading
-                        val before = memoryGuard?.beforeLoad()
+                        var before = memoryGuard?.beforeLoad()
                         runtime.updateParams(effective, effective.effectiveCpuThreads(processorCount), effective.batchSize)
-                        var loaded = runtime.load(path)
+                        var nativeFailure: Exception? = null
+                        fun load(): Boolean = try {
+                            runtime.load(path)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (error: IllegalStateException) {
+                            nativeFailure = error
+                            false
+                        }
+                        var loaded = load()
                         // A failed larger allocation is retried with a small batch and the smallest usable context.
-                        if (!loaded) {
+                        if (!loaded && (effective.contextSize != minimum || effective.batchSize != 64)) {
                             requestContext.ensureActive()
-                            val minimum = AutomaticContextPolicy.minimumContext(inputTokens, task)
-                            val metadataCap = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
-                            check(minimum <= metadataCap) { "Запрос превышает предел контекста модели" }
+                            // Native loading can release the old context even when it fails.
+                            releaseModel()
                             effective = effective.copy(contextSize = minimum, batchSize = 64,
                                 maxTokens = AutomaticContextPolicy.availableAnswer(minimum, inputTokens))
+                            val retryAssessment = memoryGuard?.assess(file, effective)
+                            checkAllocationAssessment(retryAssessment, minimum)
+                            if (retryAssessment != null && retryAssessment.maximumContext < minimum) {
+                                throw capacityFailure(inputTokens, task, retryAssessment.maximumContext, trained)
+                            }
+                            effective = effective.copy(deviceContextLimit = retryAssessment)
+                            before = memoryGuard?.beforeLoad()
+                            automaticSession = true
+                            generationActive = true
+                            mutableState.value = ModelState.Loading
                             runtime.updateParams(effective, effective.effectiveCpuThreads(processorCount), 64)
-                            loaded = runtime.load(path)
+                            runtime.beginRequest()
+                            requestContext.ensureActive()
+                            loaded = load()
                         }
-                        if (!loaded && task != GenerationTask.CALENDAR) {
-                            // The failed load may have freed the old native context. Release its RAM credit.
-                            // A smaller prompt can retry a smaller allocation, never the same failing budget.
-                            val retryContext = minOf(previousContext ?: effective.contextSize,
-                                effective.contextSize - AutomaticContextPolicy.STEP).coerceAtLeast(0)
+                        if (!loaded) {
+                            requestContext.ensureActive()
                             releaseModel()
-                            throw PromptCapacityException(AutomaticContextPolicy.promptBudget(retryContext, task))
+                            throw ModelAllocationException(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED,
+                                minimum, effective.deviceContextLimit, nativeFailure)
                         }
-                        check(loaded) { "Не удалось выделить память даже для минимальной конфигурации модели" }
                         loadedModelPath = path
                         loadedConfiguration = NativeConfiguration(effective, processorCount)
                         loadedContextLength = GgufMetadataReader.readContextLength(file)
@@ -282,6 +337,8 @@ class LlamatikEngine internal constructor(
                         },
                         AutomaticContextPolicy.availableAnswer(effective.contextSize, inputTokens))
                 }
+                currentCoroutineContext().ensureActive()
+                onReady()
                 currentCoroutineContext().ensureActive()
                 var callbackError: String? = null
                 val stream = object : GenStream {
@@ -347,7 +404,7 @@ class LlamatikEngine internal constructor(
                 // Deliver the failure after all prior deltas, so channel cancellation cannot discard the tail.
                 send(AutomaticEmission.Failed(error))
             } finally {
-                cancelHook.cancel()
+                cancelHook?.cancel()
                 synchronized(lifecycleLock) { generationActive = false }
             }
         }
@@ -366,22 +423,46 @@ class LlamatikEngine internal constructor(
     private fun automaticConfiguration(file: File, settings: GenerationParams, promptTokens: Int,
         task: GenerationTask, desired: Int): GenerationParams {
         val trained = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
+        val minimum = AutomaticContextPolicy.minimumContext(promptTokens, task)
         val preferred = AutomaticContextPolicy.preferredBatch(promptTokens, task)
         var best: GenerationParams? = null
         for (batch in listOf(512, 256, 128, 64).filter { it <= preferred }) {
             val request = settings.copy(batchSizeAuto = false, batchSize = batch,
                 trainedContextLength = trained, contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE)
             val assessment = memoryGuard?.assess(file, request)
-            // Estimates guide sizing. An uncertain estimate still gets one minimal native allocation attempt.
+            // A rejected/unknown estimate carries its own cause; never invent a 512-token capacity.
             val cap = if (assessment == null) trained else
-                if (assessment.canLoad) minOf(trained, assessment.maximumContext) else minOf(trained, 512)
-            val context = minOf(desired, cap).coerceAtLeast(1)
+                if (assessment.canLoad) minOf(trained, assessment.maximumContext) else minOf(trained, minimum)
+            val context = minOf(maxOf(desired, minimum), cap).coerceAtLeast(1)
             val candidate = request.copy(contextSize = context, deviceContextLimit = assessment,
                 maxTokens = AutomaticContextPolicy.availableAnswer(context, promptTokens))
-            if (context >= desired) return candidate
-            if (best == null || context > best.contextSize) best = candidate
+            val usable = assessment?.canLoad != false
+            if (usable && context >= desired) return candidate
+            val bestUsable = best?.deviceContextLimit?.canLoad != false
+            if (best == null || (usable && !bestUsable) ||
+                (usable == bestUsable && context > best.contextSize)) best = candidate
         }
         return requireNotNull(best)
+    }
+
+    private fun capacityFailure(promptTokens: Int, task: GenerationTask, context: Int,
+        trained: Int): PromptCapacityException = PromptCapacityException(
+        AutomaticContextPolicy.promptBudget(context, task),
+        if (AutomaticContextPolicy.minimumContext(promptTokens, task) > trained)
+            ContextCapacityReason.MODEL_LIMIT else ContextCapacityReason.MEMORY,
+        AutomaticContextPolicy.minimumContext(promptTokens, task), context,
+        AutomaticContextPolicy.minimumAnswer(task),
+    )
+
+    private fun checkAllocationAssessment(assessment: DeviceContextLimit?, minimum: Int?) {
+        if (assessment == null || assessment.canLoad) return
+        val reason = when (assessment.status) {
+            MemoryLimitStatus.LOW_MEMORY -> ModelAllocationFailure.LOW_MEMORY
+            MemoryLimitStatus.INSUFFICIENT_MEMORY, MemoryLimitStatus.ESTIMATED -> ModelAllocationFailure.INSUFFICIENT_MEMORY
+            MemoryLimitStatus.MEMORY_UNAVAILABLE -> ModelAllocationFailure.MEMORY_UNAVAILABLE
+            MemoryLimitStatus.METADATA_UNAVAILABLE -> ModelAllocationFailure.METADATA_UNAVAILABLE
+        }
+        throw ModelAllocationException(reason, minimum, assessment)
     }
 
     override fun generate(messages: List<ChatMessage>): Flow<String> {

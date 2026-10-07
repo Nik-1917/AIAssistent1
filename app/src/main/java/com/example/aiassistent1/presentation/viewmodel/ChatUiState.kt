@@ -34,6 +34,7 @@ data class ChatUiState(
     val calendarDeleteTargetSelection: CalendarDeleteTargetSelectionUiState? = null,
     val calendarChatPrompt: CalendarChatPromptUiState? = null,
     val isProcessing: Boolean = false,
+    val isCheckingRequest: Boolean = false,
     val isVoiceMode: Boolean = false,
     val voiceDraft: VoiceDraftState = VoiceDraftState(),
     val speechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle,
@@ -59,5 +60,6 @@ data class ChatUiState(
     val isCalendarMode: Boolean get() = activeChatId == "calendar"
     val modelProfile: ModelProfile get() = ModelProfile.forCalendarMode(isCalendarMode)
     val modelParams: GenerationParams get() = modelProfiles[modelProfile]
+    val isGenerating: Boolean get() = isProcessing && !isCheckingRequest
     val calendarEventDraft: CalendarEventDraftUiState? get() = calendarDrafts.selected
 }

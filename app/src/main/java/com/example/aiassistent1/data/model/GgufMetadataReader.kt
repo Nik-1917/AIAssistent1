@@ -3,6 +3,7 @@ package com.example.aiassistent1.data.model
 import com.example.aiassistent1.domain.model.ModelMemoryMetadata
 import com.example.aiassistent1.domain.model.HybridMemoryMetadata
 import java.io.File
+import java.io.EOFException
 import java.io.IOException
 import java.io.RandomAccessFile
 
@@ -153,13 +154,43 @@ object GgufMetadataReader {
     private class MetadataInput(private val input: RandomAccessFile, private val littleEndian: Boolean) {
         // Bounds work on malformed files without allocating from untrusted lengths.
         private val end = minOf(input.length(), 256L * 1024 * 1024)
-        val remaining: Long get() = (end - input.filePointer).coerceAtLeast(0)
+        private var position = input.filePointer
+        private val buffer = ByteArray(64 * 1024)
+        private var bufferStart = -1L
+        private var bufferedBytes = 0
+        val remaining: Long get() = (end - position).coerceAtLeast(0)
         private var stringElements = 0L
         private var layerElements = 0L
 
+        private fun ensureBuffered() {
+            if (position >= bufferStart && position < bufferStart + bufferedBytes) return
+            require(remaining > 0)
+            input.seek(position)
+            bufferedBytes = input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt())
+            if (bufferedBytes <= 0) throw EOFException("Truncated GGUF metadata")
+            bufferStart = position
+        }
+
+        private fun byte(): Int {
+            ensureBuffered()
+            return (buffer[(position++ - bufferStart).toInt()].toInt() and 0xff)
+        }
+
+        private fun readFully(bytes: ByteArray) {
+            var offset = 0
+            while (offset < bytes.size) {
+                ensureBuffered()
+                val index = (position - bufferStart).toInt()
+                val count = minOf(bytes.size - offset, bufferedBytes - index)
+                buffer.copyInto(bytes, offset, index, index + count)
+                position += count
+                offset += count
+            }
+        }
+
         private fun boolean(): Boolean {
             require(remaining >= 1)
-            val value = input.readUnsignedByte()
+            val value = byte()
             require(value in 0..1)
             return value == 1
         }
@@ -179,13 +210,16 @@ object GgufMetadataReader {
 
         fun unsignedInt(): Long {
             require(remaining >= 4)
-            val value = input.readInt()
+            var value = 0
+            repeat(4) { value = (value shl 8) or byte() }
             return (if (littleEndian) Integer.reverseBytes(value) else value).toLong() and 0xffffffffL
         }
 
         fun unsignedLong(): Long {
             require(remaining >= 8)
-            val value = input.readLong().let { if (littleEndian) java.lang.Long.reverseBytes(it) else it }
+            var encoded = 0L
+            repeat(8) { encoded = (encoded shl 8) or byte().toLong() }
+            val value = if (littleEndian) java.lang.Long.reverseBytes(encoded) else encoded
             require(value >= 0)
             return value
         }
@@ -194,13 +228,14 @@ object GgufMetadataReader {
             val length = unsignedLong()
             require(length <= maxBytes && length <= remaining)
             val bytes = ByteArray(length.toInt())
-            input.readFully(bytes)
+            readFully(bytes)
             return bytes.toString(Charsets.UTF_8)
         }
 
         private fun skip(bytes: Long) {
             require(bytes >= 0 && bytes <= remaining)
-            input.seek(input.filePointer + bytes)
+            // Short tokenizer strings usually stay in the same buffer. Large arrays skip without reading them.
+            position += bytes
         }
 
         fun skipValue(type: Int) {

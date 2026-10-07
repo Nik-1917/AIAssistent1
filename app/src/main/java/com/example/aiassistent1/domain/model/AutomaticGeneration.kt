@@ -9,8 +9,33 @@ enum class ContextCapacityReason { MEMORY, MODEL_LIMIT }
 class PromptCapacityException(
     val promptBudget: Int,
     val reason: ContextCapacityReason = ContextCapacityReason.MEMORY,
+    val requiredContext: Int? = null,
+    val availableContext: Int? = null,
+    val minimumAnswerTokens: Int? = null,
 ) :
-    IllegalStateException("Полный запрос не помещается в доступный контекст; требуется обработка по частям.")
+    IllegalStateException(when (reason) {
+        ContextCapacityReason.MODEL_LIMIT -> "Полный запрос вместе с резервом ответа превышает предел контекста модели."
+        ContextCapacityReason.MEMORY -> "По оценке оперативной памяти нельзя выделить контекст для полного запроса вместе с резервом ответа."
+    } + if (requiredContext != null && availableContext != null)
+        " Требуется $requiredContext токенов контекста, доступно $availableContext." else "")
+
+enum class ModelAllocationFailure {
+    LOW_MEMORY, INSUFFICIENT_MEMORY, MEMORY_UNAVAILABLE, METADATA_UNAVAILABLE, NATIVE_ALLOCATION_FAILED,
+}
+
+/** These failures cannot be repaired by excluding conversation turns. */
+class ModelAllocationException(
+    val reason: ModelAllocationFailure,
+    val requiredContext: Int?,
+    val assessment: DeviceContextLimit? = null,
+    cause: Throwable? = null,
+) : IllegalStateException(when (reason) {
+    ModelAllocationFailure.LOW_MEMORY -> "Устройству сейчас не хватает оперативной памяти. Освободите память и повторите запрос."
+    ModelAllocationFailure.INSUFFICIENT_MEMORY -> "По оценке оперативной памяти загрузка этой модели недоступна даже при минимальном контексте. Освободите память или выберите модель меньшего размера."
+    ModelAllocationFailure.MEMORY_UNAVAILABLE -> "Не удалось определить доступную оперативную память для загрузки модели. Повторите запрос после обновления оценки памяти."
+    ModelAllocationFailure.METADATA_UNAVAILABLE -> "Не удалось рассчитать потребление памяти модели по GGUF."
+    ModelAllocationFailure.NATIVE_ALLOCATION_FAILED -> "Не удалось загрузить модель даже с минимальным контекстом $requiredContext токенов. Повторите запрос или выберите другую модель."
+}, cause)
 
 data class GenerationResult(
     val reason: GenerationStopReason,

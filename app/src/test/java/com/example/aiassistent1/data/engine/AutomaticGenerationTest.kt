@@ -56,16 +56,107 @@ class AutomaticGenerationTest {
             assertTrue(runtime.shutdowns > 0)
         }
     }
-    @Test fun `unavailable estimate attempts minimum and oversized input never reaches decoder`() = runBlocking {
+    @Test fun `rejected and unavailable estimates retain their causes without a fake 512 capacity`() = runBlocking {
+        for ((status, reason) in listOf(
+            MemoryLimitStatus.LOW_MEMORY to ModelAllocationFailure.LOW_MEMORY,
+            MemoryLimitStatus.INSUFFICIENT_MEMORY to ModelAllocationFailure.INSUFFICIENT_MEMORY,
+            MemoryLimitStatus.MEMORY_UNAVAILABLE to ModelAllocationFailure.MEMORY_UNAVAILABLE,
+            MemoryLimitStatus.METADATA_UNAVAILABLE to ModelAllocationFailure.METADATA_UNAVAILABLE,
+        )) for (task in GenerationTask.entries) fixture { engine, runtime, guard ->
+            guard.limit = DeviceContextLimit(0, status)
+            var started = false
+            val early = runCatching { engine.checkModelAvailability(task) }.exceptionOrNull()
+            assertTrue(early is ModelAllocationException)
+            val failure = runCatching { engine.generateForTask(emptyList(), task) { started = true }.toList() }.exceptionOrNull()
+            assertTrue(failure is ModelAllocationException)
+            failure as ModelAllocationException
+            assertEquals(reason, failure.reason)
+            assertNull(failure.requiredContext) // The input was not tokenized.
+            assertFalse(failure.message!!.contains("по частям"))
+            assertEquals(0, runtime.loads)
+            assertEquals(0, runtime.generations)
+            assertEquals(0, runtime.preparations)
+            assertEquals(0, runtime.tokenizations)
+            assertEquals(0, runtime.begins)
+            assertFalse(started)
+        }
+    }
+
+    @Test fun `ready notification follows successful validation and load before decoding`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            var starts = 0
+            runtime.beforeLoad = { assertEquals(0, starts) }
+            runtime.beforeGeneration = { assertEquals(1, starts) }
+            engine.generateForTask(emptyList(), GenerationTask.CHAT) {
+                assertEquals(ModelState.Ready, engine.state.value)
+                assertTrue(engine.automaticState.value!!.availableAnswerTokens >= 1024)
+                starts++
+            }.toList()
+            assertEquals(1, starts)
+        }
+    }
+
+    @Test fun `capacity rejection never announces generation`() = runBlocking {
         fixture { engine, runtime, guard ->
-            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.MEMORY_UNAVAILABLE)
-            engine.generateForTask(emptyList(), GenerationTask.CALENDAR).toList()
-            assertEquals(512, runtime.params.contextSize)
-            assertEquals(64, runtime.params.batchSize)
-            runtime.tokens = 2000
+            guard.limit = DeviceContextLimit(512, MemoryLimitStatus.ESTIMATED)
+            var started = false
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT) { started = true }.toList() }.exceptionOrNull()
+            assertTrue(failure is PromptCapacityException)
+            assertFalse(started)
+            assertEquals(0, runtime.loads)
+            assertEquals(0, runtime.generations)
+        }
+    }
+
+    @Test fun `cancellation in ready notification prevents decoding and preserves the allocation`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT) {
+                throw kotlinx.coroutines.CancellationException("cancel before decode")
+            }.toList() }.exceptionOrNull()
+            assertTrue(failure is kotlinx.coroutines.CancellationException)
+            assertEquals(0, runtime.generations)
+            assertEquals(ModelState.Ready, engine.state.value)
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(1, runtime.loads)
+        }
+    }
+
+    @Test fun `preflight preserves a proven compatible allocation despite rejected RAM`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)
+            val before = runtime.preparations
+            engine.checkModelAvailability(GenerationTask.CHAT)
+            assertEquals(before, runtime.preparations)
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(1, runtime.loads)
+        }
+    }
+
+    @Test fun `an actual 512 RAM limit remains a capacity failure for chat without native decoding`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            guard.limit = DeviceContextLimit(512, MemoryLimitStatus.ESTIMATED)
             val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
             assertTrue(failure is PromptCapacityException)
-            assertEquals(1, runtime.generations)
+            failure as PromptCapacityException
+            assertEquals(ContextCapacityReason.MEMORY, failure.reason)
+            assertEquals(1536, failure.requiredContext)
+            assertEquals(512, failure.availableContext)
+            assertEquals(1024, failure.minimumAnswerTokens)
+            assertEquals(0, runtime.loads)
+        }
+    }
+
+    @Test fun `long calendar system input gets a fitting initial context`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.tokens = 1200
+            val system = "Правила календаря ".repeat(120)
+            engine.generateForTask(listOf(ChatMessage(role = MessageRole.SYSTEM, content = system),
+                ChatMessage(role = MessageRole.USER, content = "Создай встречу завтра")), GenerationTask.CALENDAR).toList()
+            assertEquals(1536, runtime.params.contextSize)
+            assertEquals(64, runtime.params.batchSize)
+            assertTrue(runtime.lastPrompt.contains(system))
+            assertTrue(runtime.params.maxTokens >= 64)
         }
     }
     @Test fun `failed context allocation retries smallest fitting context once`() = runBlocking {
@@ -76,6 +167,62 @@ class AutomaticGenerationTest {
             assertEquals(1536, runtime.params.contextSize)
             assertTrue(runtime.params.maxTokens >= 1024)
             assertEquals(64, runtime.params.batchSize)
+        }
+    }
+    @Test fun `JNI load exception also retries a fitting context`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.throwFirstLoad = true
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(2, runtime.loads)
+            assertEquals(1536, runtime.params.contextSize)
+            assertTrue(runtime.params.maxTokens >= 1024)
+        }
+    }
+
+    @Test fun `smaller batch is checked even when rejected estimate already names the required context`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            runtime.tokens = 1200
+            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.INSUFFICIENT_MEMORY)
+            guard.limitsByBatch = mapOf(64 to DeviceContextLimit(4096, MemoryLimitStatus.ESTIMATED))
+            engine.generateForTask(emptyList(), GenerationTask.SUMMARY).toList()
+            assertEquals(2560, runtime.params.contextSize)
+            assertEquals(64, runtime.params.batchSize)
+            assertTrue(runtime.params.maxTokens >= 1024)
+        }
+    }
+
+    @Test fun `native failure at the smallest configuration keeps its cause without retrying the same allocation`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.tokens = 1200
+            runtime.throwFirstLoad = true
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CALENDAR).toList() }.exceptionOrNull()
+            assertTrue(failure is ModelAllocationException)
+            assertEquals(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED, (failure as ModelAllocationException).reason)
+            assertEquals("Context allocation failed", failure.cause?.message)
+            assertEquals(1, runtime.loads)
+            assertEquals(0, runtime.generations)
+            assertEquals(ModelState.Unloaded, engine.state.value)
+        }
+    }
+
+    @Test fun `fresh memory rejection stops the retry after a failed larger native load`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            runtime.failFirstLoad = true
+            runtime.beforeLoad = { guard.limit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY) }
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
+            assertTrue(failure is ModelAllocationException)
+            assertEquals(ModelAllocationFailure.LOW_MEMORY, (failure as ModelAllocationException).reason)
+            assertEquals(1, runtime.loads)
+            assertEquals(ModelState.Unloaded, engine.state.value)
+        }
+    }
+
+    @Test fun `summary budget preserves memory assessment failure instead of returning zero`() = runBlocking {
+        fixture { engine, _, guard ->
+            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.METADATA_UNAVAILABLE)
+            val failure = runCatching { engine.promptTokenBudget(GenerationTask.SUMMARY) }.exceptionOrNull()
+            assertTrue(failure is ModelAllocationException)
+            assertEquals(ModelAllocationFailure.METADATA_UNAVAILABLE, (failure as ModelAllocationException).reason)
         }
     }
     @Test fun `summary allocation does not replace remembered chat context`() = runBlocking {
@@ -214,14 +361,15 @@ class AutomaticGenerationTest {
         }
     }
 
-    @Test fun `failed native allocations release stale configuration and offer a smaller budget`() = runBlocking {
+    @Test fun `failed native allocations release stale configuration without inventing a smaller usable budget`() = runBlocking {
         fixture { engine, runtime, _ ->
             engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
             runtime.failAllLoads = true
             runtime.tokens = 600
             val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
-            assertTrue(failure is PromptCapacityException)
-            assertEquals(496, (failure as PromptCapacityException).promptBudget)
+            assertTrue(failure is ModelAllocationException)
+            assertEquals(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED, (failure as ModelAllocationException).reason)
+            assertEquals(2048, failure.requiredContext)
             assertEquals(ModelState.Unloaded, engine.state.value)
             assertEquals(1, runtime.generations)
         }
@@ -242,7 +390,8 @@ class AutomaticGenerationTest {
     private class Guard : ModelMemoryGuard {
         override val changes = MutableStateFlow(0L)
         var limit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED)
-        override fun assess(file: File, params: GenerationParams) = limit
+        var limitsByBatch = emptyMap<Int, DeviceContextLimit>()
+        override fun assess(file: File, params: GenerationParams) = limitsByBatch[params.batchSize] ?: limit
         override fun beforeLoad(): DeviceMemorySnapshot? = null
         override fun loaded(file: File, params: GenerationParams, before: DeviceMemorySnapshot?) = Unit
         override fun unloaded() = Unit
@@ -253,20 +402,33 @@ class AutomaticGenerationTest {
         var tokens = 100
         var loads = 0
         var generations = 0
+        var preparations = 0
+        var tokenizations = 0
+        var begins = 0
         var shutdowns = 0
         var limitFirst = false
         var resizeSucceeds = true
         var failFirstLoad = false
+        var throwFirstLoad = false
         var failAllLoads = false
         var beforeGeneration: () -> Unit = {}
         var beforeLoad: () -> Unit = {}
         var onCancel: () -> Unit = {}
+        var lastPrompt = ""
         val resizes = mutableListOf<Int>()
         override var lastGeneration: GenerationResult? = null
         override fun updateParams(params: GenerationParams, threads: Int, batchSize: Int) { this.params = params }
-        override fun load(path: String): Boolean { loads++; beforeLoad(); return !failAllLoads && (!failFirstLoad || loads > 1) }
-        override fun countTokens(prompt: String) = tokens
+        override fun load(path: String): Boolean {
+            loads++
+            beforeLoad()
+            if (throwFirstLoad && loads == 1) throw IllegalStateException("Context allocation failed")
+            return !failAllLoads && (!failFirstLoad || loads > 1)
+        }
+        override fun beginRequest() { begins++ }
+        override fun prepareTokenizer(path: String) { preparations++ }
+        override fun countTokens(prompt: String): Int { tokenizations++; return tokens }
         override fun generateStream(prompt: String, stream: GenStream) {
+            lastPrompt = prompt
             generations++
             beforeGeneration()
             stream.onDelta(if (limitFirst) "first" else "complete")
