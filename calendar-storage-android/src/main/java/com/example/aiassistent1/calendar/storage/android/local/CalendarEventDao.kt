@@ -49,42 +49,6 @@ abstract class CalendarEventDao {
         rangeEndEpochMillis: Long,
     ): List<CalendarEventEntity>
 
-    @Query(
-        """
-        SELECT * FROM calendar_events
-        WHERE (:rangeStartEpochMillis IS NULL OR startsAtEpochMillis < :rangeEndEpochMillis)
-          AND (:rangeEndEpochMillis IS NULL OR endsAtEpochMillis > :rangeStartEpochMillis)
-        ORDER BY startsAtEpochMillis ASC, id ASC
-        """,
-    )
-    abstract suspend fun findForUpdateCandidates(
-        rangeStartEpochMillis: Long?,
-        rangeEndEpochMillis: Long?,
-    ): List<CalendarEventEntity>
-
-    @Query(
-        """
-        SELECT * FROM calendar_events
-        ORDER BY createdAtEpochMillis DESC, rowid DESC
-        LIMIT 1
-        """,
-    )
-    abstract suspend fun getLastCreated(): CalendarEventEntity?
-
-    @Query(
-        """
-        SELECT * FROM calendar_events
-        WHERE startsAtEpochMillis < :rangeEndEpochMillis
-          AND endsAtEpochMillis > :rangeStartEpochMillis
-        ORDER BY startsAtEpochMillis DESC, id DESC
-        LIMIT 1
-        """,
-    )
-    abstract suspend fun getLastInRange(
-        rangeStartEpochMillis: Long,
-        rangeEndEpochMillis: Long,
-    ): CalendarEventEntity?
-
     @Query("SELECT * FROM calendar_command_receipts WHERE requestId = :requestId")
     abstract suspend fun getReceipt(requestId: String): CalendarReceiptEntity?
 
@@ -118,17 +82,6 @@ abstract class CalendarEventDao {
                     draft.endsAtEpochMillis, now, now, draft.value, notes = draft.notes?.takeIf { it.isNotBlank() })
                 insert(event)
                 kind = "calendar_add"
-            }
-            is CalendarMutation.Update -> {
-                require(mutation.update.expectedRevision != null) { "Не указана версия события" }
-                event = updateChecked(mutation.update, now)
-                kind = "calendar_update"
-            }
-            is CalendarMutation.Delete -> {
-                event = getById(mutation.id) ?: throw NoSuchElementException("Событие не найдено")
-                if (event.revision != mutation.expectedRevision) throw CalendarConflictException()
-                check(deleteById(event.id) == 1) { "Событие не удалено" }
-                kind = "calendar_delete"
             }
         }
         return CalendarReceiptEntity(requestId, kind, event.id, event.title, event.notes).also { insertReceipt(it) }

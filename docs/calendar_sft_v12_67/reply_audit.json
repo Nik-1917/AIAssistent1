@@ -1,0 +1,72 @@
+{
+  "calendar_holdout_v12_2": {
+    "rows": 8,
+    "known_clock_rows": 4,
+    "status": "PASS"
+  },
+  "context_transfer_eval": {
+    "rows": 41,
+    "known_clock_rows": 3,
+    "status": "PASS"
+  },
+  "half_hour_holdout": {
+    "rows": 36,
+    "known_clock_rows": 36,
+    "status": "PASS"
+  },
+  "holdout": {
+    "rows": 36,
+    "known_clock_rows": 36,
+    "status": "PASS"
+  },
+  "input_clock_holdout": {
+    "rows": 72,
+    "known_clock_rows": 70,
+    "status": "PASS"
+  },
+  "intent_holdout": {
+    "rows": 28,
+    "known_clock_rows": 8,
+    "status": "PASS"
+  },
+  "interval_holdout": {
+    "rows": 12,
+    "known_clock_rows": 11,
+    "status": "PASS"
+  },
+  "offset_reply_holdout": {
+    "rows": 48,
+    "known_clock_rows": 44,
+    "status": "PASS"
+  },
+  "order_holdout": {
+    "rows": 39,
+    "known_clock_rows": 37,
+    "status": "PASS"
+  },
+  "regression_holdout": {
+    "rows": 40,
+    "known_clock_rows": 14,
+    "status": "PASS"
+  },
+  "reply_consistency_holdout": {
+    "rows": 21,
+    "known_clock_rows": 19,
+    "status": "PASS"
+  },
+  "speech_holdout": {
+    "rows": 27,
+    "known_clock_rows": 20,
+    "status": "PASS"
+  },
+  "train": {
+    "rows": 5396,
+    "known_clock_rows": 4523,
+    "status": "PASS"
+  },
+  "validation": {
+    "rows": 685,
+    "known_clock_rows": 469,
+    "status": "PASS"
+  }
+}

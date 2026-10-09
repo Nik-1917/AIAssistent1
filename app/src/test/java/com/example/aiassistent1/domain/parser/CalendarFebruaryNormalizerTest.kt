@@ -100,19 +100,12 @@ class CalendarFebruaryNormalizerTest {
         assertTrue(parse(""""starts_at":"2026-02-30T09:00","ends_at":"2026-03-01T10:00"""" ).isFailure)
     }
 
-    @Test fun `search sum delete update and date only delete boundaries normalize`() {
+    @Test fun `search and sum boundaries normalize`() {
         val range = """"range_start":"2026-02-29T00:00","range_end":"2026-02-31T00:00""""
         val search = parse(range, intent = "calendar_search").getOrThrow().params as CalendarSearchParams
         assertEquals("2026-03-01T00:00", search.rangeStart)
         assertEquals("2026-03-03T00:00", search.rangeEnd)
         assertTrue(parse(range, intent = "calendar_sum").isSuccess)
-        assertTrue(parse(range, intent = "calendar_delete").isSuccess)
-        assertTrue(parse(""""target":{$range}""", intent = "calendar_delete").isSuccess)
-        val update = parse(""""target":{"query":"Встреча",$range},"changes":{"date":"2024-02-30"}""", intent = "calendar_update").getOrThrow().params as CalendarUpdateParams
-        assertEquals("2024-03-01", update.changes.date)
-        val delete = parse(""""start":"2026-02-29","end":"2026-02-31"""", intent = "calendar_delete_range").getOrThrow().params as CalendarDeleteParams
-        assertEquals("2026-03-01T00:00", delete.target.rangeStart)
-        assertEquals("2026-03-03T00:00", delete.target.rangeEnd)
     }
 
     @Test fun `all other date and JSON errors remain errors`() {

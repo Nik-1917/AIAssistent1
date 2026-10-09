@@ -8,15 +8,7 @@ import android.provider.OpenableColumns
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.aiassistent1.calendar.core.domain.CalendarEvent
-import com.example.aiassistent1.calendar.core.domain.CalendarEventChanges
-import com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand
-import com.example.aiassistent1.calendar.core.domain.CalendarUpdateTargetResolution
-import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
-import com.example.aiassistent1.calendar.core.domain.PrepareCalendarEventUpdateUseCase
-import com.example.aiassistent1.calendar.core.domain.ResolveCalendarUpdateTargetUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
-import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandExecutor
 import com.example.aiassistent1.calendar.core.domain.CalendarCommand
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandResult
@@ -33,12 +25,8 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.context.ModelContextBuilder
-import com.example.aiassistent1.domain.mapper.CalendarDeleteCommandMapper
-import com.example.aiassistent1.domain.mapper.CalendarUpdateCommandMapper
 import com.example.aiassistent1.domain.model.CalendarAddParams
-import com.example.aiassistent1.domain.model.CalendarDeleteParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
-import com.example.aiassistent1.domain.model.CalendarUpdateParams
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.ChatScrollPosition
@@ -86,12 +74,6 @@ class ChatViewModel(
     private val context: Context,
     private val chatRepository: ChatRepository,
     private val sendMessage: SendMessageUseCase,
-    private val calendarUpdateCommandMapper: CalendarUpdateCommandMapper,
-    private val resolveCalendarUpdateTarget: ResolveCalendarUpdateTargetUseCase,
-    private val prepareCalendarEventUpdate: PrepareCalendarEventUpdateUseCase,
-    private val updateCalendarEvent: UpdateCalendarEventUseCase,
-    private val deleteCalendarEvent: DeleteCalendarEventUseCase,
-    private val calendarDeleteCommandMapper: CalendarDeleteCommandMapper,
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
@@ -681,7 +663,6 @@ class ChatViewModel(
                             val messageToSave = if (parsed != null) {
                                 val notes = when (val params = parsed.params) {
                                     is CalendarAddParams -> params.notes
-                                    is CalendarUpdateParams -> params.changes.notes
                                     else -> null
                                 }
                                 finalMessage.copy(content = parsed.reply.withCalendarNotes(notes))
@@ -928,7 +909,6 @@ class ChatViewModel(
     }
 
     fun clearChat() {
-        cancelCalendarDeleteTargetSelection()
         val activeGeneration = generationJob
         val state = mutableUiState.value
         val voiceDraft = state.voiceDraft
@@ -1025,8 +1005,6 @@ class ChatViewModel(
                 }
             }
             is com.example.aiassistent1.domain.model.CalendarSumParams -> handleCalendarSum(params, messageId)
-            is CalendarDeleteParams -> handleCalendarDelete(params, messageId)
-            is CalendarUpdateParams -> handleCalendarUpdate(params, messageId)
             // intent="chat": the model itself decided this is not a calendar command.
             else -> promptCalendarChatFallback(originalQuery)
         }
@@ -1080,314 +1058,6 @@ class ChatViewModel(
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                 }
         }
-    }
-
-    private fun handleCalendarDelete(params: CalendarDeleteParams, messageId: String) {
-        cancelCalendarDeleteTargetSelection()
-        viewModelScope.launch {
-            val command = calendarCommandMapper.map(params).getOrElse { error ->
-                replaceAssistantReply(messageId, "Уточните, какое событие удалить.")
-                mutableUiState.update { it.copy(error = error.userMessage()) }
-                return@launch
-            }
-            executeCalendarDelete(command as CalendarCommand.Delete, messageId)
-        }
-    }
-
-    fun selectCalendarDeleteTarget(eventId: String) {
-        val selection = uiState.value.calendarDeleteTargetSelection ?: return
-        val event = selection.candidates.firstOrNull { it.id == eventId } ?: return
-        if (selection.allowsMultipleDeletes) {
-            val pending = selection.beginDelete(eventId) ?: return
-            mutableUiState.update { it.copy(calendarDeleteTargetSelection = pending) }
-            viewModelScope.launch { deleteCalendarPeriodSelection(pending, event) }
-            return
-        }
-        // Clear before launching so repeated taps cannot submit another selection.
-        cancelCalendarDeleteTargetSelection()
-        viewModelScope.launch {
-            executeCalendarDelete(selection.command, selection.requestId, event)
-        }
-    }
-
-    fun cancelCalendarDeleteTargetSelection() {
-        mutableUiState.update { it.copy(calendarDeleteTargetSelection = null) }
-    }
-
-    private suspend fun deleteCalendarPeriodSelection(selection: CalendarDeleteTargetSelectionUiState,
-        event: CalendarEvent) {
-        var succeeded = false
-        try {
-            val outcome = calendarCommandExecutor.execute(
-                selection.command,
-                requestId = selection.deletionRequestId(event.id),
-                confirmed = true,
-                selectedEvent = event,
-            ).getOrThrow()
-            check(outcome is CalendarCommandResult.Completed && outcome.receipt.eventId == event.id) {
-                "Не удалось удалить выбранное событие."
-            }
-            succeeded = true
-            replaceAssistantReply(selection.requestId,
-                "Событие удалено: ${outcome.receipt.title}.".withCalendarNotes(outcome.receipt.notes))
-            mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            mutableUiState.update { it.copy(error = error.userMessage()) }
-        } finally {
-            mutableUiState.update { state ->
-                val current = state.calendarDeleteTargetSelection
-                // Do not reopen a dismissed card or replace the selection of another request.
-                if (current == null || current.requestId != selection.requestId) state
-                else state.copy(calendarDeleteTargetSelection = current.finishDelete(event.id, succeeded))
-            }
-        }
-    }
-
-    private suspend fun executeCalendarDelete(command: CalendarCommand.Delete, messageId: String,
-        selectedEvent: CalendarEvent? = null) {
-            calendarCommandExecutor.execute(command, requestId = messageId,
-                confirmed = selectedEvent != null, selectedEvent = selectedEvent)
-                .onSuccess { outcome ->
-                    when (outcome) {
-                        is CalendarCommandResult.Completed -> {
-                            replaceAssistantReply(messageId, "Событие удалено: ${outcome.receipt.title}.".withCalendarNotes(outcome.receipt.notes))
-                            mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") }
-                        }
-                        is CalendarCommandResult.Selection -> {
-                            replaceAssistantReply(messageId, if (outcome.candidates.isEmpty())
-                                "События для удаления за выбранный период не найдены."
-                            else "Выберите событие для удаления в карточке.")
-                            mutableUiState.update { state ->
-                                state.copy(calendarDeleteTargetSelection = CalendarDeleteTargetSelectionUiState(
-                                    candidates = outcome.candidates,
-                                    command = outcome.command as CalendarCommand.Delete,
-                                    requestId = messageId,
-                                ))
-                            }
-                        }
-                        CalendarCommandResult.NotFound -> {
-                            replaceAssistantReply(messageId, "Событие для удаления не найдено.")
-                        }
-                        is CalendarCommandResult.NeedsFields -> {
-                            replaceAssistantReply(messageId, "Уточните, какое событие удалить.")
-                        }
-                        else -> replaceAssistantReply(messageId, "Не удалось удалить событие.")
-                    }
-                }
-                .onFailure { error ->
-                    replaceAssistantReply(messageId, "Не удалось удалить событие.")
-                    mutableUiState.update { it.copy(error = error.userMessage()) }
-                }
-    }
-
-    private fun handleCalendarUpdate(params: CalendarUpdateParams, requestId: String) {
-        viewModelScope.launch {
-            val command = calendarCommandMapper.map(params).getOrElse { error ->
-                mutableUiState.update { it.copy(error = error.userMessage()) }
-                return@launch
-            }
-            calendarCommandExecutor.execute(command, requestId = requestId)
-                .onSuccess { outcome ->
-                    when (outcome) {
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.UpdateDraft -> {
-                            val update = com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand(
-                                requireNotNull(outcome.command.target), outcome.command.changes,
-                            )
-                            startCalendarUpdateDraft(outcome.event, update, requestId)
-                        }
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Selection -> {
-                            val update = outcome.command as com.example.aiassistent1.calendar.core.domain.CalendarCommand.Update
-                            mutableUiState.update {
-                                it.copy(calendarUpdateTargetSelection = CalendarUpdateTargetSelectionUiState(
-                                    candidates = outcome.candidates,
-                                    command = com.example.aiassistent1.calendar.core.domain.CalendarUpdateCommand(
-                                        requireNotNull(update.target), update.changes,
-                                    ),
-                                    requestId = requestId,
-                                ))
-                            }
-                        }
-                        com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NotFound ->
-                            mutableUiState.update { it.copy(error = "Событие для изменения не найдено.") }
-                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields ->
-                            mutableUiState.update { it.copy(error = "Уточните событие и поля для изменения.") }
-                        else -> mutableUiState.update { it.copy(error = "Не удалось подготовить изменение события.") }
-                    }
-                }
-                .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
-        }
-    }
-
-    fun selectCalendarUpdateTarget(eventId: String) {
-        val selection = uiState.value.calendarUpdateTargetSelection ?: return
-        val event = selection.candidates.firstOrNull { it.id == eventId } ?: return
-        mutableUiState.update { it.copy(calendarUpdateTargetSelection = null) }
-        startCalendarUpdateDraft(event, selection.command, selection.requestId)
-    }
-
-    fun cancelCalendarUpdateTargetSelection() {
-        mutableUiState.update { it.copy(calendarUpdateTargetSelection = null) }
-    }
-
-    private fun startCalendarUpdateDraft(event: CalendarEvent, command: CalendarUpdateCommand, requestId: String = "") {
-        closeCalendarDraftEditor()
-        val changes = command.changes
-        // A partial update still refers to an event with its existing notes.
-        // Supplied notes were already added to the model reply when it was parsed.
-        if (changes.notes.isNullOrBlank() && !event.notes.isNullOrBlank()) {
-            viewModelScope.launch {
-                val message = uiState.value.messages.firstOrNull { it.id == requestId } ?: return@launch
-                val suffix = "\nПримечание: ${event.notes}"
-                if (!message.content.endsWith(suffix)) {
-                    replaceAssistantReply(requestId, message.content.withCalendarNotes(event.notes))
-                }
-            }
-        }
-        if (changes.isEmpty) {
-            mutableUiState.update {
-                it.copy(
-                    calendarUpdateDraft = CalendarUpdateDraftUiState(
-                        event = event,
-                        changes = changes,
-                        previewTitle = event.title,
-                        previewStartsAt = formatCalendarEventStart(event.startsAtEpochMillis),
-                        previewDurationMinutes = eventDurationMinutes(
-                            event.startsAtEpochMillis,
-                            event.endsAtEpochMillis,
-                        ).toInt(),
-                        target = command.target,
-                        requestId = requestId,
-                        isSelectingField = true,
-                    ),
-                )
-            }
-            return
-        }
-
-        prepareCalendarEventUpdate(event, changes)
-            .onSuccess { update ->
-                mutableUiState.update {
-                    it.copy(
-                        calendarUpdateDraft = CalendarUpdateDraftUiState(
-                            event = event,
-                            changes = changes,
-                            previewTitle = update.title,
-                            previewStartsAt = formatCalendarEventStart(update.startsAtEpochMillis),
-                        previewDurationMinutes = eventDurationMinutes(
-                                update.startsAtEpochMillis,
-                                update.endsAtEpochMillis,
-                        ).toInt(),
-                        target = command.target,
-                        requestId = requestId,
-                        ),
-                    )
-                }
-            }
-            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
-    }
-
-    fun updateCalendarUpdateDraftInput(value: String) {
-        mutableUiState.update { state ->
-            state.copy(calendarUpdateDraft = state.calendarUpdateDraft?.copy(input = value, error = null))
-        }
-    }
-
-    fun selectCalendarUpdateField(field: CalendarUpdateField) {
-        mutableUiState.update { state ->
-            state.copy(
-                calendarUpdateDraft = state.calendarUpdateDraft?.copy(
-                    isSelectingField = false,
-                    activeField = field,
-                    input = "",
-                    error = null,
-                ),
-            )
-        }
-    }
-
-    fun submitCalendarUpdateDraftField() {
-        val draft = uiState.value.calendarUpdateDraft ?: return
-        val field = draft.activeField ?: return
-        val changes = runCatching {
-            when (field) {
-                CalendarUpdateField.Title -> draft.changes.copy(
-                    title = draft.input.trim().also {
-                        require(it.isNotEmpty()) { "Введите новое название события." }
-                    },
-                )
-                CalendarUpdateField.StartsAt -> {
-                    val value = LocalDateTime.parse(
-                        draft.input.trim(),
-                        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-                    )
-                    draft.changes.copy(date = value.toLocalDate(), time = value.toLocalTime())
-                }
-                CalendarUpdateField.DurationMinutes -> draft.changes.copy(
-                    durationMinutes = draft.input.trim().toInt().also {
-                        require(it > 0) { "Длительность должна быть больше нуля." }
-                    },
-                )
-            }
-        }.getOrElse { error ->
-            mutableUiState.update {
-                it.copy(
-                    calendarUpdateDraft = draft.copy(
-                        error = when (field) {
-                            CalendarUpdateField.Title -> error.userMessage()
-                            CalendarUpdateField.StartsAt -> "Введите дату и время в формате ГГГГ-ММ-ДДTЧЧ:ММ."
-                            CalendarUpdateField.DurationMinutes -> error.userMessage()
-                        },
-                    ),
-                )
-            }
-            return
-        }
-        prepareCalendarEventUpdate(draft.event, changes)
-            .onSuccess { update ->
-                mutableUiState.update {
-                    it.copy(
-                        calendarUpdateDraft = draft.copy(
-                            changes = changes,
-                            previewTitle = update.title,
-                            previewStartsAt = formatCalendarEventStart(update.startsAtEpochMillis),
-                            previewDurationMinutes = eventDurationMinutes(
-                                update.startsAtEpochMillis,
-                                update.endsAtEpochMillis,
-                            ).toInt(),
-                            isSelectingField = false,
-                            activeField = null,
-                            input = "",
-                            error = null,
-                        ),
-                    )
-                }
-            }
-            .onFailure { error ->
-                mutableUiState.update { it.copy(calendarUpdateDraft = draft.copy(error = error.userMessage())) }
-            }
-    }
-
-    fun confirmCalendarUpdateDraft() {
-        val draft = uiState.value.calendarUpdateDraft ?: return
-        if (!draft.isReadyForConfirmation) return
-        viewModelScope.launch {
-            val requestId = draft.requestId.ifBlank { "update-${draft.event.id}-${System.currentTimeMillis()}" }
-            calendarCommandExecutor.execute(
-                com.example.aiassistent1.calendar.core.domain.CalendarCommand.Update(draft.target, draft.changes),
-                requestId = requestId,
-                confirmed = true,
-                selectedEvent = draft.event,
-            ).onSuccess { outcome ->
-                if (outcome is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Completed) {
-                    mutableUiState.update { it.copy(calendarUpdateDraft = null, snackbarMessage = "Событие изменено") }
-                } else mutableUiState.update { it.copy(error = "Не удалось изменить событие.") }
-            }.onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
-        }
-    }
-
-    fun cancelCalendarUpdateDraft() {
-        mutableUiState.update { it.copy(calendarUpdateDraft = null) }
     }
 
     fun setCompactDatesEnabled(enabled: Boolean) {
@@ -1915,8 +1585,6 @@ class ChatViewModel(
                             navigationState = session.navigation,
                             systemPromptEnabled = session.navigation.isCalendarMode,
                             activeChatId = session.navigation.chatId,
-                            calendarDeleteTargetSelection = state.calendarDeleteTargetSelection
-                                .takeIf { state.activeChatId == session.navigation.chatId },
                             messages = messages,
                             isHistoryLoaded = true,
                             chatScrollPosition = session.scrollPosition,

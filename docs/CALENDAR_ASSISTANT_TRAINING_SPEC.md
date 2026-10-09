@@ -1,253 +1,42 @@
-# Calendar Assistant: training contract
+# Calendar Assistant V12.67: active training contract
 
-## V12.66: reminder creation versus lookup
+This version permits exactly `chat`, `calendar_add`, `calendar_search`, and
+`calendar_sum`. The [four-action rules](CALENDAR_ASSISTANT_V12_67_RULES.md)
+apply to all current training targets, development cases and evaluation.
+The application owns persistence, local search results and stored-value totals.
 
-Apply the [V12.66 intent routing rules](CALENDAR_ASSISTANT_V12_66_INTENT_ROUTING.md)
-to new examples and evaluation. Requests to remind the user about an action
-produce `calendar_add`, including polite questions and incomplete commands.
-In V12.66 authored user requests, the reminder verbs are reserved for creation.
-Use lookup wording such as `найди`, `покажи`, `что у меня` and
-`посмотри в календаре` for existing events. Preserve compound update
-semantics and the meaning of the noun `напоминание` in event titles.
+Return exactly one object with `intent`, nonempty `reply` and object `params`.
+Unknown fields are omitted, never `null`. No Markdown or surrounding text.
 
-Keep ordinary date/time questions as `chat`; four inherited questions are
-manually reworded without reminder verbs, retaining their responses and intent.
-Do not relabel factual questions as event creation. Missing event fields stay
-missing under the existing partial-command contract. V12.65 reply consistency
-and temporal arithmetic checks remain required. This is a data-authoring
-policy, not a runtime keyword classifier or a new notification feature.
+| Intent | Canonical params keys |
+| --- | --- |
+| `chat` | none; `{}` |
+| `calendar_add` | `title`, `starts_at`, `ends_at`, `date`, `time`, `duration_min`, `value`, `notes` |
+| `calendar_search` | `query`, `range_start`, `range_end` |
+| `calendar_sum` | `query`, `range_start`, `range_end` |
 
-## V12.65: exact agreement between event parameters and reply
+These are the complete canonical schemas. Missing event fields remain missing,
+except the mandatory implicit local date of an add request. Model replies never
+claim that an event has already been saved. Creation, search and sum defaults in
+Android remain application behavior and are not invented training parameters.
 
-Use the [V12.65 reply consistency rules](CALENDAR_ASSISTANT_V12_65_REPLY_CONSISTENCY.md)
-for new training targets and evaluation. The time spoken in `reply` must
-represent the same instant as the resolved parameters, including time updates
-and interval endpoints. In `HH:MM`, elapsed minutes come from `MM`, never
-from `HH`, event duration, value or numbers in the title. For example,
-`12:12` is `в двенадцать минут первого`, whereas `12:15` is `в четверть первого`.
-Correct parameters with an incorrect spoken time fail evaluation.
-
-Known times are spoken even in partial commands with a missing title.
-Unknown times remain absent. Relative offsets are added to the current
-system time before forming both parameters and reply. The V12.62 clock
-style and existing extraction rules remain in force. V12.65 explicitly
-updates legacy reply targets through a reviewed correction register; old
-datasets remain reproducible. These rules describe data preparation and
-are not an additional runtime system prompt.
-
-## V12.63: interpreting spoken clocks
-
-The [V12.63 input clock rules](CALENDAR_ASSISTANT_V12_63_INPUT_CLOCK.md)
-make the existing short, fully spoken, and relative clock meanings explicit.
-They preserve the V12.56 exception for half-hour expressions and the V12.62
-reply style. There is no general afternoon/evening default for ordinary hours.
-The withdrawn proposal to map bare four/six/ten to 16/18/22 is not adopted.
-Unknown or ambiguous fields remain absent under the existing partial-command
-contract. Markdown rules are preparation instructions, not an extra runtime
-system prompt; their effects must be verified in literal examples and inference.
-
-## V12.62: complete clock pronunciation in reply
-
-For V12.62 data preparation, use the
-[complete reply clock rules](CALENDAR_ASSISTANT_V12_62_REPLY_CLOCK.md)
-for every minute of every hour: all 1,440 values from `00:00` to `23:59`.
-Only the pronunciation of known event times inside `reply` is affected.
-Known event times are spoken; missing times are never invented.
-
-At `:00`, retain the existing whole-hour wording. At `:01` through `:29`,
-name the elapsed minutes of the upcoming hour, with `в четверть ...` at
-`:15`. At `:30`, use `в половине ...`. At every minute `:31` through `:59`,
-name the remaining `60 - minute` minutes with `без ...` and the upcoming
-hour: `12:31` is `без двадцати девяти минут час`, and `12:59` is
-`без одной минуты час`. Use `без четверти ...` at `:45`; the user-requested
-short form at `:50` is `без десяти ...`. Never round or substitute `:30`
-for `:15`. Apply the documented Russian case and number agreement.
-
-This V12.62 wording takes precedence over older reply clock variants below
-only for new V12.62 targets. It does not alter time extraction, daypart
-resolution, input messages, `intent`, `params`, exact title copies,
-durations, relative delays, interval dates, or historical datasets.
-These authoring rules are not automatically inserted into the model prompt;
-the corresponding target replies must be present in the training data.
-
-## Active input-order and single-event rules
-
-**Input parameters may appear in any order and in any supported combination.**
-Their semantic role, not their position, determines JSON fields. Event title,
-date, start, end, duration and value can precede, follow or separate one
-another. In particular, `завтра с пяти баня до семи вечера` has the same
-parameters as `баня завтра с пяти до семи вечера`. A list of demonstrated
-orders is coverage evidence, not a restriction on accepted input.
-The same principle applies to update targets and requested changes.
-Preserve existing date/time inference and omit other unspecified parameters.
+Requests to remind the user about an action use `calendar_add`, including
+incomplete and polite requests. Lookup uses `найди`, `покажи`, `что у меня`,
+`есть ли запись` and `посмотри в календаре`. Factual date/time questions use
+`chat`. Event statements with a known title are creation requests even without
+an imperative verb. Input field order never changes intent or parameter meaning.
 
 Emit one object and one command. For multiple explicitly independent event
 creations, use the first mentioned event only, keep its parameters separate
 from later events, and explain in `reply` that the others were not processed.
 Do not split a single event merely because its title contains `и`.
 Explicit self-corrections replace the corrected value; they are not another
-event. Presentation rules still apply only to `reply`.
-See [the complete order, field-count and first-event rules](CALENDAR_ASSISTANT_ORDER_COVERAGE.md).
+event. Presentation rules apply only to `reply`.
 
-## Active single-request last-created clarification
-
-See [the last-created rules and manual examples](CALENDAR_ASSISTANT_LAST_EVENT.md).
-`Измени последнее событие` means `calendar_update` with
-`params.target.use_last_created: true`. The same applies to one request such
-as `найди последнее событие и измени в нём время`: emit one update JSON, not
-a separate search or an invented `calendar_last`. Use only the requested
-changes; when none are specified, keep `changes` empty for the editor.
-An explicitly named event, including one described as found, uses `target.query`
-instead. A found event must not silently become the last-created event.
-`use_last_match` and `use_last_referenced` are unsupported. This clarification
-does not add cross-message search memory or a last-created search operation.
-
-## Active V12.56: half-hour defaults and event endpoints
-
-V12.56 adds the explicit [half-hour and interval rules](CALENDAR_ASSISTANT_V12_56_INTERVALS.md).
-For `пол...` and `половина...` without an explicit daypart or resolving
-context, choose the second half of the day: `полдевятого` = `20:30`,
-`полпервого` = `12:30`, `полдвенадцатого` = `23:30`. Explicit dayparts
-override this default, including a daypart applying to an entire interval.
-This supersedes the V12.5/V12.55 requirement to omit ambiguous half-hour times.
-It does not change defaults for ordinary cardinal hours or other clock forms.
-
-An event statement such as `с пяти до семи я в бане` is `calendar_add`
-even without an imperative verb. Extract the event title and both exact
-endpoints. New `contract_version: "v12.56"` records may provide `starts_at`
-and `ends_at` as local `YYYY-MM-DDTHH:MM` timestamps. `ends_at` must be
-later than the resolved start; when an ordered clock interval crosses midnight,
-the end date is the following day. Never output `24:00`. Equal endpoints do
-not imply a full day without explicit context. A supplied duration must agree
-with the endpoints. When endpoints are given, duration can be computed by the
-application and need not be repeated in model JSON. Missing value stays absent.
-
-Resolve both clock meanings first, then the start date under existing explicit
-and implicit date rules, then the end date. The date of an interval belongs to
-its start. A phrase applying to the whole interval applies to both endpoints;
-an endpoint-specific daypart takes precedence over a whole-interval daypart.
-For example, `с полдвенадцатого до полпервого ночи` explicitly ends at `00:30`
-on the following date. With both halves bare, `с полдвенадцатого до полпервого`
-means `23:30` to `12:30` the following day, not an invented `00:30` end.
-
-The prior six intents, reply-only presentation scope, and other extraction
-rules remain. Archived datasets and contract versions remain reproducible.
-The sections below describing the V12.54 addition and historical V14 are not
-permission to introduce removed intents or overwrite the V12.56 exceptions.
-
-## Inherited V12.54 reply addition to V12.53
-
-For the V12.54 dataset, the supported intents remain
-`chat`, `calendar_add`, `calendar_search`, `calendar_update`,
-`calendar_delete`, and `calendar_sum`. The current training files contain no
-`note_add` records. The inherited V12.4 rows retain their frozen `v12.1`
-JSON contract. The twelve V12.5 relative-clock rows, the 72
-V12.51 whole-hour rows, the 168 V12.52 minute-of-hour rows and the
-338 inherited V12.53 compact-clock rows use
-`contract_version: "v12.5"`; the dataset version does not require a different
-JSON contract. The current reply-only addition is defined in
-[CALENDAR_ASSISTANT_V12_54_REPLY_MINUTES_TO.md](CALENDAR_ASSISTANT_V12_54_REPLY_MINUTES_TO.md).
-[The V12.53 compact-clock rules](CALENDAR_ASSISTANT_V12_53_COMPACT_CLOCK.md),
-[the V12.51 whole-hour rules](CALENDAR_ASSISTANT_V12_51_ON_HOUR.md) and
-[the V12.5 relative-clock rules](CALENDAR_ASSISTANT_V12_5_RELATIVE_CLOCK.md)
-continue to govern input understanding. V12.53 supersedes their reply daypart
-wording: replies omit clock qualifiers `утра`, `дня`, `вечера`, `ночи`.
-The archived V12.53 files remain unchanged. In the V12.54 copies, a manual register
-replaces only 180 inherited reply strings (144 train and 36 validation).
-All source prompts, parameters, intents, categories and IDs remain unchanged.
-Historical V14 intent sections
-below are not the active V12.54 intent inventory.
-
-**Reply rules apply only to the `reply` string.** They do not apply to
-`intent`, `params`, nested targets/changes, event titles, user messages, system
-messages or stored calendar fields. In particular, spoken clock forms, year
-omission and reply punctuation rules must never rewrite `params.title`,
-`params.query`, ISO dates/times or numeric durations/values. Parameter-specific
-type and extraction rules still apply to their own fields. Historical
-validation remains versioned for reproducibility.
-
-When an action reply mentions a known clock time, use `четверть` for
-`:15`, `пол...` or `половина...` for `:30`, and `без четверти` for `:45`.
-V12.54 additionally requires `без двадцати пяти минут` for `:35`,
-`без двадцати минут` for `:40`, `без десяти минут` for `:50`,
-and `без пяти минут` for `:55`, followed by the upcoming hour in cardinal
-form: `14:35` is spoken as `без двадцати пяти минут три`.
-These expressions refer to the upcoming named hour; JSON parameters retain
-the exact resolved time. A title-only reply need not invent scheduling details.
-The model's reply is not proof that an operation has been saved.
-
-**Understand dayparts in the input; omit them when speaking clock times in
-`reply`.** For example, `четверть третьего дня` resolves to `14:15`,
-while the reply says `в четверть третьего`. This applies to exact hours,
-ordinary minutes, minutes of the upcoming hour, quarter, half, and quarter-to
-forms, including both endpoints of an interval. Do not infer the stored
-24-hour value from the shortened reply. Date phrases such as `через три дня`
-and exact title copies keep their meaning and text.
-
-## Scope
-
-This contract covers only the application's local Room calendar. The model has
-no database access. It extracts fields supported by the user's wording and
-explicit relative-time expressions, plus the mandatory implicit date for
-`calendar_add`. Android validates the JSON, applies only user-enabled defaults
-to the other omitted fields, decides whether to open a draft or execute a
-complete command, resolves targets against the local calendar, and owns every
-actual database result.
-
-| Intent | App action |
-| --- | --- |
-| `chat` | Shows an ordinary reply. |
-| `calendar_add` | Supplies the known fields of a new event. |
-| `calendar_search` | Supplies known title and period fields for a local search. |
-| `calendar_sum` | Requests the sum of integer event values in a period. |
-| `note_add` | Carries the user's exact note text for local persistence. |
-
-V14 permits exactly these five intents. Changing or deleting an existing event,
-remote calendars, reminders, and `use_last_referenced` are not executable model
-operations in this release. A request to change or delete an event produces a
-factual non-action `chat` response with `params: {}`.
-`note_add` is executed by the Android application only after the text has been
-written to the local notes database.
-
-## Exact response schema
-
-Every assistant response is exactly one valid JSON object. No Markdown, code
-fences, leading commentary, or trailing text is allowed. All top-level keys are
-required; `params` is always an object; no additional top-level keys are
-allowed.
-
-```json
-{"intent":"chat","reply":"...","params":{}}
-```
-
-```json
-{"intent":"calendar_add","reply":"...","params":{"title":"...","starts_at":"YYYY-MM-DDTHH:MM","duration_min":60}}
-```
-
-For a partial creation command, known date and time may be separate:
-
-```json
-{"intent":"calendar_add","reply":"...","params":{"title":"...","date":"YYYY-MM-DD","duration_min":60}}
-```
-
-```json
-{"intent":"calendar_search","reply":"...","params":{"query":"...","range_start":"YYYY-MM-DDTHH:MM","range_end":"YYYY-MM-DDTHH:MM"}}
-```
-
-```json
-{"intent":"calendar_sum","reply":"...","params":{"range_start":"YYYY-MM-DDTHH:MM","range_end":"YYYY-MM-DDTHH:MM"}}
-```
-
-```json
-{"intent":"note_add","reply":"Сохраняю заметку.","params":{"text":"..."}}
-```
-
-Never send `null`, an empty string, `0`, or an invented default as a placeholder
-for an unknown calendar field. Omit the unknown field, except for the mandatory
-implicit `calendar_add` date defined below. An explicitly supplied `value: 0`
-is known data and remains valid. The existing explicit wildcard
-`calendar_search.params.query: ""` remains valid when the user asks for all
-events; it is not a placeholder for an unknown query.
+`value` is a signed 64-bit integer; `duration_min` is a positive integer of at
+most 2147483647 minutes. `notes` is optional exact event text, not a separate
+action. Preserve every supplied meaningful title word and relation in a query.
+Do not infer a numeric value from numbers occurring only inside `notes`.
 
 ### chat
 
@@ -259,24 +48,10 @@ events; it is not a placeholder for an unknown query.
   values. They must be calculated from the supplied local system timestamp and
   its IANA time zone.
 
-### note_add
-
-- `params` contains exactly one non-empty string field: `text`.
-- Matching of the command prefix is case-insensitive. Supported direct forms
-  include `в заметки`, `запиши в заметки`, `добавь в заметки`, and
-  `сохрани в заметки`.
-- Remove only the command prefix and optional separator immediately after it.
-  Preserve the remaining text exactly, including capitalization, punctuation,
-  numbers, line breaks, names, dates, and clock values. Do not summarize,
-  correct, or reformulate the note.
-- The model reply is exactly `Сохраняю заметку.` It does not claim that the
-  note was saved. The Android executor owns the database result and adds the
-  actual local date, time, weekday, and time zone.
-
 ### calendar_add
 
 - Allowed parameters are only `title`, `starts_at`, `date`, `time`,
-  `duration_min`, and `value`. V12.56 additionally allows `ends_at` for an
+  `duration_min`, `value`, `notes`, and `ends_at`. Use `ends_at` for an
   explicitly supplied event endpoint, with a complete start and a strictly
   later local end timestamp. Prefer `starts_at` plus `ends_at` for intervals;
   Android derives their duration. If `duration_min` is also supplied, it must
@@ -318,10 +93,9 @@ events; it is not a placeholder for an unknown query.
 - Do not supply a default duration. When the user did not name a duration,
   omit `duration_min`; Android may apply its user-enabled default.
 - Omit every other unknown event field. The model never asks for it.
-- For a complete command, the canonical training form is
-  `Событие создано: <название> <дата>, <время>.` The prefix
-  `Событие создано:` is optional: a valid `reply` may begin directly with the
-  event description. The text describes the prepared command; the UI controls
+- A complete command uses an individually authored declarative `reply` that
+  describes the prepared event and agrees with its known parameters. It must
+  never claim that the event has already been saved. The UI controls
   confirmation and the actual local save.
 - A partial command uses an individually authored declarative `reply` that
   mentions only known data. It never asks a question. There is no shared
@@ -359,14 +133,6 @@ events; it is not a placeholder for an unknown query.
 - Do not invent search results: Android owns the actual local query result.
 - A search reply must not begin with an event-action prefix.
 
-### Unsupported event mutations
-
-V14 does not expose an intent for changing or deleting existing events. Such a
-request always uses `chat`, an empty `params` object, and concise factual wording
-that the operation is unavailable. The reply may list the supported creation,
-search, sum, and note functions, but it must not claim that calendar data was
-changed.
-
 ### calendar_sum
 
 `calendar_sum` prepares a local aggregate query. The model never calculates or
@@ -380,11 +146,37 @@ invents the result because it cannot read Room. Allowed parameters are only
   explicit or relative period. If the period is unknown, omit both.
 - Use the same relative-date, week, month, quarter, half-year, year, rollover,
   and short-month rules as calendar search.
-- The future Android client sums stored integer `value` fields. Events without
+- The Android client sums stored integer `value` fields. Events without
   `value` do not become model-generated zeroes, and the model does not emit a
   currency field.
 - `reply` describes the requested period or filter but never states a numeric
   total and never asks a question.
+
+## Half-hour defaults and event endpoints
+
+For `пол...` and `половина...` without an explicit daypart or resolving
+context, choose the second half of the day: `полдевятого` = `20:30`,
+`полпервого` = `12:30`, `полдвенадцатого` = `23:30`. Explicit dayparts
+override this default, including a daypart applying to an entire interval.
+It does not change defaults for ordinary cardinal hours or other clock forms.
+
+An event statement such as `с пяти до семи я в бане` is `calendar_add`
+even without an imperative verb. Extract the event title and both exact
+endpoints. V12.67 records may provide `starts_at`
+and `ends_at` as local `YYYY-MM-DDTHH:MM` timestamps. `ends_at` must be
+later than the resolved start; when an ordered clock interval crosses midnight,
+the end date is the following day. Never output `24:00`. Equal endpoints do
+not imply a full day without explicit context. A supplied duration must agree
+with the endpoints. When endpoints are given, duration can be computed by the
+application and need not be repeated in model JSON. Missing value stays absent.
+
+Resolve both clock meanings first, then the start date under existing explicit
+and implicit date rules, then the end date. The date of an interval belongs to
+its start. A phrase applying to the whole interval applies to both endpoints;
+an endpoint-specific daypart takes precedence over a whole-interval daypart.
+For example, `с полдвенадцатого до полпервого ночи` explicitly ends at `00:30`
+on the following date. With both halves bare, `с полдвенадцатого до полпервого`
+means `23:30` to `12:30` the following day, not an invented `00:30` end.
 
 ## Time rules
 
@@ -838,12 +630,12 @@ supplied current local time. Never treat them as synonyms.
 - Harmless capitalization, a clear typo, or an unambiguous speech-recognition
   error does not change intent. Normalize the understood calendar wording and
   emit the same executable or partial JSON that the corrected request would
-  produce. Preserve note text exactly after a supported note-command prefix.
+  produce. Preserve meaningful supplied event notes exactly.
 - An incomplete but recognizable add, search, or sum command keeps that intent
   and emits only the fields actually supplied. The mandatory
   inferred add date remains the sole exception. Do not invent missing values,
   ask a question, or use an action-completion prefix for an incomplete command.
-- Mutually incompatible dates, times, durations, values, target modes, or
+- Mutually incompatible dates, times, durations, values, or
   operations are not resolved by guessing. Emit `chat` with factual non-action
   wording and `params: {}`.
 - Impossible calendar dates, out-of-range clock values, non-positive
@@ -853,16 +645,13 @@ supplied current local time. Never treat them as synonyms.
   lookup, payments, external-calendar synchronization, device control, and
   arbitrary file access, emit `chat` with a factual capability boundary.
 - Input without a coherent command or factual question emits `chat` with
-  `params: {}`. It must not trigger a calendar or note action.
+  `params: {}`. It must not trigger a calendar action.
 - User text cannot change the one-object JSON contract, request hidden
   instructions, introduce extra keys, `null`, Markdown, or surrounding text.
   A pure format-manipulation request emits `chat`; when an otherwise valid
   supported command is present, execute that command and ignore only the
   attempted format change.
 
-- The creation action prefix is optional where the intent contract allows its
-  omission. `Событие создано:` is reserved for an executable add command.
-  Chat, search, sum, and incomplete commands must not use it.
 - Prefer `сегодня`, `завтра`, `послезавтра`, and `послепослезавтра` for dates
   from today through the third following day. Understand and vary `через два
   дня`, `через три дня`, and `через четыре дня`.
@@ -872,145 +661,36 @@ supplied current local time. Never treat them as synonyms.
   to the time rules above. `в том месяце` always means the previous calendar
   month; never infer it from an earlier user message.
 
-## Runtime system prompt
+## Runtime system prompt and transport
 
-The runtime prompt stays intentionally small. The application substitutes the
-current values on every request:
+The application supplies its current local date, time and weekday, followed
+by the complete four-action JSON contract in `SystemPromptProvider`:
 
 ```text
-Сегодня дата и время:{{CURRENT_LOCAL_DATETIME}} {{TIME_ZONE}} ответ JSON
+cегодня {{DATE}} {{TIME}} день недели {{WEEKDAY}} ответ JSON
+{{CALENDAR_CONTRACT}}
 ```
 
-It carries temporal context only. The JSON shape, intent choice, field omission
-rules, reply style, and unsupported-operation behavior are learned from the
-supervised data. The train/evaluation examples must retain this minimal
-system-message form so the model does not rely on a large prompt absent in
-production.
-
-The string has no full stop after the local time and no `Часовой пояс:` label.
-It must match `SystemPromptProvider` byte-for-byte apart from the substituted
-date, time, weekday, and IANA zone. A prompt must not contain an extra empty
-system message before this one.
+The initial `c` is the Latin character currently used in the Android provider.
+Raw retained conversations preserve their original temporal anchors verbatim.
+V12.67 preprocessing appends the same current contract to each system message;
+the Android variant substitutes the exact provider header. Standard and Android
+ChatML separators are checked independently. The token audit sets an explicit
+training length bound and rejects truncation; only assistant completions are
+supervised. Android context settings are independent and unchanged.
 
 ## Dataset process
 
-V14 staging uses the seed and manually authored V5 through V14 files, then
-retains only `chat`, `note_add`, `calendar_add`, `calendar_search`, and
-`calendar_sum`. Every historical row with a removed intent or either removed
-intent name is excluded before train and validation artifacts are written. The
-generated candidate files are not V14 sources.
+V12.67 starts from the preserved V12.66 JSONL files and the reviewed exclusion
+positions in `calendar_v12_67_manual/exclusions.json`. The assembler does not
+write Russian examples. Every retained user message and assistant JSON remains
+exact; only `contract_version` changes to `v12.67`. Historical source files are
+protected by SHA-256. Empty suites are absent from the active package.
 
-- `calendar_assistant_train_seed.jsonl` is the retained supervised seed set.
-- `calendar_assistant_eval_seed.jsonl` remains validation-only: never train on
-  it or use it as few-shot prompt material.
-- `calendar_assistant_manual_train_v5.jsonl` and
-  `calendar_assistant_manual_eval_v5.jsonl` contain the manually authored v5
-  additions for omitted fields, implicit add dates, integer `value`,
-  `clear_value`, and `calendar_sum`.
-- `calendar_assistant_manual_train_v6.jsonl` and
-  `calendar_assistant_manual_eval_v6.jsonl` contain the manually authored v6
-  contrastive additions defined in `CALENDAR_ASSISTANT_V6_MANUAL_AUDIT.md`.
-  They reinforce exact versus relative time, omitted-field discipline,
-  durations, integer values, aggregate periods, target extraction, and
-  command-versus-how-to intent choice. These files are written and reviewed
-  line by line. The dataset generator is not used to create them.
-- `calendar_assistant_manual_train_v7.jsonl` and
-  `calendar_assistant_manual_eval_v7.jsonl` contain manually authored clock,
-  day-unit, and Gregorian leap-year boundary additions. Leap-year examples are
-  paired with non-leap contrasts and cover add timestamps, add dates, search
-  and sum ranges, update destinations, and delete target ranges. Existing
-  holdout rows are not copied into these files.
-- `calendar_assistant_manual_train_v8.jsonl` and
-  `calendar_assistant_manual_eval_v8.jsonl` are the manually authored
-  correction layer for complete semantic `title` and `query` values. They do
-  not copy H003, H017, H018, or any other holdout prompt. The layer also
-  contrasts named-event searches with explicit all-events searches for the
-  same `через четыре дня` period. Historical v7 sources stay byte-for-byte
-  unchanged so the trained v7 adapter remains reproducible.
-- `calendar_assistant_manual_train_v9.jsonl` and
-  `calendar_assistant_manual_eval_v9.jsonl` are the manually authored calendar
-  ontology layer. The train split contains 84 rows and the validation split
-  contains 28 rows. Together they cover exact unit relationships, all seven
-  weekdays, all twelve month names and lengths, calendar-month versus fixed-day
-  contrasts, four quarters, two half-years, four meteorological seasons,
-  ordinary and leap calendar years, and calendar-year versus 365-day offsets.
-  They include factual `chat` examples and executable calendar commands. No v9
-  row is copied from holdout, and the generator is not used to create them.
-- `calendar_assistant_manual_train_v10.jsonl` and
-  `calendar_assistant_manual_eval_v10.jsonl` are the manually authored
-  knowledge layer for assistant identity, concrete capability descriptions,
-  case-insensitive phrasing, factual Gregorian weekday calculations, relative
-  minute/hour/day/week/month/year arithmetic, and exact note-text extraction.
-  The train split contains 168 rows and the validation split contains 56 rows.
-  They are included in `prepare_dataset.py` after the local Android note path
-  was connected. Temporal calculations in this layer remain learned model
-  behavior; deterministic app-side temporal execution is a separate future
-  stage.
-- `calendar_assistant_manual_train_v11.jsonl` and
-  `calendar_assistant_manual_eval_v11.jsonl` are the manually authored
-  correction layer for H004, H008, and H011. The train split contains 45 rows
-  and the validation split contains 15 rows: 20 examples per error across both
-  splits. They reinforce February 28 transitions in leap and ordinary years,
-  implicit today-or-tomorrow selection from the requested clock time, and the
-  distinction between twenty, eighty, and one hundred twenty minutes. Leap
-  examples cover Gregorian leap years through 2080. No holdout prompt is
-  copied, and the dataset generator is not used to create this layer.
-- `calendar_assistant_manual_train_v12.jsonl` and
-  `calendar_assistant_manual_eval_v12.jsonl` are the manually authored final
-  value, omission, and duration-vocabulary layer. The train split contains 200
-  rows and the validation split contains 55 rows. Together they contain 15
-  integer-value examples, 40 field-omission examples, all minute durations
-  from one through sixty, every `час без N минут` form for `N` from one
-  through twenty-nine, compound hour-plus-minute arithmetic, and four
-  supervised phrasings for each core alias from a quarter hour through two
-  days. Unknown fields stay absent except for the mandatory inferred add date.
-  No holdout prompt is copied, and the dataset generator is not used to create
-  this layer.
-- `calendar_assistant_manual_train_v13.jsonl` and
-  `calendar_assistant_manual_eval_v13.jsonl` are the manually authored noisy
-  and invalid-input layer. The train split contains 200 rows and the validation
-  split contains 60 rows. Together they cover recoverable typo and speech
-  noise, incomplete commands, contradictory requests, impossible dates and
-  times, unsupported operations, incoherent input, resistance to requested
-  schema violations, and targeted corrections for H004, H054, H056, omitted
-  add fields, and `clear_value`. The 260 rows are never template-generated.
-- `calendar_assistant_negative_holdout_v13.jsonl` contains 40 separately
-  authored cases with stable `N001` through `N040` identifiers. It is excluded
-  from both training and validation and is scored only as an independent
-  negative/contrastive holdout. Its semantic-acceptance file is bound to the
-  exact holdout SHA-256 and currently permits no alternate parameter objects.
-  The dataset generator is not used for either V13 source or this holdout.
-- `calendar_assistant_manual_train_v14.jsonl` and
-  `calendar_assistant_manual_eval_v14.jsonl` are the manually authored V14
-  layer. They contain exactly 300 training and 90 validation rows covering
-  creation, search, sum, unsupported event mutations, assistant identity, and
-  exact note capture. `value` and `duration_min` occur only in creation rows
-  whose user wording explicitly supplies those fields.
-- `calendar_assistant_manual_holdout_v14.jsonl` contains 60 independently
-  authored cases with stable `V14H001` through `V14H060` identifiers: 18 add,
-  16 search, 12 sum, 8 mutation-refusal, 3 identity, and 3 note cases. It is
-  excluded from training and validation. Its semantic-acceptance policy is
-  bound to the exact file SHA-256 and currently permits no alternate params.
-- `calendar_assistant_holdout_semantic_acceptance.json` records only explicitly
-  reviewed semantic alternatives. It is bound to the exact holdout SHA-256;
-  the scorer rejects it if the holdout changes. Exact params remain a separate
-  metric, and no unlisted wording difference is accepted automatically.
-- The checked-in files under `docs/calendar_assistant_candidates/` are retained
-  only as historical artifacts. `prepare_dataset.py` excludes them from V14.
-- `tools/generate_calendar_training_dataset.py` must not be run. All V14 rows
-  are authored directly and validated without invoking the generator.
-- Template expansion alone is not a production-quality dataset. Review every
-  retained candidate and every manual row for naturalness and semantic
-  correctness before final SFT.
-- Every line contains `messages` in system/user/assistant order and a category.
-- Before use, validate every assistant JSON string with the strict dataset
-  parser and the schema above.
-- Do not include real calendar data. Search results are application-owned data
-  and are intentionally absent from model examples.
-
-## SFT pilot package
-
-`tools/calendar_sft/` validates the sources, builds disjoint train/validation/
-holdout artifacts, scores model outputs, and records the exact source model
-lock. Read `docs/CALENDAR_ASSISTANT_SFT_PILOT.md` before staging a model or
-creating a cloud training job.
+The same exclusions apply to validation, developer cases and independent
+checks. Rebuild audit indexes, clock-grid line positions and artifact hashes
+from retained records. Keep independent checks out of checkpoint selection.
+Validate all targets with `v12_67_contract.py` and all clock meaning/style,
+reply/params agreement and annotated offsets with the V12.67 evaluator.
+The 1440-cell inherited clock grid and factual date/time chat remain.
+Preparation and gold-target validation are not new model inference results.

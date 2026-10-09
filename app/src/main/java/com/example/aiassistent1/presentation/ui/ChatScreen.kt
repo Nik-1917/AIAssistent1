@@ -166,10 +166,6 @@ import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
-import com.example.aiassistent1.presentation.viewmodel.CalendarDeleteTargetSelectionUiState
-import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateField
-import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateDraftUiState
-import com.example.aiassistent1.presentation.viewmodel.CalendarUpdateTargetSelectionUiState
 import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
@@ -1219,33 +1215,6 @@ fun ChatScreen(
         )
     }
 
-    uiState.calendarDeleteTargetSelection?.let { selection ->
-        CalendarDeleteTargetSelectionDialog(
-            selection = selection,
-            onDelete = viewModel::selectCalendarDeleteTarget,
-            onDismiss = viewModel::cancelCalendarDeleteTargetSelection,
-        )
-    }
-
-    uiState.calendarUpdateTargetSelection?.let { selection ->
-        CalendarUpdateTargetSelectionDialog(
-            selection = selection,
-            onSelect = viewModel::selectCalendarUpdateTarget,
-            onDismiss = viewModel::cancelCalendarUpdateTargetSelection,
-        )
-    }
-
-    uiState.calendarUpdateDraft?.let { draft ->
-        CalendarUpdateDraftDialog(
-            draft = draft,
-            onValueChange = viewModel::updateCalendarUpdateDraftInput,
-            onSelectField = viewModel::selectCalendarUpdateField,
-            onSubmitField = viewModel::submitCalendarUpdateDraftField,
-            onConfirm = viewModel::confirmCalendarUpdateDraft,
-            onDismiss = viewModel::cancelCalendarUpdateDraft,
-        )
-    }
-
     if (uiState.calendarChatPrompt != null) {
         CalendarChatPromptDialog(
             onConfirm = viewModel::confirmCalendarChatPrompt,
@@ -1343,151 +1312,6 @@ fun ChatScreen(
 }
 
 @Composable
-private fun CalendarDeleteTargetSelectionDialog(
-    selection: CalendarDeleteTargetSelectionUiState,
-    onDelete: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Выберите событие для удаления") },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                selection.command.target.range?.let { range ->
-                    Text("Период: ${formatCalendarDialogDateTime(range.start)} — ${formatCalendarDialogDateTime(range.end)}",
-                        style = MaterialTheme.typography.bodySmall)
-                }
-                if (selection.candidates.isEmpty()) {
-                    Text(if (selection.deletedCount > 0) "Все события из списка удалены." else "События не найдены.")
-                }
-                selection.candidates.forEach { event ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
-                            Text(formatCalendarDialogDateTime(event.startsAtEpochMillis),
-                                style = MaterialTheme.typography.bodySmall)
-                            CalendarNotesText(event.notes)
-                            TextButton(
-                                onClick = { onDelete(event.id) },
-                                enabled = selection.deletingEventId == null,
-                                modifier = Modifier.align(Alignment.End),
-                            ) { Text(if (selection.deletingEventId == event.id) "Удаление…" else "Удалить") }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
-    )
-}
-
-@Composable
-private fun CalendarUpdateTargetSelectionDialog(
-    selection: CalendarUpdateTargetSelectionUiState,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Выберите событие для изменения") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text("Найдено несколько событий. Выберите нужное.")
-                Spacer(modifier = Modifier.height(8.dp))
-                selection.candidates.forEach { event ->
-                    TextButton(
-                        onClick = { onSelect(event.id) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(event.title, style = MaterialTheme.typography.bodyLarge)
-                            CalendarNotesText(event.notes)
-                            Text(
-                                "${formatCalendarDialogDateTime(event.startsAtEpochMillis)} · ${calendarDialogDurationMinutes(event.startsAtEpochMillis, event.endsAtEpochMillis)} мин",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Отмена") }
-        },
-    )
-}
-
-@Composable
-private fun CalendarUpdateDraftDialog(
-    draft: CalendarUpdateDraftUiState,
-    onValueChange: (String) -> Unit,
-    onSelectField: (CalendarUpdateField) -> Unit,
-    onSubmitField: () -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (draft.isReadyForConfirmation) "Изменить событие?" else "Уточните изменение") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text("Было", style = MaterialTheme.typography.labelLarge)
-                Text("Название: ${draft.event.title}")
-                CalendarNotesText(draft.event.notes)
-                Text("Дата и время: ${formatCalendarDialogDateTime(draft.event.startsAtEpochMillis)}")
-                Text("Длительность: ${calendarDialogDurationMinutes(draft.event.startsAtEpochMillis, draft.event.endsAtEpochMillis)} мин")
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Будет", style = MaterialTheme.typography.labelLarge)
-                Text("Название: ${draft.previewTitle}")
-                CalendarNotesText(draft.previewNotes)
-                Text("Дата и время: ${LocalUserDateTimeFormatter.current.value(draft.previewStartsAt)}")
-                Text("Длительность: ${draft.previewDurationMinutes} мин")
-
-                if (draft.isSelectingField) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Что изменить?", style = MaterialTheme.typography.labelLarge)
-                    CalendarUpdateField.entries.forEach { field ->
-                        TextButton(onClick = { onSelectField(field) }) {
-                            Text(field.label)
-                        }
-                    }
-                } else if (!draft.isReadyForConfirmation) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    val field = requireNotNull(draft.activeField)
-                    Text(field.label, style = MaterialTheme.typography.labelLarge)
-                    OutlinedTextField(
-                        value = draft.input,
-                        onValueChange = onValueChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = draft.error != null,
-                        supportingText = draft.error?.let { { Text(it) } },
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (!draft.isSelectingField) {
-                TextButton(
-                    onClick = if (draft.isReadyForConfirmation) onConfirm else onSubmitField,
-                    enabled = draft.isReadyForConfirmation || draft.input.isNotBlank(),
-                ) {
-                    Text(if (draft.isReadyForConfirmation) "Изменить событие" else "Далее")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Отмена") }
-        },
-    )
-}
-
-@Composable
 private fun CalendarChatPromptDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -1504,13 +1328,6 @@ private fun CalendarChatPromptDialog(
         },
     )
 }
-
-@Composable
-private fun formatCalendarDialogDateTime(epochMillis: Long): String =
-    LocalUserDateTimeFormatter.current.dateTime(epochMillis)
-
-private fun calendarDialogDurationMinutes(startEpochMillis: Long, endEpochMillis: Long): Long =
-    (endEpochMillis - startEpochMillis) / 60_000L
 
 @Composable
 private fun ImportProgress(progress: Float) {

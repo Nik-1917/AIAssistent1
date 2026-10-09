@@ -30,7 +30,7 @@ class CalendarInvalidDatesTest {
             "2026-03-01T10:00" to "2026-03-01T10:00",
         )) {
             assertTrue(parse("calendar_add", """"starts_at":"$start","ends_at":"$end"""").isFailure)
-            for (intent in listOf("calendar_search", "calendar_sum", "calendar_delete")) {
+            for (intent in listOf("calendar_search", "calendar_sum")) {
                 assertTrue(intent, parse(intent, """"range_start":"$start","range_end":"$end"""").isFailure)
             }
         }

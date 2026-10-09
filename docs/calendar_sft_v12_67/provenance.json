@@ -1,0 +1,28 @@
+{
+  "format_version": 1,
+  "status": "VERIFIED",
+  "dataset_id": "aiassistent1-v12.67-four-actions",
+  "review": {
+    "reviewed_by": "Codex under the project owner's explicit instruction",
+    "reviewed_on": "2026-10-09",
+    "decision_evidence": "Owner approved four actions and the Android assistant command cleanup. Existing literal conversations are retained unchanged under an exact exclusion register. No new Russian training sentences were generated."
+  },
+  "artifacts": {
+    "train": {
+      "sha256": "1fcc2decb15f3b27d39f141f2c78dbe7f3360c6cd0d47a06e5ca5f5c2706873e"
+    },
+    "validation": {
+      "sha256": "0bf4336df52a01dcefffbc3332ef5645dedb11f7ce1467d8f4d99219ef5c2762"
+    }
+  },
+  "records": [
+    {
+      "source_type": "internal_authored",
+      "source_reference": "workspace:docs/calendar_sft_v12_65/provenance.json and docs/calendar_v12_66_manual",
+      "rights_evidence": "Authorized inherited fictional conversations plus handwritten conversations and four literal input replacements; no external calendar records or generated Russian sentences.",
+      "permits_model_training": true,
+      "permits_derivative_weight_distribution": true,
+      "contains_personal_data": false
+    }
+  ]
+}

@@ -16,9 +16,6 @@ internal object CalendarFebruaryNormalizer {
         val paths = when (input["intent"]) {
             "calendar_add" -> listOf("date", "starts_at", "ends_at")
             "calendar_search", "calendar_sum" -> listOf("range_start", "range_end")
-            "calendar_update" -> listOf("target.range_start", "target.range_end", "changes.date")
-            "calendar_delete" -> listOf("range_start", "range_end", "target.range_start", "target.range_end")
-            "calendar_delete_range" -> listOf("start", "end")
             else -> return input
         }
         val params = input["params"] as? Map<*, *> ?: return input

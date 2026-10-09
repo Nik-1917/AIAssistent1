@@ -1,117 +1,53 @@
-# Ручная вычитка датасета календарного ассистента
+# Ручная вычитка V12.67
 
-## Назначение
+Источник обучения — `docs/calendar_sft_v12_67/*.jsonl`. Витрина Markdown
+предназначена для просмотра и не используется как обучающий источник.
+Сохранённые пользовательские запросы и JSON-ответы V12.66 перенесены без
+переписывания. Реестр исключённых позиций и хешей находится в
+`docs/calendar_v12_67_manual/exclusions.json`.
 
-Исходные `.jsonl` предназначены для программ: одна JSON-запись на строку.
-Их не нужно превращать в красивый формат и затем обучать модель по Markdown.
-Для вычитки используется отдельная генерируемая витрина. Она показывает
-system context, фразы пользователя и ожидаемый JSON отдельными блоками.
+## Просмотр
 
-Витрина записывается в `build/calendar_sft_review/`. Папка `build/` не входит
-в Git и не является источником обучения.
-
-## Первый запуск
-
-Откройте PowerShell в корне проекта и выполните:
+Из корня проекта:
 
 ```powershell
-python -B tools\calendar_sft\render_dataset_review.py --split all
+.\build\calendar_sft_qwen35_venv\Scripts\python.exe -X utf8 -B tools/calendar_sft/render_v12_67_review.py --split all
 ```
 
-Будут созданы:
+Откройте `build/calendar_sft_v12_67_review/index.md`. Каждая запись показывает
+исходный system, user и полный ожидаемый JSON, а также категорию, идентификатор
+и исходную позицию V12.66. Страницы содержат по 25 записей. Для другой выборки
+используйте `--split train`, `--split validation` или `--split holdout` и новый
+каталог `--output`. Существующая витрина не перезаписывается.
 
-```text
-build\calendar_sft_review\index.md
-build\calendar_sft_review\train\page-001.md ...
-build\calendar_sft_review\validation\page-001.md ...
-build\calendar_sft_review\holdout\page-001.md
-build\calendar_sft_review\review_manifest.json
-```
+## Вычитка
 
-Откройте сначала `index.md` в Android Studio или любом Markdown-просмотрщике.
-В нём есть число записей, категории и ссылки на страницы. По умолчанию одна
-страница содержит 50 примеров.
+1. Различайте четыре действия: `chat`, `calendar_add`, `calendar_search`,
+   `calendar_sum`. Просьба «напомни» создаёт событие, вопрос о дате остаётся чатом.
+2. Проверяйте известные параметры, временной якорь и арифметику относительных
+   дат. Неизвестные поля отсутствуют. Для создания сохраняется прежнее правило
+   ближайшей даты при указанном времени без даты.
+3. Сверяйте произнесённое время с параметрами, включая оба конца интервала.
+   Числа в названии или примечании не превращаются в длительность или ценность.
+4. Для поиска и суммы проверяйте фильтр и обе границы полуоткрытого периода.
+   Модель не сообщает вычисленный числовой итог.
+5. Правила оформления календарного ответа относятся к `reply`; исходный
+   пользовательский текст и названия не переписываются ради оформления.
+6. Train, validation, разработческие примеры и независимые проверочные наборы
+   сохраняются раздельно. Независимые наборы не участвуют в выборе checkpoint.
 
-## Что проверять в каждой записи
-
-1. В `SYSTEM` убедитесь, что дата, время и `Europe/Samara` соответствуют
-   вычисленным параметрам.
-2. В `USER` проверьте естественность русского текста и отсутствие личных
-   данных реальных людей.
-3. В `ОЖИДАЕМЫЙ JSON` проверьте `intent`, форму `reply` и только нужные
-   поля в `params`.
-4. Для поиска проверьте включаемую `range_start` и исключаемую `range_end`.
-   Сегодня и на этой неделе начинаются с текущего времени system context;
-   будущие дни начинаются в `00:00`.
-5. Для `value` проверьте целое число без валюты и дробной части. Для
-   `calendar_sum` проверьте только фильтр и период: модель не должна печатать
-   вычисленную сумму.
-6. Для каждого `calendar_add` проверьте `date` или `starts_at`. Если дата не
-   названа, точное время позже system time означает сегодня, а более раннее или
-   равное завтра. Без точного времени используется сегодняшняя `date`.
-7. Убедитесь, что `reply` не спрашивает недостающие данные. Остальные неизвестные
-   поля должны отсутствовать, а не получать `null`, пустую строку или default
-   модели.
-8. В пользовательском тексте, `reply` и строковых параметрах не допускаются
-   Unicode U+2014, U+00AB и U+00BB.
-9. Проверяйте train и validation раздельно. Holdout предназначен только для
-   независимой итоговой оценки и не добавляется в обучение.
-
-## Работа небольшими страницами
-
-Для 25 записей на страницу:
+## Проверки
 
 ```powershell
-python -B tools\calendar_sft\render_dataset_review.py --split train --page-size 25 --output-dir build\calendar_sft_review_train_25
+.\build\calendar_sft_qwen35_venv\Scripts\python.exe -X utf8 -B tools/calendar_sft/prepare_v12_67.py --check-only
+.\build\calendar_sft_qwen35_venv\Scripts\python.exe -X utf8 -B tools/calendar_sft/test_v12_67.py
+.\build\calendar_sft_qwen35_venv\Scripts\python.exe -X utf8 -B tools/calendar_sft/audit_v12_67_tokens.py
 ```
 
-Для просмотра одной категории можно повторять `--category`:
+`--check-only` повторно собирает ожидаемые байты в памяти и сверяет все
+артефакты, исходные хеши и архив документов. Он не переписывает данные.
+Изменения формулировок требуют отдельной ручной вычитки конкретных строк;
+обновление метаданных не может подменить JSONL.
 
-```powershell
-python -B tools\calendar_sft\render_dataset_review.py --split train --category calendar_search --category calendar_update --output-dir build\calendar_sft_review_commands
-```
-
-## Как вносить исправления
-
-Не редактируйте файлы внутри `build/calendar_sft_review/`: следующий рендер
-перезапишет их.
-
-- Если источник указан как seed или `calendar_assistant_manual_*_v5.jsonl`,
-  исправьте конкретную JSONL-строку вручную.
-- Для текущей v5-ревизии не запускайте
-  `tools/generate_calendar_training_dataset.py`. Проверенные candidate-файлы
-  очищены от старых уточняющих строк вручную; новые v5-примеры находятся только
-  в ручных источниках.
-- Генератор поддерживает актуальный контракт как reference implementation. Его
-  будущий запуск и полная замена candidate-файлов требуют отдельного решения,
-  просмотра всего diff и новой ручной вычитки.
-- Если ошибка в holdout, исправьте только holdout. Его нельзя копировать в
-  train или validation.
-
-После любого исправления пересоберите витрину:
-
-```powershell
-python -B tools\calendar_sft\render_dataset_review.py --split all --overwrite
-```
-
-Параметр `--overwrite` удаляет только ранее созданную витрину по указанному
-`--output-dir`; исходные JSONL он не затрагивает.
-
-## Обязательные проверки перед обучением
-
-```powershell
-python -B tools\calendar_sft\test_dataset_contract.py
-python -B tools\calendar_sft\test_dataset_provenance.py
-python -B tools\calendar_sft\test_search_periods.py
-python -B tools\calendar_sft\prepare_dataset.py --check-only
-```
-
-Если все команды завершились без ошибки, витрина соответствует текущим
-проверяемым источникам. Затем можно собирать обучающие артефакты отдельной
-командой подготовки датасета.
-
-`calendar_sft_data_provenance_v4.json` содержит хеши прежних v4-артефактов и не
-подтверждает изменённые v5-источники. До обучения нужно отдельно собрать и
-вычитать v5-артефакты, создать новый register из
-`tools/calendar_sft/dataset_provenance.template.json`, записать точные SHA-256
-train/validation и получить решение правообладателя со статусом `VERIFIED`.
+Прежняя инструкция вычитки сохранена в
+[архиве](calendar_training_archive/V12_66_CALENDAR_ASSISTANT_DATASET_REVIEW_BEFORE_V12_67.md).

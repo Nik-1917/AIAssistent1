@@ -3,7 +3,7 @@ package com.example.aiassistent1.domain.parser
 import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 
-/** V12.4 wire contract. Missing optional fields differ from invalid supplied fields. */
+/** V12.67 wire contract. Missing optional fields differ from invalid supplied fields. */
 class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()) {
     fun parse(text: String): AssistantResponse? = parseResult(text).getOrNull()
 
@@ -64,58 +64,6 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                 if (intent == "calendar_search") CalendarSearchParams(query, start, end)
                 else CalendarSumParams(query, start, end)
             }
-            "calendar_update" -> {
-                val p = Fields(raw, "$.params", setOf("target", "changes"))
-                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last", "use_last_in_range"))
-                val c = Fields(p.objectValue("changes"), "$.params.changes", setOf("title", "date", "time", "duration_min", "value", "date_value", "clear_value", "notes"))
-                val query = t.string("query")
-                // Validate every supplied spelling before combining the flags.
-                val lastCreated = t.flag("use_last_created")
-                val lastAlias = t.flag("use_last")
-                val lastInRangeAlias = t.flag("use_last_in_range")
-                val last = lastCreated || lastAlias || lastInRangeAlias
-                val (start, end) = t.range()
-                require(!lastInRangeAlias || (query == null && start == null && end == null)) {
-                    "$.params.target: use_last_in_range для обновления допустим только без query и периода"
-                }
-                require(!(query != null && last)) { "$.params.target: конфликт способов выбора события" }
-                require(start == null || query != null) { "$.params.target: период требует query" }
-                val value = c.eventValue()
-                val clear = c.flag("clear_value")
-                require(value == null || !clear) { "$.params.changes: value несовместим с clear_value" }
-                CalendarUpdateParams(
-                    CalendarUpdateTargetParams(query, start, end, last),
-                    CalendarUpdateChangesParams(c.string("title"), c.date("date"), c.time("time"), c.duration(), value, clear, c.notes()),
-                )
-            }
-            "calendar_delete_range" -> {
-                val p = Fields(raw, "$.params", setOf("start", "end"))
-                val start = requireNotNull(p.deleteRangeBoundary("start")) { "$.params.start: укажите начало периода" }
-                val end = requireNotNull(p.deleteRangeBoundary("end")) { "$.params.end: укажите конец периода" }
-                require(start < end) { "$.params: начало периода должно предшествовать концу" }
-                CalendarDeleteParams(CalendarDeleteTargetParams(rangeStart = start, rangeEnd = end))
-            }
-            "calendar_delete" -> {
-                val p = Fields(raw, "$.params", setOf("target", "changes", "range_start", "range_end"))
-                if ("changes" in raw) {
-                    require(p.objectValue("changes").isEmpty()) { "$.params.changes: для удаления допустим только пустой объект" }
-                }
-                if ("range_start" in raw || "range_end" in raw) {
-                    require("target" !in raw) { "$.params: нельзя смешивать target и диапазон в params" }
-                    val (start, end) = p.range()
-                    return@runCatching AssistantResponse(intent, reply,
-                        CalendarDeleteParams(CalendarDeleteTargetParams(rangeStart = start, rangeEnd = end)))
-                }
-                val t = Fields(p.objectValue("target"), "$.params.target", setOf("query", "range_start", "range_end", "use_last_created", "use_last_in_range", "time_min", "time_max"))
-                val query = t.string("query")
-                val last = t.flag("use_last_created")
-                val inRange = t.flag("use_last_in_range")
-                val (start, end) = t.deleteRange()
-                require(listOf(query != null, last, inRange).count { it } <= 1) { "$.params.target: конфликт способов выбора события" }
-                require(!last || start == null) { "$.params.target: use_last_created не допускает период" }
-                require(!inRange || start != null) { "$.params.target: use_last_in_range требует период" }
-                CalendarDeleteParams(CalendarDeleteTargetParams(query, start, end, last, inRange))
-            }
             else -> error("$.intent: неподдерживаемая команда $intent")
         }
         AssistantResponse(intent, reply, params)
@@ -159,11 +107,6 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
     fun duration(): Int? = integer("duration_min")?.also {
         require(it in 1..Int.MAX_VALUE.toLong()) { "$path.duration_min: число вне диапазона 1..${Int.MAX_VALUE}" }
     }?.toInt()
-    fun flag(key: String): Boolean {
-        if (key !in values) return false
-        require(values[key] == true) { "$path.$key: при наличии должно быть true" }
-        return true
-    }
     private fun temporal(key: String, validate: (String) -> Any): String? = string(key)?.also {
         try { validate(it) } catch (error: Exception) {
             throw IllegalArgumentException("$path.$key: некорректная дата или время", error)
@@ -172,10 +115,6 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
     fun date(key: String) = temporal(key, CalendarTime::date)
     fun time(key: String) = temporal(key, CalendarTime::time)
     fun dateTime(key: String) = temporal(key, CalendarTime::dateTime)
-    /** Only calendar_delete_range accepts a date as midnight; end remains exclusive. */
-    fun deleteRangeBoundary(key: String): String? = temporal(key) {
-        if (it.length == 10) CalendarTime.date(it) else CalendarTime.dateTime(it)
-    }?.let { if (it.length == 10) "${it}T00:00" else it }
     fun isDateTime(value: String): Boolean = runCatching { CalendarTime.dateTime(value) }.isSuccess
     fun isTime(value: String): Boolean = runCatching { CalendarTime.time(value) }.isSuccess
     fun range(): Pair<String?, String?> {
@@ -184,26 +123,6 @@ private class Fields(private val values: Map<String, Any>, private val path: Str
         require((start == null) == (end == null)) { "$path: обе границы периода должны быть указаны вместе" }
         require(start == null || start < end!!) { "$path: начало периода должно предшествовать концу" }
         return start to end
-    }
-    /** Optional whole-hour bounds narrow a single full day for delete targets only. */
-    fun deleteRange(): Pair<String?, String?> {
-        val original = range()
-        if ("time_min" !in values && "time_max" !in values) return original
-        val minHour = integer("time_min")
-        val maxHour = integer("time_max")
-        require(minHour != null && maxHour != null) { "$path: time_min и time_max должны быть указаны вместе" }
-        require(minHour in 0L..23L && maxHour in 1L..24L && minHour < maxHour) {
-            "$path: требуются целые часы 0 <= time_min < time_max <= 24"
-        }
-        val (start, end) = original
-        require(start != null && end != null) { "$path: time_min/time_max требуют обе границы дня" }
-        val dayStart = CalendarTime.dateTime(start)
-        val dayEnd = CalendarTime.dateTime(end)
-        require(dayStart.toLocalTime() == java.time.LocalTime.MIDNIGHT && dayEnd == dayStart.plusDays(1)) {
-            "$path: time_min/time_max допустимы только для одного полного дня от 00:00 до 00:00"
-        }
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
-        return dayStart.plusHours(minHour).format(formatter) to dayStart.plusHours(maxHour).format(formatter)
     }
     /** A lone start is an exact-moment search, represented as a one-minute interval. */
     fun searchRange(): Pair<String?, String?> {

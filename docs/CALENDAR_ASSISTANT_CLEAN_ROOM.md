@@ -1,4 +1,8 @@
-# Clean-room calendar-assistant model
+# Clean-room calendar-assistant policy: V12.67
+
+The current protocol is defined by the four-action V12.67 training contract.
+The previous policy snapshot is retained in
+[the archive](calendar_training_archive/V12_66_CALENDAR_ASSISTANT_CLEAN_ROOM_BEFORE_V12_67.md).
 
 ## Decision
 
@@ -8,7 +12,7 @@ adaptation: it must reproduce the application's calendar JSON contract, not
 copy any RefalMachine intellectual property or claim general Russian-language
 superiority.
 
-The candidate base lock is
+The historical candidate base lock is
 [`Qwen/Qwen3-4B-Instruct-2507`](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507)
 at `cdbee75f17c01a7cc42f958dc650907174af0554`. The official model card and
 bundled licence declare Apache-2.0. The full lock is
@@ -32,30 +36,26 @@ weight distribution. A dataset register based on
 [`dataset_provenance.template.json`](../tools/calendar_sft/dataset_provenance.template.json)
 must be completed and reviewed before a real training run.
 
-The last verified register is the archived v4 register
+The archived v4 register is
 [`calendar_sft_data_provenance_v4.json`](calendar_sft_data_provenance_v4.json).
-It does not approve the current v5 source set. The historical v1, v2 and v3
+It approves only its exact artifact hashes. The historical v1, v2 and v3
 registers also remain immutable. Each register is bound to staged training
-artifacts by SHA-256; changing either JSONL file requires a new review and
-register version. A real v5 training run therefore requires a new `VERIFIED`
-register after manual review and staging.
+artifacts by SHA-256; changing either JSONL file requires a reviewed register
+with the new hashes. V12.67 has a separate
+[provenance register](calendar_sft_v12_67/provenance.json) retaining the reviewed
+internally authored sources and binding the retained train/validation files.
 
 ## Product target
 
-The model's scope is the target local calendar protocol. The Android mechanisms
-that will consume the extended contract are specified separately and are not
-implemented by this documentation revision:
+The model's scope is the current local four-action protocol:
 
 ```json
-{"intent":"chat | calendar_search | calendar_add | calendar_update | calendar_delete | calendar_sum","reply":"","params":{}}
+{"intent":"chat | calendar_search | calendar_add | calendar_sum","reply":"","params":{}}
 ```
 
-Training messages use the application system prompt exactly as rendered at
-runtime:
-
-```text
-Сегодня дата и время:<DATE> (<WEEKDAY>) <TIME> <IANA_ZONE> ответ JSON
-```
+The retained dataset stores its original local timestamp and Europe/Samara
+anchor. Training transports append the actual four-action provider contract.
+The Android transport also repeats the provider header and application ChatML.
 
 For every calendar intent, the model emits fields known from the user's request
 and resolvable relative expressions. The only model-owned default is the
@@ -70,13 +70,11 @@ notation. `calendar_sum` carries an optional title filter and an exact local
 half-open period when those values are known; the model never calculates or
 prints the aggregate result. The complete field and period rules are defined in
 [`CALENDAR_ASSISTANT_TRAINING_SPEC.md`](CALENDAR_ASSISTANT_TRAINING_SPEC.md), and
-the future client behavior is defined in
+the current client behavior is described in
 [`CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md`](CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md).
 
-The dataset must cover creation, search, partial fields, relative dates,
-integer values, value removal, aggregate requests, multi-turn corrections,
-updates to the last event, named-event updates, and immediate deletion of one
-resolved local event. It
+The dataset covers creation, search, partial fields, relative dates,
+integer values, aggregate requests and factual chat. It
 must include colloquial Russian forms and occupation contexts without recording
 real users' personal data.
 
@@ -86,13 +84,14 @@ No model may be described as better before an identical, frozen holdout is run
 against the base and adapted checkpoints with the same decoding settings. The
 adapted checkpoint must not reduce strict JSON validity or intent accuracy and
 must improve the exact-parameter score on the calendar holdout. Report each
-intent separately, including `calendar_update`, `calendar_delete`, and
-`calendar_sum`; do not substitute subjective chat quality for these measures.
+intent separately: `chat`, `calendar_add`, `calendar_search`, `calendar_sum`.
+Do not substitute subjective chat quality for these measures.
 
 The independent holdout remains excluded from SFT and run selection. Reply text
 is schema-checked for concise Russian wording; `intent` and `params` are scored
-semantically. The existing evaluator and manual holdout are the starting point,
-not proof of Qwen3 quality.
+semantically, with independent spoken-clock and arithmetic checks.
+The V12.67 evaluator and retained manual holdouts are preparation tools;
+their existence is not proof of Qwen3 quality.
 
 ## Execution gates
 
@@ -103,8 +102,8 @@ not proof of Qwen3 quality.
    personal data.
 2. Explicitly approve downloading the locked base snapshot; calculate SHA-256
    for every file named in the source lock. The verifier must match the
-   official LFS SHA-256 values for the three Safetensors shards and
-   `tokenizer.json`, and the recorded byte size for every locked file.
+   selected source lock, revision, SHA-256 values and recorded byte size
+   for every required file.
 3. Update the training environment to
    [`requirements-train-qwen3.txt`](../tools/calendar_sft/requirements-train-qwen3.txt)
    in an approved CUDA image.

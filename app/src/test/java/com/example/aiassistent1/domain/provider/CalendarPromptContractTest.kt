@@ -75,7 +75,6 @@ class CalendarPromptContractTest {
                 endsAt = params.endsAt.takeUnless { start != null && params.durationMin != null })
         } else params
         val intent = when (response.intent) {
-            "calendar_delete_range" -> "calendar_delete"
             "chat_reply" -> "chat"
             else -> response.intent
         }

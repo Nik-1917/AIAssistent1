@@ -1,0 +1,30 @@
+{
+  "docs/CALENDAR_SYSTEM_PROMPT_CONTRACT.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_SYSTEM_PROMPT_CONTRACT_BEFORE_V12_67.md",
+    "sha256": "b96276e99237b387ea15f64c5260dfb8f86436301611ac286f251524b0f3d405"
+  },
+  "docs/CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_ASSISTANT_ANDROID_MECHANISMS_BEFORE_V12_67.md",
+    "sha256": "502aa4d28730d67ec332d2bbc9d345334d46916a99bca2fc18fbebb973af86aa"
+  },
+  "docs/CALENDAR_OPTIONAL_NOTES.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_OPTIONAL_NOTES_BEFORE_V12_67.md",
+    "sha256": "7fa5fc1b272c7efca2ba88ce1ff1e85452609bab6b3e50b78e66cbca5e480f7f"
+  },
+  "docs/CALENDAR_ASSISTANT_CLEAN_ROOM.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_ASSISTANT_CLEAN_ROOM_BEFORE_V12_67.md",
+    "sha256": "45517cd8fd599ea2e97fd8c25307bf385c6db03cce5832489f721e2bf359be07"
+  },
+  "docs/CALENDAR_ASSISTANT_DATASET_REVIEW.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_ASSISTANT_DATASET_REVIEW_BEFORE_V12_67.md",
+    "sha256": "1d926a08b0c3a74dc9dde883845804af8e45eb1bf34a3078ec5a4e11714ba582"
+  },
+  "tools/calendar_sft/README.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_CALENDAR_SFT_README_BEFORE_V12_67.md",
+    "sha256": "fa6e5a61e3000c457ddaecf38a9b1f1d39dc5b6cbc61bdea1ca82511956b72b2"
+  },
+  "docs/CALENDAR_ASSISTANT_TRAINING_SPEC.md": {
+    "archived_path": "docs/calendar_training_archive/V12_66_TRAINING_SPEC_BEFORE_V12_67.md",
+    "sha256": "4a0528781f2605777f724bf3035df56ce28d436e0164e13f51103929e16cfd97"
+  }
+}

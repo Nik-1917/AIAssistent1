@@ -1,0 +1,152 @@
+{
+  "version": "v12.67",
+  "contract_version": "v12.67",
+  "allowed_intents": [
+    "calendar_add",
+    "calendar_search",
+    "calendar_sum",
+    "chat"
+  ],
+  "artifacts": {
+    "calendar_holdout_v12_2": {
+      "rows": 8,
+      "sha256": "90e2812d5ef3905d8250ecb67452d766e22780cd75810aed3063be89fae86a98",
+      "intents": {
+        "calendar_add": 8
+      }
+    },
+    "context_transfer_eval": {
+      "rows": 41,
+      "sha256": "ba926ef9e1cd3c163598480e1d8f4f8f3a6ffc791c4aba6cda93c42a011ec7e3",
+      "intents": {
+        "calendar_add": 3,
+        "calendar_search": 35,
+        "chat": 3
+      }
+    },
+    "half_hour_holdout": {
+      "rows": 36,
+      "sha256": "c07c71c679e03dd042c0d6b65e84da4f579ea56d09e6d1161cd47fb8ba4d3b0d",
+      "intents": {
+        "calendar_add": 36
+      }
+    },
+    "holdout": {
+      "rows": 36,
+      "sha256": "a8d0f3c00a9ef0eefa86d7aff2c0ac04f1328c686d30256bd356c64f49eebdfc",
+      "intents": {
+        "calendar_add": 36
+      }
+    },
+    "input_clock_holdout": {
+      "rows": 72,
+      "sha256": "4ad36deef4e30f5f4be2045c6101f3ca5410ff031f9dab5118921a90d7cda85a",
+      "intents": {
+        "calendar_add": 72
+      }
+    },
+    "intent_holdout": {
+      "rows": 28,
+      "sha256": "b0be4df1e8039a62e755fcf1398c4eb423f40a00e0018fddc887d1f31b3b11e2",
+      "intents": {
+        "calendar_add": 12,
+        "calendar_search": 12,
+        "chat": 4
+      }
+    },
+    "interval_holdout": {
+      "rows": 12,
+      "sha256": "9249014ba6436d87f0f9604a3a3c019d08e81f734bf1ace7a7d4b3d50a04a4ac",
+      "intents": {
+        "calendar_add": 11,
+        "calendar_search": 1
+      }
+    },
+    "offset_reply_holdout": {
+      "rows": 48,
+      "sha256": "53950b4808b4ac656d9e9d06320aeaa39cb55f973f4e427d0f014e0ef8ce3c1b",
+      "intents": {
+        "calendar_add": 46,
+        "chat": 2
+      }
+    },
+    "order_holdout": {
+      "rows": 39,
+      "sha256": "0fa9b2bd7ec5b047fff9c23f3d01302d97c01ce0e57c749d05d5c83d26f1238b",
+      "intents": {
+        "calendar_add": 39
+      }
+    },
+    "regression_holdout": {
+      "rows": 40,
+      "sha256": "35de3a1c0a756508b9327bcf1e337be58dd0daea441dede1c552c213d22fda37",
+      "intents": {
+        "calendar_add": 22,
+        "calendar_search": 13,
+        "calendar_sum": 4,
+        "chat": 1
+      }
+    },
+    "reply_consistency_holdout": {
+      "rows": 21,
+      "sha256": "4cede32438dd9b816e1adf76b978b62fb9a0299f13dbc8ef65aa4da36caea945",
+      "intents": {
+        "calendar_add": 20,
+        "chat": 1
+      }
+    },
+    "speech_holdout": {
+      "rows": 27,
+      "sha256": "98278129e33edf7e7588a4fec6e681506f393d654046839edc9434f1c807f8dc",
+      "intents": {
+        "calendar_add": 25,
+        "calendar_search": 1,
+        "chat": 1
+      }
+    },
+    "train": {
+      "rows": 5396,
+      "sha256": "1fcc2decb15f3b27d39f141f2c78dbe7f3360c6cd0d47a06e5ca5f5c2706873e",
+      "intents": {
+        "calendar_add": 4749,
+        "calendar_search": 354,
+        "calendar_sum": 88,
+        "chat": 205
+      }
+    },
+    "validation": {
+      "rows": 685,
+      "sha256": "0bf4336df52a01dcefffbc3332ef5645dedb11f7ce1467d8f4d99219ef5c2762",
+      "intents": {
+        "calendar_add": 522,
+        "calendar_search": 70,
+        "calendar_sum": 32,
+        "chat": 61
+      }
+    }
+  },
+  "total_rows": 6489,
+  "excluded_rows": 815,
+  "development_rows": 106,
+  "inherited_clock_grid": 1440,
+  "conversations_preserved": 6489,
+  "changed_user_or_assistant_messages": 0,
+  "rules_sha256": {
+    "docs/CALENDAR_ASSISTANT_TRAINING_SPEC.md": "6ad664c30e265ec3d303b6f9aa53f958017c650faf4ce8d43c0a68ac408a9794",
+    "docs/CALENDAR_ASSISTANT_V12_67_RULES.md": "7d1218fcfb2cba72ac04819a072b5a7455240fcbb178fd1325bb40e04563c617",
+    "docs/CALENDAR_SYSTEM_PROMPT_CONTRACT.md": "af23984da3d4179c930ab602efadf7b526a8a72988a9a61aa3f4ae439f25f2b8",
+    "docs/CALENDAR_ASSISTANT_ANDROID_MECHANISMS.md": "086222045f1a2b60bbf7c3a0447ebdc2763d426cf72d718c798bdb0e09c4e244",
+    "docs/CALENDAR_OPTIONAL_NOTES.md": "92236953bda1d0c0b111d1343dd1529b069e7c013d2ee59a2020109792e7f45e",
+    "docs/CALENDAR_ASSISTANT_CLEAN_ROOM.md": "a38719ef07ad2ba282c50d93099858f1ad5f8067356e924e44f203ca230cec5c",
+    "docs/CALENDAR_ASSISTANT_DATASET_REVIEW.md": "9e4afbcd7edcd3df791a23d8874401f5b9610efe68c45a1ba01dffcfed61f08e",
+    "tools/calendar_sft/README.md": "19a0471c19f17df8d44513fb9c094aee1d5840885fd3703e0123c703c5a36993"
+  },
+  "runtime_provider_sha256": "7cc5539ab2b74d123093b6819cbbd35626a8ebaf874deda144984e242ab9ae8e",
+  "exclusions_sha256": "df9268e8ae2f39af90a474c551dfc379c5f865e298add485d413548e1025523d",
+  "source_lock_sha256": "1a629a93c3a3b2734ac7da5631377126022166f9fc7d919c31ccb0c9369e5adc",
+  "protected_files_checked": 664,
+  "archive_registry_sha256": "b5fb67a9e12b3d07fb863ed770a3f8e3b95420f31a219e08e6024a08d5918b99",
+  "source_manifest_sha256": "d711f0800663e2bfcd76d1dbc160f02adfdebfcf79e789a06e2ee5afa5b90c1d",
+  "training": "NOT_RUN",
+  "inference": "NOT_RUN"
+}

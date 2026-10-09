@@ -100,7 +100,8 @@ class CalendarNotesStorageTest {
             assertEquals(text, event.notes)
             assertEquals(17L, event.value)
         }
-        val update = PrepareCalendarEventUpdateUseCase()(event, CalendarEventChanges(notes = "  Новый текст  ")).getOrThrow()
+        val update = CalendarEventUpdate(event.id, event.title, event.startsAtEpochMillis,
+            event.endsAtEpochMillis, expectedRevision = event.revision, notes = "  Новый текст  ")
         val changed = repo.update(update).getOrThrow()
         assertEquals("  Новый текст  ", changed.notes)
         assertEquals(event.revision + 1, changed.revision)
@@ -115,15 +116,15 @@ class CalendarNotesStorageTest {
         var event = repo.getById(receipt.eventId).getOrThrow()!!
         assertEquals(text, event.notes)
         assertEquals(1, repo.search("", 0, 180000).getOrThrow().size)
-        val update = PrepareCalendarEventUpdateUseCase()(event, CalendarEventChanges(notes = "Новое")).getOrThrow()
-        val updated = repo.commit("update", CalendarMutation.Update(update)).getOrThrow()
+        val update = CalendarEventUpdate(event.id, event.title, event.startsAtEpochMillis,
+            event.endsAtEpochMillis, expectedRevision = event.revision, notes = "Новое")
+        val updated = repo.update(update).getOrThrow()
         assertEquals("Новое", updated.notes)
-        assertEquals(updated, repo.commit("update", CalendarMutation.Update(update)).getOrThrow())
         event = repo.getById(event.id).getOrThrow()!!
-        val deleted = repo.commit("delete", CalendarMutation.Delete(event.id, event.revision)).getOrThrow()
-        assertEquals("Новое", deleted.notes)
+        assertEquals("Новое", event.notes)
+        repo.delete(event.id).getOrThrow()
         assertNull(repo.getById(event.id).getOrThrow())
-        assertEquals(deleted, repo.commit("delete", CalendarMutation.Delete(event.id, event.revision)).getOrThrow())
+        assertEquals(receipt, repo.getReceipt("create").getOrThrow())
     }
 
     @Test fun notesRemainOptional() = runTest {
@@ -153,7 +154,8 @@ class CalendarNotesStorageTest {
                 assertEquals(CalendarReceipt("old-request", "calendar_add", "old-event", "Старое событие"), receipt)
                 assertEquals(receipt, repo.commit("old-request", CalendarMutation.Create(CalendarEventDraft("Дубль", 60000, 120000, notes = text))).getOrThrow())
             }
-            val update = PrepareCalendarEventUpdateUseCase()(event, CalendarEventChanges(notes = text)).getOrThrow()
+            val update = CalendarEventUpdate(event.id, event.title, event.startsAtEpochMillis,
+                event.endsAtEpochMillis, expectedRevision = event.revision, notes = text)
             assertEquals(text, repo.update(update).getOrThrow().notes)
         }
     }

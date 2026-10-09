@@ -39,22 +39,6 @@ class CalendarNotesCommandTest {
         }
     }
 
-    @Test fun `notes-only update preserves all other fields and revision guard`() {
-        val event = CalendarEvent("id", "Встреча", 60000, 120000, 0, 0, value = 17, revision = 4, notes = "Старое")
-        val update = PrepareCalendarEventUpdateUseCase(ZoneOffset.UTC)(event, CalendarEventChanges(notes = "  Новое\n  ")).getOrThrow()
-        assertEquals("  Новое\n  ", update.notes)
-        assertEquals(event.title, update.title)
-        assertEquals(event.startsAtEpochMillis, update.startsAtEpochMillis)
-        assertEquals(event.endsAtEpochMillis, update.endsAtEpochMillis)
-        assertEquals(CalendarValueChange.Keep, update.valueChange)
-        assertEquals(event.revision, update.expectedRevision)
-        for (notes in listOf(null, "", " \n ")) {
-            assertTrue(CalendarEventChanges(notes = notes).isEmpty)
-            val otherChange = PrepareCalendarEventUpdateUseCase(ZoneOffset.UTC)(event, CalendarEventChanges(title = "Новое название", notes = notes)).getOrThrow()
-            assertNull(otherChange.notes)
-        }
-    }
-
     private class RecordingRepository(private val events: List<CalendarEvent> = emptyList()) : CalendarEventRepository {
         var created: CalendarEventDraft? = null
         override suspend fun commit(requestId: String, mutation: CalendarMutation): Result<CalendarReceipt> {
@@ -67,8 +51,5 @@ class CalendarNotesCommandTest {
         override suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent> = error("Not used")
         override suspend fun delete(id: String): Result<Unit> = error("Not used")
         override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<List<CalendarEvent>> = Result.success(events)
-        override suspend fun findForUpdate(query: String, rangeStartEpochMillis: Long?, rangeEndEpochMillis: Long?): Result<List<CalendarEvent>> = error("Not used")
-        override suspend fun getLastCreated(): Result<CalendarEvent?> = error("Not used")
-        override suspend fun getLastInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<CalendarEvent?> = error("Not used")
     }
 }

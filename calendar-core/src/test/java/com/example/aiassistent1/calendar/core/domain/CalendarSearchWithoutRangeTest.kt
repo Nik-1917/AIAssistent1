@@ -71,8 +71,5 @@ class CalendarSearchWithoutRangeTest {
         override fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Flow<List<CalendarEvent>> = emptyFlow()
         override suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent> = error("Not used")
         override suspend fun delete(id: String): Result<Unit> = error("Not used")
-        override suspend fun findForUpdate(query: String, rangeStartEpochMillis: Long?, rangeEndEpochMillis: Long?): Result<List<CalendarEvent>> = error("Not used")
-        override suspend fun getLastCreated(): Result<CalendarEvent?> = error("Not used")
-        override suspend fun getLastInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<CalendarEvent?> = error("Not used")
     }
 }
