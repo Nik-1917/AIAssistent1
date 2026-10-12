@@ -2,6 +2,10 @@ package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
+import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.parser.AssistantResponseParser
+import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
+import com.example.aiassistent1.calendar.core.domain.CalendarCommand
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
@@ -16,11 +20,27 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatResponseWriterTest {
+    @Test
+    fun `parsed creation persists only reply while structured notes reach the calendar command`() = runTest {
+        val raw = """{"intent":"calendar_add","reply":"Новое событие: Встреча с Анной.","params":{"title":"Встреча с Анной","starts_at":"2026-10-12T15:00","notes":"  Взять документы.\nАкт от 2027-09-01 в 09:30.  "}}"""
+        val parsed = AssistantResponseParser().parseResult(raw).getOrThrow()
+        val params = parsed.params as CalendarAddParams
+        val command = CalendarCommandMapper().map(params).getOrThrow() as CalendarCommand.Add
+        val session = Session(chatId = "calendar")
+        session.generate(flowOf(raw)) { it.copy(content = parsed.reply) }
+        assertEquals("Новое событие: Встреча с Анной.", session.visible.content)
+        assertEquals(session.visible, session.writes.single())
+        assertEquals("  Взять документы.\nАкт от 2027-09-01 в 09:30.  ", command.notes)
+        assertEquals(params.notes, command.notes)
+        assertNull(command.value)
+    }
+
     @Test
     fun `frequent deltas update live text immediately but only changed checkpoints are written`() = runTest {
         val session = Session()

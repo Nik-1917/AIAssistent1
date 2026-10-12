@@ -4,15 +4,15 @@
   "dataset_id": "aiassistent1-v12.67-four-actions",
   "review": {
     "reviewed_by": "Codex under the project owner's explicit instruction",
-    "reviewed_on": "2026-10-09",
-    "decision_evidence": "Owner approved four actions and the Android assistant command cleanup. Existing literal conversations are retained unchanged under an exact exclusion register. No new Russian training sentences were generated."
+    "reviewed_on": "2026-10-11",
+    "decision_evidence": "Owner approved the four-action scope, title-only replies, twenty-four handwritten extensions and twelve explicit parameter corrections after a complete manual semantic review. The parameter register restores three named clocks and nine complete search names; questions, replies, other targets and historical sources are preserved. Russian training text and corrected values are copied from reviewed literal sources, not inferred by scripts."
   },
   "artifacts": {
     "train": {
-      "sha256": "1fcc2decb15f3b27d39f141f2c78dbe7f3360c6cd0d47a06e5ca5f5c2706873e"
+      "sha256": "f9bc34ecd2719def05c7660a63b749ead9209b285039e1cd51fb721bbf39ab58"
     },
     "validation": {
-      "sha256": "0bf4336df52a01dcefffbc3332ef5645dedb11f7ce1467d8f4d99219ef5c2762"
+      "sha256": "1045a3d839081d87a3f7a3b13f4136c21bf8bae131bd0c1ca6a9fe1fe6c2dcc8"
     }
   },
   "records": [

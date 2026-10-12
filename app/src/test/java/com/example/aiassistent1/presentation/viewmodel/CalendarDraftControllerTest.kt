@@ -191,6 +191,32 @@ class CalendarDraftControllerTest {
         assertEquals(original.notes, changed.notes)
     }
 
+    @Test fun `notes survive draft reopening editing and event creation without altering value`() = runTest {
+        val repository = Repository()
+        val controller = CalendarDraftController(repository, this)
+        val initialNotes = "  Первая строка\nВторая строка: 12500 рублей.  "
+        controller.add(draft("notes").copy(notes = initialNotes))
+        runCurrent()
+        val reopened = CalendarDraftController(repository, this)
+        runCurrent()
+        assertEquals(initialNotes, reopened.find("notes")!!.notes)
+        val editedNotes = "  Взять документы.\nАкт от 2027-09-01 в 09:30.  "
+        reopened.editNotes("notes", editedNotes)
+        runCurrent()
+        var committedNotes: String? = null
+        reopened.save("notes") {
+            committedNotes = it.notes
+            assertEquals(0L, it.value)
+            "event-with-notes"
+        }
+        runCurrent()
+        assertEquals(editedNotes, committedNotes)
+        val saved = repository.stored.single()
+        assertEquals("event-with-notes", saved.savedEventId)
+        assertEquals(editedNotes, saved.notes)
+        assertEquals(0L, saved.value)
+    }
+
     @Test fun `filling a missing start retains the supplied end and derives the duration`() {
         val draft = CalendarEventDraftUiState(
             title = "Встреча", date = "2026-10-01", endsAt = "2026-10-01T16:00", value = 0,

@@ -1,4 +1,4 @@
-"""V12.67 isolated four-action run with verified prepared inputs and semantic reply selection. Preflight loads no weights."""
+"""V12.67 isolated four-action run with verified title replies and parameter selection. Preflight loads no weights."""
 from __future__ import annotations
 import argparse
 from collections import Counter
@@ -48,7 +48,7 @@ def main():
     rows = load_jsonl(DATA / 'train.jsonl')
     validation = load_jsonl(DATA / 'validation.jsonl')
     # Cycle both exact transports with the current application JSON contract.
-    # Literal user text and assistant targets remain unchanged.
+    # Literal user text and reviewed assistant targets are identical across transports.
     variants = CONFIG['training_transports']
     train_data = [encode_variant(tokenizer, row, variants[i % len(variants)]) for i, row in enumerate(rows)]
     lengths = [len(encode_variant(tokenizer, row, variant)['input_ids'])

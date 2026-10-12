@@ -63,6 +63,7 @@ internal fun CalendarDraftCard(draft: CalendarEventDraftUiState, onOpen: () -> U
             val date = draft.fieldText(CalendarEventField.Date).ifBlank { "Дата не указана" }
             val time = draft.fieldText(CalendarEventField.Time).ifBlank { "Время не указано" }
             Text("${LocalUserDateTimeFormatter.current.value(date)} · $time")
+            CalendarNotesText(draft.notes)
             if (draft.missingFields.isNotEmpty()) {
                 Text("Не указаны: ${draft.missingFields.joinToString { it.shortLabel() }}", style = MaterialTheme.typography.bodySmall)
             } else {

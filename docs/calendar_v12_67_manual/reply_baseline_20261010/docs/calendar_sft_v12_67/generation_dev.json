@@ -1,0 +1,2000 @@
+[
+  {
+    "case_id": "V1263D00",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра без одной минуты час ночи проверка прожектора."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка прожектора завтра без одной минуты час.\",\"params\":{\"title\":\"Проверка прожектора\",\"starts_at\":\"2027-02-01T00:59\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D01",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Разбор проводки завтра без двадцати девяти минут два ночи на четверть часа."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разбор проводки завтра без двадцати девяти минут два, на четверть часа.\",\"params\":{\"title\":\"Разбор проводки\",\"starts_at\":\"2027-02-01T01:31\",\"duration_min\":15}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D02",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В четверть третьего ночи завтра замер температуры."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Замер температуры завтра в четверть третьего.\",\"params\":{\"title\":\"Замер температуры\",\"starts_at\":\"2027-02-01T02:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D03",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "На завтра без двадцати восьми минут четыре утра обход площадки."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Обход площадки завтра без двадцати восьми минут четыре.\",\"params\":{\"title\":\"Обход площадки\",\"starts_at\":\"2027-02-01T03:32\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D04",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра сверка журнала в двадцать девять минут пятого утра."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка журнала завтра в двадцать девять минут пятого.\",\"params\":{\"title\":\"Сверка журнала\",\"starts_at\":\"2027-02-01T04:29\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D05",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Без четверти шесть утра завтра разгрузка фургона."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разгрузка фургона завтра без четверти шесть.\",\"params\":{\"title\":\"Разгрузка фургона\",\"starts_at\":\"2027-02-01T05:45\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D06",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра шесть семнадцать, проверка пропуска."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка пропуска завтра в семнадцать минут седьмого.\",\"params\":{\"title\":\"Проверка пропуска\",\"starts_at\":\"2027-02-01T06:17\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D07",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В половине восьмого утра завтра получение справки."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Получение справки завтра в половине восьмого.\",\"params\":{\"title\":\"Получение справки\",\"starts_at\":\"2027-02-01T07:30\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D08",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра в восемь часов двадцать четыре минуты урок музыки."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Урок музыки завтра в двадцать четыре минуты девятого.\",\"params\":{\"title\":\"Урок музыки\",\"starts_at\":\"2027-02-01T08:24\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D09",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Доставка бумаги завтра без двадцати шести минут десять утра."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Доставка бумаги завтра без двадцати шести минут десять.\",\"params\":{\"title\":\"Доставка бумаги\",\"starts_at\":\"2027-02-01T09:34\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D10",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "На завтра одна минута одиннадцатого утра, осмотр крыши."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр крыши завтра в одну минуту одиннадцатого.\",\"params\":{\"title\":\"Осмотр крыши\",\"starts_at\":\"2027-02-01T10:01\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D11",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра без одной минуты двенадцать дня проверка лифта."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка лифта завтра без одной минуты двенадцать.\",\"params\":{\"title\":\"Проверка лифта\",\"starts_at\":\"2027-02-01T11:59\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D12",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Двенадцать часов пятнадцать минут, завтра едем на склад."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Едем на склад завтра в четверть первого.\",\"params\":{\"title\":\"Едем на склад\",\"starts_at\":\"2027-02-01T12:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D13",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Без двадцати двух минут два дня завтра выдача формы."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Выдача формы завтра без двадцати двух минут два.\",\"params\":{\"title\":\"Выдача формы\",\"starts_at\":\"2027-02-01T13:38\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D14",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра четырнадцать тридцать один, проверка батарей."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка батарей завтра без двадцати девяти минут три.\",\"params\":{\"title\":\"Проверка батарей\",\"starts_at\":\"2027-02-01T14:31\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D15",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Разбор сметной ведомости завтра без тринадцати минут четыре дня."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разбор сметной ведомости завтра без тринадцати минут четыре.\",\"params\":{\"title\":\"Разбор сметной ведомости\",\"starts_at\":\"2027-02-01T15:47\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D16",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В двадцать одну минуту пятого дня завтра сверка остатков."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка остатков завтра в двадцать одну минуту пятого.\",\"params\":{\"title\":\"Сверка остатков\",\"starts_at\":\"2027-02-01T16:21\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D17",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра без четырёх минут шесть вечера осмотр упаковки."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр упаковки завтра без четырёх минут шесть.\",\"params\":{\"title\":\"Осмотр упаковки\",\"starts_at\":\"2027-02-01T17:56\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D18",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Чтение пьесы завтра в шесть часов двадцать восемь минут вечера."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Чтение пьесы завтра в двадцать восемь минут седьмого.\",\"params\":{\"title\":\"Чтение пьесы\",\"starts_at\":\"2027-02-01T18:28\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D19",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "На завтра без восемнадцати минут восемь вечера, встреча редакторов."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча редакторов завтра без восемнадцати минут восемь.\",\"params\":{\"title\":\"Встреча редакторов\",\"starts_at\":\"2027-02-01T19:42\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D20",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра без двадцати девяти минут девять вечера обсуждение маршрута."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Обсуждение маршрута завтра без двадцати девяти минут девять.\",\"params\":{\"title\":\"Обсуждение маршрута\",\"starts_at\":\"2027-02-01T20:31\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D21",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В двадцать один час тридцать девять минут завтра проверка расписания."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка расписания завтра без двадцати одной минуты десять.\",\"params\":{\"title\":\"Проверка расписания\",\"starts_at\":\"2027-02-01T21:39\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D22",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Сбор инструментов завтра без одиннадцати минут одиннадцать вечера."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сбор инструментов завтра без одиннадцати минут одиннадцать.\",\"params\":{\"title\":\"Сбор инструментов\",\"starts_at\":\"2027-02-01T22:49\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1263D23",
+    "category": "v12_63_dev",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-01-31 (воскресенье) 06:10 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра без одной минуты двенадцать ночи обход галереи."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Обход галереи завтра без одной минуты двенадцать.\",\"params\":{\"title\":\"Обход галереи\",\"starts_at\":\"2027-02-01T23:59\"}}"
+      }
+    ]
+  },
+  {
+    "category": "calendar_add_relative_date",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Добавь послезавтра в восемь часов пять минут утра пробежку на 35 минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Пробежка в пять минут девятого.\",\"params\":{\"title\":\"Пробежка\",\"starts_at\":\"2026-08-26T08:05\",\"duration_min\":35}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_add_default_today",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Создай встречу с бухгалтером в четыре часа тридцать минут дня на час."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Встреча с бухгалтером в половине пятого.\",\"params\":{\"title\":\"Встреча с бухгалтером\",\"starts_at\":\"2026-08-24T16:30\",\"duration_min\":60}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_add_weekday",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В пятницу в семь часов вечера поставь кино на два часа."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Кино в девятнадцать часов.\",\"params\":{\"title\":\"Кино\",\"starts_at\":\"2026-08-28T19:00\",\"duration_min\":120}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_search_next_week",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Что у меня на следующей неделе?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Проверяю все события на следующей неделе.\",\"params\":{\"query\":\"\",\"range_start\":\"2026-08-31T00:00\",\"range_end\":\"2026-09-07T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_search_name",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-09-03 (четверг) 09:00 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Покажи встречи с Ильёй на этой неделе."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Проверяю встречи с Ильёй на этой неделе.\",\"params\":{\"query\":\"встречи с Ильёй\",\"range_start\":\"2026-09-03T09:00\",\"range_end\":\"2026-09-07T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "ordinary_chat",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-08-24 (понедельник) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Объясни, что такое JSON."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"JSON текстовый формат для передачи структурированных данных.\",\"params\":{}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_add_spoken_noon_eval",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2026-09-15 (вторник) 09:00 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Добавь на послезавтра техосмотр в двенадцать ноль ноль продолжительностью сорок пять минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Техосмотр в двенадцать часов.\",\"params\":{\"title\":\"Техосмотр\",\"starts_at\":\"2026-09-17T12:00\",\"duration_min\":45}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_search",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2036-03-25 (вторник) 09:15 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Покажи Урок математики завтра."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Проверяю событие Урок математики завтра.\",\"params\":{\"query\":\"Урок математики\",\"range_start\":\"2036-03-26T00:00\",\"range_end\":\"2036-03-27T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "calendar_search",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2036-04-13 (воскресенье) 09:15 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Найди событие Консультация через три дня."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Проверяю событие Консультация через три дня.\",\"params\":{\"query\":\"Консультация\",\"range_start\":\"2036-04-16T00:00\",\"range_end\":\"2036-04-17T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v5_eval_sum_day_before_yesterday",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Какая суммарная ценность доставок позавчера?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_sum\",\"reply\":\"Подготавливаю сумму ценностей доставок за позавчера.\",\"params\":{\"query\":\"доставка\",\"range_start\":\"2027-02-01T00:00\",\"range_end\":\"2027-02-02T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v5_eval_sum_next_week",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Посчитай ценность всех событий на следующей неделе."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_sum\",\"reply\":\"Готовлю сумму ценностей событий за следующую неделю.\",\"params\":{\"range_start\":\"2027-02-08T00:00\",\"range_end\":\"2027-02-15T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v5_eval_sum_current_month",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Суммируй ценность консультаций в этом месяце."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_sum\",\"reply\":\"Подготавливаю сумму ценностей консультаций за текущий месяц.\",\"params\":{\"query\":\"консультация\",\"range_start\":\"2027-02-01T00:00\",\"range_end\":\"2027-03-01T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v5_eval_sum_next_month",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-02-03 (среда) 14:30 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Подсчитай ценность осмотров в следующем месяце."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_sum\",\"reply\":\"Готовлю сумму ценностей осмотров за следующий месяц.\",\"params\":{\"query\":\"осмотр\",\"range_start\":\"2027-03-01T00:00\",\"range_end\":\"2027-04-01T00:00\"}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v6_eval_chat_vs_command",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2027-05-19 (среда) 11:50 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Какая команда покажет события следующей недели?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Команда для просмотра: покажи события на следующей неделе.\",\"params\":{}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v6_eval_chat_vs_command",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2028-12-30 (суббота) 20:40 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Как посчитать ценность событий в следующем месяце?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Команда для подсчёта: посчитай ценность событий в следующем месяце.\",\"params\":{}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "category": "manual_v9_eval_unit_and_role",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2031-06-15 (воскресенье) 08:00 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Сколько часов составляют сто двадцать минут?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Сто двадцать минут составляют два часа.\",\"params\":{}}"
+      }
+    ],
+    "contract_version": "v12.67"
+  },
+  {
+    "case_id": "V1264V01",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Мне нужно через минуту протереть объектив, напомни."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Протереть объектив без двенадцати минут двенадцать.\",\"params\":{\"title\":\"Протереть объектив\",\"starts_at\":\"2029-04-30T23:48\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V02",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Принести штатив через две минуты, напомни пожалуйста."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Принести штатив без одиннадцати минут двенадцать.\",\"params\":{\"title\":\"Принести штатив\",\"starts_at\":\"2029-04-30T23:49\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V03",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни мне упаковать фотоаппарат через тринадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Упаковать фотоаппарат в ноль часов.\",\"params\":{\"title\":\"Упаковать фотоаппарат\",\"starts_at\":\"2029-05-01T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V04",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "На семь минут через двадцать девять минут чистка линз."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Чистка линз в шестнадцать минут первого, на семь минут.\",\"params\":{\"title\":\"Чистка линз\",\"starts_at\":\"2029-05-01T00:16\",\"duration_min\":7}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V05",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через пятьдесят девять минут напомни проверить кассету."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить кассету без четырнадцати минут час.\",\"params\":{\"title\":\"Проверить кассету\",\"starts_at\":\"2029-05-01T00:46\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V06",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Проверить затвор напомни через шестьдесят минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить затвор без тринадцати минут час.\",\"params\":{\"title\":\"Проверить затвор\",\"starts_at\":\"2029-05-01T00:47\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V07",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через шестьдесят одну минуту запись экспозиции."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Запись экспозиции без двенадцати минут час.\",\"params\":{\"title\":\"Запись экспозиции\",\"starts_at\":\"2029-05-01T00:48\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V08",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни через полтора часа вернуть вспышку."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Вернуть вспышку в семнадцать минут второго.\",\"params\":{\"title\":\"Вернуть вспышку\",\"starts_at\":\"2029-05-01T01:17\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V09",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Вернуть зарядник через сто двадцать минут, напомни."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Вернуть зарядник без тринадцати минут два.\",\"params\":{\"title\":\"Вернуть зарядник\",\"starts_at\":\"2029-05-01T01:47\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V10",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни через двадцать четыре часа осмотреть кофр."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотреть кофр без тринадцати минут двенадцать.\",\"params\":{\"title\":\"Осмотреть кофр\",\"starts_at\":\"2029-05-01T23:47\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V11",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через сорок восемь часов напомни получить снимки."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Получить снимки без тринадцати минут двенадцать.\",\"params\":{\"title\":\"Получить снимки\",\"starts_at\":\"2029-05-02T23:47\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V12",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через одну минуту будем слушать запись, напомни мне."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Будем слушать запись без трёх минут десять.\",\"params\":{\"title\":\"Будем слушать запись\",\"starts_at\":\"2032-02-29T21:57\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V13",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни протереть клавиши через 2 минуты."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Протереть клавиши без двух минут десять.\",\"params\":{\"title\":\"Протереть клавиши\",\"starts_at\":\"2032-02-29T21:58\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V14",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через четыре минуты настройка синтезатора на две минуты."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Настройка синтезатора в двадцать два часа, на две минуты.\",\"params\":{\"title\":\"Настройка синтезатора\",\"starts_at\":\"2032-02-29T22:00\",\"duration_min\":2}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V15",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни минут через семнадцать проверить педаль."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить педаль в тринадцать минут одиннадцатого.\",\"params\":{\"title\":\"Проверить педаль\",\"starts_at\":\"2032-02-29T22:13\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V16",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Проверить метроном напомни через тридцать одну минуту."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить метроном в двадцать семь минут одиннадцатого.\",\"params\":{\"title\":\"Проверить метроном\",\"starts_at\":\"2032-02-29T22:27\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V17",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через сорок пять минут уборка пюпитра, значение восемь."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Уборка пюпитра без девятнадцати минут одиннадцать, значение восемь.\",\"params\":{\"title\":\"Уборка пюпитра\",\"starts_at\":\"2032-02-29T22:41\",\"value\":8}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V18",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни через час и семь минут забрать футляр."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Забрать футляр в три минуты двенадцатого.\",\"params\":{\"title\":\"Забрать футляр\",\"starts_at\":\"2032-02-29T23:03\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V19",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через два часа четыре минуты напомни проверить струны."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить струны в ноль часов.\",\"params\":{\"title\":\"Проверить струны\",\"starts_at\":\"2032-03-01T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V20",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни убрать смычок через три часа пятьдесят девять минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Убрать смычок без пяти минут два.\",\"params\":{\"title\":\"Убрать смычок\",\"starts_at\":\"2032-03-01T01:55\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V21",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через двадцать три часа одну минуту напомни проверить ноты."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить ноты без трёх минут девять.\",\"params\":{\"title\":\"Проверить ноты\",\"starts_at\":\"2032-03-01T20:57\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V22",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни через двадцать четыре часа пять минут забрать партитуру."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Забрать партитуру в одну минуту одиннадцатого.\",\"params\":{\"title\":\"Забрать партитуру\",\"starts_at\":\"2032-03-01T22:01\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V23",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни завтра в одиннадцать часов пятнадцать минут разложить фотографии."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Разложить фотографии завтра в четверть двенадцатого.\",\"params\":{\"title\":\"Разложить фотографии\",\"starts_at\":\"2029-05-01T11:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V24",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра в десять пятнадцать напомни заказать альбом."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Заказать альбом завтра в четверть одиннадцатого.\",\"params\":{\"title\":\"Заказать альбом\",\"starts_at\":\"2029-05-01T10:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V25",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра проявка плёнки в двенадцать тридцать одну, напомни."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проявка плёнки завтра без двадцати девяти минут час.\",\"params\":{\"title\":\"Проявка плёнки\",\"starts_at\":\"2032-03-01T12:31\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V26",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни в двадцать три пятьдесят девять проверить усилитель."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить усилитель без одной минуты двенадцать.\",\"params\":{\"title\":\"Проверить усилитель\",\"starts_at\":\"2032-02-29T23:59\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V27",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Значение шесть, на три минуты, через четверть часа, замена ремешка."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Замена ремешка в две минуты первого, на три минуты, значение шесть.\",\"params\":{\"title\":\"Замена ремешка\",\"starts_at\":\"2029-05-01T00:02\",\"duration_min\":3,\"value\":6}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V28",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Прогон гаммы, значение два, через полчаса, на один час."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Прогон гаммы в двадцать шесть минут одиннадцатого, на час, значение два.\",\"params\":{\"title\":\"Прогон гаммы\",\"starts_at\":\"2032-02-29T22:26\",\"duration_min\":60,\"value\":2}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V29",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Запиши сегодня Укладка штатива на минуту."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Укладка штатива сегодня, на минуту.\",\"params\":{\"title\":\"Укладка штатива\",\"date\":\"2029-04-30\",\"duration_min\":1}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V30",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Если прибавить к текущему времени две минуты, сколько получится?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Получится 21:58.\",\"params\":{}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V31",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:47 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через пять минут напомни событие Три часа на двадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Три часа без восьми минут двенадцать, на двадцать минут.\",\"params\":{\"title\":\"Три часа\",\"starts_at\":\"2029-04-30T23:52\",\"duration_min\":20}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1264V32",
+    "category": "v12_64_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2032-02-29 (воскресенье) 21:56 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни через две минуты обсудить семь эскизов на пять минут, значение девять."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Обсудить семь эскизов без двух минут десять, на пять минут, значение девять.\",\"params\":{\"title\":\"Обсудить семь эскизов\",\"starts_at\":\"2032-02-29T21:58\",\"duration_min\":5,\"value\":9}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V01",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В двенадцать двенадцать завтра запиши сверку образца лака на пятнадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка образца лака завтра в двенадцать минут первого на пятнадцать минут.\",\"params\":{\"title\":\"Сверка образца лака\",\"starts_at\":\"2029-05-01T12:12\",\"duration_min\":15}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V02",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "В двенадцать пятнадцать завтра запиши сверку образца лака на двенадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверка образца лака завтра в четверть первого на двенадцать минут.\",\"params\":{\"title\":\"Сверка образца лака\",\"starts_at\":\"2029-05-01T12:15\",\"duration_min\":12}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V03",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра напомни в двенадцать четырнадцать проверить новый трафарет."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить новый трафарет завтра в четырнадцать минут первого.\",\"params\":{\"title\":\"Проверить новый трафарет\",\"starts_at\":\"2029-05-01T12:14\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V04",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Проверить новый трафарет напомни завтра в двенадцать шестнадцать."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить новый трафарет завтра в шестнадцать минут первого.\",\"params\":{\"title\":\"Проверить новый трафарет\",\"starts_at\":\"2029-05-01T12:16\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V05",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Запиши завтра подбор ленты в одиннадцать пятнадцать, значение двенадцать."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Подбор ленты завтра в четверть двенадцатого, значение двенадцать.\",\"params\":{\"title\":\"Подбор ленты\",\"starts_at\":\"2029-05-01T11:15\",\"value\":12}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V06",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра в ноль пятнадцать напомни сверить номер пломбы."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверить номер пломбы завтра в четверть первого.\",\"params\":{\"title\":\"Сверить номер пломбы\",\"starts_at\":\"2029-05-01T00:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V07",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни сверить номер пломбы через одну минуту."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сверить номер пломбы в четверть первого.\",\"params\":{\"title\":\"Сверить номер пломбы\",\"starts_at\":\"2029-04-30T12:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V08",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через две минуты на пятнадцать минут поставь осмотр стойки микрофона."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр стойки микрофона в шестнадцать минут первого на пятнадцать минут.\",\"params\":{\"title\":\"Осмотр стойки микрофона\",\"starts_at\":\"2029-04-30T12:16\",\"duration_min\":15}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V09",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:59 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через тринадцать минут проверь крепление лампы, напомни."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить крепление лампы завтра в двенадцать минут первого.\",\"params\":{\"title\":\"Проверить крепление лампы\",\"starts_at\":\"2029-05-01T00:12\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V10",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 23:59 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни про крепление лампы через шестнадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Крепление лампы завтра в четверть первого.\",\"params\":{\"title\":\"Крепление лампы\",\"starts_at\":\"2029-05-01T00:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V11",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Поставь осмотр стойки микрофона через час и одну минуту на двенадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр стойки микрофона в четверть второго на двенадцать минут.\",\"params\":{\"title\":\"Осмотр стойки микрофона\",\"starts_at\":\"2029-04-30T13:15\",\"duration_min\":12}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V14",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Добавь изучение инструкции на пятнадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Изучение инструкции на пятнадцать минут.\",\"params\":{\"title\":\"Изучение инструкции\",\"date\":\"2029-04-30\",\"duration_min\":15}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V15",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Сколько минут означает четверть часа?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Четверть часа составляет пятнадцать минут.\",\"params\":{}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1265V16",
+    "category": "v12_65_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 12:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "На двенадцать минут завтра контроль бирки в двадцать три пятнадцать."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Контроль бирки завтра в четверть двенадцатого на двенадцать минут.\",\"params\":{\"title\":\"Контроль бирки\",\"starts_at\":\"2029-05-01T23:15\",\"duration_min\":12}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V01",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни завтра в двенадцать пятнадцать проверить крепёж витража."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверить крепёж витража завтра в четверть первого.\",\"params\":{\"title\":\"Проверить крепёж витража\",\"starts_at\":\"2029-05-01T12:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V02",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Найди на завтра проверку крепежа витража."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск проверки крепежа витража на завтра.\",\"params\":{\"query\":\"проверка крепежа витража\",\"range_start\":\"2029-05-01T00:00\",\"range_end\":\"2029-05-02T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V03",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Через минуту напомни протереть линзу проектора."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Протереть линзу проектора в четверть двенадцатого.\",\"params\":{\"title\":\"Протереть линзу проектора\",\"starts_at\":\"2029-04-30T11:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V04",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Покажи протирку линзы проектора сегодня."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск протирки линзы проектора на сегодня.\",\"params\":{\"query\":\"протирка линзы проектора\",\"range_start\":\"2029-04-30T11:14\",\"range_end\":\"2029-05-01T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V05",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Напомни завтра про подбор проволоки для каркаса."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Подбор проволоки для каркаса завтра.\",\"params\":{\"title\":\"Подбор проволоки для каркаса\",\"date\":\"2029-05-01\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V06",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Что завтра уже записано по подбору проволоки для каркаса?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск подбора проволоки для каркаса на завтра.\",\"params\":{\"query\":\"подбор проволоки для каркаса\",\"range_start\":\"2029-05-01T00:00\",\"range_end\":\"2029-05-02T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V07",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Можете напомнить завтра в тринадцать пятнадцать про сбор коробок для рам?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Сбор коробок для рам завтра в четверть второго.\",\"params\":{\"title\":\"Сбор коробок для рам\",\"starts_at\":\"2029-05-01T13:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V08",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Можете показать записи про сбор коробок для рам?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск сбора коробок для рам.\",\"params\":{\"query\":\"сбор коробок для рам\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V09",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Значение пять, на двенадцать минут через две минуты напомни осмотр крепления экрана."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Осмотр крепления экрана в шестнадцать минут двенадцатого на двенадцать минут, значение пять.\",\"params\":{\"title\":\"Осмотр крепления экрана\",\"starts_at\":\"2029-04-30T11:16\",\"duration_min\":12,\"value\":5}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V10",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Осмотр крепления экрана сегодня найди в календаре."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск осмотра крепления экрана на сегодня.\",\"params\":{\"query\":\"осмотр крепления экрана\",\"range_start\":\"2029-04-30T11:14\",\"range_end\":\"2029-05-01T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V11",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Завтра в одиннадцать пятнадцать напомни."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Название события не указано. Время: завтра в четверть двенадцатого.\",\"params\":{\"starts_at\":\"2029-05-01T11:15\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V12",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Что уже внесено в мой календарь на завтра?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск событий на завтра.\",\"params\":{\"query\":\"\",\"range_start\":\"2029-05-01T00:00\",\"range_end\":\"2029-05-02T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V13",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Мне нужно напомнить про переноску для холстов."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Переноска для холстов.\",\"params\":{\"title\":\"Переноска для холстов\",\"date\":\"2029-04-30\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V14",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Есть в календаре запись про переноску для холстов?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск переноски для холстов.\",\"params\":{\"query\":\"переноска для холстов\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V15",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Про проверку стойки витража через час и одну минуту напомни на пятнадцать минут."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_add\",\"reply\":\"Проверка стойки витража в четверть первого на пятнадцать минут.\",\"params\":{\"title\":\"Проверка стойки витража\",\"starts_at\":\"2029-04-30T12:15\",\"duration_min\":15}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V16",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Посмотри в календаре проверку стойки витража сегодня."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"calendar_search\",\"reply\":\"Поиск проверки стойки витража на сегодня.\",\"params\":{\"query\":\"проверка стойки витража\",\"range_start\":\"2029-04-30T11:14\",\"range_end\":\"2029-05-01T00:00\"}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V17",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Какое местное время сейчас в контексте?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Сейчас 11:14.\",\"params\":{}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V18",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Назови завтрашнюю календарную дату полностью."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Завтра будет 1 мая 2029 года.\",\"params\":{}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V19",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Объясни различие между просмотром записей и созданием новой."
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Просмотр ищет существующие события по названию и периоду. Создание подготавливает новое событие из названных данных.\",\"params\":{}}"
+      }
+    ]
+  },
+  {
+    "case_id": "V1266V20",
+    "category": "v12_66_validation",
+    "contract_version": "v12.67",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Сегодня дата и время:2029-04-30 (понедельник) 11:14 Europe/Samara ответ JSON"
+      },
+      {
+        "role": "user",
+        "content": "Что означает неизвестное время у события?"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"intent\":\"chat\",\"reply\":\"Точное время ещё не задано. Остальные известные данные события можно сохранить в черновике.\",\"params\":{}}"
+      }
+    ]
+  }
+]

@@ -1,0 +1,79 @@
+{
+  "RecordedAtUtc": "2026-10-12T07:37:22.5744844Z",
+  "Status": "APPLIED_VERIFICATION_RUNNING",
+  "AuthorizedChoice": "Удалённые на C: файлы убирать из архива на D: при ближайшем обновлении, без истории",
+  "Upgrade": {
+    "Status": "APPLIED",
+    "StartedAtUtc": "2026-10-12T07:34:24.2525480Z",
+    "UpdatedAtUtc": "2026-10-12T07:34:30.1042904Z",
+    "Error": null,
+    "Staging": "C:\\ProgramData\\ProfileBackup007\\cleanup-upgrade-661b5872f8934e06b21cf2785172743a",
+    "RetentionMode": "LatestOnly",
+    "WorkerSha256": "3d34ded4475598d7fdc1d9e33888d3f417d099a8bc69aaea96d2e4d18d1e3057",
+    "CleanupSha256": "c027ed3b7602b5c1ffdcc63f303f663efd43c794fc3d0e21a2c55e90a77248c2",
+    "TaskStarted": true
+  },
+  "Config": {
+    "Source": "C:\\Users\\007",
+    "Repository": "D:\\Backups\\007-restic",
+    "InstalledRoot": "C:\\ProgramData\\ProfileBackup007",
+    "RetentionMode": "LatestOnly",
+    "WorkerSha256": "3d34ded4475598d7fdc1d9e33888d3f417d099a8bc69aaea96d2e4d18d1e3057",
+    "CleanupSha256": "c027ed3b7602b5c1ffdcc63f303f663efd43c794fc3d0e21a2c55e90a77248c2",
+    "RetentionEnabledAtUtc": "2026-10-12T07:34:29.7492878Z",
+    "MinimumFreeBytes": 10737418240,
+    "StopBelowBytes": 11811160064
+  },
+  "Schedule": {
+    "Enabled": true,
+    "EnabledXml": null,
+    "EnabledEvidence": "XML default true and successful actual task start",
+    "SystemUser": "S-1-5-18",
+    "Interval": "PT1H",
+    "Command": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "Arguments": "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:\\ProgramData\\ProfileBackup007\\profile-backup.ps1\" -Mode Hourly",
+    "Description": "Hourly compressed backup of C:\\Users\\007 to Toshiba D:. After a verified update, retain only that snapshot and prune unused data. Space reserve: 10 GiB. No deletion history."
+  },
+  "FunctionalTest": {
+    "Status": "PASS",
+    "CheckedAtUtc": "2026-10-12T07:26:59.3105177Z",
+    "PowerShell": "5.1.19041.6456",
+    "FixtureRoot": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\profile_backup_cleanup_20261012\\smoke-a88c7a1d106f4b32845c1115e0ba0ec6",
+    "WorkerSha256": "3d34ded4475598d7fdc1d9e33888d3f417d099a8bc69aaea96d2e4d18d1e3057",
+    "HelperSha256": "c027ed3b7602b5c1ffdcc63f303f663efd43c794fc3d0e21a2c55e90a77248c2",
+    "FailedBackupKeptPriorSnapshots": true,
+    "UnverifiedCleanupBlocked": true,
+    "DeletedFileAbsent": true,
+    "LatestContentsRestoredAndMatched": true,
+    "OldProfileSnapshotRemoved": true,
+    "UnrelatedSnapshotRestoredAndMatched": true,
+    "FullFixtureDataCheckPassed": true,
+    "Cleanup": {
+      "Policy": "LatestOnly",
+      "KeptSnapshotId": "d6e56d93f5c095ba865525812360a511f4e3a53c0c6f501110986e287118b3c7",
+      "ScopePaths": [
+        "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\profile_backup_cleanup_20261012\\smoke-a88c7a1d106f4b32845c1115e0ba0ec6\\profile with spaces",
+        "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\profile_backup_cleanup_20261012\\smoke-a88c7a1d106f4b32845c1115e0ba0ec6\\job\\source-metadata\\profile-special.json"
+      ],
+      "PlannedRemovedIds": [
+        "23d2b68250be181728312b6df2123e30e049b3625f8654d719d33a9e8e4033ed"
+      ],
+      "RemovedIds": [
+        "23d2b68250be181728312b6df2123e30e049b3625f8654d719d33a9e8e4033ed"
+      ],
+      "UnrelatedSnapshotIds": [
+        "7e75416bb1ab4eb59245671a30496c866e062cc24c86fceadc5b99d8b5fd8710"
+      ],
+      "PruneCompleted": true,
+      "NewPrunePacksVerified": 2,
+      "PreCleanupRestorePassed": true,
+      "PostCleanupRestorePassed": true,
+      "CheckPassed": true,
+      "StartedAtUtc": "2026-10-12T07:26:30.5090609Z",
+      "CompletedAtUtc": "2026-10-12T07:26:49.8578174Z"
+    },
+    "ProductionRepositoryTouched": false
+  },
+  "BeforeCleanupRepositoryBytes": 276632698745,
+  "BeforeCleanupFreeDBytes": 141616111616
+}

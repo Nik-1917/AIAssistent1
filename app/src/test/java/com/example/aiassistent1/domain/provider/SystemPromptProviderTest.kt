@@ -30,4 +30,16 @@ class SystemPromptProviderTest {
         assertTrue(Regex("""cегодня \d{4}-\d{2}-\d{2} \d{2}:\d{2} день недели \p{IsCyrillic}+""").matches(prompt))
         assertFalse(prompt.contains("calendar_"))
     }
+
+    @Test
+    fun `creation reply contract preserves the title and separates schedule params`() {
+        val prompt = SystemPromptProvider().getSystemPrompt(isCalendarMode = true)
+        assertTrue(prompt.contains("Новое событие: НАЗВАНИЕ."))
+        assertTrue(prompt.contains("Создаём событие без названия."))
+        assertTrue(prompt.contains("Не добавляй дату, время, длительность"))
+        assertTrue(prompt.contains("Слова внутри самого title сохраняй буквально"))
+        assertTrue(prompt.contains("обработай только первое"))
+        assertTrue(prompt.contains("Только для calendar_add: если запрошено несколько независимых событий"))
+        assertTrue(prompt.contains("не обработаны"))
+    }
 }

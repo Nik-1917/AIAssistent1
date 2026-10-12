@@ -1,0 +1,1651 @@
+package com.example.aiassistent1.presentation.viewmodel
+
+import com.example.aiassistent1.domain.formatter.withCalendarNotes
+
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
+import com.example.aiassistent1.calendar.core.domain.CalendarCommandExecutor
+import com.example.aiassistent1.calendar.core.domain.CalendarCommand
+import com.example.aiassistent1.calendar.core.domain.CalendarCommandResult
+import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
+import com.example.aiassistent1.domain.interfaces.ChatRepository
+import com.example.aiassistent1.domain.interfaces.ChatContextRepository
+import com.example.aiassistent1.domain.model.ChatContextChoice
+import com.example.aiassistent1.domain.model.ChatHistoryPolicy
+import com.example.aiassistent1.domain.usecase.ChatContextSession
+import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
+import com.example.aiassistent1.domain.interfaces.InputProvider
+import com.example.aiassistent1.domain.interfaces.LLMEngine
+import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.domain.interfaces.SpeechPlayback
+import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
+import com.example.aiassistent1.domain.context.ModelContextBuilder
+import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarSearchParams
+import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.AppDestination
+import com.example.aiassistent1.domain.model.ChatScrollPosition
+import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ModelProfile
+import com.example.aiassistent1.domain.model.ModelParameterProfiles
+import com.example.aiassistent1.domain.model.FloatingControlPositions
+import com.example.aiassistent1.domain.model.MessageRole
+import com.example.aiassistent1.domain.model.ModelState
+import com.example.aiassistent1.domain.parser.AssistantResponseParser
+import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
+import com.example.aiassistent1.domain.usecase.SendMessageUseCase
+import com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCase
+import com.example.aiassistent1.service.GenerationForegroundService
+import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
+import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
+import com.example.aiassistent1.presentation.playback.SpeechStopReason
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+class ChatViewModel(
+    private val context: Context,
+    private val chatRepository: ChatRepository,
+    private val sendMessage: SendMessageUseCase,
+    private val llmEngine: LLMEngine,
+    private val voiceInput: InputProvider? = null,
+    private val voiceDraftRepository: VoiceDraftRepository,
+    private val speechPlayback: SpeechPlayback? = null,
+    private val settingsRepository: SettingsRepository,
+    private val searchCalendarEvents: SearchCalendarEventsUseCase,
+    private val assistantResponseParser: AssistantResponseParser,
+    private val modelContextBuilder: ModelContextBuilder,
+    private val formatCalendarField: FormatCalendarFieldUseCase,
+    private val calendarCommandExecutor: CalendarCommandExecutor,
+    private val calendarCommandMapper: CalendarCommandMapper,
+    calendarDraftRepository: CalendarDraftRepository,
+    private val chatContextRepository: ChatContextRepository,
+) : ViewModel() {
+    private val mutableUiState = MutableStateFlow(ChatUiState())
+    private val calendarDraftController = CalendarDraftController(calendarDraftRepository, viewModelScope)
+    private var calendarDraftVoiceTarget: Pair<String, CalendarEventField>? = null
+    private val speechPlaybackController = speechPlayback?.let {
+        SpeechPlaybackController(context, it)
+    }
+    private var generationJob: Job? = null
+    private val contextDecisions = ChatContextDecisionGate()
+    private val chatContextSession = ChatContextSession(llmEngine, chatContextRepository, modelContextBuilder)
+    private val pendingChatMessages = PendingChatMessages()
+    private var activeChatJob: Job? = null
+    private var voiceDraftRestored = false
+    private var openVoiceDraftAfterRestore = false
+    private var activeVoiceInputSessionId: Long? = null
+    private var voiceStartJob: Job? = null
+    private var voiceBackgroundSession: GenerationForegroundService.Session? = null
+    private var paramsJob: Job? = null
+    private val modelParamsWrites = Mutex()
+    private val modelParamsController = ModelParamsController(llmEngine)
+    val automaticGeneration = llmEngine.automaticState
+    private var voiceModeShutdownJob: Job? = null
+    private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
+    private var isManualMessagePlayback = false
+    private val mutableAudioActivity = MutableStateFlow(com.example.aiassistent1.domain.model.AudioSessionState.Idle)
+    val audioActivity = mutableAudioActivity.asStateFlow()
+    val personalKeywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls?
+        get() = voiceInput as? com.example.aiassistent1.domain.interfaces.PersonalKeywordControls
+    val voiceProfileControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls?
+        get() = voiceInput as? com.example.aiassistent1.domain.interfaces.VoiceProfileControls
+    private val mutableSummaryState = MutableStateFlow<String?>(null)
+    val summaryState = mutableSummaryState.asStateFlow()
+    private var summarizing = false
+    private var wakeWordEnabled = false
+
+    val uiState: StateFlow<ChatUiState> = mutableUiState.asStateFlow()
+    val assistantDisplayName = settingsRepository.assistantDisplayName
+
+    init {
+        viewModelScope.launch {
+            contextDecisions.pressure.collect { pressure ->
+                mutableUiState.update { it.copy(chatContextPressure = pressure) }
+            }
+        }
+        viewModelScope.launch {
+            try {
+                chatContextRepository.observe("general").collect { settings ->
+                    mutableUiState.update { it.copy(chatHistoryPolicy = settings.policy) }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
+        viewModelScope.launch {
+            calendarDraftController.state.collect { drafts ->
+                mutableUiState.update { it.copy(calendarDrafts = drafts) }
+            }
+        }
+        observeAppSession()
+        observeModelState()
+        observeSettings()
+        observeVoiceInput()
+        observeVoiceInputErrors()
+        observeSpeechPlayback()
+        observeVoiceBackgroundSession()
+        restoreVoiceDraft()
+        updateAvailableModels()
+        viewModelScope.launch {
+            var previous: com.example.aiassistent1.domain.model.VoiceInputPolicy? = null
+            settingsRepository.audioPreferences.collect { prefs ->
+                wakeWordEnabled = prefs.wakeWordEnabled
+                val policy = prefs.inputPolicy()
+                val changed = previous != null && previous != policy
+                previous = policy
+                if (changed && uiState.value.isVoiceMode) {
+                    stopVoiceInput()
+                    val state = uiState.value
+                    val speaking = state.speechPlaybackState is SpeechPlaybackState.Playing ||
+                        state.speechPlaybackState is SpeechPlaybackState.Generating
+                    if ((state.isProcessing || speaking) && prefs.bargeIn) startVoiceInput(bargeIn = true)
+                    else if (!state.isProcessing && !speaking) startVoiceInput()
+                }
+            }
+        }
+        viewModelScope.launch { voiceInput?.observeActivity()?.collect { mutableAudioActivity.value = it } }
+        viewModelScope.launch {
+            voiceInput?.observeSpeechStart()?.collect { sessionId ->
+                if (sessionId == activeVoiceInputSessionId && uiState.value.isVoiceMode &&
+                    settingsRepository.bargeInEnabled.value &&
+                    (uiState.value.speechPlaybackState is SpeechPlaybackState.Playing ||
+                        uiState.value.speechPlaybackState is SpeechPlaybackState.Generating)) {
+                    speechPlaybackController?.stop(SpeechStopReason.NewMessage)
+                }
+            }
+        }
+        viewModelScope.launch {
+            val manager = com.example.aiassistent1.di.AppModule.provideConferenceManager(context)
+            kotlinx.coroutines.flow.combine(manager.summaryRequest, uiState) { id, state -> id to state.isProcessing }
+                .collect { (id, busy) ->
+                    if (id != null && !busy) {
+                        manager.summaryHandled(id)
+                        summarizeConference(id)
+                    }
+                }
+        }
+    }
+
+    fun prepareForConference() {
+        setVoiceMode(false)
+        stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.User)
+    }
+
+    fun summarizeConference(id: Long) {
+        if (uiState.value.isProcessing) { mutableSummaryState.value = "Дождитесь завершения текущего ответа"; return }
+        prepareForConference()
+        summarizing = true
+        mutableUiState.update { it.copy(isProcessing = true) }
+        mutableSummaryState.value = "Создание выжимки…"
+        generationJob = viewModelScope.launch {
+            var session: GenerationForegroundService.Session? = null
+            try {
+                session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                session.awaitReady()
+                modelParamsController.applyForRequest(uiState.value.modelParams)
+                val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
+                    com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
+                mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
+            } catch (cancelled: CancellationException) {
+                mutableSummaryState.value = "Создание выжимки остановлено"
+                throw cancelled
+            } catch (error: Exception) { mutableSummaryState.value = error.message ?: "Ошибка выжимки" }
+            finally {
+                summarizing = false
+                modelParamsController.applyForRequest(uiState.value.modelParams)
+                mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                session?.close()
+            }
+        }
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            settingsRepository.selectedModel.collect { model ->
+                mutableUiState.update { it.copy(
+                    selectedModel = model.orEmpty(),
+                    modelProfiles = ModelParameterProfiles(),
+                    areModelParamsLoaded = false,
+                ) }
+                checkModelPresence(model)
+                if (model != null) observeParams(model)
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.showDeleteMessageConfirmation.collect { show ->
+                mutableUiState.update { it.copy(showDeleteMessageConfirmation = show) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.showClearChatConfirmation.collect { show ->
+                mutableUiState.update { it.copy(showClearChatConfirmation = show) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.compactDatesEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(compactDatesEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.smoothResponseEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(smoothResponseEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.dialogueModeEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(dialogueModeEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.autoPlaybackEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(autoPlaybackEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.speechRate.collect { rate ->
+                mutableUiState.update { it.copy(speechRate = rate) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.floatingControlPositions.collect { positions ->
+                mutableUiState.update {
+                    it.copy(
+                        floatingControlPositions = positions,
+                        isFloatingControlPositionsLoaded = true,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observeParams(modelName: String) {
+        paramsJob?.cancel()
+        paramsJob = viewModelScope.launch {
+            combine(
+                settingsRepository.getParamsForModel(modelName, ModelProfile.CALENDAR),
+                settingsRepository.getParamsForModel(modelName, ModelProfile.CHAT),
+            ) { calendar, chat -> ModelParameterProfiles(calendar, chat) }.collect { profiles ->
+                if (uiState.value.selectedModel == modelName) {
+                    mutableUiState.update { it.copy(modelProfiles = profiles, areModelParamsLoaded = true) }
+                    applyCurrentModelParamsIfIdle()
+                }
+            }
+        }
+    }
+
+    fun updateModelParams(modelName: String, profile: ModelProfile, params: GenerationParams) {
+        viewModelScope.launch {
+            modelParamsWrites.withLock {
+                settingsRepository.updateParamsForModel(modelName, profile, params)
+            }
+        }
+    }
+
+    private suspend fun readRequestParams(modelName: String, profile: ModelProfile): GenerationParams =
+        modelParamsWrites.withLock {
+            settingsRepository.getParamsForModel(modelName, profile).first()
+        }
+
+    fun refreshModelMemory() = settingsRepository.refreshModelMemory()
+
+    private fun applyCurrentModelParamsIfIdle() {
+        modelParamsController.applyWhenIdle(uiState.value, summarizing)
+    }
+
+    fun refreshModelStatus() {
+        checkModelPresence(settingsRepository.selectedModel.value)
+        updateAvailableModels()
+    }
+
+    private fun updateAvailableModels() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val modelsDir = context.getExternalFilesDir("models")
+            val modelFiles = mutableSetOf<String>()
+            modelsDir?.listFiles { file -> file.extension.equals("gguf", ignoreCase = true) }?.forEach {
+                if (it.length() > 0) modelFiles.add(it.name) 
+            }
+            val sortedModels = modelFiles.toList().sorted()
+            mutableUiState.update { it.copy(availableModels = sortedModels) }
+        }
+    }
+
+    fun importModel(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                mutableUiState.update { it.copy(modelState = ModelState.Importing(0f)) }
+                val importedFileName = withContext(Dispatchers.IO) {
+                    val contentResolver = context.contentResolver
+                    
+                    val fileName = requireModelFileName(getFileName(uri))
+                    
+                    val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+                    val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Не удалось открыть файл")
+                    
+                    val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
+                    check(targetDir.exists() || targetDir.mkdirs()) { "Не удалось создать папку моделей" }
+                    if (totalSize >= 0) {
+                        require(totalSize <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                        require(totalSize <= targetDir.usableSpace) { "Недостаточно места для импорта модели" }
+                    }
+                    
+                    val canonicalTargetDir = targetDir.canonicalFile
+                    val targetFile = File(canonicalTargetDir, fileName).canonicalFile
+                    require(targetFile.parentFile == canonicalTargetDir) { "Некорректный путь к модели" }
+                    require(!targetFile.exists()) { "Модель с таким именем уже импортирована" }
+                    val temporaryFile = File.createTempFile("model_", ".part", canonicalTargetDir)
+                    val buffer = ByteArray(1024 * 1024) // 1MB buffer
+                    var bytesCopied = 0L
+                    try {
+                        inputStream.use { input ->
+                            FileOutputStream(temporaryFile).use { output ->
+                                while (true) {
+                                    val bytesRead = input.read(buffer)
+                                    if (bytesRead == -1) break
+                                    bytesCopied += bytesRead
+                                    require(bytesCopied <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                                    output.write(buffer, 0, bytesRead)
+                                    if (totalSize > 0) {
+                                        val progress = bytesCopied.toFloat() / totalSize
+                                        mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+                                    }
+                                }
+                            }
+                        }
+                        require(bytesCopied > 0) { "Файл модели пуст" }
+                        check(temporaryFile.renameTo(targetFile)) { "Не удалось завершить импорт модели" }
+                    } finally {
+                        if (temporaryFile.exists()) temporaryFile.delete()
+                    }
+                    fileName
+                }
+                
+                // После успешного импорта выбираем эту модель
+                selectModel(importedFileName)
+                updateAvailableModels()
+                mutableUiState.update {
+                    it.copy(
+                        modelState = ModelState.Unloaded,
+                        modelAvailability = ModelAvailability.Available,
+                    )
+                }
+            } catch (e: Exception) {
+                mutableUiState.update { it.copy(modelState = ModelState.Error(e.message ?: "Ошибка импорта")) }
+            }
+        }
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) {
+                        result = cursor.getString(index)
+                    }
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/') ?: -1
+            if (cut != -1) {
+                result = result?.substring(cut + 1)
+            }
+        }
+        return result
+    }
+
+    private fun requireModelFileName(fileName: String?): String {
+        val safeFileName = fileName?.trim().orEmpty()
+        require(safeFileName.isNotBlank()) { "Не удалось определить имя файла модели" }
+        require(safeFileName.length <= MAX_MODEL_FILE_NAME_LENGTH) { "Слишком длинное имя файла модели" }
+        require(!safeFileName.contains('/') && !safeFileName.contains('\\')) { "Некорректное имя файла модели" }
+        require(safeFileName.endsWith(".gguf", ignoreCase = true)) { "Поддерживаются только модели .gguf" }
+        return safeFileName
+    }
+
+    private fun checkModelPresence(fileName: String?) {
+        if (fileName == null) {
+            mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Checking) }
+            return
+        }
+
+        if (fileName.isBlank()) {
+            mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Missing) }
+            return
+        }
+
+        mutableUiState.update { it.copy(modelAvailability = ModelAvailability.Checking) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val privateFile = File(context.getExternalFilesDir("models"), fileName)
+            val privateExists = privateFile.exists() && privateFile.length() > 0
+            mutableUiState.update {
+                it.copy(
+                    modelAvailability = if (privateExists) {
+                        ModelAvailability.Available
+                    } else {
+                        ModelAvailability.Missing
+                    }
+                )
+            }
+        }
+    }
+
+    fun sendMessage(text: String) {
+        sendMessageInternal(text)
+    }
+
+    fun sendVoiceDraft() {
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isVisible || !sendMessageInternal(state.voiceDraft.text)) return
+
+        mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
+        clearPersistedVoiceDraft()
+    }
+
+    fun setChatMode(isCalendar: Boolean) {
+        viewModelScope.launch {
+            try {
+                settingsRepository.setSystemPromptEnabled(isCalendar)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
+    }
+
+    fun openCalendar() = navigateTo(AppDestination.CALENDAR)
+
+    fun returnToConversation() = navigateTo(AppDestination.CHAT)
+
+    private fun navigateTo(destination: AppDestination) {
+        viewModelScope.launch {
+            try {
+                settingsRepository.setAppDestination(destination)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
+    }
+
+    fun resolveChatContext(id: String, choice: ChatContextChoice) {
+        if (contextDecisions.pressure.value?.id != id) return
+        contextDecisions.resolve(id, choice)
+        // Match the existing Stop action, including resuming dialogue listening when enabled.
+        if (choice == ChatContextChoice.Cancel) stopGeneration()
+    }
+
+    fun setChatHistoryPolicy(policy: ChatHistoryPolicy) {
+        viewModelScope.launch {
+            try { chatContextRepository.update("general", policy = policy) }
+            catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            }
+        }
+    }
+
+    private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false): Boolean {
+        val trimmedText = text.trim()
+        val state = mutableUiState.value
+        val messageLimit = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(state.isCalendarMode)
+        when {
+            trimmedText.isEmpty() -> return false
+            trimmedText.length > messageLimit -> {
+                mutableUiState.update { it.copy(error = "Сообщение не должно превышать $messageLimit символов") }
+                return false
+            }
+            state.isProcessing || state.isStopping -> return false
+        }
+
+        stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.NewMessage)
+
+        val userMessage = ChatMessage(
+            role = MessageRole.USER,
+            content = trimmedText,
+            chatId = state.activeChatId
+        )
+        pendingChatMessages.put(userMessage)
+        mutableUiState.update { currentState ->
+            currentState.copy(
+                messages = currentState.messages + userMessage,
+                isProcessing = true,
+                isCheckingRequest = true,
+                isStopping = false,
+                isVoiceMode = preserveVoiceMode,
+                voiceDraft = currentState.voiceDraft.copy(isVisible = false, isRecording = false),
+                error = null,
+            )
+        }
+
+        startGenerationFlow(state.copy(messages = state.messages + userMessage), userMessage)
+        return true
+    }
+
+    private fun startGenerationFlow(
+        requestState: ChatUiState = mutableUiState.value,
+        newUserMessage: ChatMessage? = null,
+    ) {
+        generationJob = viewModelScope.launch {
+            var assistantMessage: ChatMessage? = null
+            var responseWriter: ChatResponseWriter? = null
+            var backgroundSession: GenerationForegroundService.Session? = null
+            var generationStarted = false
+            val onReady: suspend () -> Unit = {
+                withContext(Dispatchers.Main.immediate) {
+                    currentCoroutineContext().ensureActive()
+                    if (!generationStarted) {
+                        generationStarted = true
+                        mutableUiState.update { it.copy(isCheckingRequest = false) }
+                        assistantMessage?.let { updateMessage(it, isStreaming = true) }
+                    }
+                }
+            }
+            try {
+                val currentState = requestState
+                modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
+                if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
+                llmEngine.checkModelAvailability(if (currentState.isCalendarMode)
+                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR
+                    else com.example.aiassistent1.domain.model.GenerationTask.CHAT)
+                backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                backgroundSession.awaitReady()
+                val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
+                val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
+                    modelContextBuilder.build(
+                        currentState.messages,
+                        appendChatStyleInstruction = !currentState.isCalendarMode,
+                        isCalendarMode = currentState.isCalendarMode,
+                    ),
+                    useSystemPrompt = true,
+                    isCalendarMode = currentState.isCalendarMode,
+                    onReady = onReady,
+                ) else Result.success(chatContextSession.respond(currentState.activeChatId, currentState.messages, onReady) { pressure ->
+                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                        uiState.value.selectedModel != currentState.selectedModel) {
+                        throw CancellationException("Чат или модель изменились")
+                    }
+                    // Release the generation session while the user chooses history; the engine mutex is already free.
+                    backgroundSession?.close()
+                    backgroundSession = null
+                    val choice = contextDecisions.await(pressure)
+                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                        uiState.value.selectedModel != currentState.selectedModel) {
+                        throw CancellationException("Чат или модель изменились")
+                    }
+                    if (choice != ChatContextChoice.Cancel) {
+                        backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                        backgroundSession?.awaitReady()
+                    }
+                    choice
+                })
+                val response = responseFlowResult.getOrElse { error ->
+                    mutableUiState.update { it.copy(error = error.userMessage()) }
+                    return@launch
+                }
+
+                assistantMessage = ChatMessage(
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    chatId = currentState.activeChatId
+                )
+                val writer = ChatResponseWriter(
+                    initialMessage = assistantMessage!!,
+                    saveMessage = { message ->
+                        withContext(Dispatchers.IO) { chatRepository.saveMessage(message) }
+                    },
+                    onMessageChanged = { message, isStreaming ->
+                        assistantMessage = message
+                        if (generationStarted) updateMessage(message, isStreaming)
+                    },
+                )
+                responseWriter = writer
+                writer.collect(response)
+
+                // Сохраняем в БД только если есть контент
+                val finalMessage = assistantMessage
+                if (finalMessage != null) {
+                    if (finalMessage.content.isNotBlank()) {
+                        // Обычный чат живёт по своей логике: JSON-контракт парсится только в режиме календаря
+                        if (currentState.isCalendarMode) {
+                            val parseOutcome = assistantResponseParser.parseResult(
+                                finalMessage.content,
+                                com.example.aiassistent1.domain.parser.CalendarDateContext(
+                                    today = LocalDate.now(ZoneId.systemDefault()),
+                                    userMessagesNewestFirst = currentState.messages.asReversed()
+                                        .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.USER }
+                                        .map { it.content },
+                                    assistantMessagesNewestFirst = currentState.messages.asReversed()
+                                        .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.ASSISTANT }
+                                        .map { it.content },
+                                ),
+                            )
+                            val parsed = parseOutcome.getOrNull()
+                                ?.resolveImplicitCalendarAddDate(
+                                    LocalDateTime.now(ZoneId.systemDefault()),
+                                )
+                            val messageToSave = if (parsed != null) {
+                                val notes = when (val params = parsed.params) {
+                                    is CalendarAddParams -> params.notes
+                                    else -> null
+                                }
+                                finalMessage.copy(content = parsed.reply.withCalendarNotes(notes))
+                            } else {
+                                val rawModelJson = finalMessage.content.take(MAX_LOGCAT_PAYLOAD_LENGTH)
+                                Log.e(TAG, "RAW_MODEL_JSON: $rawModelJson")
+                                Log.e(
+                                    TAG,
+                                    "PARSE_ERROR: ${parseOutcome.exceptionOrNull()?.message ?: "неизвестная ошибка"}",
+                                )
+                                finalMessage.copy(content = "Не удалось разобрать ответ модели. Попробуйте изменить запрос.")
+                            }
+
+                            // Финальная запись следует после всех контрольных точек сырого JSON.
+                            writer.complete(messageToSave)
+
+                            if (parsed != null) {
+                                handleParsedResponse(parsed, messageToSave.id, lastUserMessageContent)
+                            }
+                        } else {
+                            writer.complete(finalMessage)
+                        }
+                    } else {
+                        // Если сообщение пустое после завершения (например, сброс), удаляем из UI
+                        mutableUiState.update { state ->
+                            state.copy(messages = state.messages.filterNot { it.id == finalMessage.id })
+                        }
+                    }
+                }
+
+                val playbackStarted = if (mutableUiState.value.autoPlaybackEnabled) {
+                    assistantMessage?.content
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { content -> speechPlaybackController?.speak(content) }
+                        ?: false
+                } else {
+                    false
+                }
+                if (!playbackStarted) {
+                    viewModelScope.launch {
+                        kotlinx.coroutines.yield()
+                        resumeDialogueVoiceInput()
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+            } finally {
+                try {
+                    // No-op after a successful final write; also flushes the tail on ordinary errors.
+                    responseWriter?.interrupt()
+                } catch (storageError: Exception) {
+                    mutableUiState.update { state ->
+                        state.copy(error = listOfNotNull(
+                            state.error,
+                            "Не удалось сохранить ответ: ${storageError.userMessage()}",
+                        ).joinToString("\n"))
+                    }
+                }
+                // Финальная проверка: если в списке осталось пустое сообщение, удаляем его
+                assistantMessage?.let { final ->
+                    if (final.content.isBlank()) {
+                        pendingChatMessages.remove(final.id)
+                        mutableUiState.update { state ->
+                            state.copy(messages = state.messages.filterNot { it.id == final.id })
+                        }
+                    }
+                }
+                mutableUiState.update { it.copy(isProcessing = false, isCheckingRequest = false, isStopping = false) }
+                applyCurrentModelParamsIfIdle()
+                backgroundSession?.close()
+            }
+        }
+    }
+
+    fun selectModel(modelName: String) {
+        viewModelScope.launch {
+            if (uiState.value.selectedModel == modelName) {
+                // Import may restore a previously selected but missing file.
+                observeParams(modelName)
+                return@launch
+            }
+            val previousGeneration = generationJob
+            
+            stopGeneration(resumeDialogue = false)
+            previousGeneration?.join()
+            llmEngine.unload()
+            // Принудительно сбрасываем флаги при смене модели
+            mutableUiState.update { it.copy(isStopping = false, isProcessing = false, isCheckingRequest = false) }
+            settingsRepository.setSelectedModel(modelName)
+        }
+    }
+
+    fun copyToClipboard(text: String) {
+        if (text.isBlank()) return
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clip = android.content.ClipData.newPlainText("AI Assistant Message", text)
+        clipboard.setPrimaryClip(clip)
+        mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован") }
+    }
+
+    fun setShowDeleteMessageConfirmation(show: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowDeleteMessageConfirmation(show)
+        }
+    }
+
+    fun setShowClearChatConfirmation(show: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowClearChatConfirmation(show)
+        }
+    }
+
+    fun deleteMessage(id: String) {
+        viewModelScope.launch {
+            pendingChatMessages.remove(id)
+            // Сначала немедленно удаляем из UI
+            mutableUiState.update { it.copy(messages = it.messages.filterNot { it.id == id }) }
+            // Затем удаляем из базы данных
+            withContext(Dispatchers.IO) {
+                chatRepository.deleteMessage(id)
+            }
+        }
+    }
+
+    fun retry() {
+        val state = uiState.value
+        if (state.isProcessing || state.isStopping) return
+
+        setVoiceMode(false)
+        
+        val lastUserMessage = state.messages.findLast { it.role == MessageRole.USER } ?: return
+        val lastUserMessageIndex = state.messages.indexOf(lastUserMessage)
+
+        // Берем историю до последнего сообщения пользователя включительно
+        val historyToRetry = state.messages.take(lastUserMessageIndex + 1)
+        
+        viewModelScope.launch {
+            // Удаляем из БД сообщения после последнего пользовательского
+            val messagesToDelete = state.messages.drop(lastUserMessageIndex + 1)
+            messagesToDelete.forEach { pendingChatMessages.remove(it.id) }
+            withContext(Dispatchers.IO) {
+                messagesToDelete.forEach { chatRepository.deleteMessage(it.id) }
+            }
+            
+            // Сначала обновляем UI (удаляем лишнее), затем запускаем генерацию
+            mutableUiState.update { it.copy(
+                messages = historyToRetry,
+                isProcessing = true,
+                isCheckingRequest = true,
+                isStopping = false, // Сбрасываем флаг остановки при повторе
+                error = null,
+            ) }
+            
+            startGenerationFlow()
+        }
+    }
+
+    fun onMicrophoneTap() {
+        val state = mutableUiState.value
+        if (state.isProcessing) return
+
+        if (state.voiceDraft.isVisible) {
+            hideVoiceDraftAndEnterVoiceMode()
+        } else {
+            setVoiceMode(!state.isVoiceMode)
+        }
+    }
+
+    fun startVoiceDraft() {
+        val state = mutableUiState.value
+        if (state.isProcessing) return
+        if (!voiceDraftRestored) {
+            openVoiceDraftAfterRestore = true
+            return
+        }
+        if (state.voiceDraft.isVisible && state.voiceDraft.isRecording) return
+
+        cancelPendingVoiceModeShutdown()
+        if (state.isVoiceMode || state.voiceDraft.isRecording) stopVoiceInput()
+        mutableUiState.update { current ->
+            current.copy(
+                isVoiceMode = false,
+                voiceDraft = current.voiceDraft.copy(isVisible = true, isRecording = true),
+                error = null,
+            )
+        }
+        speechPlaybackController?.stop(SpeechStopReason.User)
+        startVoiceInput(continuous = true)
+    }
+
+    fun deleteVoiceDraft() {
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(
+                isVoiceMode = false,
+                voiceDraft = VoiceDraftState(),
+            )
+        }
+        clearPersistedVoiceDraft()
+    }
+
+    fun onAppBackgrounded(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) persistVoiceDraft(mutableUiState.value.voiceDraft.text)
+    }
+
+    fun setVoiceMode(enabled: Boolean) {
+        val state = mutableUiState.value
+        if (state.isVoiceMode == enabled || (enabled && state.isProcessing)) return
+        if (enabled) cancelPendingVoiceModeShutdown()
+        mutableUiState.update { it.copy(isVoiceMode = enabled, error = null) }
+        if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
+        if (!enabled) {
+            stopVoiceInput()
+        }
+    }
+
+    fun stopGeneration(resumeDialogue: Boolean = true) {
+        speechPlaybackController?.stop(SpeechStopReason.User)
+        if (!uiState.value.isProcessing) return
+        if (resumeDialogue && !uiState.value.dialogueModeEnabled) {
+            setVoiceMode(false)
+        }
+
+        val activeGeneration = generationJob
+
+        // Устанавливаем флаг остановки для изменения текста в UI
+        mutableUiState.update { it.copy(isStopping = true) }
+        
+        // Прерываем native процесс
+        llmEngine.cancelGeneration()
+        // Отменяем корутину генерации
+        activeGeneration?.cancel()
+        // Возвращаем немедленный сброс флага обработки, как было раньше
+        mutableUiState.update { it.copy(isProcessing = false, isCheckingRequest = false) }
+        // The generation coroutine releases its own session in finally.
+        if (resumeDialogue) {
+            viewModelScope.launch {
+                activeGeneration?.join()
+                resumeDialogueVoiceInput()
+            }
+        }
+    }
+
+    fun clearChat() {
+        val activeGeneration = generationJob
+        val state = mutableUiState.value
+        val voiceDraft = state.voiceDraft
+        llmEngine.cancelGeneration()
+        stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.User)
+        activeGeneration?.cancel()
+        persistVoiceDraft(voiceDraft.text)
+
+        viewModelScope.launch {
+            activeGeneration?.join()
+            pendingChatMessages.clear(state.activeChatId)
+            withContext(Dispatchers.IO) { chatRepository.deleteAllMessages(state.activeChatId) }
+            if (!state.isCalendarMode) chatContextRepository.update(state.activeChatId, excludedTurnIds = emptySet())
+            settingsRepository.setChatScrollPosition(ChatScrollPosition())
+            mutableUiState.update {
+                it.copy(
+                    messages = if (it.activeChatId == state.activeChatId) emptyList() else it.messages,
+                    isProcessing = false,
+                    isCheckingRequest = false,
+                    isVoiceMode = false,
+                    voiceDraft = it.voiceDraft.copy(isVisible = false, isRecording = false),
+                    error = null,
+                )
+            }
+        }
+    }
+
+    fun clearError() {
+        mutableUiState.update { it.copy(error = null) }
+    }
+
+    fun clearSnackbar() {
+        mutableUiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    fun stopSpeechPlayback() {
+        isManualMessagePlayback = false
+        speechPlaybackController?.stop(SpeechStopReason.User)
+        resumeDialogueVoiceInput()
+    }
+
+    fun speakMessage(text: String) {
+        if (text.isBlank()) return
+        val controller = speechPlaybackController ?: return
+
+        cancelPendingVoiceModeShutdown()
+        isManualMessagePlayback = true
+        stopVoiceInput()
+        if (!controller.speak(text)) {
+            isManualMessagePlayback = false
+            resumeDialogueVoiceInput()
+        }
+    }
+
+    private fun handleParsedResponse(
+        response: com.example.aiassistent1.domain.model.AssistantResponse,
+        messageId: String,
+        originalQuery: String,
+    ) {
+        when (val params = response.params) {
+            is com.example.aiassistent1.domain.model.CalendarAddParams -> {
+                startCalendarEventDraft(params, messageId)
+            }
+            is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
+                viewModelScope.launch {
+                    val command = calendarCommandMapper.map(params).getOrElse { error ->
+                        mutableUiState.update { it.copy(error = error.userMessage()) }
+                        return@launch
+                    }
+                    calendarCommandExecutor.execute(command, requestId = messageId)
+                        .onSuccess { outcome ->
+                            when (outcome) {
+                                is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Found -> {
+                                    val resultsText = if (outcome.events.isNotEmpty()) {
+                                        "\n\nНайдено:\n" + outcome.events.joinToString("\n") {
+                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)".withCalendarNotes(it.notes)
+                                        }
+                                    } else "\n\nНичего не найдено."
+                                    replaceAssistantReply(messageId, response.reply + resultsText)
+                                }
+                                is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields ->
+                                    replaceAssistantReply(messageId, if (outcome.fields.contains(com.example.aiassistent1.calendar.core.domain.MissingCalendarField.QUERY)) {
+                                        "Уточните название события для поиска."
+                                    } else {
+                                        "Уточните параметры поиска событий."
+                                    })
+                                else -> replaceAssistantReply(messageId, "Не удалось выполнить поиск событий.")
+                            }
+                        }
+                        .onFailure { error ->
+                            mutableUiState.update { it.copy(error = "Ошибка поиска: ${error.message}") }
+                        }
+                }
+            }
+            is com.example.aiassistent1.domain.model.CalendarSumParams -> handleCalendarSum(params, messageId)
+            // intent="chat": the model itself decided this is not a calendar command.
+            else -> promptCalendarChatFallback(originalQuery)
+        }
+    }
+
+    private fun promptCalendarChatFallback(query: String) {
+        if (query.isBlank()) return
+        mutableUiState.update { it.copy(calendarChatPrompt = CalendarChatPromptUiState(query = query)) }
+    }
+
+    fun confirmCalendarChatPrompt() {
+        val prompt = uiState.value.calendarChatPrompt ?: return
+        mutableUiState.update { it.copy(calendarChatPrompt = null) }
+        viewModelScope.launch {
+            try {
+                settingsRepository.setSystemPromptEnabled(false)
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+                return@launch
+            }
+            // Wait for the chat/calendar switch to actually take effect before sending,
+            // otherwise the new message could land while activeChatId still points at "calendar".
+            uiState.first { !it.isCalendarMode }
+            sendMessageInternal(prompt.query)
+        }
+    }
+
+    fun dismissCalendarChatPrompt() {
+        mutableUiState.update { it.copy(calendarChatPrompt = null) }
+    }
+
+    private fun handleCalendarSum(params: com.example.aiassistent1.domain.model.CalendarSumParams, messageId: String) {
+        viewModelScope.launch {
+            val command = calendarCommandMapper.map(params).getOrElse { error ->
+                replaceAssistantReply(messageId, "Не удалось подготовить сумму событий.")
+                mutableUiState.update { it.copy(error = error.userMessage()) }
+                return@launch
+            }
+            calendarCommandExecutor.execute(command, requestId = messageId)
+                .onSuccess { outcome ->
+                    val text = when (outcome) {
+                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields -> "Не указан период для подсчёта ценности событий."
+                        is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Sum -> "Суммарная ценность событий: ${outcome.total}."
+                        else -> "Не удалось подсчитать ценность событий."
+                    }
+                    replaceAssistantReply(messageId, text)
+                }
+                .onFailure { error ->
+                    replaceAssistantReply(messageId, "Не удалось подсчитать ценность событий.")
+                    mutableUiState.update { it.copy(error = error.userMessage()) }
+                }
+        }
+    }
+
+    fun setCompactDatesEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setCompactDatesEnabled(enabled) }
+    }
+
+    fun setSmoothResponseEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSmoothResponseEnabled(enabled)
+        }
+    }
+
+    fun setSystemPromptEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setSystemPromptEnabled(enabled)
+        }
+    }
+
+    fun setDialogueModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setDialogueModeEnabled(enabled)
+        }
+    }
+
+    fun setAutoPlaybackEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAutoPlaybackEnabled(enabled)
+        }
+    }
+
+    fun setSpeechRate(rate: Float) {
+        viewModelScope.launch {
+            settingsRepository.setSpeechRate(rate)
+        }
+    }
+
+    fun saveChatScrollPosition(position: ChatScrollPosition) {
+        viewModelScope.launch {
+            settingsRepository.setChatScrollPosition(position)
+        }
+    }
+
+    fun saveFloatingControlPositions(positions: FloatingControlPositions) {
+        viewModelScope.launch {
+            settingsRepository.setFloatingControlPositions(positions)
+        }
+    }
+
+    private fun com.example.aiassistent1.domain.model.AssistantResponse.resolveImplicitCalendarAddDate(
+        now: LocalDateTime,
+    ): com.example.aiassistent1.domain.model.AssistantResponse {
+        val calendarParams = params as? CalendarAddParams ?: return this
+        if (!calendarParams.startsAt.isNullOrBlank() || !calendarParams.date.isNullOrBlank()) return this
+
+        val knownTime = calendarParams.time
+            ?.takeIf { isCalendarTime(it) }
+            ?.let { LocalTime.parse(it, DateTimeFormatter.ofPattern("HH:mm")) }
+        val resolvedDate = resolveImplicitCalendarAddDate(now, knownTime)
+        val resolvedParams = if (knownTime != null) {
+            calendarParams.copy(
+                startsAt = "$resolvedDate" + "T" + knownTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                date = null,
+                time = null,
+            )
+        } else {
+            calendarParams.copy(date = resolvedDate.toString())
+        }
+        return copy(
+            params = resolvedParams,
+        )
+    }
+
+    private fun startCalendarEventDraft(params: CalendarAddParams, requestId: String = "") {
+        runCatching {
+            val parsedStartsAt = params.startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime)
+            CalendarEventDraftUiState(
+                title = params.title,
+                date = parsedStartsAt?.toLocalDate()?.toString() ?: params.date,
+                time = parsedStartsAt?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: params.time,
+                durationMinutes = params.durationMin, value = params.value, notes = params.notes,
+                endsAt = params.endsAt,
+                requestId = requestId.ifBlank { java.util.UUID.randomUUID().toString() },
+                chatId = "calendar",
+                createdAtEpochMillis = uiState.value.messages.firstOrNull { it.id == requestId }
+                    ?.createdAtEpochMillis ?: System.currentTimeMillis(),
+            ).withNextField()
+        }.onSuccess(calendarDraftController::add)
+            .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
+    }
+
+    fun openCalendarDraft(id: String) {
+        stopCalendarDraftVoiceInput()
+        calendarDraftController.open(id)
+    }
+
+    fun showCalendarDrafts() {
+        stopCalendarDraftVoiceInput()
+        calendarDraftController.showList()
+    }
+
+    fun closeCalendarDraftEditor() {
+        stopCalendarDraftVoiceInput()
+        calendarDraftController.close()
+    }
+
+    fun discardCalendarDraft(id: String) {
+        if (calendarDraftVoiceTarget?.first == id) stopCalendarDraftVoiceInput()
+        calendarDraftController.discard(id)
+    }
+
+    fun updateCalendarDraftField(id: String, field: CalendarEventField, value: String) {
+        if (calendarDraftVoiceTarget?.first == id) stopCalendarDraftVoiceInput()
+        calendarDraftController.edit(id, field, value)
+    }
+
+    fun updateCalendarDraftNotes(id: String, value: String) = calendarDraftController.editNotes(id, value)
+
+    fun retryCalendarDraftStorage() = calendarDraftController.retryStorage()
+
+    fun createCalendarDraftEvent(id: String) {
+        if (calendarDraftVoiceTarget?.first == id) stopCalendarDraftVoiceInput()
+        calendarDraftController.save(id) { draft ->
+            val start = com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(requireNotNull(draft.startsAt))
+            val command = CalendarCommand.Add(
+                title = draft.title, date = start.toLocalDate(), time = start.toLocalTime(),
+                durationMinutes = draft.durationMinutes, value = draft.value, notes = draft.notes,
+                endsAt = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+            )
+            val outcome = calendarCommandExecutor.execute(command, draft.requestId, confirmed = true).getOrThrow()
+            check(outcome is CalendarCommandResult.Completed) { "Не удалось сохранить событие." }
+            mutableUiState.update { it.copy(snackbarMessage = "Событие сохранено в локальном календаре") }
+            outcome.receipt.eventId
+        }
+    }
+
+    fun startCalendarDraftVoiceInput(id: String, field: CalendarEventField) {
+        val draft = calendarDraftController.find(id) ?: return
+        if (!draft.isEditable || draft.isFormatting || calendarDraftController.state.value.selectedId != id) return
+        if (calendarDraftVoiceTarget == (id to field)) {
+            stopCalendarDraftVoiceInput()
+            return
+        }
+        stopCalendarDraftVoiceInput()
+        stopVoiceInput()
+        if (voiceInput == null) {
+            calendarDraftController.update(id, persist = false) { it.copy(error = "Голосовой ввод недоступен.") }
+            return
+        }
+        calendarDraftVoiceTarget = id to field
+        cancelPendingVoiceModeShutdown()
+        speechPlaybackController?.stop(SpeechStopReason.User)
+        calendarDraftController.update(id, persist = false) { it.copy(isVoiceInputActive = true, activeField = field, error = null) }
+        startVoiceInput()
+    }
+
+    private fun stopCalendarDraftVoiceInput() {
+        val target = calendarDraftVoiceTarget ?: return
+        calendarDraftVoiceTarget = null
+        stopVoiceInput()
+        calendarDraftController.update(target.first, persist = false) { it.copy(isVoiceInputActive = false) }
+    }
+
+    fun formatCalendarDraftField(id: String, field: CalendarEventField) {
+        val draft = calendarDraftController.find(id) ?: return
+        if (!draft.isEditable || draft.isFormatting) return
+        val rawValue = draft.fieldText(field)
+        if (rawValue.isBlank()) return
+        val validated = validateCalendarField(field, rawValue)
+        if (validated.isSuccess || field == CalendarEventField.Title) {
+            calendarDraftController.update(id, persist = false) { it.copy(isFormatting = true, formattingField = field) }
+            calendarDraftController.finishFormatting(id, field, rawValue, validated)
+            return
+        }
+        if (uiState.value.isProcessing) {
+            calendarDraftController.update(id, persist = false) { it.copy(error = "Дождитесь завершения ответа перед форматированием поля.") }
+            return
+        }
+        stopCalendarDraftVoiceInput()
+        calendarDraftController.update(id, persist = false) { it.copy(isFormatting = true, formattingField = field, error = null) }
+        mutableUiState.update { it.copy(isProcessing = true) }
+        generationJob = viewModelScope.launch {
+            var background: GenerationForegroundService.Session? = null
+            try {
+                background = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                background.awaitReady()
+                modelParamsController.applyForRequest(readRequestParams(uiState.value.selectedModel, ModelProfile.CALENDAR))
+                val result = formatCalendarField(field.modelName, field.expectedFormat, rawValue)
+                    .mapCatching { validateCalendarField(field, it).getOrThrow() }
+                calendarDraftController.finishFormatting(id, field, rawValue, result)
+            } catch (error: CancellationException) {
+                calendarDraftController.finishFormatting(id, field, rawValue,
+                    Result.failure(IllegalStateException("Распознавание остановлено. Введённый текст сохранён.")))
+                throw error
+            } catch (error: Exception) {
+                calendarDraftController.finishFormatting(id, field, rawValue, Result.failure(error))
+            } finally {
+                background?.close()
+                mutableUiState.update { it.copy(isProcessing = false, isStopping = false) }
+                applyCurrentModelParamsIfIdle()
+                if (kotlin.coroutines.coroutineContext[Job]?.isActive == true) resumeDialogueVoiceInput()
+            }
+        }
+    }
+
+    private fun validateCalendarField(field: CalendarEventField, rawValue: String): Result<String> = runCatching {
+        when (field) {
+            CalendarEventField.Title -> rawValue.trim().also { require(it.isNotEmpty()) { "Название события не может быть пустым." } }
+            CalendarEventField.Date -> LocalDate.parse(rawValue.trim(), DateTimeFormatter.ISO_LOCAL_DATE)
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+            CalendarEventField.Time -> LocalTime.parse(rawValue.trim(), DateTimeFormatter.ofPattern("HH:mm"))
+                .format(DateTimeFormatter.ofPattern("HH:mm"))
+            CalendarEventField.DurationMinutes -> rawValue.trim().toInt().also {
+                require(it > 0) { "Длительность должна быть больше нуля." }
+            }.toString()
+            CalendarEventField.Value -> rawValue.trim().toLongOrNull()?.toString()
+                ?: error("Ценность должна быть целым числом.")
+        }
+    }
+
+    private fun parseCalendarDateTime(value: String?, label: String): Long {
+        require(!value.isNullOrBlank()) { "$label не указано." }
+        return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    private fun isCalendarDateTime(value: String): Boolean =
+        runCatching { LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }.isSuccess
+
+    private fun isCalendarDate(value: String): Boolean =
+        runCatching { LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE) }.isSuccess
+
+    private fun isCalendarTime(value: String): Boolean =
+        runCatching { LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm")) }.isSuccess
+
+    private fun formatCalendarEventStart(epochMillis: Long): String =
+        Instant.ofEpochMilli(epochMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+
+    private fun eventDurationMinutes(startEpochMillis: Long, endEpochMillis: Long): Long =
+        (endEpochMillis - startEpochMillis) / MILLIS_PER_MINUTE
+
+    override fun onCleared() {
+        cancelPendingVoiceModeShutdown()
+        stopGeneration(resumeDialogue = false)
+        stopVoiceInput()
+        (voiceInput as? AutoCloseable)?.close()
+        voiceBackgroundSession?.close()
+        voiceBackgroundSession = null
+        speechPlaybackController?.close()
+        llmEngine.close()
+    }
+
+    private fun observeSpeechPlayback() {
+        val controller = speechPlaybackController ?: return
+        viewModelScope.launch {
+            controller.state.collect { playbackState ->
+                mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
+                if (calendarDraftVoiceTarget == null && (playbackState is SpeechPlaybackState.Playing || playbackState is SpeechPlaybackState.Generating) && uiState.value.isVoiceMode &&
+                    settingsRepository.bargeInEnabled.value) startVoiceInput(bargeIn = true)
+                if (isManualMessagePlayback &&
+                    (playbackState is SpeechPlaybackState.Idle || playbackState is SpeechPlaybackState.Error)
+                ) {
+                    isManualMessagePlayback = false
+                    if ((uiState.value.dialogueModeEnabled || wakeWordEnabled) && uiState.value.isVoiceMode &&
+                        !uiState.value.isProcessing
+                    ) {
+                        startVoiceInput()
+                    } else {
+                        scheduleVoiceModeShutdown()
+                    }
+                } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
+                    playbackState is SpeechPlaybackState.Idle
+                ) {
+                    if ((uiState.value.dialogueModeEnabled || wakeWordEnabled) && uiState.value.isVoiceMode &&
+                        !uiState.value.isProcessing
+                    ) {
+                        startVoiceInput()
+                    } else {
+                        scheduleVoiceModeShutdown()
+                    }
+                } else if (playbackState !is SpeechPlaybackState.Idle) {
+                    cancelPendingVoiceModeShutdown()
+                }
+                previousSpeechPlaybackState = playbackState
+            }
+        }
+    }
+
+    private fun scheduleVoiceModeShutdown() {
+        cancelPendingVoiceModeShutdown()
+        voiceModeShutdownJob = viewModelScope.launch {
+            delay(VOICE_MODE_SHUTDOWN_DELAY_MILLIS)
+            if (uiState.value.speechPlaybackState is SpeechPlaybackState.Idle) {
+                setVoiceMode(false)
+            }
+        }
+    }
+
+    private fun cancelPendingVoiceModeShutdown() {
+        voiceModeShutdownJob?.cancel()
+        voiceModeShutdownJob = null
+    }
+
+    private fun resumeDialogueVoiceInput() {
+        val state = uiState.value
+        if (calendarDraftVoiceTarget != null) return
+        if ((!state.dialogueModeEnabled && !wakeWordEnabled) || !state.isVoiceMode || state.isProcessing) return
+
+        cancelPendingVoiceModeShutdown()
+        startVoiceInput()
+    }
+
+    private fun observeVoiceInput() {
+        val inputProvider = voiceInput ?: return
+        viewModelScope.launch {
+            inputProvider.observeInput().collect { event ->
+                if (event.sessionId != activeVoiceInputSessionId) return@collect
+                val state = mutableUiState.value
+                when {
+                    calendarDraftVoiceTarget != null -> {
+                        val target = calendarDraftVoiceTarget
+                        stopCalendarDraftVoiceInput()
+                        if (target != null) calendarDraftController.edit(target.first, target.second, event.transcript)
+                    }
+                    state.voiceDraft.isRecording && !state.isProcessing -> {
+                        appendVoiceDraftTranscript(event.transcript)
+                    }
+                    state.isVoiceMode && !state.isProcessing -> {
+                        sendMessageInternal(event.transcript, preserveVoiceMode = state.dialogueModeEnabled || wakeWordEnabled)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeVoiceBackgroundSession() {
+        viewModelScope.launch {
+            uiState.collect { state ->
+                if (!state.isVoiceMode && !state.voiceDraft.isRecording &&
+                    calendarDraftVoiceTarget == null
+                ) {
+                    voiceBackgroundSession?.close()
+                    voiceBackgroundSession = null
+                }
+            }
+        }
+    }
+
+    private fun startVoiceInput(continuous: Boolean = false, bargeIn: Boolean = false) {
+        if (voiceInput == null) return
+        voiceStartJob?.cancel()
+        voiceStartJob = viewModelScope.launch {
+            try {
+                val background = voiceBackgroundSession ?: GenerationForegroundService.acquire(
+                    context, GenerationForegroundService.Kind.Microphone,
+                ).also { voiceBackgroundSession = it }
+                background.awaitReady()
+                val prefs = settingsRepository.readAudioPreferences()
+                activeVoiceInputSessionId = when {
+                    calendarDraftVoiceTarget != null -> voiceInput.start()
+                    bargeIn -> voiceInput.startBargeIn()
+                    continuous -> voiceInput.startContinuous()
+                    uiState.value.isVoiceMode && prefs.wakeWordEnabled -> voiceInput.startWakeWord()
+                    else -> voiceInput.start()
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                stopCalendarDraftVoiceInput()
+                activeVoiceInputSessionId = null
+                voiceBackgroundSession?.close()
+                voiceBackgroundSession = null
+                mutableUiState.update {
+                    it.copy(
+                        error = error.userMessage(),
+                        isVoiceMode = false,
+                        voiceDraft = it.voiceDraft.copy(isRecording = false),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun observeVoiceInputErrors() {
+        val inputProvider = voiceInput ?: return
+        viewModelScope.launch {
+            inputProvider.observeErrors().collect { event ->
+                if (event.sessionId != activeVoiceInputSessionId) return@collect
+                val state = mutableUiState.value
+                if (!state.isVoiceMode && !state.voiceDraft.isRecording &&
+                    state.calendarEventDraft?.isVoiceInputActive != true
+                ) return@collect
+
+                mutableUiState.update {
+                    it.copy(
+                        error = event.cause.message ?: "Не удалось обработать голосовой ввод",
+                        isVoiceMode = false,
+                        voiceDraft = it.voiceDraft.copy(isRecording = false),
+                    )
+                }
+                stopCalendarDraftVoiceInput()
+                activeVoiceInputSessionId = null
+            }
+        }
+    }
+
+    private fun hideVoiceDraftAndEnterVoiceMode() {
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isVisible) return
+
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(
+                isVoiceMode = true,
+                voiceDraft = state.voiceDraft.copy(isVisible = false, isRecording = false),
+                error = null,
+            )
+        }
+        persistVoiceDraft(state.voiceDraft.text)
+        startVoiceInput()
+    }
+
+    private fun stopVoiceInput() {
+        calendarDraftVoiceTarget?.let { target ->
+            calendarDraftVoiceTarget = null
+            calendarDraftController.update(target.first, persist = false) { it.copy(isVoiceInputActive = false) }
+        }
+        voiceStartJob?.cancel()
+        voiceStartJob = null
+        activeVoiceInputSessionId = null
+        voiceInput?.stop()
+    }
+
+    private fun restoreVoiceDraft() {
+        viewModelScope.launch {
+            val draft = runCatching { voiceDraftRepository.loadDraft() }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось восстановить голосовой черновик")
+                    }
+                }
+                .getOrDefault("")
+
+            voiceDraftRestored = true
+            mutableUiState.update { state ->
+                state.copy(voiceDraft = state.voiceDraft.copy(text = draft.take(MAX_MESSAGE_LENGTH)))
+            }
+            if (openVoiceDraftAfterRestore) {
+                openVoiceDraftAfterRestore = false
+                startVoiceDraft()
+            }
+        }
+    }
+
+    private suspend fun appendVoiceDraftTranscript(transcript: String) {
+        val recognizedText = transcript.trim()
+        if (recognizedText.isEmpty()) return
+
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isRecording) return
+
+        val currentText = state.voiceDraft.text.trim()
+        val separator = if (currentText.isEmpty()) "" else " "
+        val availableLength = MAX_MESSAGE_LENGTH - currentText.length - separator.length
+        if (availableLength <= 0) {
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
+            return
+        }
+
+        val appendedText = recognizedText.take(availableLength)
+        val updatedText = currentText + separator + appendedText
+        mutableUiState.update {
+            it.copy(voiceDraft = it.voiceDraft.copy(text = updatedText))
+        }
+        runCatching { voiceDraftRepository.saveDraft(updatedText) }
+            .onFailure {
+                mutableUiState.update { state ->
+                    state.copy(error = "Не удалось сохранить голосовой черновик")
+                }
+            }
+        if (appendedText.length < recognizedText.length) {
+            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
+        }
+    }
+
+    private fun persistVoiceDraft(text: String) {
+        viewModelScope.launch {
+            runCatching { voiceDraftRepository.saveDraft(text) }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось сохранить голосовой черновик")
+                    }
+                }
+        }
+    }
+
+    private fun clearPersistedVoiceDraft() {
+        viewModelScope.launch {
+            runCatching { voiceDraftRepository.clearDraft() }
+                .onFailure {
+                    mutableUiState.update { state ->
+                        state.copy(error = "Не удалось удалить голосовой черновик")
+                    }
+                }
+        }
+    }
+
+    fun observeAppSession() {
+        activeChatJob?.cancel()
+        mutableUiState.update { it.copy(sessionError = null) }
+        activeChatJob = viewModelScope.launch {
+            try {
+                ObserveAppSessionUseCase(settingsRepository, chatRepository)().collect { session ->
+                    if (uiState.value.activeChatId != session.navigation.chatId && contextDecisions.pressure.value != null) {
+                        stopGeneration(resumeDialogue = false)
+                    }
+                    if (uiState.value.activeChatId != session.navigation.chatId) closeCalendarDraftEditor()
+                    val messages = pendingChatMessages.merge(session.navigation.chatId, session.messages)
+                    mutableUiState.update { state ->
+                        state.copy(
+                            navigationState = session.navigation,
+                            systemPromptEnabled = session.navigation.isCalendarMode,
+                            activeChatId = session.navigation.chatId,
+                            messages = messages,
+                            isHistoryLoaded = true,
+                            chatScrollPosition = session.scrollPosition,
+                            isChatScrollPositionLoaded = true,
+                            sessionError = null,
+                        )
+                    }
+                    applyCurrentModelParamsIfIdle()
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                mutableUiState.update {
+                    it.copy(sessionError = error.userMessage(), error = error.userMessage())
+                }
+            }
+        }
+    }
+
+    private fun observeModelState() {
+        viewModelScope.launch {
+            llmEngine.state.collect { modelState ->
+                mutableUiState.update { it.copy(modelState = modelState) }
+            }
+        }
+    }
+
+    private fun updateMessage(message: ChatMessage, isStreaming: Boolean = false) {
+        pendingChatMessages.put(message, isStreaming)
+        mutableUiState.update { state ->
+            if (state.activeChatId != message.chatId) state
+            else state.copy(messages = if (state.messages.any { it.id == message.id }) {
+                state.messages.map { current -> if (current.id == message.id) message else current }
+            } else {
+                state.messages + message
+            })
+        }
+    }
+
+    private suspend fun replaceAssistantReply(messageId: String, reply: String) {
+        val originalMessage = pendingChatMessages.find(messageId) ?: mutableUiState.value.messages
+            .firstOrNull { it.id == messageId }
+            // A calendar command can finish after the user has switched to the other chat.
+            ?: withContext(Dispatchers.IO) {
+                chatRepository.observeMessages("calendar").first().firstOrNull { it.id == messageId }
+            }
+            ?: return
+        val updatedMessage = originalMessage.copy(content = reply)
+        updateMessage(updatedMessage)
+        withContext(Dispatchers.IO) { chatRepository.saveMessage(updatedMessage) }
+    }
+
+    private fun Throwable.userMessage(): String = message ?: "Не удалось сгенерировать ответ"
+
+    private companion object {
+        const val TAG = "ChatViewModel"
+        const val MAX_MESSAGE_LENGTH = 3000
+        const val MAX_LOGCAT_PAYLOAD_LENGTH = 3500
+        const val MAX_MODEL_FILE_NAME_LENGTH = 128
+        const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024
+        const val VOICE_MODE_SHUTDOWN_DELAY_MILLIS = 1_000L
+        const val MILLIS_PER_MINUTE = 60_000L
+        const val MILLIS_PER_DAY = 24L * 60L * MILLIS_PER_MINUTE
+    }
+}

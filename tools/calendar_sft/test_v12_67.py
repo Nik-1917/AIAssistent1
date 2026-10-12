@@ -1,16 +1,18 @@
-"""Regression checks of the retained literals, four-action boundary and independent grading."""
+"""Regression checks of handwritten reply scope, four-action boundary and parameter arithmetic."""
 from collections import Counter
 from copy import deepcopy
 import json
 import unittest
 
-from prepare_v12_67 import assemble, verify_preserved_sources
+from prepare_v12_67 import assemble, messages_digest, verify_preserved_sources
 from evaluate_v12_67 import case_digest, prepared_inputs, score_cached
 from v12_67_contract import (DatasetContractError, INTENTS, load_jsonl,
                             parse_and_validate_assistant_response)
 from v12_67_evaluation import VERSION, case_from_row, grade, selection_score, summary
+from v12_67_extensions import BASE_DATA as EXTENSION_BASE_DATA, HandwrittenExtensions
+from v12_67_semantics import SemanticCorrections, replace_params
 from v12_67_training import (CONFIG, DATA, PROVIDER, ROOT, development_cases,
-                            read, selection_steps, system_text, variant_row)
+                            frozen_paths, read, selection_steps, system_text, variant_row)
 
 
 def raw(payload):
@@ -23,42 +25,207 @@ class V1267Tests(unittest.TestCase):
         cls.manifest = assemble(check_only=True)
         cls.rows = {name: load_jsonl(DATA / (name + ".jsonl")) for name in cls.manifest["artifacts"]}
         cls.train = cls.rows["train"]
+        cls.corrections = SemanticCorrections()
         cls.add = next(json.loads(row["messages"][-1]["content"]) for row in cls.train
                        if json.loads(row["messages"][-1]["content"])["intent"] == "calendar_add")
 
     def test_reassembly_and_history_are_exact(self):
         self.assertEqual(self.manifest["protected_files_checked"], verify_preserved_sources())
         self.assertGreaterEqual(self.manifest["protected_files_checked"], 663)
-        self.assertEqual(6489, self.manifest["total_rows"])
-        self.assertEqual(815, self.manifest["excluded_rows"])
-        self.assertEqual(0, self.manifest["changed_user_or_assistant_messages"])
+        self.assertEqual(6506, self.manifest["total_rows"])
+        self.assertEqual(818, self.manifest["excluded_rows"])
+        self.assertEqual(5610, self.manifest["changed_user_or_assistant_messages"])
+        self.assertEqual(5681, self.manifest["reply_design"]["changed_replies"])
         retention = read(DATA / "retention_index.json")
+        extension = HandwrittenExtensions()
         for name, rows in self.rows.items():
-            original = [json.loads(line) for line in (ROOT / "docs/calendar_sft_v12_66" / (name + ".jsonl")).read_text(encoding="utf-8").splitlines()]
+            source_path = ROOT / "docs/calendar_sft_v12_66" / (name + ".jsonl")
+            original = [json.loads(line) for line in source_path.read_text(encoding="utf-8").splitlines()] if source_path.exists() else []
             for row, position in zip(rows, retention[name]["positions"]):
+                row = self.without_semantic_correction(row, name, position["output_line"])
+                if "source_file" in position:
+                    self.assertEqual(extension.sources[name], position["source_file"])
+                    self.assertEqual(extension.rows[name][position["source_line"] - 1], row)
+                    continue
                 source = original[position["source_line"] - 1]
-                self.assertEqual(source["messages"], row["messages"])
+                self.assertEqual(source["messages"][:-1], row["messages"][:-1])
+                before = json.loads(source["messages"][-1]["content"])
+                after = json.loads(row["messages"][-1]["content"])
+                if before["intent"] == "calendar_add":
+                    self.assertNotEqual(before.pop("reply"), after.pop("reply"))
+                    self.assertEqual(before, after)
+                else:
+                    self.assertEqual(source["messages"], row["messages"])
                 self.assertEqual(source["category"], row["category"])
         old_dev = read(ROOT / "docs/calendar_sft_v12_66/generation_dev.json")
         for row, position in zip(read(DATA / "generation_dev.json"), retention["generation_dev"]["positions"]):
-            self.assertEqual(old_dev[position["source_line"] - 1]["messages"], row["messages"])
+            if "source_file" in position:
+                self.assertEqual(extension.sources["generation_dev"], position["source_file"])
+                self.assertEqual(extension.rows["generation_dev"][position["source_line"] - 1], row)
+                continue
+            before = old_dev[position["source_line"] - 1]["messages"]
+            self.assertEqual(before[:-1], row["messages"][:-1])
+            old, new = json.loads(before[-1]["content"]), json.loads(row["messages"][-1]["content"])
+            if old["intent"] == "calendar_add":
+                self.assertNotEqual(old.pop("reply"), new.pop("reply"))
+            else:
+                self.assertEqual(before, row["messages"])
+            self.assertEqual(old, new)
 
     def test_every_target_is_valid_and_sum_is_retained(self):
         actions = set()
         for rows in self.rows.values():
             actions.update(json.loads(row["messages"][-1]["content"])["intent"] for row in rows)
         self.assertEqual(set(INTENTS), actions)
-        self.assertEqual(dict(calendar_add=4749, calendar_search=354, calendar_sum=88, chat=205),
+        self.assertEqual(dict(calendar_add=4761, calendar_search=354, calendar_sum=88, chat=202),
                          self.manifest["artifacts"]["train"]["intents"])
         self.assertEqual(32, self.manifest["artifacts"]["validation"]["intents"]["calendar_sum"])
-        self.assertEqual(dict(calendar_add=522, calendar_search=70, calendar_sum=32, chat=61),
+        self.assertEqual(dict(calendar_add=526, calendar_search=70, calendar_sum=32, chat=61),
                          self.manifest["artifacts"]["validation"]["intents"])
+
+    def test_launch_freeze_includes_nested_handwritten_literals_and_baseline(self):
+        frozen = set(frozen_paths())
+        manual = ROOT / "docs/calendar_v12_67_manual"
+        files = {path for path in manual.rglob("*") if path.is_file()}
+        self.assertTrue(files.issubset(frozen))
+        self.assertIn(manual / "reply_literals/010.txt", frozen)
+        self.assertIn(manual / "reply_baseline_20261010/snapshot.json", frozen)
+        self.assertIn(manual / "reply_extensions/manifest.json", frozen)
+        self.assertIn(manual / "notes_baseline_20261011/snapshot.json", frozen)
+
+    def without_semantic_correction(self, row, split, line):
+        item = self.corrections.edits.get((split, line))
+        if not item:
+            return row
+        restored = deepcopy(row)
+        content = restored["messages"][-1]["content"]
+        target = json.loads(content)
+        self.assertEqual(item["after_params"], target["params"])
+        self.assertEqual(item["before"]["intent"], target["intent"])
+        self.assertEqual(item["before"]["reply"], target["reply"])
+        restored["messages"][-1]["content"] = replace_params(
+            content, item["after_params"], item["before"]["params"], separators=(",", ":"))
+        return restored
+
+    def test_extension_preserves_prior_conversations_except_reviewed_semantic_params(self):
+        extension = HandwrittenExtensions()
+        retention = read(DATA / "retention_index.json")
+        before_retention = read(EXTENSION_BASE_DATA / "retention_index.json")
+        inherited_count = 0
+        for path in sorted(EXTENSION_BASE_DATA.glob("*.jsonl")):
+            inherited = load_jsonl(path)
+            restored = [self.without_semantic_correction(row, path.stem, line)
+                        for line, row in enumerate(self.rows[path.stem][:len(inherited)], 1)]
+            self.assertEqual(inherited, restored)
+            current_lines = (DATA / path.name).read_bytes().splitlines(keepends=True)
+            for line, original_line in enumerate(path.read_bytes().splitlines(keepends=True), 1):
+                if (path.stem, line) not in self.corrections.edits:
+                    self.assertEqual(original_line, current_lines[line - 1])
+            restored_positions = deepcopy(retention[path.stem]["positions"][:len(inherited)])
+            for position in restored_positions:
+                key = path.stem, position["output_line"]
+                if key in self.corrections.edits:
+                    self.assertEqual(self.corrections.edits[key]["id"], position.pop("semantic_correction"))
+                    position["messages_sha256"] = messages_digest(restored[position["output_line"] - 1])
+            self.assertEqual(before_retention[path.stem]["positions"],
+                             restored_positions)
+            inherited_count += len(inherited)
+        before_dev = read(EXTENSION_BASE_DATA / "generation_dev.json")
+        self.assertEqual(before_dev, read(DATA / "generation_dev.json")[:len(before_dev)])
+        self.assertEqual(before_retention["generation_dev"]["positions"],
+                         retention["generation_dev"]["positions"][:len(before_dev)])
+        self.assertEqual(6592, inherited_count + len(before_dev))
+        for name in ("clock_coverage_index.json", "reply_edits.json"):
+            self.assertEqual((EXTENSION_BASE_DATA / name).read_bytes(), (DATA / name).read_bytes())
+        before_audit, after_audit = read(EXTENSION_BASE_DATA / "audit_index.json"), read(DATA / "audit_index.json")
+        self.assertEqual(before_audit, {key: after_audit[key] for key in before_audit})
+        self.assertEqual(24, len(after_audit) - len(before_audit))
+        self.assertEqual(extension.info, self.manifest["handwritten_extensions"])
+
+    def test_reviewed_semantics_restore_clocks_and_named_searches_and_reject_old_gold(self):
+        self.assertEqual(12, self.manifest["semantic_corrections"]["rows"])
+        expected_clocks = {("speech_holdout", 24): "2030-05-01T12:30",
+                           ("train", 3485): "2026-10-01T14:30",
+                           ("validation", 592): "2029-09-01T12:30"}
+        expected_queries = {82: "разговор с бухгалтером", 118: "проверка отчёта",
+                            178: "сервис автомобиля", 234: "оплата интернета",
+                            239: "встреча с Анной", 280: "созвон с командой",
+                            325: "покупка продуктов", 331: "Поздравить маму", 397: "занятие йогой"}
+        self.assertEqual(set(expected_clocks) | {("train", line) for line in expected_queries},
+                         set(self.corrections.edits))
+        for (split, line), item in self.corrections.edits.items():
+            row = self.rows[split][line - 1]
+            target = json.loads(row["messages"][-1]["content"])
+            if (split, line) in expected_clocks:
+                self.assertEqual(expected_clocks[split, line], target["params"]["starts_at"])
+                self.assertNotIn("date", target["params"])
+            else:
+                self.assertEqual(expected_queries[line], target["params"]["query"])
+            case = case_from_row(row, f"{split}:{line}")
+            self.assertTrue(grade(case, row["messages"][-1]["content"])["passed"])
+            self.assertFalse(grade(case, raw(item["before"]))["passed"])
+
+    def test_semantic_corrections_reject_changed_context_question_or_original_target(self):
+        retention = read(EXTENSION_BASE_DATA / "retention_index.json")["speech_holdout"]["positions"]
+        baseline = load_jsonl(EXTENSION_BASE_DATA / "speech_holdout.jsonl")
+        for field in ("context", "question", "target"):
+            with self.subTest(field=field):
+                rows = deepcopy(baseline)
+                row = rows[23]
+                if field == "context":
+                    row["messages"][0]["content"] = row["messages"][0]["content"].replace("20:00", "20:01")
+                elif field == "question":
+                    row["messages"][1]["content"] += " Сегодня."
+                else:
+                    target = json.loads(row["messages"][-1]["content"])
+                    target["params"]["date"] = "2030-05-02"
+                    row["messages"][-1]["content"] = raw(target)
+                with self.assertRaises(ValueError):
+                    SemanticCorrections().apply(rows, deepcopy(retention), "speech_holdout", messages_digest)
+
+    def test_handwritten_notes_and_literal_titles_cover_all_partitions(self):
+        extension = HandwrittenExtensions()
+        families = {"v12_67_notes", "v12_67_numeric_title", "v12_67_punctuation_title", "v12_67_notes_literal_title"}
+        input_sets, notes_count = {}, 0
+        for split, rows in extension.rows.items():
+            self.assertEqual(families, {row["category"] for row in rows})
+            self.assertEqual({3 if split == "train" else 1}, set(Counter(row["category"] for row in rows).values()))
+            input_sets[split] = {tuple(m["content"] for m in row["messages"][:-1]) for row in rows}
+            for row in rows:
+                case = case_from_row(row, split + row["case_id"])
+                payload = case["expected"]
+                self.assertTrue(grade(case, raw(payload))["passed"])
+                if "notes" in payload["params"]:
+                    notes_count += 1
+                    self.assertNotIn(payload["params"]["notes"].strip(), payload["reply"])
+                    wrong = deepcopy(payload)
+                    wrong["params"]["notes"] += "!"
+                    self.assertFalse(grade(case, raw(wrong))["params_case_insensitive"])
+                    wrong = deepcopy(payload)
+                    wrong["reply"] += " Примечание: " + payload["params"]["notes"]
+                    self.assertFalse(grade(case, raw(wrong))["passed"])
+        self.assertEqual(12, notes_count)
+        for first, inputs in input_sets.items():
+            for second, other in input_sets.items():
+                if first != second:
+                    self.assertTrue(inputs.isdisjoint(other))
+        cases = {row["case_id"]: json.loads(row["messages"][-1]["content"]) for rows in extension.rows.values() for row in rows}
+        self.assertNotIn("value", cases["V1267_EXT_T10"]["params"])
+        self.assertNotIn("value", cases["V1267_EXT_V04"]["params"])
+        self.assertEqual("  Принести схему и ключ.  ", cases["V1267_EXT_T11"]["params"]["notes"])
+        self.assertEqual("Первая строка\nВторая строка", cases["V1267_EXT_T12"]["params"]["notes"])
+        self.assertEqual("2029-12-31T23:59", cases["V1267_EXT_H01"]["params"]["starts_at"])
+        self.assertEqual("2030-01-01", cases["V1267_EXT_H02"]["params"]["date"])
+        with self.assertRaises(ValueError):
+            development_cases(extension.rows["reply_extensions_holdout"])
 
     def test_reviewed_chat_claims_are_excluded_without_keyword_deletion(self):
         registry = read(ROOT / "docs/calendar_v12_67_manual/exclusions.json")
         counts = {name: sum(item["reason"] == "scope_instruction" for item in registry[name]["exclude"])
                   for name in ("train", "validation")}
-        self.assertEqual(dict(train=17, validation=4), counts)
+        self.assertEqual(dict(train=20, validation=4), counts)
+        retained_source_lines = {item["source_line"] for item in read(DATA / "retention_index.json")["train"]["positions"]}
+        self.assertTrue({1092, 1362, 1445}.isdisjoint(retained_source_lines))
         # A word inside an event name does not turn creation into another action.
         self.assertTrue(any(json.loads(row["messages"][-1]["content"])["params"].get("title") == "Обновление списка"
                             for row in self.train))
@@ -74,11 +241,11 @@ class V1267Tests(unittest.TestCase):
 
     def test_development_is_independent_of_training_and_rejects_holdout(self):
         rows = read(DATA / "generation_dev.json")
-        self.assertEqual(106, len(rows))
+        self.assertEqual(110, len(rows))
         pairs = {(row["messages"][0]["content"], row["messages"][1]["content"]) for row in self.train}
         self.assertTrue(all((row["messages"][0]["content"], row["messages"][1]["content"]) not in pairs for row in rows))
         cases = development_cases(rows)
-        self.assertEqual(212, len(cases))
+        self.assertEqual(220, len(cases))
         results = [grade(case, raw(case["expected"])) for case in cases]
         self.assertEqual([1.0, 1.0, 1.0, 1.0], selection_score(cases, results))
         cases[0]["split"] = "holdout"
@@ -124,18 +291,56 @@ class V1267Tests(unittest.TestCase):
         with self.assertRaises(DatasetContractError):
             parse_and_validate_assistant_response(raw(incorrect))
 
-    def test_correct_parameters_with_wrong_spoken_time_fail(self):
+    def test_title_reply_replaces_clock_wording_and_rejects_extra_schedule(self):
         grid = read(DATA / "clock_coverage_index.json")
         row = self.train[grid["12:15"]["train_line"] - 1]
         case = case_from_row(row, "clock_regression")
         self.assertTrue(grade(case, raw(case["expected"]))["passed"])
         payload = deepcopy(case["expected"])
-        self.assertIn("четверть первого", payload["reply"])
-        payload["reply"] = payload["reply"].replace("четверть первого", "половине первого")
+        self.assertTrue(payload["reply"].startswith("Новое событие: "))
+        self.assertIsNone(grade(case, raw(payload))["reply_clock_correct"])
+        for suffix in (" Завтра.", " В четверть первого.", " 12:15.", " На час.", " Значение пять."):
+            incorrect = deepcopy(payload)
+            incorrect["reply"] += suffix
+            result = grade(case, raw(incorrect))
+            self.assertTrue(result["params_exact"])
+            self.assertFalse(result["reply_style_correct"])
+            self.assertFalse(result["reply_params_consistent"])
+            self.assertFalse(result["passed"])
+        payload["reply"] = "Новое событие: Другое название."
+        self.assertFalse(grade(case, raw(payload))["reply_title_correct"])
+
+    def test_unnamed_creation_does_not_invent_a_title(self):
+        row = next(row for row in self.train if json.loads(row["messages"][-1]["content"])["intent"] == "calendar_add"
+                   and "title" not in json.loads(row["messages"][-1]["content"])["params"])
+        case = case_from_row(row, "unnamed_regression")
+        payload = deepcopy(case["expected"])
+        self.assertEqual("Создаём событие без названия.", payload["reply"])
+        self.assertTrue(grade(case, raw(payload))["passed"])
+        payload["reply"] = "Новое событие: Событие."
+        self.assertFalse(grade(case, raw(payload))["passed"])
+
+    def test_literal_title_can_contain_date_time_or_punctuation(self):
+        row = next(row for row in self.train if json.loads(row["messages"][-1]["content"])["params"].get("title") == "Пять часов")
+        case = case_from_row(row, "literal_title_regression")
+        self.assertTrue(grade(case, raw(case["expected"]))["passed"])
+        # Novel in-memory grading probes, never authored or written dataset rows.
+        for title, reply in (("Планы на 2027-05-06 в 12:15", "Новое событие: Планы на 2027-05-06 в 12:15."),
+                             ("Разбор «Плана» — часть 2", "Новое событие: Разбор «Плана» — часть 2.")):
+            probe = deepcopy(case)
+            probe["expected"]["params"]["title"] = title
+            probe["expected"]["reply"] = reply
+            self.assertTrue(grade(probe, raw(probe["expected"]))["passed"])
+
+    def test_multiple_events_keep_the_required_warning_without_time(self):
+        row = next(row for row in self.train if "не обработан" in json.loads(row["messages"][-1]["content"])["reply"])
+        case = case_from_row(row, "multiple_event_regression")
+        payload = deepcopy(case["expected"])
+        self.assertTrue(grade(case, raw(payload))["passed"])
+        payload["reply"] = payload["reply"].split(". ", 1)[0] + "."
         result = grade(case, raw(payload))
         self.assertTrue(result["params_exact"])
-        self.assertFalse(result["reply_clock_correct"])
-        self.assertFalse(result["reply_params_consistent"])
+        self.assertFalse(result["reply_warning_correct"])
         self.assertFalse(result["passed"])
 
     def test_annotated_relative_arithmetic_is_checked_independently(self):

@@ -8,6 +8,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -27,6 +28,18 @@ import java.util.UUID
 
 class CalendarDraftCardsTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun notesAreVisibleInBothDraftAndSavedCards() {
+        var current by androidx.compose.runtime.mutableStateOf(CalendarEventDraftUiState(
+            requestId = "notes", title = "Встреча с Анной", date = "2026-10-12", time = "15:00",
+            notes = "взять документы",
+        ))
+        compose.setContent { MaterialTheme { CalendarDraftCard(current, onOpen = {}) } }
+        compose.onNodeWithText("Примечание: взять документы").assertIsDisplayed()
+        compose.runOnIdle { current = current.copy(savedEventId = "saved-notes") }
+        compose.onNodeWithText("Создано").assertIsDisplayed()
+        compose.onNodeWithText("Примечание: взять документы").assertIsDisplayed()
+    }
 
     @Test fun firstEditorSurvivesANewEventAndBothCardsRemainIndependent() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

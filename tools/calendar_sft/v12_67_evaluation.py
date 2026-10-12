@@ -1,19 +1,43 @@
-"""Four-action scoring with independent clock meaning, style and arithmetic checks."""
+"""Four-action scoring of title-only creation replies and independent parameter arithmetic."""
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta
 import json
+import re
 
 from v12_67_contract import INTENTS, parse_and_validate_assistant_response
 from v12_67_clock import compare_clock_reply, expected_clocks
 
-VERSION = "v12.67-four-actions-1"
+VERSION = "v12.67-title-reply-2"
 METRICS = ("passed", "json_valid", "contract_valid", "intent_match", "params_exact",
            "params_case_insensitive", "temporal_params_match", "reply_clock_correct",
-           "reply_style_correct", "offset_arithmetic_correct", "reply_params_consistent")
+           "reply_style_correct", "reply_title_correct", "reply_warning_correct",
+           "offset_arithmetic_correct", "reply_params_consistent")
+
+
+def addition_reply(reply, expected):
+    """Validate presentation against the title; title words are never parsed as dates."""
+    if not isinstance(reply, str):
+        return False, False, ""
+    title = expected.get("params", {}).get("title")
+    if title:
+        base = "Новое событие: " + title + "."
+        valid = reply[:len(base)].casefold() == base.casefold()
+        # The fixed action prefix itself is canonical; title casing may vary.
+        valid = valid and reply.startswith("Новое событие: ")
+    else:
+        base = "Создаём событие без названия."
+        valid = reply.startswith(base)
+    tail = reply[len(base):] if valid else ""
+    warning = not tail or bool(re.fullmatch(
+        r" [^\r\n:?!]+ не обработан(?:а|о|ы)?: за один запрос можно добавить только одно событие\.", tail))
+    return bool(valid), bool(valid and warning), tail
 
 
 def check_reply(payload):
+    if payload.get("intent") == "calendar_add":
+        meaning, style, _ = addition_reply(payload.get("reply", ""), payload)
+        return meaning and style, style, []
     return compare_clock_reply(payload.get("reply", ""), payload, expected_clocks(payload))
 
 
@@ -60,9 +84,16 @@ def grade(case, raw):
         == {key: expected["params"][key] for key in temporal_keys if key in expected["params"]}
     )
     reply = actual.get("reply", "")
-    meaning, style, mentions = compare_clock_reply(
-        reply if isinstance(reply, str) else "", expected, expected_clocks(expected),
-    )
+    title_correct, warning_correct = None, None
+    if expected["intent"] == "calendar_add":
+        title_correct, style, tail = addition_reply(reply, expected)
+        _, _, expected_tail = addition_reply(expected["reply"], expected)
+        warning_correct = tail.casefold() == expected_tail.casefold() and title_correct
+        meaning, mentions = None, []
+    else:
+        meaning, style, mentions = compare_clock_reply(
+            reply if isinstance(reply, str) else "", expected, expected_clocks(expected),
+        )
     consistent = check_reply(actual)[0] if error is None else False
     arithmetic = None
     if "offset_minutes" in case:
@@ -71,12 +102,14 @@ def grade(case, raw):
         arithmetic = isinstance(params, dict) and params.get("starts_at") == computed
     passed = bool(valid_json and error is None and intent and folded
                   and meaning is not False and style is not False
+                  and title_correct is not False and warning_correct is not False
                   and consistent is not False and arithmetic is not False)
     return dict(case_id=case["id"], suite=case["suite"], grader_version=VERSION,
                 passed=passed, json_valid=valid_json, contract_valid=error is None,
                 contract_error=error, intent_match=intent, params_exact=exact,
                 params_case_insensitive=folded, temporal_params_match=temporal,
                 reply_clock_correct=meaning, reply_style_correct=style,
+                reply_title_correct=title_correct, reply_warning_correct=warning_correct,
                 reply_params_consistent=consistent, offset_arithmetic_correct=arithmetic,
                 detected_clocks=mentions, expected=expected, actual=actual, raw=raw,
                 user=case["user"], system=case["system"],
@@ -120,6 +153,4 @@ def selection_score(cases, records):
         groups[case["expected"]["intent"]].append(result)
     def macro(metric):
         return sum(sum(row[metric] is True for row in rows) / len(rows) for rows in groups.values()) / len(groups)
-    clocks = [row for row in records if row["reply_clock_correct"] is not None]
-    agreement = sum(row["reply_clock_correct"] is True and row["reply_params_consistent"] is True for row in clocks)
-    return [macro("passed"), macro("intent_match"), agreement / len(clocks) if clocks else 0, macro("params_exact")]
+    return [macro("passed"), macro("intent_match"), macro("temporal_params_match"), macro("params_exact")]

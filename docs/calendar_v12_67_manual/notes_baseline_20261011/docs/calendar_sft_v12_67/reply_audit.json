@@ -1,0 +1,72 @@
+{
+  "calendar_holdout_v12_2": {
+    "rows": 8,
+    "checked_reply_rows": 8,
+    "status": "PASS"
+  },
+  "context_transfer_eval": {
+    "rows": 41,
+    "checked_reply_rows": 3,
+    "status": "PASS"
+  },
+  "half_hour_holdout": {
+    "rows": 36,
+    "checked_reply_rows": 36,
+    "status": "PASS"
+  },
+  "holdout": {
+    "rows": 36,
+    "checked_reply_rows": 36,
+    "status": "PASS"
+  },
+  "input_clock_holdout": {
+    "rows": 72,
+    "checked_reply_rows": 72,
+    "status": "PASS"
+  },
+  "intent_holdout": {
+    "rows": 28,
+    "checked_reply_rows": 12,
+    "status": "PASS"
+  },
+  "interval_holdout": {
+    "rows": 12,
+    "checked_reply_rows": 11,
+    "status": "PASS"
+  },
+  "offset_reply_holdout": {
+    "rows": 48,
+    "checked_reply_rows": 46,
+    "status": "PASS"
+  },
+  "order_holdout": {
+    "rows": 39,
+    "checked_reply_rows": 39,
+    "status": "PASS"
+  },
+  "regression_holdout": {
+    "rows": 40,
+    "checked_reply_rows": 22,
+    "status": "PASS"
+  },
+  "reply_consistency_holdout": {
+    "rows": 21,
+    "checked_reply_rows": 20,
+    "status": "PASS"
+  },
+  "speech_holdout": {
+    "rows": 27,
+    "checked_reply_rows": 25,
+    "status": "PASS"
+  },
+  "train": {
+    "rows": 5393,
+    "checked_reply_rows": 4749,
+    "status": "PASS"
+  },
+  "validation": {
+    "rows": 685,
+    "checked_reply_rows": 522,
+    "status": "PASS"
+  }
+}

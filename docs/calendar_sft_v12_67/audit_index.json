@@ -4234,5 +4234,125 @@
     "routing_family": "ordinary_chat",
     "literal_reference": "docs/calendar_v12_66_manual/holdout.txt:28",
     "split": "holdout"
+  },
+  "V1267_EXT_T01": {
+    "split": "train",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T02": {
+    "split": "train",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T03": {
+    "split": "train",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T04": {
+    "split": "train",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T05": {
+    "split": "train",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T06": {
+    "split": "train",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T07": {
+    "split": "train",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T08": {
+    "split": "train",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T09": {
+    "split": "train",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T10": {
+    "split": "train",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T11": {
+    "split": "train",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_T12": {
+    "split": "train",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl"
+  },
+  "V1267_EXT_V01": {
+    "split": "validation",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/validation.jsonl"
+  },
+  "V1267_EXT_V02": {
+    "split": "validation",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/validation.jsonl"
+  },
+  "V1267_EXT_V03": {
+    "split": "validation",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/validation.jsonl"
+  },
+  "V1267_EXT_V04": {
+    "split": "validation",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/validation.jsonl"
+  },
+  "V1267_EXT_D01": {
+    "split": "generation_dev",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/generation_dev.jsonl"
+  },
+  "V1267_EXT_D02": {
+    "split": "generation_dev",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/generation_dev.jsonl"
+  },
+  "V1267_EXT_D03": {
+    "split": "generation_dev",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/generation_dev.jsonl"
+  },
+  "V1267_EXT_D04": {
+    "split": "generation_dev",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/generation_dev.jsonl"
+  },
+  "V1267_EXT_H01": {
+    "split": "holdout",
+    "routing_family": "v12_67_notes",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/reply_extensions_holdout.jsonl"
+  },
+  "V1267_EXT_H02": {
+    "split": "holdout",
+    "routing_family": "v12_67_numeric_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/reply_extensions_holdout.jsonl"
+  },
+  "V1267_EXT_H03": {
+    "split": "holdout",
+    "routing_family": "v12_67_punctuation_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/reply_extensions_holdout.jsonl"
+  },
+  "V1267_EXT_H04": {
+    "split": "holdout",
+    "routing_family": "v12_67_notes_literal_title",
+    "source_file": "docs/calendar_v12_67_manual/reply_extensions/reply_extensions_holdout.jsonl"
   }
 }

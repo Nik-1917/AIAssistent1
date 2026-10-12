@@ -89,9 +89,19 @@ Do not substitute subjective chat quality for these measures.
 
 The independent holdout remains excluded from SFT and run selection. Reply text
 is schema-checked for concise Russian wording; `intent` and `params` are scored
-semantically, with independent spoken-clock and arithmetic checks.
+semantically, with independent temporal-parameter and arithmetic checks.
+Creation replies use handwritten title-only literals; their exact titles and
+required multiple-event warnings are evaluated separately. Other reply targets
+are unchanged. The importer preserves the reviewed internally authored sources.
 The V12.67 evaluator and retained manual holdouts are preparation tools;
 their existence is not proof of Qwen3 quality.
+
+The approved 2026-10-11 extension contains 24 complete internally handwritten
+conversations in `calendar_v12_67_manual/reply_extensions/`. Its register binds
+each source by SHA-256. Importing preserves all 6592 preceding V12.67
+conversations and source positions against `notes_baseline_20261011/`.
+The new four-case holdout remains excluded from SFT and checkpoint selection.
+These additional gold targets are not model inference results.
 
 ## Execution gates
 

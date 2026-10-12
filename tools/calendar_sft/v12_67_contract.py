@@ -89,7 +89,13 @@ def parse_and_validate_assistant_response(raw, location="assistant", *, contract
         if params:
             fail(location + ".params", "chat has no command fields")
         return response
-    if re.search(r"[\u2014\u00ab\u00bb]", reply):
+    presentation = reply
+    title = params.get("title")
+    if intent == "calendar_add" and isinstance(title, str):
+        prefix = "Новое событие: "
+        if reply.startswith(prefix) and reply[len(prefix):len(prefix) + len(title)].casefold() == title.casefold():
+            presentation = reply[:len(prefix)] + reply[len(prefix) + len(title):]
+    if re.search(r"[\u2014\u00ab\u00bb]", presentation):
         fail(location + ".reply", "unsupported calendar reply punctuation")
     if reply.startswith("Событие создано:"):
         fail(location + ".reply", "model output is not a database receipt")

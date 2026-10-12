@@ -2901,6 +2901,11 @@
         "reason": "scope_instruction"
       },
       {
+        "line": 1092,
+        "row_sha256": "9c6d67953815ea543682c4470920c502b17d8d3df45ef199cb505e00bfeff148",
+        "reason": "scope_instruction"
+      },
+      {
         "line": 1098,
         "row_sha256": "7f6a3d76562dae7cc21ffb218ccf1f3d9ebedf193bdd48aa1a38b4f07141f088",
         "reason": "outside_contract"
@@ -3011,6 +3016,11 @@
         "reason": "scope_instruction"
       },
       {
+        "line": 1362,
+        "row_sha256": "c0f3b2e779fec32151c7bb747e7658b2775770bb667eeb436446731e2159582e",
+        "reason": "scope_instruction"
+      },
+      {
         "line": 1364,
         "row_sha256": "fe55dba8629980cbb01ccd1cadf8d5097af55b98064e54d25d61103d7f2a044a",
         "reason": "scope_instruction"
@@ -3073,6 +3083,11 @@
       {
         "line": 1444,
         "row_sha256": "1f7866bad4e71cde0fe0e0af82aa87a7899c34a9929b05ce5f216358756cfb95",
+        "reason": "scope_instruction"
+      },
+      {
+        "line": 1445,
+        "row_sha256": "fd52dd24cd67ecd83218f873b6ba4df6ad91b3e89ddff2138c6a033701845dce",
         "reason": "scope_instruction"
       },
       {

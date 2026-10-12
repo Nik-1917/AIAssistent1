@@ -661,11 +661,7 @@ class ChatViewModel(
                                     LocalDateTime.now(ZoneId.systemDefault()),
                                 )
                             val messageToSave = if (parsed != null) {
-                                val notes = when (val params = parsed.params) {
-                                    is CalendarAddParams -> params.notes
-                                    else -> null
-                                }
-                                finalMessage.copy(content = parsed.reply.withCalendarNotes(notes))
+                                finalMessage.copy(content = parsed.reply)
                             } else {
                                 val rawModelJson = finalMessage.content.take(MAX_LOGCAT_PAYLOAD_LENGTH)
                                 Log.e(TAG, "RAW_MODEL_JSON: $rawModelJson")

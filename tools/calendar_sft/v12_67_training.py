@@ -52,7 +52,8 @@ WORK = ROOT / CONFIG["work_directory"]
 SOURCE_LOCK = ROOT / CONFIG["source_lock"]
 SEED = CONFIG["seed"]
 NAMES = {CONFIG["model"]: "Qwen3-1.7B"}
-PRESERVATION = WORK / "preservation.json"
+# Earlier preparation freezes remain historical evidence of their own revisions.
+PRESERVATION = WORK / "preservation_semantics_20261011.json"
 PROVIDER = ROOT / "app/src/main/java/com/example/aiassistent1/domain/provider/SystemPromptProvider.kt"
 provider_source = PROVIDER.read_text(encoding="utf-8")
 CONTRACT = textwrap.dedent(provider_source.split('CALENDAR_CONTRACT = """', 1)[1]
@@ -175,6 +176,7 @@ def verify_preservation():
 def frozen_paths():
     directory = ROOT / "tools/calendar_sft"
     paths = list(directory.glob("*v12_67*.py")) + [directory / "amp_retry.py", CONFIG_PATH, SOURCE_LOCK, PRESERVATION, PROVIDER]
-    paths += list(DATA.iterdir()) + list((ROOT / "docs/calendar_v12_67_manual").iterdir())
+    paths += list(DATA.iterdir())
+    paths += [path for path in (ROOT / "docs/calendar_v12_67_manual").rglob("*") if path.is_file()]
     paths += [ROOT / name for name in read(DATA / "manifest.json")["rules_sha256"]]
     return sorted(set(paths))

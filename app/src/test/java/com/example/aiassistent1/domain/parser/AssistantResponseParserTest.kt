@@ -119,9 +119,9 @@ class AssistantResponseParserTest {
     }
 
     @Test
-    fun `rejects removed note intent`() {
+    fun `rejects an unsupported intent`() {
         val response = parser.parse(
-            """{"intent":"note_add","reply":"Сохраняю","params":{"text":"текст"}}""",
+            """{"intent":"calendar_future_action","reply":"x","params":{}}""",
         )
 
         assertNull(response)

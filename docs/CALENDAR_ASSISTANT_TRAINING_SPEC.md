@@ -93,13 +93,13 @@ Do not infer a numeric value from numbers occurring only inside `notes`.
 - Do not supply a default duration. When the user did not name a duration,
   omit `duration_min`; Android may apply its user-enabled default.
 - Omit every other unknown event field. The model never asks for it.
-- A complete command uses an individually authored declarative `reply` that
-  describes the prepared event and agrees with its known parameters. It must
+- A complete command uses the handwritten title-only `reply` described below.
+  Dates, clock times, duration, value and notes stay in `params`. It must
   never claim that the event has already been saved. The UI controls
   confirmation and the actual local save.
-- A partial command uses an individually authored declarative `reply` that
-  mentions only known data. It never asks a question. There is no shared
-  fallback phrase for partial commands.
+- A partial command with a known title uses the same title-only reply.
+  Without a title, use exactly `Создаём событие без названия.` and omit
+  `title` from `params`. Never ask for missing data.
 
 ### calendar_search
 
@@ -259,8 +259,8 @@ February. For example:
 Apply these boundaries consistently to `date`, `starts_at`, and search or sum
 ranges. A one-day range
 that selects 29 February 2024 starts at `2024-02-29T00:00` and ends at
-`2024-03-01T00:00`. The relative wording in `reply` must describe the same
-calendar date as the technical fields in `params`.
+`2024-03-01T00:00`. Relative period wording in search and sum replies must
+describe the same boundaries as `params`; creation replies do not state dates.
 
 ### Weekday vocabulary and week boundaries
 
@@ -428,13 +428,13 @@ Midnight is the beginning of the requested date; the phrase itself does not
 move that date forward. Do not output `24:00`. A separately specified duration
 or offset retains its own meaning; the two zero minute digits do not set
 `duration_min` to zero. The full 24-hour mapping is documented in the V12.51
-rules. Keep `HH:00` in technical parameters. In `reply`, use the exact spoken
-whole hour, such as `в двадцать часов`; do not turn `:00` into a quarter or half.
+rules. Keep `HH:00` in technical parameters. Do not turn `:00` into a quarter
+or half. The current creation reply does not repeat the clock.
 
-In the current contract, `reply` writes event times in words. User messages
-may contain numeric clock forms; system context and technical JSON parameters
-retain their specified numeric formats. Frozen older contracts keep their
-original input-authoring restrictions.
+User messages may contain numeric clock forms; system context and technical
+JSON parameters retain their specified numeric formats. Current creation
+replies use the title-only format, without event times. Frozen older contracts
+keep their original input-authoring and spoken-reply restrictions.
 
 ### Minutes of the upcoming named hour
 
@@ -454,10 +454,9 @@ Without enough context to distinguish the two halves of the day, do not
 invent a daypart. This construction does not change the existing date rules.
 Do not confuse it with a duration after `на` or an offset after `через`.
 
-In `reply` only, the existing V12.5 forms still apply at `:15`, `:30`
-and `:45`. V12.54 uses the minutes-to forms at `:35`, `:40`, `:50`,
-and `:55`. Other minute values may use the exact `в ... минут ...`
-expression. Numeric time and duration fields retain their own formats.
+The historical V12.5 and V12.54 spoken-reply forms remain in their archived
+contracts. V12.67 creation replies do not repeat these clocks. Their input
+meanings and numeric time and duration fields retain their existing semantics.
 
 ### Compact current-hour and minute expressions
 
@@ -485,37 +484,28 @@ Every presentation rule in this section applies exclusively to `reply`.
 It must not normalize, remove, decline or rephrase content in other fields.
 
 - Concise, neutral Russian, without Markdown.
-- Do not emit Unicode U+2014, U+00AB, or U+00BB in `reply`.
-  In `reply` only, join text separated by U+2014 with exactly one
-  ordinary space and remove U+00AB/U+00BB without replacement.
+- `calendar_add` with a title: `Новое событие: Встреча с Анной.`
+  Replace only the title passage with the exact `params.title`, without
+  inflection, omission, normalization or rephrasing.
+- `calendar_add` without a title: exactly `Создаём событие без названия.`
+- Do not add dates, clock times, duration, value or notes to creation replies.
+  All known technical values remain in `params`, including start and end.
+- A literal title such as `Завтра`, `Пять часов` or `Планы на завтра` remains
+  a title. Numeric or punctuation content inside a literal title is preserved.
+- For multiple independent creations, prepare only the first and append
+  the existing declarative warning naming the unprocessed events. The warning
+  does not repeat their dates or times. Single-event replies have no suffix.
+- Outside literal creation title copies, do not emit U+2014, U+00AB or U+00BB.
 - Never ask the user a question. Do not use `?`, `уточните`, `укажите`, or an
   imperative such as `скажите` to request missing data. A direct how-to answer
   may quote a complete command, but it must not request a value that the model
   failed to extract.
-- Never mention a year in `reply`.
-- Write known event times in words in `reply`; retain ISO digits only in JSON
-  params.
-- At `:15`, use `четверть` of the upcoming hour; at `:30`, use `пол...` or
-  `половина...` of the upcoming hour; at `:45`, use `без четверти` the upcoming
-  hour. At `:35`, `:40`, `:50` and `:55`, respectively use `без двадцати пяти
-  минут`, `без двадцати минут`, `без десяти минут` and `без пяти минут`,
-  followed by the upcoming cardinal hour (`час`, `два`, ..., `двенадцать`).
-  These V12.54 forms supersede the archived reply forms `в тридцать пять
-  минут ...`, `в сорок минут ...`, `в пятьдесят минут ...` and `в пятьдесят
-  пять минут ...`. Apply them to known starts and ends of events. Keep all
-  other minutes exact; never round them to one of these forms.
-- Apply clock wording only to the clock passage in `reply`; preserve exact
-  event title copies, durations and offsets such as `на сорок минут` and
-  `через пятьдесят минут`. A next-hour phrase does not change the event date:
-  `23:55` says `без пяти минут двенадцать` and retains the original date
-  and `23:55` in `params`. Do not add a preposition before `без`; use
-  independent clauses such as `начало без десяти минут три, окончание ...`.
-- Omit `утра`, `дня`, `вечера` and `ночи` attached to a clock
-  time in every reply form. Keep those qualifiers in the user's input and
-  use them to resolve the exact numerical parameters. The V12.53 rule
-  supersedes archived reply examples containing clock dayparts.
+- Other actions retain their existing reply wording and meaning. They do not
+  use the creation prefix. Factual date and time questions remain `chat`.
+- Input clock vocabulary, dayparts, offsets and interval endpoints are still
+  interpreted exactly. This presentation revision does not change arithmetic.
 
-### Exact clock vocabulary
+### Exact clock vocabulary for interpreting input
 
 One local day contains exactly 24 clock-hour values numbered from `00` through
 `23`. The hour words below are exact clock pronunciations when they occur in a
@@ -679,18 +669,34 @@ ChatML separators are checked independently. The token audit sets an explicit
 training length bound and rejects truncation; only assistant completions are
 supervised. Android context settings are independent and unchanged.
 
+The Android creation message stores only the parsed `reply`; it does not append
+`params.notes` or speak them as part of that message. Notes remain in the event
+object and draft/event cards and editors. The existing Android date normalizer,
+including its treatment of date-like words in the reply title, remains intentional
+and unchanged. The model target still copies the literal title.
+
 ## Dataset process
 
 V12.67 starts from the preserved V12.66 JSONL files and the reviewed exclusion
 positions in `calendar_v12_67_manual/exclusions.json`. The assembler does not
-write Russian examples. Every retained user message and assistant JSON remains
-exact; only `contract_version` changes to `v12.67`. Historical source files are
+compose Russian examples. User messages and non-creation responses remain
+exact. Only creation `reply` tokens are substituted from handwritten literals
+in `calendar_v12_67_manual/reply_literals/`, `reply_unnamed.txt` and
+`reply_multiple_events.json`. The complete before/after register is
+`calendar_sft_v12_67/reply_edits.json`; parameters are unchanged. Historical source files are
 protected by SHA-256. Empty suites are absent from the active package.
+
+On 2026-10-11 a separate reviewed extension adds 24 complete handwritten
+conversations from `calendar_v12_67_manual/reply_extensions/`: 12 train,
+4 validation, 4 generation-dev and 4 independent holdout. All 6592 preceding
+V12.67 conversations remain identical to `notes_baseline_20261011/`.
+The extension covers notes, numeric titles, punctuation and their combinations;
+its importer copies complete literal conversations without constructing phrases.
 
 The same exclusions apply to validation, developer cases and independent
 checks. Rebuild audit indexes, clock-grid line positions and artifact hashes
 from retained records. Keep independent checks out of checkpoint selection.
-Validate all targets with `v12_67_contract.py` and all clock meaning/style,
-reply/params agreement and annotated offsets with the V12.67 evaluator.
+Validate all targets with `v12_67_contract.py`. Grade title-only replies,
+required warnings, exact temporal parameters and annotated offsets separately.
 The 1440-cell inherited clock grid and factual date/time chat remain.
 Preparation and gold-target validation are not new model inference results.

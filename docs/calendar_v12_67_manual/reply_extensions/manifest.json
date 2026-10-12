@@ -1,0 +1,53 @@
+{
+  "version": "v12.67-notes-title-extension-1",
+  "reviewed_on": "2026-10-11",
+  "authorship": "Literal Russian conversations authored by hand after owner approval; no generated phrases.",
+  "baseline_snapshot_sha256": "9eba8b32db4edcb4f7ac52a1cea63c21956ad281ff856856baa2c29c8d2c1405",
+  "rows": 24,
+  "splits": {
+    "generation_dev": {
+      "file": "docs/calendar_v12_67_manual/reply_extensions/generation_dev.jsonl",
+      "rows": 4,
+      "sha256": "bf20e422333d7e0487747d169e2748555665c40cc2ea7a56e9d0fc1cfbc8c747",
+      "categories": {
+        "v12_67_notes": 1,
+        "v12_67_numeric_title": 1,
+        "v12_67_punctuation_title": 1,
+        "v12_67_notes_literal_title": 1
+      }
+    },
+    "reply_extensions_holdout": {
+      "file": "docs/calendar_v12_67_manual/reply_extensions/reply_extensions_holdout.jsonl",
+      "rows": 4,
+      "sha256": "9ead45615e33c85d6f85ac3bcb7278467d263442b0a30cabf5fed31c3ab60a4a",
+      "categories": {
+        "v12_67_notes": 1,
+        "v12_67_numeric_title": 1,
+        "v12_67_punctuation_title": 1,
+        "v12_67_notes_literal_title": 1
+      }
+    },
+    "train": {
+      "file": "docs/calendar_v12_67_manual/reply_extensions/train.jsonl",
+      "rows": 12,
+      "sha256": "7bf5d07699156a6d23b5754ec172c5da545b4cd6fe1ab1f68d4af6e5f50318a6",
+      "categories": {
+        "v12_67_notes": 3,
+        "v12_67_numeric_title": 3,
+        "v12_67_punctuation_title": 3,
+        "v12_67_notes_literal_title": 3
+      }
+    },
+    "validation": {
+      "file": "docs/calendar_v12_67_manual/reply_extensions/validation.jsonl",
+      "rows": 4,
+      "sha256": "50080b17b6e304e6100a126a4e41055ae76f8f98bd82fe641a10f4e3b9763fa2",
+      "categories": {
+        "v12_67_notes": 1,
+        "v12_67_numeric_title": 1,
+        "v12_67_punctuation_title": 1,
+        "v12_67_notes_literal_title": 1
+      }
+    }
+  }
+}

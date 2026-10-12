@@ -2,8 +2,9 @@
 
 The active protocol has four actions: `chat`, `calendar_add`, `calendar_search`,
 `calendar_sum`. The dataset lives in `docs/calendar_sft_v12_67`. It retains
-literal V12.66 user messages and assistant JSON under an exact exclusion
-register. Historical datasets, runs, source locks and model artifacts remain
+literal V12.66 user messages and parameters under an exact exclusion
+register. Creation replies are copied from explicit handwritten literal files;
+`reply_edits.json` records every original and replacement. Historical datasets, runs, source locks and model artifacts remain
 preserved. The old tool inventory is available in the
 [archived README](../../docs/calendar_training_archive/V12_66_CALENDAR_SFT_README_BEFORE_V12_67.md).
 
@@ -36,6 +37,28 @@ Its default independent pack excludes training and validation.
 folder. It never writes SFT examples. `prepare_v12_67.py --refresh-metadata`
 updates generated metadata only after every JSONL matches its reconstruction.
 It cannot rewrite literal conversations.
+
+The approved title-reply revision is applied only with
+`prepare_v12_67.py --apply-reviewed-replies` against the verified snapshot in
+`docs/calendar_v12_67_manual/reply_baseline_20261010`. The importer does not
+construct reply text from title strings: it copies the exact authored literals
+and refuses missing, extra or duplicate titles. User text, parameters, other
+actions and suite positions are preserved. Creation replies no longer state
+dates, clock times, durations or values; their parameters are still evaluated.
+
+The subsequent notes/title extension is applied with
+`prepare_v12_67.py --apply-reviewed-extensions`. Its 24 complete handwritten
+conversations and source hashes live in `docs/calendar_v12_67_manual/reply_extensions/`.
+The importer validates the separate `notes_baseline_20261011` snapshot and
+preserves every preceding conversation and position before appending 12 train,
+4 validation, 4 development and 4 independent holdout cases. It never assembles
+Russian sentences. Current totals are 6506 JSONL conversations plus 110 development
+conversations. Creation chat messages contain only `reply`; structured notes are
+displayed in cards and editors. Android date normalization remains unchanged.
+
+The fresh review folder defaults to `build/calendar_sft_v12_67_notes_reply_review_final`.
+Earlier review, token-audit and preservation snapshots retain their revision scope.
+The current preservation register is `preservation_notes_reply_20261011.json`.
 
 ## Prepared training configuration
 

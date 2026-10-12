@@ -1,0 +1,130 @@
+{
+  "version": "v12.67-manual-semantics-1",
+  "reviewed_on": "2026-10-11",
+  "baseline_manifest_sha256": "7cf77aa84a9afc1c3fb12b3544ee3a50151a863c0890829a218663ceb22d6b7e",
+  "corrections": [
+    {
+      "id": "F001",
+      "split": "speech_holdout",
+      "output_line": 24,
+      "source_line": 25,
+      "case_id": "V1261H25",
+      "anchor": "2030-04-30T20:00",
+      "question": "В полпервого завтра запиши смену оформления.",
+      "before": {"intent": "calendar_add", "reply": "Новое событие: Смена оформления.", "params": {"title": "Смена оформления", "date": "2030-05-01"}},
+      "after_params": {"title": "Смена оформления", "starts_at": "2030-05-01T12:30"}
+    },
+    {
+      "id": "F002_01",
+      "split": "train",
+      "output_line": 82,
+      "source_line": 149,
+      "anchor": "2030-09-13T14:30",
+      "question": "Найди разговор с бухгалтером в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю разговор с бухгалтером в том месяце.", "params": {"query": "бухгалтером", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "разговор с бухгалтером", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_02",
+      "split": "train",
+      "output_line": 118,
+      "source_line": 231,
+      "anchor": "2030-09-19T14:30",
+      "question": "Найди проверку отчёта в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю проверка отчёта в том месяце.", "params": {"query": "отчёта", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "проверка отчёта", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_03",
+      "split": "train",
+      "output_line": 178,
+      "source_line": 340,
+      "anchor": "2030-09-18T14:30",
+      "question": "Найди сервис автомобиля в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю сервис автомобиля в том месяце.", "params": {"query": "автомобиля", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "сервис автомобиля", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_04",
+      "split": "train",
+      "output_line": 234,
+      "source_line": 436,
+      "anchor": "2030-09-12T14:30",
+      "question": "Найди оплату интернета в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю оплата интернета в том месяце.", "params": {"query": "интернета", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "оплата интернета", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_05",
+      "split": "train",
+      "output_line": 239,
+      "source_line": 445,
+      "anchor": "2030-09-08T14:30",
+      "question": "Найди встречу с Анной в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю встреча с анной в том месяце.", "params": {"query": "Анной", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "встреча с Анной", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_06",
+      "split": "train",
+      "output_line": 280,
+      "source_line": 521,
+      "anchor": "2030-09-09T14:30",
+      "question": "Найди созвон с командой в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю созвон с командой в том месяце.", "params": {"query": "командой", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "созвон с командой", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_07",
+      "split": "train",
+      "output_line": 325,
+      "source_line": 614,
+      "anchor": "2030-09-15T14:30",
+      "question": "Найди покупку продуктов в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю покупка продуктов в том месяце.", "params": {"query": "продуктов", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "покупка продуктов", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_08",
+      "split": "train",
+      "output_line": 331,
+      "source_line": 628,
+      "anchor": "2030-09-21T14:30",
+      "question": "Найди событие \"Поздравить маму\" в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю поздравить маму в том месяце.", "params": {"query": "маму", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "Поздравить маму", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F002_09",
+      "split": "train",
+      "output_line": 397,
+      "source_line": 759,
+      "anchor": "2030-09-22T14:30",
+      "question": "Найди занятие йогой в том месяце.",
+      "before": {"intent": "calendar_search", "reply": "Проверяю занятие йогой в том месяце.", "params": {"query": "йогой", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}},
+      "after_params": {"query": "занятие йогой", "range_start": "2030-08-01T00:00", "range_end": "2030-09-01T00:00"}
+    },
+    {
+      "id": "F003",
+      "split": "train",
+      "output_line": 3485,
+      "source_line": 4093,
+      "case_id": "V1261S49",
+      "anchor": "2026-09-30T10:15",
+      "question": "Завтра в полтретьего подбор красок.",
+      "before": {"intent": "calendar_add", "reply": "Новое событие: Подбор красок.", "params": {"title": "Подбор красок", "date": "2026-10-01"}},
+      "after_params": {"title": "Подбор красок", "starts_at": "2026-10-01T14:30"}
+    },
+    {
+      "id": "F004",
+      "split": "validation",
+      "output_line": 592,
+      "source_line": 667,
+      "case_id": "V1261V25",
+      "anchor": "2029-08-31T11:10",
+      "question": "Первого сентября половина первого, подбор рамки.",
+      "before": {"intent": "calendar_add", "reply": "Новое событие: Подбор рамки.", "params": {"title": "Подбор рамки", "date": "2029-09-01"}},
+      "after_params": {"title": "Подбор рамки", "starts_at": "2029-09-01T12:30"}
+    }
+  ]
+}

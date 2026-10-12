@@ -5,7 +5,7 @@
   "dataset": "docs/calendar_sft_v12_67",
   "source_lock": "build/calendar_v12_66_qwen3_17b/Qwen3-1.7B_source_lock.json",
   "work_directory": "build/calendar_v12_67_qwen3_17b",
-  "grader_version": "v12.67-four-actions-1",
+  "grader_version": "v12.67-title-reply-2",
   "seed": 20261009,
   "epochs": 3,
   "effective_batch_size": 16,
@@ -22,7 +22,7 @@
   "amp_initial_scale": 128.0,
   "amp_max_retries": 12,
   "cuda_memory_fraction": 0.8,
-  "selection": "Macro full pass including intent, spoken time and reply/params agreement; then macro intent accuracy; then clock agreement; then macro exact params. Earlier checkpoint wins ties.",
+  "selection": "Macro full pass including intent, title-only reply, required multiple-event warning and exact parameters; then macro intent accuracy; then macro temporal params accuracy; then macro exact params. Earlier checkpoint wins ties.",
   "training_transports": [
     "standard_chatml",
     "android_runtime"
