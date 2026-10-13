@@ -26,7 +26,7 @@ internal class ChatContextDecisionGate {
         }
     }
 
-    fun resolve(id: String, choice: ChatContextChoice) {
-        if (state.value?.id == id) answer?.complete(choice)
-    }
+    /** Only the first choice for the currently displayed request is accepted. */
+    fun resolve(id: String, choice: ChatContextChoice): Boolean =
+        state.value?.id == id && answer?.complete(choice) == true
 }

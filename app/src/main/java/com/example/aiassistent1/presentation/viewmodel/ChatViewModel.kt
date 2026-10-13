@@ -96,6 +96,9 @@ class ChatViewModel(
     }
     private var generationJob: Job? = null
     private val contextDecisions = ChatContextDecisionGate()
+    private var pendingContextRequest: PendingContextRequest? = null
+    private var contextCancelResumeJob: Job? = null
+    private data class PendingContextRequest(val job: Job, val chatId: String, val modelName: String)
     private val chatContextSession = ChatContextSession(llmEngine, chatContextRepository, modelContextBuilder)
     private val pendingChatMessages = PendingChatMessages()
     private var activeChatJob: Job? = null
@@ -493,6 +496,7 @@ class ChatViewModel(
     fun returnToConversation() = navigateTo(AppDestination.CHAT)
 
     private fun navigateTo(destination: AppDestination) {
+        cancelContextVoiceResume()
         viewModelScope.launch {
             try {
                 settingsRepository.setAppDestination(destination)
@@ -504,10 +508,24 @@ class ChatViewModel(
     }
 
     fun resolveChatContext(id: String, choice: ChatContextChoice) {
-        if (contextDecisions.pressure.value?.id != id) return
-        contextDecisions.resolve(id, choice)
-        // Match the existing Stop action, including resuming dialogue listening when enabled.
-        if (choice == ChatContextChoice.Cancel) stopGeneration()
+        val request = pendingContextRequest ?: return
+        if (!contextDecisions.resolve(id, choice) || choice != ChatContextChoice.Cancel) return
+
+        // The decision itself cancels this request. Wait for its normal cleanup before listening again.
+        contextCancelResumeJob = viewModelScope.launch {
+            request.job.join()
+            val current = uiState.value
+            if (generationJob === request.job && current.activeChatId == request.chatId &&
+                current.selectedModel == request.modelName
+            ) {
+                resumeDialogueVoiceInput()
+            }
+        }
+    }
+
+    private fun cancelContextVoiceResume() {
+        contextCancelResumeJob?.cancel()
+        contextCancelResumeJob = null
     }
 
     fun setChatHistoryPolicy(policy: ChatHistoryPolicy) {
@@ -563,6 +581,7 @@ class ChatViewModel(
         newUserMessage: ChatMessage? = null,
     ) {
         generationJob = viewModelScope.launch {
+            val requestJob = coroutineContext[Job] ?: error("Нет корутины текущего запроса")
             var assistantMessage: ChatMessage? = null
             var responseWriter: ChatResponseWriter? = null
             var backgroundSession: GenerationForegroundService.Session? = null
@@ -604,7 +623,13 @@ class ChatViewModel(
                     // Release the generation session while the user chooses history; the engine mutex is already free.
                     backgroundSession?.close()
                     backgroundSession = null
-                    val choice = contextDecisions.await(pressure)
+                    val pending = PendingContextRequest(requestJob, currentState.activeChatId, currentState.selectedModel)
+                    pendingContextRequest = pending
+                    val choice = try {
+                        contextDecisions.await(pressure)
+                    } finally {
+                        if (pendingContextRequest === pending) pendingContextRequest = null
+                    }
                     if (uiState.value.activeChatId != currentState.activeChatId ||
                         uiState.value.selectedModel != currentState.selectedModel) {
                         throw CancellationException("Чат или модель изменились")
@@ -869,6 +894,7 @@ class ChatViewModel(
     fun setVoiceMode(enabled: Boolean) {
         val state = mutableUiState.value
         if (state.isVoiceMode == enabled || (enabled && state.isProcessing)) return
+        if (!enabled) cancelContextVoiceResume()
         if (enabled) cancelPendingVoiceModeShutdown()
         mutableUiState.update { it.copy(isVoiceMode = enabled, error = null) }
         if (enabled && !mutableUiState.value.isProcessing) startVoiceInput()
@@ -878,6 +904,7 @@ class ChatViewModel(
     }
 
     fun stopGeneration(resumeDialogue: Boolean = true) {
+        cancelContextVoiceResume()
         speechPlaybackController?.stop(SpeechStopReason.User)
         if (!uiState.value.isProcessing) return
         if (resumeDialogue && !uiState.value.dialogueModeEnabled) {
@@ -905,6 +932,7 @@ class ChatViewModel(
     }
 
     fun clearChat() {
+        cancelContextVoiceResume()
         val activeGeneration = generationJob
         val state = mutableUiState.value
         val voiceDraft = state.voiceDraft
@@ -1571,6 +1599,7 @@ class ChatViewModel(
         activeChatJob = viewModelScope.launch {
             try {
                 ObserveAppSessionUseCase(settingsRepository, chatRepository)().collect { session ->
+                    if (uiState.value.activeChatId != session.navigation.chatId) cancelContextVoiceResume()
                     if (uiState.value.activeChatId != session.navigation.chatId && contextDecisions.pressure.value != null) {
                         stopGeneration(resumeDialogue = false)
                     }

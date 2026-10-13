@@ -21,9 +21,9 @@ class ChatContextDecisionGateTest {
         val second = pressure()
         val nextJob = async { gate.await(second) }
         runCurrent()
-        gate.resolve(first.id, ChatContextChoice.Automatic(true))
+        assertFalse(gate.resolve(first.id, ChatContextChoice.Automatic(true)))
         assertFalse(nextJob.isCompleted)
-        gate.resolve(second.id, ChatContextChoice.Manual(setOf("old")))
+        assertTrue(gate.resolve(second.id, ChatContextChoice.Manual(setOf("old"))))
         assertEquals(ChatContextChoice.Manual(setOf("old")), nextJob.await())
         assertNull(gate.pressure.value)
     }
@@ -33,9 +33,20 @@ class ChatContextDecisionGateTest {
         val state = pressure()
         val waiting = async { gate.await(state) }
         runCurrent()
-        gate.resolve(state.id, ChatContextChoice.Cancel)
-        gate.resolve(state.id, ChatContextChoice.Automatic())
+        assertTrue(gate.resolve(state.id, ChatContextChoice.Cancel))
+        assertFalse(gate.resolve(state.id, ChatContextChoice.Automatic()))
         assertEquals(ChatContextChoice.Cancel, waiting.await())
+        assertNull(gate.pressure.value)
+    }
+
+    @Test fun `cancel after another accepted choice cannot stop that request`() = runTest {
+        val gate = ChatContextDecisionGate()
+        val state = pressure()
+        val waiting = async { gate.await(state) }
+        runCurrent()
+        assertTrue(gate.resolve(state.id, ChatContextChoice.Automatic()))
+        assertFalse(gate.resolve(state.id, ChatContextChoice.Cancel))
+        assertEquals(ChatContextChoice.Automatic(), waiting.await())
         assertNull(gate.pressure.value)
     }
 }
