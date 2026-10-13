@@ -12,6 +12,7 @@ import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandExecutor
 import com.example.aiassistent1.calendar.core.domain.CalendarCommand
 import com.example.aiassistent1.calendar.core.domain.CalendarCommandResult
+import com.example.aiassistent1.data.model.ModelFileCatalog
 import com.example.aiassistent1.domain.mapper.CalendarCommandMapper
 import com.example.aiassistent1.domain.interfaces.ChatRepository
 import com.example.aiassistent1.domain.interfaces.ChatContextRepository
@@ -63,6 +64,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -109,6 +111,7 @@ class ChatViewModel(
     private var voiceBackgroundSession: GenerationForegroundService.Session? = null
     private var paramsJob: Job? = null
     private val modelParamsWrites = Mutex()
+    private val modelFilesMutex = Mutex()
     private val modelParamsController = ModelParamsController(llmEngine)
     val automaticGeneration = llmEngine.automaticState
     private var voiceModeShutdownJob: Job? = null
@@ -331,78 +334,81 @@ class ChatViewModel(
     }
 
     private fun updateAvailableModels() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val modelsDir = context.getExternalFilesDir("models")
-            val modelFiles = mutableSetOf<String>()
-            modelsDir?.listFiles { file -> file.extension.equals("gguf", ignoreCase = true) }?.forEach {
-                if (it.length() > 0) modelFiles.add(it.name) 
-            }
-            val sortedModels = modelFiles.toList().sorted()
-            mutableUiState.update { it.copy(availableModels = sortedModels) }
+        viewModelScope.launch {
+            modelFilesMutex.withLock { refreshAvailableModels() }
         }
     }
 
+    private suspend fun refreshAvailableModels() {
+        val models = withContext(Dispatchers.IO) {
+            context.getExternalFilesDir("models")?.let { ModelFileCatalog(it).list() }.orEmpty()
+        }
+        mutableUiState.update { it.copy(availableModels = models) }
+    }
+
+    private fun modelFileCatalog(): ModelFileCatalog = ModelFileCatalog(
+        requireNotNull(context.getExternalFilesDir("models")) { "Папка приложения недоступна" }
+    )
+
     fun importModel(uri: Uri) {
         viewModelScope.launch {
-            try {
-                mutableUiState.update { it.copy(modelState = ModelState.Importing(0f)) }
-                val importedFileName = withContext(Dispatchers.IO) {
-                    val contentResolver = context.contentResolver
-                    
-                    val fileName = requireModelFileName(getFileName(uri))
-                    
-                    val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
-                    val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("Не удалось открыть файл")
-                    
-                    val targetDir = context.getExternalFilesDir("models") ?: throw Exception("Папка приложения недоступна")
-                    check(targetDir.exists() || targetDir.mkdirs()) { "Не удалось создать папку моделей" }
-                    if (totalSize >= 0) {
-                        require(totalSize <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
-                        require(totalSize <= targetDir.usableSpace) { "Недостаточно места для импорта модели" }
-                    }
-                    
-                    val canonicalTargetDir = targetDir.canonicalFile
-                    val targetFile = File(canonicalTargetDir, fileName).canonicalFile
-                    require(targetFile.parentFile == canonicalTargetDir) { "Некорректный путь к модели" }
-                    require(!targetFile.exists()) { "Модель с таким именем уже импортирована" }
-                    val temporaryFile = File.createTempFile("model_", ".part", canonicalTargetDir)
-                    val buffer = ByteArray(1024 * 1024) // 1MB buffer
-                    var bytesCopied = 0L
-                    try {
-                        inputStream.use { input ->
-                            FileOutputStream(temporaryFile).use { output ->
-                                while (true) {
-                                    val bytesRead = input.read(buffer)
-                                    if (bytesRead == -1) break
-                                    bytesCopied += bytesRead
-                                    require(bytesCopied <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
-                                    output.write(buffer, 0, bytesRead)
-                                    if (totalSize > 0) {
-                                        val progress = bytesCopied.toFloat() / totalSize
-                                        mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+            modelFilesMutex.withLock {
+                try {
+                    mutableUiState.update { it.copy(modelState = ModelState.Importing(0f)) }
+                    val importedFileName = withContext(Dispatchers.IO) {
+                        val contentResolver = context.contentResolver
+                        val fileName = requireModelFileName(getFileName(uri))
+                        val targetDir = context.getExternalFilesDir("models") ?: error("Папка приложения недоступна")
+                        check(targetDir.exists() || targetDir.mkdirs()) { "Не удалось создать папку моделей" }
+                        val catalog = modelFileCatalog()
+                        val targetFile = catalog.file(fileName)
+                        require(!targetFile.exists()) { "Модель с таким именем уже импортирована" }
+                        catalog.requireSpaceForAnother()
+
+                        val totalSize = contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+                        if (totalSize >= 0) {
+                            require(totalSize <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                            require(totalSize <= targetDir.usableSpace) { "Недостаточно места для импорта модели" }
+                        }
+
+                        val inputStream = contentResolver.openInputStream(uri) ?: error("Не удалось открыть файл")
+                        val temporaryFile = File.createTempFile("model_", ".part", targetDir.canonicalFile)
+                        val buffer = ByteArray(1024 * 1024)
+                        var bytesCopied = 0L
+                        try {
+                            inputStream.use { input ->
+                                FileOutputStream(temporaryFile).use { output ->
+                                    while (true) {
+                                        val bytesRead = input.read(buffer)
+                                        if (bytesRead == -1) break
+                                        bytesCopied += bytesRead
+                                        require(bytesCopied <= MAX_MODEL_FILE_BYTES) { "Размер модели превышает 8 ГБ" }
+                                        output.write(buffer, 0, bytesRead)
+                                        if (totalSize > 0) {
+                                            val progress = bytesCopied.toFloat() / totalSize
+                                            mutableUiState.update { it.copy(modelState = ModelState.Importing(progress)) }
+                                        }
                                     }
                                 }
                             }
+                            require(bytesCopied > 0) { "Файл модели пуст" }
+                            Files.move(temporaryFile.toPath(), targetFile.toPath())
+                        } finally {
+                            if (temporaryFile.exists()) temporaryFile.delete()
                         }
-                        require(bytesCopied > 0) { "Файл модели пуст" }
-                        check(temporaryFile.renameTo(targetFile)) { "Не удалось завершить импорт модели" }
-                    } finally {
-                        if (temporaryFile.exists()) temporaryFile.delete()
+                        fileName
                     }
-                    fileName
+
+                    selectModelInternal(importedFileName)
+                    checkModelPresence(importedFileName)
+                    mutableUiState.update { it.copy(modelState = ModelState.Unloaded) }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    mutableUiState.update { it.copy(modelState = ModelState.Error(error.message ?: "Ошибка импорта")) }
+                } finally {
+                    refreshAvailableModels()
                 }
-                
-                // После успешного импорта выбираем эту модель
-                selectModel(importedFileName)
-                updateAvailableModels()
-                mutableUiState.update {
-                    it.copy(
-                        modelState = ModelState.Unloaded,
-                        modelAvailability = ModelAvailability.Available,
-                    )
-                }
-            } catch (e: Exception) {
-                mutableUiState.update { it.copy(modelState = ModelState.Error(e.message ?: "Ошибка импорта")) }
             }
         }
     }
@@ -762,20 +768,73 @@ class ChatViewModel(
 
     fun selectModel(modelName: String) {
         viewModelScope.launch {
-            if (uiState.value.selectedModel == modelName) {
-                // Import may restore a previously selected but missing file.
-                observeParams(modelName)
-                return@launch
+            modelFilesMutex.withLock {
+                try {
+                    selectModelInternal(modelName)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    mutableUiState.update { it.copy(error = error.message ?: "Не удалось выбрать модель") }
+                } finally {
+                    refreshAvailableModels()
+                }
             }
-            val previousGeneration = generationJob
-            
-            stopGeneration(resumeDialogue = false)
-            previousGeneration?.join()
-            llmEngine.unload()
-            // Принудительно сбрасываем флаги при смене модели
-            mutableUiState.update { it.copy(isStopping = false, isProcessing = false, isCheckingRequest = false) }
-            settingsRepository.setSelectedModel(modelName)
         }
+    }
+
+    private suspend fun selectModelInternal(modelName: String) {
+        val exists = withContext(Dispatchers.IO) {
+            modelFileCatalog().list().any { it.fileName == modelName }
+        }
+        require(exists) { "Файл модели не найден" }
+        val currentModel = settingsRepository.selectedModel.first { it != null }.orEmpty()
+        if (currentModel == modelName) {
+            // Import may restore a previously selected but missing file.
+            observeParams(modelName)
+            checkModelPresence(modelName)
+            return
+        }
+        unloadActiveModel()
+        settingsRepository.setSelectedModel(modelName)
+        settingsRepository.selectedModel.first { it == modelName }
+    }
+
+    fun deleteModel(modelName: String) {
+        viewModelScope.launch {
+            modelFilesMutex.withLock {
+                try {
+                    val models = withContext(Dispatchers.IO) { modelFileCatalog().list() }
+                    require(models.any { it.fileName == modelName }) { "Файл модели не найден" }
+                    val currentModel = settingsRepository.selectedModel.first { it != null }.orEmpty()
+                    val deletingSelected = currentModel == modelName
+                    if (deletingSelected) unloadActiveModel()
+                    withContext(Dispatchers.IO) { modelFileCatalog().delete(modelName) }
+                    if (deletingSelected) {
+                        val nextModel = withContext(Dispatchers.IO) {
+                            modelFileCatalog().list().firstOrNull()?.fileName.orEmpty()
+                        }
+                        settingsRepository.setSelectedModel(nextModel)
+                        settingsRepository.selectedModel.first { it == nextModel }
+                        checkModelPresence(nextModel)
+                    }
+                    mutableUiState.update { it.copy(snackbarMessage = "Модель удалена") }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    mutableUiState.update { it.copy(error = error.message ?: "Не удалось удалить модель") }
+                } finally {
+                    refreshAvailableModels()
+                }
+            }
+        }
+    }
+
+    private suspend fun unloadActiveModel() {
+        val previousGeneration = generationJob
+        stopGeneration(resumeDialogue = false)
+        previousGeneration?.join()
+        llmEngine.unload()
+        mutableUiState.update { it.copy(isStopping = false, isProcessing = false, isCheckingRequest = false) }
     }
 
     fun copyToClipboard(text: String) {

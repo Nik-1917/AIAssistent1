@@ -2,6 +2,7 @@ package com.example.aiassistent1.presentation.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -59,7 +60,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -122,6 +122,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -130,6 +131,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -137,6 +139,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.BaselineShift
@@ -166,6 +169,7 @@ import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.StoredModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
 import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
@@ -505,6 +509,7 @@ fun ChatScreen(
                 },
                 onLoadModel = { filePickerLauncher.launch("*/*") },
                 onSelectModel = viewModel::selectModel,
+                onDeleteModel = viewModel::deleteModel,
                 onOpenSettings = { showSettingsDialog = true },
                 onOpenConferences = { viewModel.prepareForConference(); showConferences = true },
                 audioStatus = audioActivity.takeUnless { it == com.example.aiassistent1.domain.model.AudioSessionState.Idle }?.label,
@@ -1361,7 +1366,7 @@ internal fun ChatTopBar(
     hasMessages: Boolean,
     modelAvailability: ModelAvailability,
     selectedModel: String,
-    availableModels: List<String>,
+    availableModels: List<StoredModel>,
     onStop: () -> Unit,
     onClearChat: () -> Unit,
     onLoadModel: () -> Unit,
@@ -1372,8 +1377,13 @@ internal fun ChatTopBar(
     isCalendarMode: Boolean,
     onModeToggle: (Boolean) -> Unit,
     isCheckingRequest: Boolean = false,
+    onDeleteModel: (String) -> Unit = {},
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var modelToDelete by remember { mutableStateOf<StoredModel?>(null) }
+    var showModelLimit by remember { mutableStateOf(false) }
+    val menuWidth = minOf(360.dp, (LocalConfiguration.current.screenWidthDp - 48).coerceAtLeast(1).dp)
+    val context = LocalContext.current
 
     TopAppBar(
         title = {
@@ -1424,19 +1434,58 @@ internal fun ChatTopBar(
                     onDismissRequest = { showMenu = false }
                 ) {
                     availableModels.forEach { model ->
+                        val selected = model.fileName == selectedModel
                         DropdownMenuItem(
-                            text = { Text(model) },
+                            modifier = Modifier.width(menuWidth).semantics {
+                                stateDescription = if (selected) "Выбрана" else "Не выбрана"
+                            },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = model.displayName,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = Formatter.formatShortFileSize(context, model.sizeBytes),
+                                        modifier = Modifier.width(76.dp),
+                                        maxLines = 1,
+                                        textAlign = TextAlign.End,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                            },
                             onClick = {
-                                onSelectModel(model)
+                                onSelectModel(model.fileName)
                                 showMenu = false
                             },
                             trailingIcon = {
-                                if (model == selectedModel) {
-                                    Icon(Icons.Default.Check, contentDescription = null)
+                                IconButton(onClick = {
+                                    showMenu = false
+                                    modelToDelete = model
+                                }) {
+                                    Icon(Icons.Default.DeleteOutline,
+                                        contentDescription = "Удалить модель ${model.displayName}")
                                 }
-                            }
+                            },
                         )
                     }
+                    DropdownMenuItem(
+                        modifier = Modifier.width(menuWidth),
+                        text = { Text("Загрузить модель .gguf") },
+                        onClick = {
+                            showMenu = false
+                            if (availableModels.size >= StoredModel.MAX_COUNT) showModelLimit = true
+                            else onLoadModel()
+                        },
+                        leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null) },
+                        trailingIcon = { Text("${availableModels.size}/${StoredModel.MAX_COUNT}") },
+                        enabled = modelState !is ModelState.Importing,
+                    )
                 }
             }
         },
@@ -1475,6 +1524,33 @@ internal fun ChatTopBar(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
     )
+
+    modelToDelete?.let { model ->
+        AlertDialog(
+            onDismissRequest = { modelToDelete = null },
+            title = { Text("Удалить модель?") },
+            text = { Text("Файл «${model.fileName}» будет удалён из папки моделей приложения.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    modelToDelete = null
+                    onDeleteModel(model.fileName)
+                }) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { modelToDelete = null }) { Text("Отмена") }
+            },
+        )
+    }
+    if (showModelLimit) {
+        AlertDialog(
+            onDismissRequest = { showModelLimit = false },
+            title = { Text("Достигнут предел моделей") },
+            text = { Text("Можно хранить до ${StoredModel.MAX_COUNT} моделей. Удалите одну, чтобы загрузить другую.") },
+            confirmButton = {
+                TextButton(onClick = { showModelLimit = false }) { Text("Понятно") }
+            },
+        )
+    }
 }
 
 @Composable

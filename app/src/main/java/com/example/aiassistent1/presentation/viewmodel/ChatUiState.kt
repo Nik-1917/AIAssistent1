@@ -9,6 +9,7 @@ import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.StoredModel
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
 enum class ModelAvailability {
@@ -47,7 +48,7 @@ data class ChatUiState(
     val autoPlaybackEnabled: Boolean = true,
     val activeChatId: String = "general",
     val speechRate: Float = SpeechRate.DEFAULT,
-    val availableModels: List<String> = emptyList(),
+    val availableModels: List<StoredModel> = emptyList(),
     val selectedModel: String = "",
     val modelProfiles: ModelParameterProfiles = ModelParameterProfiles(),
     val areModelParamsLoaded: Boolean = false,
