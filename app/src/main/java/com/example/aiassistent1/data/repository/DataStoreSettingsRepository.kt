@@ -339,6 +339,8 @@ class DataStoreSettingsRepository(
             topK = intValue("topK", defaults.topK),
             repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
+            automaticMemory = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true,
+            manualMemoryConfigured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] ?: false,
             batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
             batchSize = intValue("batchSize", defaults.batchSize),
             cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
@@ -346,7 +348,10 @@ class DataStoreSettingsRepository(
             trainedContextLength = readModelContextLength(modelName),
             contextResponseRatio = ContextResponseRatio.fromStored(intValue("contextResponseRatio", defaults.contextResponseRatio.divisor)),
         )
-        return params.copy(deviceContextLimit = readModelMemoryLimit(modelName, params)).normalizedForAutomaticSettings()
+        val resolved = if (!params.automaticMemory && !params.manualMemoryConfigured)
+            params.withAutomaticMemory(false) else params
+        return resolved
+            .copy(deviceContextLimit = readModelMemoryLimit(modelName, resolved)).normalizedForAutomaticSettings()
     }
 
     override suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams) {
@@ -357,7 +362,8 @@ class DataStoreSettingsRepository(
         val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
             // A transient memory block must not overwrite the last usable pair with zero.
-            if (normalized.deviceContextLimit?.canLoad != false) {
+            // Low RAM must never replace a manual choice with the old automatic profile size.
+            if (!normalized.automaticMemory || normalized.deviceContextLimit?.canLoad != false) {
                 preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize
                 preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.maxTokens
             } else {
@@ -375,6 +381,8 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
             preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
+            preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
+            preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
             preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto
             preferences[intPreferencesKey(prefix + "batchSize")] = normalized.batchSize
             preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] = normalized.cpuThreadsAuto

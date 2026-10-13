@@ -32,8 +32,12 @@ fun ChatContextDialog(pressure: ChatContextPressure, onChoice: (String, ChatCont
                     Text(if (manual) "Выбрать сообщения вручную" else when (pressure.reason) {
                         ContextCapacityReason.MEMORY -> "Недостаточно памяти для увеличения контекста"
                         ContextCapacityReason.MODEL_LIMIT -> "Достигнут предел контекста модели"
+                        ContextCapacityReason.MANUAL_LIMIT -> "Недостаточно места в выбранном контексте"
                     }, style = MaterialTheme.typography.titleLarge)
-                    Text("История этого чата стала слишком большой. Чтобы оставить не менее 1024 токенов для ответа, " +
+                    Text(if (pressure.reason == ContextCapacityReason.MANUAL_LIMIT)
+                        "История этого чата вместе с выбранным лимитом ответа не помещается в установленный контекст. " +
+                            "Можно исключить часть старых диалогов. Сами сообщения останутся в чате."
+                    else "История этого чата стала слишком большой. Чтобы оставить не менее 1024 токенов для ответа, " +
                         "нужно исключить часть старых сообщений из контекста модели.\nСами сообщения останутся в чате.")
                     if (manual) {
                         Text("Выберите диалоги целиком. Текущий запрос сохранится в контексте.",
@@ -90,7 +94,8 @@ fun ChatContextDialog(pressure: ChatContextPressure, onChoice: (String, ChatCont
 }
 
 @Composable
-fun ChatHistorySettings(policy: ChatHistoryPolicy, onPolicyChange: (ChatHistoryPolicy) -> Unit) {
+fun ChatHistorySettings(policy: ChatHistoryPolicy, onPolicyChange: (ChatHistoryPolicy) -> Unit,
+    automaticMemory: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("История при заполнении контекста", style = MaterialTheme.typography.titleSmall)
         ChatHistoryPolicy.entries.forEach { option ->
@@ -103,7 +108,10 @@ fun ChatHistorySettings(policy: ChatHistoryPolicy, onPolicyChange: (ChatHistoryP
                 }, style = MaterialTheme.typography.bodyMedium)
             }
         }
-        Text("Перед ответом сохраняется место не менее чем для 1024 токенов. Сначала приложение пробует увеличить контекст. " +
-            "Исключённые диалоги остаются в чате.", style = MaterialTheme.typography.bodySmall)
+        Text(if (automaticMemory)
+            "Перед ответом сохраняется место не менее чем для 1024 токенов. Сначала приложение пробует увеличить контекст. " +
+                "Исключённые диалоги остаются в чате."
+        else "Если история не помещается в выбранный контекст вместе с лимитом ответа, старые диалоги исключаются по выбранному правилу. " +
+            "Сообщения остаются в чате.", style = MaterialTheme.typography.bodySmall)
     }
 }

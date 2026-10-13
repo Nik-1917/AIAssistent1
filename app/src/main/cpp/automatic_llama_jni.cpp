@@ -224,7 +224,7 @@ Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_resize(JNIEnv * e
 extern "C" JNIEXPORT jlongArray JNICALL
 Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_generate(
         JNIEnv * env, jobject, jbyteArray prompt, jboolean continuation, jfloat temperature,
-        jfloat top_p, jint top_k, jfloat penalty, jobject callback) {
+        jfloat top_p, jint top_k, jfloat penalty, jint max_tokens, jobject callback) {
     std::lock_guard<std::mutex> lock(operation_mutex);
     try {
         if (!context) throw std::runtime_error("Context is not loaded");
@@ -261,6 +261,7 @@ Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_generate(
         int reason = 1; // context limit, never the initial answer reserve
         while (true) {
             if (cancelled.load()) { reason = 2; break; }
+            if (max_tokens > 0 && generated_count >= max_tokens) { reason = 3; break; }
             const auto token = pending_token != LLAMA_TOKEN_NULL ? pending_token : api().llama_sampler_sample(sampler, context, -1);
             pending_token = LLAMA_TOKEN_NULL;
             if (api().llama_vocab_is_eog(vocab, token)) { reason = 0; break; }

@@ -22,16 +22,35 @@ class AutomaticMemorySettingsTest {
                     dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
                     onDismiss = {}, onParamsChange = { _, _ -> }, onSmoothResponseChange = {},
                     onDialogueModeChange = {}, onAutoPlaybackChange = {}, onSpeechRateChange = {},
-                    automaticGeneration = AutomaticGenerationState(GenerationTask.CHAT, 2048, 64, 100, 512, 1932),
+                    automaticGeneration = AutomaticGenerationState(GenerationTask.CHAT, 2048, 64, 100, 512, 1932,
+                        generatedTokens = 120, stopReason = GenerationStopReason.EOS),
                 )
             }
         }
         compose.onNodeWithText("Модель", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Память: автоматически").assertExists()
-        compose.onNodeWithText("Полный вход: 100", substring = true).assertExists()
-        compose.onNodeWithText("доступно под ответ: 1932", substring = true).assertExists()
-        compose.onNodeWithText("Соотношение контекста и ответа").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Подбирать Batch Size автоматически").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").assertExists()
+        compose.onNodeWithText("вход: 100", substring = true).assertExists()
+        compose.onNodeWithText("Доступно под ответ: 1932", substring = true).assertExists()
+        compose.onNodeWithText("Лимит ответа: 256 токенов").assertDoesNotExist()
+    }
+    @Test fun firstManualEntryShowsFixedPresetAndHidesAutomaticDescription() {
+        compose.setContent {
+            MaterialTheme {
+                ModelSettingsDialog(
+                    profiles = ModelParameterProfiles(), initialProfile = ModelProfile.CHAT, paramsLoaded = true,
+                    compactDatesEnabled = true, onCompactDatesChange = {}, smoothResponseEnabled = true,
+                    dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
+                    onDismiss = {}, onParamsChange = { _, _ -> }, onSmoothResponseChange = {},
+                    onDialogueModeChange = {}, onAutoPlaybackChange = {}, onSpeechRateChange = {},
+                )
+            }
+        }
+        compose.onNodeWithText("Модель", useUnmergedTree = true).performClick()
+        compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").performClick()
+        compose.onNodeWithText("Лимит ответа: 256 токенов").assertExists()
+        compose.onNodeWithText("Контекст: 1024 токенов").assertExists()
+        compose.onNodeWithText("1/4").assertExists()
+        compose.onNodeWithText("Приложение измеряет полный запрос", substring = true).assertDoesNotExist()
     }
     @Test fun pastedLongChatTextReachesSendWithoutTruncation() {
         val text = "Длинный текст 🙂 12345. ".repeat(180)

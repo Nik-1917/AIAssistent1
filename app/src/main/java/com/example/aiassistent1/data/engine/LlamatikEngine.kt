@@ -167,6 +167,11 @@ class LlamatikEngine internal constructor(
             val file = File(modelProvider.getModelPath().getOrThrow())
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
+                if (!params.automaticMemory) {
+                    val selected = manualConfiguration(file, params)
+                    return@withContext (selected.contextSize - selected.maxTokens -
+                        AutomaticContextPolicy.TECHNICAL_RESERVE).coerceAtLeast(0)
+                }
                 val candidate = automaticConfiguration(file, params, 0, task, 4096)
                 val current = appliedParams
                 val usableExisting = task != GenerationTask.CALENDAR && state.value is ModelState.Ready &&
@@ -192,7 +197,9 @@ class LlamatikEngine internal constructor(
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
                 requestContext.ensureActive()
-                rejectUnavailableAllocation(file, params)
+                if (params.automaticMemory) rejectUnavailableAllocation(file, params)
+                else manualConfiguration(file, params)
+                Unit
             }
         }
     }
@@ -219,6 +226,112 @@ class LlamatikEngine internal constructor(
             val requestContext = currentCoroutineContext()
             val requestSettings = synchronized(lifecycleLock) { params }
             val path = modelProvider.getModelPath().getOrThrow()
+            if (!requestSettings.automaticMemory) {
+                var manualCancelHook: Job? = null
+                try {
+                    val file = File(path)
+                    val selected = synchronized(lifecycleLock) {
+                        if (loadedModelPath != null && loadedModelPath != path) releaseModel()
+                        requestContext.ensureActive()
+                        val checked = manualConfiguration(file, requestSettings)
+                        runtime.beginRequest()
+                        checked
+                    }
+                    manualCancelHook = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+                        try { awaitCancellation() } finally { runtime.cancel() }
+                    }
+                    val prompt = buildPrompt(messages)
+                    val inputTokens = synchronized(lifecycleLock) {
+                        runtime.prepareTokenizer(path)
+                        runtime.countTokens(prompt)
+                    }
+                    val promptBudget = selected.contextSize - selected.maxTokens -
+                        AutomaticContextPolicy.TECHNICAL_RESERVE
+                    if (inputTokens > promptBudget) {
+                        synchronized(lifecycleLock) {
+                            mutableAutomaticState.value = AutomaticGenerationState(task, selected.contextSize,
+                                selected.batchSize, inputTokens, selected.maxTokens,
+                                AutomaticContextPolicy.availableAnswer(selected.contextSize, inputTokens),
+                                automaticMemory = false, requestRejected = true)
+                        }
+                        throw PromptCapacityException(promptBudget, ContextCapacityReason.MANUAL_LIMIT,
+                            inputTokens + selected.maxTokens + AutomaticContextPolicy.TECHNICAL_RESERVE,
+                            selected.contextSize, selected.maxTokens)
+                    }
+                    synchronized(lifecycleLock) {
+                        check(!closed) { "Движок закрыт" }
+                        requestContext.ensureActive()
+                        val nativeConfig = NativeConfiguration(selected, processorCount)
+                        val reuseAllocation = state.value is ModelState.Ready && loadedModelPath == path &&
+                            loadedConfiguration == nativeConfig
+                        generationActive = true
+                        if (!reuseAllocation) {
+                            mutableState.value = ModelState.Loading
+                            val before = memoryGuard?.beforeLoad()
+                            runtime.updateParams(selected, selected.effectiveCpuThreads(processorCount), selected.batchSize)
+                            val loaded = runtime.load(path)
+                            if (!loaded) throw ModelAllocationException(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED,
+                                selected.contextSize, selected.deviceContextLimit)
+                            loadedModelPath = path
+                            loadedConfiguration = nativeConfig
+                            loadedContextLength = selected.trainedContextLength
+                            loadedMemoryLimit = selected.deviceContextLimit
+                            memoryGuard?.loaded(file, selected, before)
+                            mutableState.value = ModelState.Ready
+                        }
+                        runtime.updateParams(selected, selected.effectiveCpuThreads(processorCount), selected.batchSize)
+                        appliedParams = selected
+                        automaticSession = false
+                        taskContexts.clear()
+                        mutableAutomaticState.value = AutomaticGenerationState(task, selected.contextSize,
+                            selected.batchSize, inputTokens, selected.maxTokens,
+                            AutomaticContextPolicy.availableAnswer(selected.contextSize, inputTokens),
+                            automaticMemory = false)
+                    }
+                    requestContext.ensureActive()
+                    onReady()
+                    requestContext.ensureActive()
+                    var callbackError: String? = null
+                    val stream = object : GenStream {
+                        override fun onDelta(text: String) {
+                            if (trySendBlocking(AutomaticEmission.Text(text)).isFailure) runtime.cancel()
+                        }
+                        override fun onComplete() = Unit
+                        override fun onError(message: String) { callbackError = message }
+                    }
+                    runtime.generateStream(prompt, stream)
+                    callbackError?.let { error(it) }
+                    val result = requireNotNull(runtime.lastGeneration) { "Нет статистики генерации" }
+                    mutableAutomaticState.value = mutableAutomaticState.value?.copy(
+                        generatedTokens = result.generatedTokens, stopReason = result.reason)
+                    when (result.reason) {
+                        GenerationStopReason.EOS -> Unit
+                        GenerationStopReason.CANCELLED -> throw CancellationException("Генерация остановлена")
+                        GenerationStopReason.CONTEXT_LIMIT ->
+                            error("Ответ достиг выбранного вручную контекста. Сохранённая часть ответа не завершена.")
+                        GenerationStopReason.OUTPUT_LIMIT ->
+                            error("Ответ достиг выбранного лимита ${tokenCount(selected.maxTokens)}. Сохранённая часть ответа не завершена.")
+                    }
+                } catch (cancelled: CancellationException) {
+                    synchronized(lifecycleLock) {
+                        if (state.value is ModelState.Loading) releaseModel()
+                        else mutableAutomaticState.value = mutableAutomaticState.value?.copy(stopReason = GenerationStopReason.CANCELLED)
+                    }
+                    throw cancelled
+                } catch (failure: Exception) {
+                    synchronized(lifecycleLock) {
+                        if (!closed && state.value is ModelState.Loading) {
+                            releaseModel()
+                            mutableState.value = ModelState.Error(failure.toUserMessage())
+                        }
+                    }
+                    send(AutomaticEmission.Failed(failure))
+                } finally {
+                    manualCancelHook?.cancel()
+                    synchronized(lifecycleLock) { generationActive = false }
+                }
+                return@withLock
+            }
             var cancelHook: Job? = null
             try {
                 val file = File(path)
@@ -445,6 +558,26 @@ class LlamatikEngine internal constructor(
         return requireNotNull(best)
     }
 
+    /** Manual settings are fixed for the request; RAM and GGUF checks may reject but never resize them. */
+    private fun manualConfiguration(file: File, settings: GenerationParams): GenerationParams {
+        val trained = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
+        check(settings.contextSize >= 2 && settings.maxTokens > 0 &&
+            settings.contextSize > settings.maxTokens + AutomaticContextPolicy.TECHNICAL_RESERVE) {
+            "Выбранные вручную контекст и лимит ответа несовместимы."
+        }
+        check(settings.contextSize <= trained) {
+            "Выбранный вручную контекст ${settings.contextSize} превышает предел модели $trained токенов."
+        }
+        val selected = settings.copy(batchSizeAuto = false, trainedContextLength = trained)
+        val assessment = memoryGuard?.assess(file, selected)
+        checkAllocationAssessment(assessment, selected.contextSize)
+        if (assessment != null && assessment.maximumContext < selected.contextSize) {
+            error("По оценке памяти доступно до ${assessment.maximumContext} токенов контекста; " +
+                "вручную выбрано ${selected.contextSize}. Уменьшите контекст или освободите память.")
+        }
+        return selected.copy(batchSize = selected.effectiveBatchSize, deviceContextLimit = assessment)
+    }
+
     private fun capacityFailure(promptTokens: Int, task: GenerationTask, context: Int,
         trained: Int): PromptCapacityException = PromptCapacityException(
         AutomaticContextPolicy.promptBudget(context, task),
@@ -597,6 +730,15 @@ class LlamatikEngine internal constructor(
     private fun Throwable.toUserMessage(): String = when (this) {
         is OutOfMemoryError -> "Недостаточно памяти для модели"
         else -> message ?: "Ошибка загрузки модели"
+    }
+
+    private fun tokenCount(value: Int): String {
+        val word = if (value % 100 in 11..14) "токенов" else when (value % 10) {
+            1 -> "токен"
+            2, 3, 4 -> "токена"
+            else -> "токенов"
+        }
+        return "$value $word"
     }
 
     private data class NativeConfiguration(

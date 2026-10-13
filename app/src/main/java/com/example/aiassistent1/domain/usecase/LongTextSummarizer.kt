@@ -21,7 +21,7 @@ class LongTextSummarizer(private val engine: LLMEngine) {
     private inner class Reduction(private var budget: Int, private val overhead: Int) {
         private suspend fun count(text: String) = engine.countTokens(prompt(text))
         private fun validateBudget() {
-            check(budget > overhead + 32) { "Недостаточно памяти для выжимки вместе с её правилами и запасом 1024 токена для ответа" }
+            check(budget > overhead + 32) { "Недостаточно места для выжимки вместе с её правилами и выбранным лимитом ответа" }
         }
 
         private suspend fun compress(source: String): String {

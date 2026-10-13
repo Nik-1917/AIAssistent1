@@ -11,6 +11,8 @@ import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.CpuThreadSettings
+import com.example.aiassistent1.domain.model.DeviceContextLimit
+import com.example.aiassistent1.domain.model.MemoryLimitStatus
 import com.example.aiassistent1.domain.model.ModelProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
@@ -320,5 +322,48 @@ class DataStoreSettingsRepositoryTest {
         assertEquals(1, saved[intPreferencesKey("model_params/calendar/assistant.gguf/cpuThreads")])
         assertEquals(true, saved[booleanPreferencesKey("model_params/chat/assistant.gguf/cpuThreadsAuto")])
         assertEquals(1, saved[intPreferencesKey("model_params/chat/assistant.gguf/cpuThreads")])
+    }
+
+    @Test
+    fun `manual memory preset and mode persist by exact model name`() = runTest {
+        val store = TestPreferencesDataStore()
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val first = repository.getParamsForModel("first.gguf", ModelProfile.CHAT).first()
+        assertEquals(true, first.automaticMemory)
+        val manual = first.withAutomaticMemory(false).copy(topK = 35)
+        assertEquals(1024, manual.contextSize)
+        assertEquals(256, manual.maxTokens)
+        assertEquals(4, manual.contextResponseRatio.divisor)
+        repository.updateParamsForModel("first.gguf", ModelProfile.CHAT, manual)
+        assertEquals(manual, repository.getParamsForModel("first.gguf", ModelProfile.CHAT).first())
+        assertEquals(ModelProfile.CHAT.defaults,
+            repository.getParamsForModel("second.gguf", ModelProfile.CHAT).first())
+        assertEquals(ModelProfile.CALENDAR.defaults,
+            repository.getParamsForModel("first.gguf", ModelProfile.CALENDAR).first())
+
+        repository.updateParamsForModel("first.gguf", ModelProfile.CHAT, manual.withAutomaticMemory(true))
+        val restored = repository.getParamsForModel("first.gguf", ModelProfile.CHAT).first()
+            .withAutomaticMemory(false)
+        assertEquals(manual, restored)
+        val saved = store.data.first()
+        assertEquals(true, saved[booleanPreferencesKey("model_params/chat/first.gguf/automaticMemory")])
+        assertEquals(true, saved[booleanPreferencesKey("model_params/chat/first.gguf/manualMemoryConfigured")])
+        assertEquals(256, saved[intPreferencesKey("model_params/chat/first.gguf/maxTokens")])
+    }
+
+    @Test
+    fun `temporary RAM block does not replace saved manual context and answer`() = runTest {
+        val store = TestPreferencesDataStore()
+        val repository = DataStoreSettingsRepository(store, backgroundScope,
+            readModelContextLength = { 8192 },
+            readModelMemoryLimit = { _, _ -> DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY) })
+        val manual = ModelProfile.CHAT.defaults.withAutomaticMemory(false)
+        repository.updateParamsForModel("blocked.gguf", ModelProfile.CHAT, manual)
+        val saved = store.data.first()
+        assertEquals(1024, saved[intPreferencesKey("model_params/chat/blocked.gguf/contextSize")])
+        assertEquals(256, saved[intPreferencesKey("model_params/chat/blocked.gguf/maxTokens")])
+        val restored = repository.getParamsForModel("blocked.gguf", ModelProfile.CHAT).first()
+        assertEquals(1024, restored.contextSize)
+        assertEquals(256, restored.maxTokens)
     }
 }

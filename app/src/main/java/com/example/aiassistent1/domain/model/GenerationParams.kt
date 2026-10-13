@@ -10,6 +10,8 @@ data class GenerationParams(
     val topK: Int = 20,
     val repeatPenalty: Float = 1.15f,
     val gpuLayers: Int = 0,
+    val automaticMemory: Boolean = true,
+    val manualMemoryConfigured: Boolean = false,
     val batchSizeAuto: Boolean = true,
     val batchSize: Int = 256,
     val cpuThreadsAuto: Boolean = true,
@@ -23,18 +25,31 @@ data class GenerationParams(
     val contextLimits: ModelContextLimits get() = ModelContextLimits(trainedContextLength,
         deviceContextLimit?.maximumContext, contextResponseRatio.divisor)
 
+    /** Manual values stay fixed when available RAM changes; allocation is checked per request. */
+    private val editableContextLimits: ModelContextLimits get() = if (automaticMemory) contextLimits
+        else ModelContextLimits(trainedContextLength, contextMultiple = contextResponseRatio.divisor)
+
     /** Both settings sliders share the selected model's bounded grid. */
     fun withContextSize(value: Int): GenerationParams {
-        val context = contextLimits.normalize(value)
+        val context = editableContextLimits.normalize(value)
         return copy(contextSize = context, maxTokens = contextResponseRatio.maximumFor(context))
     }
 
     fun withMaxTokens(value: Int): GenerationParams =
-        withContextSize(value.coerceIn(contextResponseRatio.maximumFor(contextLimits.minimum),
-            contextResponseRatio.maximumFor(contextLimits.maximum)) * contextResponseRatio.divisor)
+        withContextSize(value.coerceIn(contextResponseRatio.maximumFor(editableContextLimits.minimum),
+            contextResponseRatio.maximumFor(editableContextLimits.maximum)) * contextResponseRatio.divisor)
 
     fun withContextResponseRatio(ratio: ContextResponseRatio): GenerationParams =
         copy(contextResponseRatio = ratio).normalizedForSettings()
+
+    /** The first manual entry has a predictable 256-token answer and a 1:4 ratio. */
+    fun withAutomaticMemory(enabled: Boolean): GenerationParams = when {
+        enabled -> copy(automaticMemory = true, batchSizeAuto = true)
+        manualMemoryConfigured -> copy(automaticMemory = false, batchSizeAuto = false)
+        else -> copy(automaticMemory = false, manualMemoryConfigured = true, batchSizeAuto = false,
+            contextSize = DEFAULT_MANUAL_CONTEXT_SIZE, maxTokens = DEFAULT_MANUAL_ANSWER_TOKENS,
+            contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE)
+    }
 
     /** Keep smaller temporary response budgets, including conference summaries. */
     fun boundedForRuntime(actualContextLength: Int?, actualDeviceLimit: DeviceContextLimit? = null): GenerationParams {
@@ -94,6 +109,8 @@ data class GenerationParams(
     companion object {
         const val DEFAULT_CONTEXT_SIZE = 512
         const val DEFAULT_MAX_TOKENS = 256
+        const val DEFAULT_MANUAL_CONTEXT_SIZE = 1024
+        const val DEFAULT_MANUAL_ANSWER_TOKENS = 256
         const val MIN_CONTEXT_SIZE = 512
         const val CONTEXT_STEP = 512
         const val MIN_TOP_K = 1

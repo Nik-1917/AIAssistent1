@@ -155,6 +155,8 @@ import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.AutomaticContextPolicy
+import com.example.aiassistent1.domain.model.ContextResponseRatio
 import com.example.aiassistent1.domain.model.ModelContextLimits
 import androidx.compose.material3.FilterChip
 import com.example.aiassistent1.domain.model.CpuThreadSettings
@@ -2116,15 +2118,92 @@ fun ModelSettingsDialog(
                     if (!paramsLoaded) {
                         Text("Загрузка настроек модели…", style = MaterialTheme.typography.bodySmall)
                     } else {
-                        SettingSlider(
-                            label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
-                            value = modelParams.temperature,
-                            onValueChange = { value -> modelSettings.update { it.copy(temperature = value) } },
-                            valueRange = 0f..2f,
-                            defaultValue = defaults.temperature,
-                            defaultValueDecimals = 2,
-                        )
-
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Автоматический подбор контекста и пакета",
+                                modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                            Switch(
+                                checked = modelParams.automaticMemory,
+                                onCheckedChange = { enabled ->
+                                    modelSettings.update { it.withAutomaticMemory(enabled) }
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "Подбирать контекст и пакет автоматически"
+                                },
+                            )
+                        }
+                        if (modelParams.automaticMemory) {
+                            Text(
+                                "Приложение измеряет полный запрос и подбирает контекст и размер пакета " +
+                                    "с учётом предела модели и доступной памяти. Если ответ заполняет контекст, " +
+                                    "приложение пробует увеличить его.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            val manualLimits = ModelContextLimits(modelParams.trainedContextLength,
+                                contextMultiple = modelParams.contextResponseRatio.divisor)
+                            Text("Ручные значения сохраняются для этой модели и не меняются от запроса к запросу.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Доля контекста для ответа", style = MaterialTheme.typography.titleSmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                ContextResponseRatio.entries.reversed().forEach { ratio ->
+                                    FilterChip(
+                                        selected = modelParams.contextResponseRatio == ratio,
+                                        onClick = { modelSettings.update { it.withContextResponseRatio(ratio) } },
+                                        label = { Text(if (ratio == ContextResponseRatio.FOUR_TO_ONE) "1/4" else "1/2") },
+                                    )
+                                }
+                            }
+                            SettingSlider(
+                                label = "Контекст: ${modelParams.contextSize} токенов",
+                                value = modelParams.contextSize.toFloat(),
+                                onValueChange = { value -> modelSettings.update { it.withContextSize(value.roundToInt()) } },
+                                valueRange = manualLimits.minimum.toFloat()..manualLimits.maximum.toFloat(),
+                                steps = manualLimits.sliderSteps,
+                                enabled = manualLimits.adjustable,
+                                defaultValue = GenerationParams.DEFAULT_MANUAL_CONTEXT_SIZE.toFloat(),
+                            )
+                            Text("Контекст вмещает полный запрос, историю и ответ.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            SettingSlider(
+                                label = "Лимит ответа: ${modelParams.maxTokens} токенов",
+                                value = modelParams.maxTokens.toFloat(),
+                                onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
+                                valueRange = modelParams.contextResponseRatio.maximumFor(manualLimits.minimum).toFloat()..
+                                    modelParams.contextResponseRatio.maximumFor(manualLimits.maximum).toFloat(),
+                                steps = manualLimits.sliderSteps,
+                                enabled = manualLimits.adjustable,
+                                defaultValue = GenerationParams.DEFAULT_MANUAL_ANSWER_TOKENS.toFloat(),
+                            )
+                            Text("Шкалы связаны: изменение одной пересчитывает другую. При достижении лимита " +
+                                "ответ отмечается как незавершённый.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Для полного запроса, включая историю и системные инструкции, остаётся до " +
+                                "${(modelParams.contextSize - modelParams.maxTokens - AutomaticContextPolicy.TECHNICAL_RESERVE).coerceAtLeast(0)} токенов. " +
+                                "Фактический размер проверяется перед ответом.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            val batchOptions = modelParams.batchSizeOptions
+                            val manualBatch = modelParams.copy(batchSizeAuto = false).effectiveBatchSize
+                            SettingSlider(
+                                label = "Размер пакета: $manualBatch токенов",
+                                value = batchOptions.indexOf(manualBatch).coerceAtLeast(0).toFloat(),
+                                onValueChange = { value ->
+                                    modelSettings.update { it.copy(batchSize = batchOptions[value.roundToInt()], batchSizeAuto = false) }
+                                },
+                                valueRange = 0f..batchOptions.lastIndex.coerceAtLeast(0).toFloat(),
+                                steps = (batchOptions.size - 2).coerceAtLeast(0),
+                                enabled = batchOptions.size > 1,
+                                defaultValue = batchOptions.indexOf(defaults.batchSize).coerceAtLeast(0).toFloat(),
+                            )
+                            Text("Пакет — часть входного текста, обрабатываемая за один шаг. " +
+                                "Он не увеличивает контекст и лимит ответа.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         Text(
                             text = modelParams.trainedContextLength?.let { "Предел контекста модели: $it токенов" }
                                 ?: "Предел контекста модели не определён. Потолок приложения: ${ModelContextLimits.FALLBACK_CONTEXT_SIZE} токенов.",
@@ -2147,33 +2226,54 @@ fun ModelSettingsDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (!memory.canLoad) {
+                                Text(memory.explanation, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error)
+                            }
+                            if (!modelParams.automaticMemory && memory.canLoad &&
+                                memory.maximumContext < modelParams.contextSize) {
+                                Text("Выбранный контекст превышает текущую оценку памяти: ${memory.maximumContext} токенов.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error)
+                            }
                         }
-                        Text("Память: автоматически", style = MaterialTheme.typography.bodyMedium)
                         if (editingProfile == ModelProfile.CHAT) {
-                            ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange)
+                            ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange,
+                                automaticMemory = modelParams.automaticMemory)
                         }
-                        Text(
-                            "Чат начинает с контекста 2 048 и резерва ответа 512 токенов. " +
-                                "Полный запрос измеряется токенизатором. Резерв растёт шагами по 512, " +
-                                "начальный контекст — в четыре раза больше резерва. " +
-                                "Ответ использует всё оставшееся место; при необходимости контекст расширяется, " +
-                                "если хватает памяти. Календарь и выжимка подбирают размеры автоматически.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        automaticGeneration?.let { actual ->
+                        val lastRequest = automaticGeneration?.takeIf { actual ->
+                            (editingProfile == ModelProfile.CALENDAR && actual.task ==
+                                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR) ||
+                                (editingProfile == ModelProfile.CHAT && actual.task !=
+                                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR)
+                        }
+                        lastRequest?.takeIf { it.stopReason != null || it.requestRejected }?.let { actual ->
                             val taskName = when (actual.task) {
                                 com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
                                 com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
                                 com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
                             }
                             Text(
-                                "$taskName · текущий контекст: ${actual.contextSize} · пакет: ${actual.batchSize}\n" +
-                                    "Полный вход: ${actual.promptTokens} · доступно под ответ: ${actual.availableAnswerTokens} токенов",
+                                "Последний запрос · $taskName · ${if (actual.automaticMemory) "авто" else "вручную"}\n" +
+                                    "Контекст: ${actual.contextSize} · вход: ${actual.promptTokens} · пакет: ${actual.batchSize} токенов\n" +
+                                    "Доступно под ответ: ${actual.availableAnswerTokens} · создано: ${actual.generatedTokens} токенов" +
+                                    (if (actual.automaticMemory) "" else "\nВыбранный лимит ответа: ${actual.initialAnswerReserve} токенов") +
+                                    (if (actual.requestRejected) "\nЗапрос не поместился в выбранный контекст." else ""),
                                 style = MaterialTheme.typography.bodySmall,
                             )
-                        } ?: Text("Фактические размеры появятся после первого запроса.",
+                        } ?: Text("Данные последнего запроса появятся после его завершения.",
                             style = MaterialTheme.typography.bodySmall)
+                        SettingSlider(
+                            label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
+                            value = modelParams.temperature,
+                            onValueChange = { value -> modelSettings.update { it.copy(temperature = value) } },
+                            valueRange = 0f..2f,
+                            defaultValue = defaults.temperature,
+                            defaultValueDecimals = 2,
+                        )
+                        Text("Влияет на разброс вариантов при выборе продолжения ответа.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                         SettingSlider(
                             label = "Top P: ${String.format("%.2f", modelParams.topP)}",
                             value = modelParams.topP,
@@ -2182,6 +2282,9 @@ fun ModelSettingsDialog(
                             defaultValue = defaults.topP,
                             defaultValueDecimals = 2,
                         )
+                        Text("Ограничивает варианты продолжения по их суммарной вероятности.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         SettingSlider(
                             label = "Top K: ${modelParams.topK}",
@@ -2191,6 +2294,9 @@ fun ModelSettingsDialog(
                             steps = GenerationParams.MAX_TOP_K - GenerationParams.MIN_TOP_K - 1,
                             defaultValue = defaults.topK.toFloat(),
                         )
+                        Text("Оставляет для выбора указанное число наиболее вероятных вариантов.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         SettingSlider(
                             label = "Repeat Penalty: ${String.format("%.2f", modelParams.repeatPenalty)}",
@@ -2200,6 +2306,9 @@ fun ModelSettingsDialog(
                             defaultValue = defaults.repeatPenalty,
                             defaultValueDecimals = 2,
                         )
+                        Text("Снижает вероятность повторения уже использованных токенов.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

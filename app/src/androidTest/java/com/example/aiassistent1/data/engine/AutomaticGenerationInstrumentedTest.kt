@@ -133,6 +133,25 @@ class AutomaticGenerationInstrumentedTest {
                 assertTrue(summary.contains("Борис", ignoreCase = true))
                 assertEquals(GenerationTask.SUMMARY, engine.automaticState.value?.task)
             }
+            if (args.getString("manualMemory") == "true") {
+                low = false
+                engine.unload()
+                engine.updateParams(ModelProfile.CHAT.defaults.withAutomaticMemory(false).copy(
+                    maxTokens = 1, temperature = 0f, topK = 1,
+                    cpuThreadsAuto = false, cpuThreads = 4))
+                val request = listOf(ChatMessage(role = MessageRole.USER,
+                    content = "Ответь одним словом: проверка. /no_think"))
+                val failure = runCatching {
+                    withTimeout(300_000) { engine.generateForTask(request, GenerationTask.CHAT).toList() }
+                }.exceptionOrNull()
+                val actual = requireNotNull(engine.automaticState.value)
+                report.put("manualStop", actual.stopReason).put("manualGeneratedTokens", actual.generatedTokens)
+                    .put("manualContext", actual.contextSize)
+                assertEquals(GenerationStopReason.OUTPUT_LIMIT, actual.stopReason)
+                assertEquals(1, actual.generatedTokens)
+                assertEquals(1024, actual.contextSize)
+                assertTrue(failure?.message?.contains("лимита 1 токен") == true)
+            }
             report.put("status", "PASSED")
         } catch (error: Throwable) {
             report.put("status", "FAILED").put("error", error.toString())

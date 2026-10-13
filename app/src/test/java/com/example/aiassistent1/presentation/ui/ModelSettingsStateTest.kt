@@ -45,6 +45,19 @@ class ModelSettingsStateTest {
         state.flush { writes += it }
         assertEquals(1, writes.size)
     }
+
+    @Test fun `manual edit survives recovery from temporary RAM block`() {
+        val initial = ModelProfile.CHAT.defaults.withAutomaticMemory(false).copy(
+            deviceContextLimit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY))
+        val state = ModelSettingsState(initial)
+        state.update { it.withContextSize(2048) }
+        state.acceptPersisted(initial.copy(deviceContextLimit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED)))
+        assertEquals(2048, state.params.contextSize)
+        assertEquals(512, state.params.maxTokens)
+        val writes = mutableListOf<GenerationParams>()
+        state.flush { writes += it }
+        assertEquals(2048, writes.single().contextSize)
+    }
     @Test
     fun `continuous dragging saves the latest pair each second without restarting the timer`() = runTest {
         val state = ModelSettingsState(ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE))

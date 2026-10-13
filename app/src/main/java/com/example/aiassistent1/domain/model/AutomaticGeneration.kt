@@ -2,9 +2,9 @@ package com.example.aiassistent1.domain.model
 
 enum class GenerationTask { CALENDAR, CHAT, SUMMARY }
 
-enum class GenerationStopReason { EOS, CONTEXT_LIMIT, CANCELLED }
+enum class GenerationStopReason { EOS, CONTEXT_LIMIT, CANCELLED, OUTPUT_LIMIT }
 
-enum class ContextCapacityReason { MEMORY, MODEL_LIMIT }
+enum class ContextCapacityReason { MEMORY, MODEL_LIMIT, MANUAL_LIMIT }
 
 class PromptCapacityException(
     val promptBudget: Int,
@@ -16,6 +16,7 @@ class PromptCapacityException(
     IllegalStateException(when (reason) {
         ContextCapacityReason.MODEL_LIMIT -> "Полный запрос вместе с резервом ответа превышает предел контекста модели."
         ContextCapacityReason.MEMORY -> "По оценке оперативной памяти нельзя выделить контекст для полного запроса вместе с резервом ответа."
+        ContextCapacityReason.MANUAL_LIMIT -> "Полный запрос вместе с выбранным лимитом ответа превышает установленный вручную контекст."
     } + if (requiredContext != null && availableContext != null)
         " Требуется $requiredContext токенов контекста, доступно $availableContext." else "")
 
@@ -53,6 +54,8 @@ data class AutomaticGenerationState(
     val availableAnswerTokens: Int,
     val generatedTokens: Int = 0,
     val stopReason: GenerationStopReason? = null,
+    val automaticMemory: Boolean = true,
+    val requestRejected: Boolean = false,
 )
 
 /** The reserve chooses an allocation; it is never a limit on generated output. */

@@ -48,6 +48,7 @@ internal object NativeLlamaRuntime : LlamaRuntime {
         lastGeneration = null
         val result = AutomaticLlamaBridge.generate(prompt.toByteArray(Charsets.UTF_8), continuation,
             params.temperature, params.topP, params.topK, params.repeatPenalty,
+            if (params.automaticMemory) 0 else params.maxTokens,
             object : AutomaticLlamaBridge.BytesCallback {
                 override fun onBytes(bytes: ByteArray) { stream.onDelta(bytes.toString(Charsets.UTF_8)) }
             })

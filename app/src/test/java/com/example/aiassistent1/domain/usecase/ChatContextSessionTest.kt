@@ -133,8 +133,12 @@ class ChatContextSessionTest {
                 error("Excluding history cannot help the protected request")
             }.toList() }.exceptionOrNull()
             assertTrue(failure is IllegalStateException)
-            assertTrue(failure!!.message!!.contains(if (reason == ContextCapacityReason.MODEL_LIMIT)
-                "предел контекста модели" else "оценке оперативной памяти"))
+            val expected = when (reason) {
+                ContextCapacityReason.MODEL_LIMIT -> "предел контекста модели"
+                ContextCapacityReason.MEMORY -> "оценке оперативной памяти"
+                ContextCapacityReason.MANUAL_LIMIT -> "ручной контекст"
+            }
+            assertTrue(failure!!.message!!.contains(expected))
             assertEquals(listOf(listOf("u4")), engine.counted)
             assertTrue(store.writes.isEmpty())
             assertEquals(7, source.size)
