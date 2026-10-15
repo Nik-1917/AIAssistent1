@@ -1501,15 +1501,6 @@ internal fun ChatTopBar(
             IconButton(onClick = onOpenSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Настройки модели")
             }
-            if (hasMessages) {
-                IconButton(onClick = onClearChat) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Удалить чат",
-                        tint = Color(0xFF2196F3)
-                    )
-                }
-            }
             if (isCheckingRequest) {
                 IconButton(onClick = onStop) {
                     Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
@@ -1517,6 +1508,14 @@ internal fun ChatTopBar(
             } else if (isProcessing) {
                 IconButton(onClick = onStop) {
                     Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
+                }
+            } else if (hasMessages) {
+                IconButton(onClick = onClearChat) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "Удалить чат",
+                        tint = Color(0xFF2196F3)
+                    )
                 }
             }
         },
