@@ -204,6 +204,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
+    var pendingMicrophoneInterruptedPlayback by remember { mutableStateOf(false) }
     var pendingCalendarMicrophone by remember { mutableStateOf<Pair<String, CalendarEventField>?>(null) }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showConferences by rememberSaveable { mutableStateOf(false) }
@@ -287,11 +288,13 @@ fun ChatScreen(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         val action = pendingMicrophoneAction
+        val forceStart = pendingMicrophoneInterruptedPlayback
         pendingMicrophoneAction = null
+        pendingMicrophoneInterruptedPlayback = false
         if (granted) {
             when (action) {
-                MicrophoneAction.TAP -> viewModel.onMicrophoneTap()
-                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft()
+                MicrophoneAction.TAP -> viewModel.onMicrophoneTap(forceStart)
+                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft(forceStart)
                 null -> Unit
             }
         }
@@ -303,13 +306,15 @@ fun ChatScreen(
     }
 
     val requestMicrophoneAction: (MicrophoneAction) -> Unit = { action ->
+        val interrupted = viewModel.interruptPlaybackForMicrophone()
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             when (action) {
-                MicrophoneAction.TAP -> viewModel.onMicrophoneTap()
-                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft()
+                MicrophoneAction.TAP -> viewModel.onMicrophoneTap(interrupted)
+                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft(interrupted)
             }
         } else {
             pendingMicrophoneAction = action
+            pendingMicrophoneInterruptedPlayback = interrupted
             microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -984,10 +989,11 @@ fun ChatScreen(
                             uiState.modelState !is ModelState.Loading &&
                             uiState.modelAvailability == ModelAvailability.Available &&
                             !uiState.voiceDraft.isVisible,
-                        microphoneEnabled = !uiState.isProcessing &&
+                        microphoneEnabled = uiState.speechPlaybackState is SpeechPlaybackState.Playing ||
+                            uiState.speechPlaybackState is SpeechPlaybackState.Generating || (!uiState.isProcessing &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
-                            uiState.modelAvailability == ModelAvailability.Available,
+                            uiState.modelAvailability == ModelAvailability.Available),
                         isProcessing = uiState.isProcessing,
                         isCheckingRequest = uiState.isCheckingRequest,
                         isVoiceMode = uiState.isVoiceMode,
@@ -1198,6 +1204,7 @@ fun ChatScreen(
                 onNotesChange = { viewModel.updateCalendarDraftNotes(draft.requestId, it) },
                 onFormat = { viewModel.formatCalendarDraftField(draft.requestId, it) },
                 onVoiceInput = { field ->
+                    viewModel.interruptPlaybackForMicrophone()
                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                         viewModel.startCalendarDraftVoiceInput(draft.requestId, field)
                     } else {

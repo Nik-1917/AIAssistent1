@@ -11,6 +11,7 @@ import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
 import com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSession
 import com.example.aiassistent1.domain.usecase.PersonalWakeResult
+import com.example.aiassistent1.domain.usecase.VoiceCommandAcceptance
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -29,6 +30,8 @@ class SherpaOnnxVoiceInputProvider(
     private val processing: AudioProcessingManager,
     private val personalKeyword: PersonalKeywordActivation? = null,
 ) : InputProvider, PersonalKeywordControls, VoiceProfileControls, AutoCloseable {
+    private data class CapturedUtterance(val samples: FloatArray, val detected: Boolean, val speechStartedAt: Long,
+        val playback: AssistantSpeechEchoGuard.Context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
@@ -202,7 +205,7 @@ class SherpaOnnxVoiceInputProvider(
             val initial = settingsRepository.readAudioPreferences()
             val useKws = wake && keywordSpotter.isAvailable()
             if (useKws) keywordSpotter.prepare()
-            val segments = Channel<Triple<FloatArray, Boolean, Long>>(4)
+            val segments = Channel<CapturedUtterance>(4)
             // A bounded observer of the SAME processed VAD utterance. It never controls activation.
             // Experimental active routing below is separate from this diagnostic observer.
             val shadowSegments = if (wake && personalKeyword?.available == true)
@@ -217,12 +220,12 @@ class SherpaOnnxVoiceInputProvider(
                 }
             }
             val feedbackPlaying = AtomicBoolean(false)
-            val resetAfterMetricFeedback = AtomicBoolean(false)
+            val resetAfterFeedback = AtomicBoolean(false)
             suspend fun activationFeedback() {
                 activity.value = AudioSessionState.Listening
                 feedbackPlaying.set(true)
                 try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
-                finally { feedbackPlaying.set(false) }
+                finally { resetAfterFeedback.set(true); feedbackPlaying.set(false) }
             }
             activity.value = if (enrollment != null) AudioSessionState.Enrolling
                 else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
@@ -236,15 +239,21 @@ class SherpaOnnxVoiceInputProvider(
                         ?: MetricKwsDecision.Unavailable("model_unavailable") },
                     verifySpeaker = voiceProfileManager::verify,
                     recognize = { recognizer.recognize(it).getOrThrow() },
-                    onActivation = { activationFeedback(); resetAfterMetricFeedback.set(true) },
+                    onActivation = { activationFeedback() },
                     onVerifiedSpeech = { if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id) },
                     clock = SystemClock::elapsedRealtime,
                     speakerReady = { !voiceProfileManager.needsEnrollment() },
                 )
                 var activePolicy = initial.inputPolicy()
-                for ((segment, detected, speechStartedAt) in segments) {
+                for ((segment, detected, speechStartedAt, playbackContext) in segments) {
                     val prefs = settingsRepository.readAudioPreferences()
                     val policy = prefs.inputPolicy()
+                    // A decoded word alone does not establish that the user spoke. Check the
+                    // captured narrator reference before any KWS activation or interruption event.
+                    val source = processing.speechEchoGuard.assess(segment, playbackContext)
+                    if (source.narrator) continue
+                    val sourceTranscript = if (source.needsTextCheck) recognizer.recognize(segment).getOrThrow() else null
+                    if (sourceTranscript != null && processing.speechEchoGuard.rejectsText(source, sourceTranscript)) continue
                     if (activePolicy != policy) { activatedUntil = 0; activePolicy = policy }
                     if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
                         shadowSegments?.trySend(segment.copyOf())
@@ -280,7 +289,7 @@ class SherpaOnnxVoiceInputProvider(
                     if (requireName && useKws && !detected) continue
                     var text: String? = null
                     if (requireName && !useKws) {
-                        val transcript = recognizer.recognize(segment).getOrThrow()
+                        val transcript = sourceTranscript ?: recognizer.recognize(segment).getOrThrow()
                         text = WakeWordTokens.removePrefix(transcript, prefs.wakeWord) ?: continue
                     }
                     if (prefs.voiceIdEnabled && !voiceProfileManager.verify(segment)) {
@@ -288,17 +297,20 @@ class SherpaOnnxVoiceInputProvider(
                         continue
                     }
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
-                    if (prefs.voiceIdEnabled && prefs.bargeIn) speechStarts.emit(id)
                     if (requireName) {
+                        // An accepted name/KWS activation is intentional input, unlike provisional VAD.
+                        if (settingsRepository.readAudioPreferences().bargeIn && isCurrent(id)) speechStarts.emit(id)
                         activationFeedback()
                         activatedUntil = SystemClock.elapsedRealtime() + 10_000
                     }
-                    val transcript = text ?: recognizer.recognize(segment).getOrThrow().let {
+                    val transcript = text ?: (sourceTranscript ?: recognizer.recognize(segment).getOrThrow()).let {
                         if (detected) WakeWordTokens.removePrefix(it, prefs.wakeWord) ?: it else it
                     }
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
-                    if (transcript.isNotBlank() && isCurrent(id)) {
+                    if (VoiceCommandAcceptance.hasSpeechText(transcript) && isCurrent(id)) {
                         activationIssue.value = null
+                        // Empty ASR, rejected activation and failed Voice ID never stop playback.
+                        if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id)
                         input.emit(VoiceInputEvent(id, transcript))
                         activatedUntil = 0
                         activity.value = if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
@@ -308,37 +320,50 @@ class SherpaOnnxVoiceInputProvider(
             recorder.startRecording()
             check(recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING)
             val pcm = ShortArray(512)
+            val sampleClock = RecordingSampleClock()
+            val preRoll = VoiceUtterancePreRoll()
+            var vadOriginNs: Long? = null
             var keywordDetected = false
             var wasSpeech = false
             var speechStartedAt = 0L
             while (currentCoroutineContext().isActive) {
                 val read = withContext(Dispatchers.IO) { recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING) }
                 check(read >= 0) { "Ошибка микрофона: $read" }
-                if (read == 0 || feedbackPlaying.get()) continue
-                if (resetAfterMetricFeedback.getAndSet(false)) {
+                if (read == 0) continue
+                val firstSampleTime = sampleClock.firstSampleTimeNs(recorder, read)
+                if (!feedbackPlaying.get() && resetAfterFeedback.getAndSet(false)) {
                     vad.reset(); keywordSpotter.reset()
+                    preRoll.reset()
+                    vadOriginNs = null
+                    processor.discardBufferedInput()
                     keywordDetected = false; wasSpeech = false; speechStartedAt = 0L
                 }
-                val samples = processor.process(FloatArray(read) { pcm[it] / 32768f })
-                if (samples.isEmpty()) continue
+                val samples = processor.process(FloatArray(read) { pcm[it] / 32768f }, firstSampleTime)
+                if (samples.isEmpty() || feedbackPlaying.get()) continue
+                if (vadOriginNs == null) vadOriginNs = processor.outputStartTimeNs
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
-                val completed = vad.accept(samples)
+                preRoll.append(samples)
+                val completed = vad.acceptTimed(samples)
                 val speech = vad.isSpeechDetected()
-                if (speech && !wasSpeech) speechStartedAt = SystemClock.elapsedRealtime()
-                if (speech && !wasSpeech && enrollment == null) {
-                    val preferences = settingsRepository.readAudioPreferences()
-                    if (preferences.bargeIn && !preferences.voiceIdEnabled) speechStarts.tryEmit(id)
+                if (speech && !wasSpeech) {
+                    speechStartedAt = SystemClock.elapsedRealtime()
+                    preRoll.speechStarted()
                 }
                 wasSpeech = speech
-                for (segment in completed) {
+                for (timed in completed) {
+                    val segment = preRoll.complete(timed.startSample, timed.samples)
                     if (enrollment != null) {
                         segments.close()
                         recognition.join()
                         enrollment.complete(segment)
                         return@coroutineScope
                     }
-                    check(segments.trySend(Triple(segment, keywordDetected,
-                        speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime())).isSuccess) {
+                    val prefixSize = segment.size - timed.samples.size
+                    val startNs = checkNotNull(vadOriginNs) + (timed.startSample - prefixSize) * PlaybackEchoReference.NANOS_PER_SAMPLE
+                    val playbackContext = processing.speechEchoGuard.snapshot(startNs,
+                        startNs + segment.size * PlaybackEchoReference.NANOS_PER_SAMPLE)
+                    check(segments.trySend(CapturedUtterance(segment, keywordDetected,
+                        speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime(), playbackContext)).isSuccess) {
                         "Распознавание не успевает за речью. Повторите запрос."
                     }
                     keywordDetected = false
@@ -384,51 +409,89 @@ class SherpaOnnxSpeechPlayback(
                 check(!closed.get()) { "Воспроизведение закрыто" }
                 stopped.set(false)
                 var started = false
-                for (chunk in SpeechTextChunker.split(text)) {
-                    currentCoroutineContext().ensureActive()
-                    if (stopped.get()) break
-                    val speech = synthesizer.synthesize(chunk).getOrThrow()
-                    val samples = PcmResampler.to16k(speech.samples, speech.sampleRate)
-                    if (stopped.get()) break
-                    withContext(Dispatchers.IO) {
-                        val minimum = AudioTrack.getMinBufferSize(16_000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
-                        check(minimum > 0)
-                        val active = AudioTrack.Builder()
-                            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                            .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                                .setSampleRate(16_000).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
-                            .setBufferSizeInBytes(maxOf(minimum, 2560))
-                            .setTransferMode(AudioTrack.MODE_STREAM).build()
-                        synchronized(trackLock) { track = active }
-                        try {
+                var output: AudioTrack? = null
+                var writtenFrames = 0L
+                val clock = PlaybackSampleClock()
+                val renderTimestamp = AudioTimestamp()
+                val silence = FloatArray(160)
+                try {
+                    for (chunk in SpeechTextChunker.split(text)) {
+                        currentCoroutineContext().ensureActive()
+                        if (stopped.get()) break
+                        val speech = synthesizer.synthesize(chunk).getOrThrow()
+                        val samples = PcmResampler.to16k(speech.samples, speech.sampleRate)
+                        if (stopped.get()) break
+                        val utteranceId = processing.prepareOutput(chunk, samples)
+                        withContext(Dispatchers.IO) {
+                            val active = output ?: run {
+                                val minimum = AudioTrack.getMinBufferSize(16_000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
+                                check(minimum > 0)
+                                AudioTrack.Builder()
+                                    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                                    .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                                        .setSampleRate(16_000).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
+                                    .setBufferSizeInBytes(maxOf(minimum, 2560))
+                                    .setTransferMode(AudioTrack.MODE_STREAM).build().also {
+                                        output = it
+                                        synchronized(trackLock) { track = it }
+                                        it.play()
+                                    }
+                            }
+                            // A sentence gap can stall the hardware clock. Feed silence until two
+                            // advancing timestamps agree, before exposing its first word to capture.
+                            clock.reset()
+                            val deadline = SystemClock.elapsedRealtime() + 500
+                            var stable = false
+                            while (!stopped.get() && !stable && SystemClock.elapsedRealtime() < deadline) {
+                                currentCoroutineContext().ensureActive()
+                                val written = active.write(silence, 0, silence.size, AudioTrack.WRITE_BLOCKING)
+                                check(written > 0 || stopped.get()) { "Ошибка подготовки аудиовывода: $written" }
+                                writtenFrames += written.coerceAtLeast(0)
+                                if (active.getTimestamp(renderTimestamp))
+                                    stable = clock.observe(renderTimestamp.framePosition, renderTimestamp.nanoTime)
+                            }
+                            if (stopped.get()) return@withContext
                             if (!started) {
                                 feedback?.triggerVibration()
                                 started = true
                                 onPlaybackStarted()
                             }
-                            active.play()
+                            var nextClockPoll = System.nanoTime() + if (stable) 10_000_000_000L else 1_000_000_000L
                             var offset = 0
                             while (offset < samples.size && !stopped.get()) {
                                 currentCoroutineContext().ensureActive()
                                 val count = minOf(160, samples.size - offset)
                                 val frame = samples.copyOfRange(offset, offset + count)
-                                val queued = (offset.toLong() - (active.playbackHeadPosition.toLong() and 0xffffffffL)).coerceAtLeast(0)
-                                processing.onOutputSamples(frame, 16_000, (queued * 1000 / 16_000 + 30).toInt())
+                                val now = System.nanoTime()
+                                if (now >= nextClockPoll) {
+                                    if (active.getTimestamp(renderTimestamp)) clock.observe(renderTimestamp.framePosition, renderTimestamp.nanoTime)
+                                    nextClockPoll = now + 10_000_000_000L
+                                }
+                                val renderTimeNs = clock.timeNs(writtenFrames,
+                                    active.playbackHeadPosition.toLong() and 0xffffffffL, now)
+                                processing.onOutputSamples(frame, 16_000, 0, renderTimeNs, utteranceId)
                                 var done = 0
                                 while (done < count && !stopped.get()) {
                                     val written = active.write(frame, done, count - done, AudioTrack.WRITE_BLOCKING)
                                     check(written > 0 || stopped.get()) { "Ошибка воспроизведения: $written" }
                                     done += written.coerceAtLeast(0)
+                                    writtenFrames += written.coerceAtLeast(0)
                                 }
                                 offset += done
                             }
-                            val deadline = SystemClock.elapsedRealtime() + 1500
-                            while (!stopped.get() && active.playbackHeadPosition < offset && SystemClock.elapsedRealtime() < deadline) delay(10)
-                        } finally {
+                            val drainDeadline = SystemClock.elapsedRealtime() + 2000
+                            while (!stopped.get() && (active.playbackHeadPosition.toLong() and 0xffffffffL) < writtenFrames &&
+                                SystemClock.elapsedRealtime() < drainDeadline) delay(10)
+                        }
+                    }
+                } finally {
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        output?.let { active ->
                             synchronized(trackLock) {
                                 if (track === active) track = null
                                 runCatching { active.stop() }
+                                processing.onOutputStopped()
                                 active.release()
                             }
                         }
@@ -443,6 +506,7 @@ class SherpaOnnxSpeechPlayback(
     override fun stop() {
         stopped.set(true)
         synchronized(trackLock) { track?.let { runCatching { it.pause(); it.flush() } } }
+        processing.onOutputStopped()
     }
     override fun close() { closed.set(true); stop(); releaseIfClosed() }
     private fun releaseIfClosed() {

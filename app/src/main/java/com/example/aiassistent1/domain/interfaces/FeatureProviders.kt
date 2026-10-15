@@ -12,6 +12,7 @@ interface ModelProvider {
 
 interface InputProvider {
     fun observeActivity(): Flow<com.example.aiassistent1.domain.model.AudioSessionState> = emptyFlow()
+    /** Input accepted for interruption; provisional VAD/noise detections must not stop playback. */
     fun observeSpeechStart(): Flow<Long> = emptyFlow()
     fun observeInput(): Flow<VoiceInputEvent>
     fun observeErrors(): Flow<VoiceInputError> = emptyFlow()

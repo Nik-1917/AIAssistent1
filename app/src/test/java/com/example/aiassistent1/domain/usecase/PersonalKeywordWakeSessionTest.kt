@@ -17,6 +17,7 @@ class PersonalKeywordWakeSessionTest {
     private var speakerCalls = 0
     private var asrCalls = 0
     private var sounds = 0
+    private var interruptions = 0
     private var text = "покажи заметки"
     private var duringSpeaker: () -> Unit = {}
     private var duringAsr: () -> Unit = {}
@@ -26,7 +27,8 @@ class PersonalKeywordWakeSessionTest {
         preferences = { prefs }, evaluate = { keywordCalls++; decision },
         verifySpeaker = { speakerCalls++; duringSpeaker(); owner },
         recognize = { asrCalls++; duringAsr(); text },
-        onActivation = { sounds++; now += 100; duringFeedback() }, clock = { now }, speakerReady = { ready },
+        onActivation = { sounds++; now += 100; duringFeedback() },
+        onVerifiedSpeech = { interruptions++ }, clock = { now }, speakerReady = { ready },
     )
 
     @Test fun wakeIsConsumedAndNextCommandIsVerifiedSeparately() = runBlocking {
@@ -50,6 +52,25 @@ class PersonalKeywordWakeSessionTest {
         decision = MetricKwsDecision.Reject
         assertEquals(PersonalWakeResult.Rejected, session().handle(audio, now))
         assertEquals(0, sounds); assertEquals(0, asrCalls); assertEquals(0, speakerCalls)
+        assertEquals(0, interruptions)
+    }
+
+    @Test fun emptyCommandOrFailedOwnerCannotInterruptPlayback() = runBlocking {
+        val session = session()
+        session.handle(audio, now)
+        val afterActivation = interruptions
+        now += 200
+        for (empty in listOf("", "...", "   ")) {
+            text = empty
+            assertEquals(PersonalWakeResult.Waiting, session.handle(audio, now))
+            assertEquals(afterActivation, interruptions)
+        }
+        owner = false; text = "покажи заметки"
+        assertEquals(PersonalWakeResult.Rejected, session.handle(audio, now))
+        assertEquals(afterActivation, interruptions)
+        owner = true
+        assertEquals(PersonalWakeResult.Command(text), session.handle(audio, now))
+        assertEquals(afterActivation + 1, interruptions)
     }
 
     @Test fun foreignCommandCannotUseOwnersActivationWindow() = runBlocking {

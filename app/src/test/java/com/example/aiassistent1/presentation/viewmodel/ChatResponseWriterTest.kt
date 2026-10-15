@@ -27,6 +27,109 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatResponseWriterTest {
     @Test
+    fun `actual device response format displays and persists only text across token boundaries`() = runTest {
+        val raw = """{"response":"Привет! Сегодня четверг, 15 октября 2026 года.","emoji":"✨"}"""
+        val expected = "Привет! Сегодня четверг, 15 октября 2026 года."
+        for (source in listOf(raw, "```json\n$raw\n```")) {
+            val session = Session()
+            val deltas = Channel<String>(Channel.UNLIMITED)
+            val generation = launch {
+                session.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+            }
+            for (character in source) deltas.send(character.toString())
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals("", session.visible.content)
+            assertTrue(session.writes.isEmpty())
+            deltas.close()
+            generation.join()
+            assertEquals(expected, session.visible.content)
+            assertEquals(listOf(expected), session.writes.map { it.content })
+        }
+    }
+
+    @Test
+    fun `chat JSON is never shown or checkpointed and only reply is saved`() = runTest {
+        val session = Session()
+        val deltas = Channel<String>(Channel.UNLIMITED)
+        val generation = launch {
+            session.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+        }
+        deltas.send("{\"intent\":\"chat\",\"reply\":\"Привет")
+        runCurrent()
+        advanceTimeBy(1_000)
+        runCurrent()
+        assertEquals("", session.visible.content)
+        assertTrue(session.writes.isEmpty())
+
+        deltas.send("!\",\"params\":{}}")
+        deltas.close()
+        generation.join()
+        assertEquals("Привет!", session.visible.content)
+        assertEquals(listOf("Привет!"), session.writes.map { it.content })
+    }
+
+    @Test
+    fun `plain chat text still streams immediately and fenced JSON shows only reply`() = runTest {
+        val plain = Session()
+        val deltas = Channel<String>(Channel.UNLIMITED)
+        val generation = launch {
+            plain.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+        }
+        deltas.send("[1] Привет")
+        runCurrent()
+        assertEquals("[1] Привет", plain.visible.content)
+        deltas.send("! (текст)")
+        deltas.close()
+        generation.join()
+        assertEquals("[1] Привет! (текст)", plain.writes.single().content)
+
+        val fenced = Session()
+        fenced.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+            "```json\n{\"intent\":\"chat\",\"reply\":\"Готово.\",\"params\":{}}\n```",
+        )))
+        assertEquals("Готово.", fenced.writes.single().content)
+    }
+
+    @Test
+    fun `chat metadata does not replace a readable model reply with an error`() = runTest {
+        val session = Session()
+        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+            "{\"intent\":\"calendar_add\",\"reply\":\"Текст модели.\",\"params\":{\"title\":\"Событие\"}}",
+        )))
+        assertEquals("Текст модели.", session.visible.content)
+        assertEquals(session.visible, session.writes.single())
+    }
+
+    @Test
+    fun `fenced and truncated chat JSON produces only available reply text`() = runTest {
+        for (raw in listOf(
+            "\uFEFF{\"reply\":\"Текст\",\"params\":null}",
+            "```json {\"reply\":\"Текст\"}```",
+            "```json\n{\"params\":[{\"reply\":\"Лишнее\"}],\"reply\":\"Текст\"",
+            "{\"intent\":\"chat\",\"reply\":\"Текст",
+        )) {
+            val session = Session()
+            session.generate(ChatReplyTextStream(AssistantResponseParser()).display(
+                flowOf(*raw.map { it.toString() }.toTypedArray()),
+            ))
+            assertEquals(raw, "Текст", session.visible.content)
+            assertEquals(listOf("Текст"), session.writes.map { it.content })
+        }
+    }
+
+    @Test
+    fun `structured chat with no reply never displays metadata`() = runTest {
+        val session = Session()
+        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+            "{\"intent\":\"chat\",\"params\":{\"reply\":\"Данные\"}}",
+        )))
+        assertEquals("Не удалось разобрать ответ модели. Попробуйте изменить запрос.", session.visible.content)
+        assertEquals(session.visible, session.writes.single())
+    }
+
+    @Test
     fun `parsed creation persists only reply while structured notes reach the calendar command`() = runTest {
         val raw = """{"intent":"calendar_add","reply":"Новое событие: Встреча с Анной.","params":{"title":"Встреча с Анной","starts_at":"2026-10-12T15:00","notes":"  Взять документы.\nАкт от 2027-09-01 в 09:30.  "}}"""
         val parsed = AssistantResponseParser().parseResult(raw).getOrThrow()

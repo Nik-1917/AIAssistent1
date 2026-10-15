@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <algorithm>
 #include <cstdint>
+#include <cmath>
 #include <vector>
 #include "lame.h"
 #include "webrtc/modules/audio_processing/aec/include/echo_cancellation.h"
@@ -61,7 +62,10 @@ extern "C" JNIEXPORT void JNICALL JNI_METHOD(processFrame)(JNIEnv* e, jobject, j
     float input[160], clean[160], output[160];
     e->GetFloatArrayRegion(data, 0, 160, input);
     if (e->ExceptionCheck()) return;
-    for (float& x : input) x = std::clamp(x, -1.0f, 1.0f) * 32768.0f;
+    for (float& x : input) {
+        if (!std::isfinite(x)) { fail(e, "Audio frame contains non-finite samples"); return; }
+        x = std::clamp(x, -1.0f, 1.0f) * 32768.0f;
+    }
     if (reverse) {
         if (p->echo && WebRtcAec_BufferFarend(p->aec, input, 160) != 0) fail(e, "AEC render processing failed");
         return;
@@ -72,9 +76,15 @@ extern "C" JNIEXPORT void JNICALL JNI_METHOD(processFrame)(JNIEnv* e, jobject, j
             fail(e, "AEC capture processing failed"); return;
         }
     } else std::copy(input, input + 160, clean);
+    for (float x : clean) {
+        if (!std::isfinite(x)) { fail(e, "WebRTC AEC produced non-finite samples"); return; }
+    }
     const float* nsIn[] = {clean}; float* nsOut[] = {output};
     WebRtcNs_Analyze(p->ns, clean);
     WebRtcNs_Process(p->ns, nsIn, 1, nsOut);
+    for (float x : output) {
+        if (!std::isfinite(x)) { fail(e, "WebRTC NS produced non-finite samples"); return; }
+    }
     for (float& x : output) x = std::clamp(x / 32768.0f, -1.0f, 1.0f);
     e->SetFloatArrayRegion(data, 0, 160, output);
 }

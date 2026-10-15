@@ -79,6 +79,7 @@ object AppModule {
 
 	@Volatile
 	private var audioProcessingManager: AudioProcessingManager? = null
+	@Volatile private var playbackCaptureController: PlaybackCaptureController? = null
 
 	@Volatile
 	private var keywordSpotter: KeywordSpotter? = null
@@ -201,7 +202,11 @@ object AppModule {
 	}
 
 	fun provideAudioProcessingManager(context: Context): AudioProcessingManager = audioProcessingManager ?: synchronized(this) {
-		audioProcessingManager ?: AudioProcessingManager().also { audioProcessingManager = it }
+		audioProcessingManager ?: AudioProcessingManager(provideSpeakerIdentifier(context)).also { audioProcessingManager = it }
+	}
+
+	fun providePlaybackCaptureController(context: Context): PlaybackCaptureController = playbackCaptureController ?: synchronized(this) {
+		playbackCaptureController ?: PlaybackCaptureController(context.applicationContext).also { playbackCaptureController = it }
 	}
 
 	fun provideSystemPromptProvider(): SystemPromptProvider =

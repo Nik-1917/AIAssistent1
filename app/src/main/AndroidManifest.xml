@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -34,6 +35,7 @@
             </intent-filter>
         </activity>
         <service android:name=".service.ConferenceService" android:exported="false" android:foregroundServiceType="microphone" />
+        <service android:name=".service.PlaybackReferenceService" android:exported="false" android:foregroundServiceType="mediaProjection" />
         <service
             android:name=".service.GenerationForegroundService"
             android:exported="false"

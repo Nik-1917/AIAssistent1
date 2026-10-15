@@ -994,6 +994,14 @@ static void NonLinearProcessing(AecCore* aec,
 
   WebRtcAec_SubbandCoherence(aec, efw, xfw, fft, cohde, cohxd);
 
+  // Coherence is bounded by [0, 1]. Float rounding on highly correlated input
+  // can exceed 1 slightly, making 1 - cohxd negative and powf return NaN in
+  // the scalar suppressor. Bound both estimates before deriving the gains.
+  for (i = 0; i < PART_LEN1; ++i) {
+    cohde[i] = WEBRTC_SPL_SAT(1.0f, cohde[i], 0.0f);
+    cohxd[i] = WEBRTC_SPL_SAT(1.0f, cohxd[i], 0.0f);
+  }
+
   hNlXdAvg = 0;
   for (i = minPrefBand; i < prefBandSize + minPrefBand; i++) {
     hNlXdAvg += cohxd[i];

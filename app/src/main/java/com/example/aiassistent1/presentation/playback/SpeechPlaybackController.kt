@@ -34,6 +34,7 @@ sealed interface SpeechPlaybackState {
 
 enum class SpeechStopReason(val label: String) {
     User("Остановлено пользователем"),
+    VoiceInput("Остановлено для голосового ввода"),
     NewMessage("Остановлено новым сообщением"),
     Background("Остановлено в фоне"),
     AudioFocus("Остановлено: другое приложение использует звук"),

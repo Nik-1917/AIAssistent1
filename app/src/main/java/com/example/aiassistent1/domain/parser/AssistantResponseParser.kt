@@ -7,6 +7,9 @@ import com.example.aiassistent1.calendar.core.domain.CalendarTime
 class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()) {
     fun parse(text: String): AssistantResponse? = parseResult(text).getOrNull()
 
+    /** Chat presentation reads text only; it never validates or executes a calendar command. */
+    fun parseChatReply(text: String): Result<String> = runCatching { ChatReplyJson.read(text) }
+
     fun parseResult(
         text: String,
         dateContext: CalendarDateContext = CalendarDateContext(today = java.time.LocalDate.now(zoneId)),

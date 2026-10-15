@@ -110,6 +110,95 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `extracts only the text of a chat response`() {
+        assertEquals("Привет, \"друг\"!\nКак дела?", parser.parseChatReply(
+            """{"intent":"chat","reply":"Привет, \"друг\"!\nКак дела?","params":{}}""",
+        ).getOrThrow())
+    }
+
+    @Test
+    fun `extracts response from the actual device reply without its emoji metadata`() {
+        val raw = """{"response":"Привет! Сегодня четверг, 15 октября 2026 года.","emoji":"✨"}"""
+        assertEquals("Привет! Сегодня четверг, 15 октября 2026 года.", parser.parseChatReply(raw).getOrThrow())
+        // This chat-only format must not become an executable calendar response.
+        assertTrue(parser.parseResult(raw).isFailure)
+    }
+
+    @Test
+    fun `reply takes precedence over response regardless of order`() {
+        for (raw in listOf(
+            """{"response":"Другой текст","reply":"Основной текст"}""",
+            """{"reply":"Основной текст","response":"Другой текст"}""",
+            """{"response":{"text":"Метаданные"},"reply":"Основной текст"}""",
+        )) assertEquals(raw, "Основной текст", parser.parseChatReply(raw).getOrThrow())
+    }
+
+    @Test
+    fun `response text tolerates partial output and keeps escaped punctuation`() {
+        assertEquals("Текст (1) {2}\n\"цитата\"", parser.parseChatReply(
+            """{"response":"Текст (1) {2}\n\"цитата\"","emoji":"✨"}""",
+        ).getOrThrow())
+        assertEquals("Часть ответа", parser.parseChatReply("{\"response\":\"Часть ответа").getOrThrow())
+        assertEquals("Текст", parser.parseChatReply("""{"reply":null,"response":"Текст"}""").getOrThrow())
+        assertEquals("Текст", parser.parseChatReply("""{"response":"Текст","reply":""}""").getOrThrow())
+    }
+
+    @Test
+    fun `response alias never substitutes nested or nontext metadata`() {
+        for (raw in listOf(
+            """{"params":{"response":"Метаданные"}}""",
+            """{"response":null,"emoji":"✨"}""",
+            """{"response":"","emoji":"✨"}""",
+            """{"response":{"text":"Метаданные"}}""",
+        )) assertTrue(raw, parser.parseChatReply(raw).isFailure)
+    }
+
+    @Test
+    fun `chat text extraction ignores intent params and additional metadata`() {
+        for (raw in listOf(
+            """{"intent":"calendar_add","reply":"Текст","params":{}}""",
+            """{"intent":"chat","reply":"Текст","params":{"title":"Событие"}}""",
+            """{"intent":null,"params":[1.5,{"reply":"Вложенное значение"}],"reply":"Текст"}""",
+            """{"intent":"chat","reply":"Текст","params":{},"extra":1}""",
+            """{"reply":"Текст"}""",
+            """{'intent':'chat','reply':'Текст'}""",
+        )) {
+            assertEquals(raw, "Текст", parser.parseChatReply(raw).getOrThrow())
+        }
+        // Text presentation does not loosen validation of executable calendar commands.
+        assertTrue(parser.parseResult("""{"intent":"chat","reply":"Текст","params":null}""").isFailure)
+    }
+
+    @Test
+    fun `chat extraction does not require a complete object after the reply`() {
+        for (raw in listOf(
+            "{\"reply\":\"Текст\",\"params\":",
+            "{\"reply\":\"Текст\"",
+            """{"reply":"Текст"} trailing text""",
+        )) {
+            assertEquals("Текст", parser.parseChatReply(raw).getOrThrow())
+        }
+    }
+
+    @Test
+    fun `unfinished chat string preserves generated text without incomplete escapes`() {
+        assertEquals("Текст", parser.parseChatReply("{\"reply\":\"Текст").getOrThrow())
+        assertEquals("Текст", parser.parseChatReply("{\"reply\":\"Текст\\").getOrThrow())
+        assertEquals("Текст", parser.parseChatReply("{\"reply\":\"Текст\\u04").getOrThrow())
+        assertEquals("Текст", parser.parseChatReply("{\"reply\":\"Текст\\uD83D").getOrThrow())
+        assertEquals("Текст 😀", parser.parseChatReply("{\"reply\":\"Текст \\uD83D\\uDE00").getOrThrow())
+    }
+
+    @Test
+    fun `chat extractor never substitutes metadata for a missing reply`() {
+        for (raw in listOf(
+            """{"params":{"reply":"Вложенное значение"}}""",
+            """{"intent":"chat","reply":"","params":{}}""",
+            """{"reply":null,"params":{"text":"Данные"}}""",
+        )) assertTrue(parser.parseChatReply(raw).isFailure)
+    }
+
+    @Test
     fun `treats chat_reply as an alias of chat`() {
         val response = parser.parse("""{"intent":"chat_reply","reply":"На какое время?","params":{}}""")
 

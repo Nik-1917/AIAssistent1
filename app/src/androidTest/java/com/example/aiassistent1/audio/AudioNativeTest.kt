@@ -42,7 +42,7 @@ class AudioNativeTest {
                 val near = far.copyOf()
                 NativeAudio.processFrame(handle, far, true, 30)
                 NativeAudio.processFrame(handle, near, false, 30)
-                assertTrue(near.all { it.isFinite() && it in -1f..1f })
+                assertTrue("Invalid WebRTC frame at block $block: ${near.take(8)}", near.all { it.isFinite() && it in -1f..1f })
                 difference += near.indices.sumOf { kotlin.math.abs(near[it] - far[it]).toDouble() }
             }
             assertTrue(difference > 1.0)
@@ -50,6 +50,16 @@ class AudioNativeTest {
                 NativeAudio.processFrame(handle, FloatArray(159), false, 0)
                 fail("Invalid frame must be rejected")
             } catch (_: IllegalStateException) { }
+        } finally { NativeAudio.closeProcessor(handle) }
+    }
+    @Test fun noiseSuppressionOnlyRemainsFiniteAcrossSilenceAndSpeech() {
+        val handle = NativeAudio.createProcessor(false)
+        try {
+            repeat(300) { block ->
+                val frame = FloatArray(160) { if (block < 10) 0f else (sin((block * 160 + it) * .15) * .1).toFloat() }
+                NativeAudio.processFrame(handle, frame, false, 0)
+                assertTrue("Invalid NS frame at block $block", frame.all { it.isFinite() && it in -1f..1f })
+            }
         } finally { NativeAudio.closeProcessor(handle) }
     }
     @Test fun streamThreeHoursWithConstantPcmBuffer() {

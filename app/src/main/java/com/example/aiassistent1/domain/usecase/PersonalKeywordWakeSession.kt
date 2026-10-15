@@ -46,10 +46,10 @@ class PersonalKeywordWakeSession(
             if (clock() < commandUntil) {
                 if (before.voiceIdEnabled && !verifySpeaker(samples)) return PersonalWakeResult.Rejected
                 if (preferences().inputPolicy() != key) return PersonalWakeResult.Rejected
-                onVerifiedSpeech()
                 val text = recognize(samples)
                 if (preferences().inputPolicy() != key) { reset(); return PersonalWakeResult.Rejected }
-                if (text.isBlank()) return PersonalWakeResult.Waiting
+                if (!VoiceCommandAcceptance.hasSpeechText(text)) return PersonalWakeResult.Waiting
+                onVerifiedSpeech()
                 reset()
                 return PersonalWakeResult.Command(text)
             }

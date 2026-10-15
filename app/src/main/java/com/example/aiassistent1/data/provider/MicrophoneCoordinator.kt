@@ -4,7 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Never open two AudioRecords in this application at the same time. */
+/** Only one hardware microphone capture. Playback-capture reference streams do not own the microphone. */
 object MicrophoneCoordinator {
     private var owner: Any? = null
     @Synchronized fun acquire(token: Any) {

@@ -90,8 +90,9 @@ fun AudioSettingsSection(keywordControls: PersonalKeywordControls? = null, voice
             "Активация по имени: локальное распознавание речи после паузы.",
             style = MaterialTheme.typography.bodySmall)
         VoiceProfileSettings(voiceControls, current, controlsBusy) { profileBusy = it }
-        AudioToggle("Прерывать ответ голосом", "Микрофон остаётся активным во время ответа в голосовом режиме",
+        AudioToggle("Прерывать ответ голосом", "Останавливает озвучку после подтверждённой фразы или активации. Нажатие на микрофон всегда останавливает озвучку.",
             current.bargeIn, !saving) { save { settings.setBargeInEnabled(it) } }
+        PlaybackCaptureSettings()
         AudioToggle("Вибрация перед ответом", "", current.haptics, !saving) { save { settings.setHapticFeedbackEnabled(it) } }
         Text(if (current.soundUri == null) "Звук активации: колокольчик" else "Звук активации: выбранный файл",
             style = MaterialTheme.typography.bodyMedium)
