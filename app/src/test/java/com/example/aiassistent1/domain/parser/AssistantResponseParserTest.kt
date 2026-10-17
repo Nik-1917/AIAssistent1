@@ -110,6 +110,66 @@ class AssistantResponseParserTest {
     }
 
     @Test
+    fun `both chat intents may omit params and preserve the literal reply`() {
+        for (intent in listOf("chat", "chat_reply")) {
+            val withoutParams = parser.parseResult(
+                """{"intent":"$intent","reply":"  Уточните \"Завтра\".\nВремя 09:15.  "}""",
+            ).getOrThrow()
+            val withEmptyParams = parser.parseResult(
+                """{"intent":"$intent","reply":"  Уточните \"Завтра\".\nВремя 09:15.  ","params":{}}""",
+            ).getOrThrow()
+
+            assertEquals(intent, withoutParams.intent)
+            assertEquals("  Уточните \"Завтра\".\nВремя 09:15.  ", withoutParams.reply)
+            assertNull(withoutParams.params)
+            assertEquals(withEmptyParams, withoutParams)
+        }
+    }
+
+    @Test
+    fun `both chat intents reject invalid or nonempty supplied params`() {
+        for (intent in listOf("chat", "chat_reply")) {
+            for (params in listOf("null", "[]", "\"\"", "0", "true", "false", """{"title":"Встреча"}""")) {
+                val raw = """{"intent":"$intent","reply":"Уточните запрос.","params":$params}"""
+                assertTrue(raw, parser.parseResult(raw).isFailure)
+            }
+        }
+    }
+
+    @Test
+    fun `omitting chat params does not relax reply or envelope validation`() {
+        for (intent in listOf("chat", "chat_reply")) {
+            for (raw in listOf(
+                """{"intent":"$intent"}""",
+                """{"intent":"$intent","reply":""}""",
+                """{"intent":"$intent","reply":"   "}""",
+                """{"intent":"$intent","reply":null}""",
+                """{"intent":"$intent","reply":123}""",
+                """{"intent":"$intent","reply":"Текст","extra":true}""",
+                """{"intent":"$intent","reply":"Текст","reply":"Другой текст"}""",
+            )) {
+                assertTrue(raw, parser.parseResult(raw).isFailure)
+            }
+        }
+    }
+
+    @Test
+    fun `all supported calendar commands still require a params object`() {
+        for (intent in listOf("calendar_add", "calendar_search", "calendar_sum")) {
+            val missing = parser.parseResult("""{"intent":"$intent","reply":"Текст"}""")
+            assertTrue(intent, missing.isFailure)
+            assertEquals("$.params: требуется объект", missing.exceptionOrNull()?.message)
+            for (params in listOf("null", "[]", "\"\"", "0", "true", "false")) {
+                val raw = """{"intent":"$intent","reply":"Текст","params":$params}"""
+                assertTrue(raw, parser.parseResult(raw).isFailure)
+            }
+            // Empty objects remain valid incomplete commands, as before this change.
+            assertTrue(parser.parseResult("""{"intent":"$intent","reply":"Текст","params":{}}""")
+                .getOrThrow().params != null)
+        }
+    }
+
+    @Test
     fun `extracts only the text of a chat response`() {
         assertEquals("Привет, \"друг\"!\nКак дела?", parser.parseChatReply(
             """{"intent":"chat","reply":"Привет, \"друг\"!\nКак дела?","params":{}}""",

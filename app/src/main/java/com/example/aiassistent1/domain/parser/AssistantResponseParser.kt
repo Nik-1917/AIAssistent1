@@ -18,7 +18,12 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
         val json = Fields(normalized, "$", setOf("intent", "reply", "params"))
         val intent = json.string("intent", required = true)!!
         val reply = json.string("reply", required = true)!!
-        val raw = json.objectValue("params")
+        // Plain replies may omit params; every supplied value still uses strict validation.
+        val raw = if ((intent == "chat" || intent == "chat_reply") && "params" !in normalized) {
+            emptyMap()
+        } else {
+            json.objectValue("params")
+        }
         val params: AssistantParams? = when (intent) {
             "chat", "chat_reply" -> { Fields(raw, "$.params", emptySet()); null }
             "calendar_add" -> {
