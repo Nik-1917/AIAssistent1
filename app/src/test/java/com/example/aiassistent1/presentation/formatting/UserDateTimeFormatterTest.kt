@@ -96,7 +96,7 @@ class UserDateTimeFormatterTest {
             assertEquals(raw, formatter.messageText(message))
             assertEquals(raw, formatter.messageText(message.copy(chatId = "general", role = com.example.aiassistent1.domain.model.MessageRole.USER)))
             assertEquals(
-                "Начало 09:05 суббота 19 сентября 2026, окончание 10:00 суббота 19 сентября 2026.",
+                "Начало 09:05 19 сентября 2026 года, суббота, окончание 10:00 19 сентября 2026 года, суббота.",
                 formatter.messageText(message.copy(chatId = "general")),
             )
         }
@@ -108,7 +108,7 @@ class UserDateTimeFormatterTest {
             content = "2026-09-19, 2026-10-19, 2027-10-19",
             chatId = "general",
         )
-        val expected = "суббота 19 сентября 2026, понедельник 19 октября 2026, вторник 19 октября 2027"
+        val expected = "19 сентября 2026 года, суббота, 19 октября 2026 года, понедельник, 19 октября 2027 года, вторник"
         for (formatter in listOf(short, full)) {
             assertEquals(expected, formatter.messageText(message))
         }
@@ -117,10 +117,10 @@ class UserDateTimeFormatterTest {
     @Test fun `general assistant normalizes numeric Russian and existing weekday dates`() {
         val message = com.example.aiassistent1.domain.model.ChatMessage(
             role = com.example.aiassistent1.domain.model.MessageRole.ASSISTANT,
-            content = "19.09.2026 09:05; 19 сентября 2026 суббота; суббота 19 сентября 2026; суббота, 19 сентября 2026, 10:00; «2026-09-19»",
+            content = "19.09.2026 09:05; 19 сентября 2026 суббота; суббота 19 сентября 2026; суббота, 19 сентября 2026, 10:00; 09:05 19 сентября 2026 года, суббота; «2026-09-19»",
             chatId = "general",
         )
-        val expected = "09:05 суббота 19 сентября 2026; суббота 19 сентября 2026; суббота 19 сентября 2026; 10:00 суббота 19 сентября 2026; «2026-09-19»"
+        val expected = "09:05 19 сентября 2026 года, суббота; 19 сентября 2026 года, суббота; 19 сентября 2026 года, суббота; 10:00 19 сентября 2026 года, суббота; 09:05 19 сентября 2026 года, суббота; «2026-09-19»"
         for (formatter in listOf(short, full)) {
             assertEquals(expected, formatter.messageText(message))
         }

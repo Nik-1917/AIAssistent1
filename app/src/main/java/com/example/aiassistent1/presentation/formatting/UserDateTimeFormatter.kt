@@ -91,7 +91,7 @@ class UserDateTimeFormatter(
         private val SHORT_DATE = DateTimeFormatter.ofPattern("d EEEE", RUSSIAN)
         private val MONTH_DATE = DateTimeFormatter.ofPattern("d MMMM EEEE", RUSSIAN)
         private val FULL_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu EEEE", RUSSIAN)
-        private val GENERAL_CHAT_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM uuuu", RUSSIAN)
+        private val GENERAL_CHAT_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu 'года', EEEE", RUSSIAN)
         private val TIME = DateTimeFormatter.ofPattern("HH:mm")
         private val NUMERIC_DATE = DateTimeFormatter.ofPattern("d.M.uuuu").withResolverStyle(ResolverStyle.STRICT)
         private val RUSSIAN_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu", RUSSIAN).withResolverStyle(ResolverStyle.STRICT)
@@ -102,7 +102,7 @@ class UserDateTimeFormatter(
         private val DATE_BODY = """$DATE_PART(?:[T ]$CLOCK_PART)?"""
         private val GENERAL_CHAT_DATE_BODY = """$DATE_PART(?:(?:[T ]|, )$CLOCK_PART)?"""
         private val DATE_SUFFIX = """(?![\p{L}\d_:/+-])(?: (?:$WEEKDAYS))?"""
-        private val GENERAL_CHAT_DATE_SUFFIX = """(?![\p{L}\d_:/+-])(?:,? (?:$WEEKDAYS))?"""
+        private val GENERAL_CHAT_DATE_SUFFIX = """(?![\p{L}\d_:/+-])(?: года)?(?:,? (?:$WEEKDAYS))?"""
         private val DATE_TOKEN = Regex(
             """(?<![\p{L}\d_./-])$DATE_BODY$DATE_SUFFIX""",
             RegexOption.IGNORE_CASE,

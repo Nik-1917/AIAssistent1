@@ -32,3 +32,6 @@ soft/*.gguf
 !app/src/main/assets/metric_kws/v3/encoder.onnx
 *.wav
 app/src/main/assets/voice/tts
+
+# Local Android emulator snapshots created during test runs
+/.artifacts/**/device.avd/
