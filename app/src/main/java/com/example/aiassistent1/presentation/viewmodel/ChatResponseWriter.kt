@@ -27,7 +27,12 @@ internal class ChatResponseWriter(
         require(checkpointIntervalMillis > 0)
     }
 
-    suspend fun collect(response: Flow<String>) = coroutineScope {
+    suspend fun collect(response: Flow<String>) = consume(response, snapshots = false)
+
+    /** Chat previews can replace a fallback when a preferred reply field arrives later. */
+    suspend fun collectSnapshots(response: Flow<String>) = consume(response, snapshots = true)
+
+    private suspend fun consume(response: Flow<String>, snapshots: Boolean) = coroutineScope {
         check(!collecting && !finished)
         collecting = true
         val checkpoints = launch {
@@ -48,7 +53,7 @@ internal class ChatResponseWriter(
         try {
             response.collect { delta ->
                 if (delta.isNotEmpty()) {
-                    currentMessage = currentMessage.copy(content = currentMessage.content + delta)
+                    currentMessage = currentMessage.copy(content = if (snapshots) delta else currentMessage.content + delta)
                     onMessageChanged(currentMessage, true)
                 }
             }

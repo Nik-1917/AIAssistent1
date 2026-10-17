@@ -16,9 +16,9 @@ class ChatReplyTextStreamTest {
     @Test fun `recovered text across arbitrary token boundaries never triggers retry`() = runTest {
         for (raw in listOf("{\"unknown\":{\"text\":\"Ответ\"}}", "[\"Ответ\"]", "\"Ответ\"",
             "[1,{\"text\":\"Ответ\"}]", "[false,\"Ответ\"]", "```json\n{\"answer\":\"Ответ\"}\n```", "Ответ")) {
-            val actual = ChatReplyTextStream(parser).display(flowOf(*raw.map(Char::toString).toTypedArray())) {
+            val actual = ChatReplyTextStream(parser).snapshots(flowOf(*raw.map(Char::toString).toTypedArray())) {
                 error("Readable response must not be generated again")
-            }.toList().joinToString("")
+            }.toList().last()
             assertEquals(raw, "Ответ", actual)
         }
     }
@@ -27,7 +27,7 @@ class ChatReplyTextStreamTest {
         val diagnostics = mutableListOf<String>()
         var retries = 0
         val stream = ChatReplyTextStream(parser) { raw, _ -> diagnostics += raw }
-        val actual = stream.display(flowOf("{}")) { retries++; flowOf("{\"role\":\"assistant\"}") }.toList()
+        val actual = stream.snapshots(flowOf("{}")) { retries++; flowOf("{\"role\":\"assistant\"}") }.toList()
         assertEquals(1, retries)
         assertEquals(listOf("{}", "{\"role\":\"assistant\"}"), diagnostics)
         assertEquals(listOf("Не удалось разобрать ответ модели. Попробуйте изменить запрос."), actual)
@@ -36,7 +36,7 @@ class ChatReplyTextStreamTest {
     @Test fun `empty and whitespace-only generations also retry`() = runTest {
         for (raw in listOf("", "  ", "\uFEFF")) {
             var retries = 0
-            assertEquals(listOf("Ответ"), ChatReplyTextStream(parser).display(flowOf(raw)) {
+            assertEquals(listOf("Ответ"), ChatReplyTextStream(parser).snapshots(flowOf(raw)) {
                 retries++; flowOf("Ответ")
             }.toList())
             assertEquals(1, retries)
@@ -48,7 +48,7 @@ class ChatReplyTextStreamTest {
         val output = mutableListOf<String>()
         val started = CompletableDeferred<Unit>()
         val job = launch {
-            ChatReplyTextStream(parser).display(flow { emit("{\"answer\":"); started.complete(Unit); awaitCancellation() }) {
+            ChatReplyTextStream(parser).snapshots(flow { emit("{\"answer\":"); started.complete(Unit); awaitCancellation() }) {
                 retries++; flowOf("Не должно появиться")
             }.toList(output)
         }
@@ -63,7 +63,7 @@ class ChatReplyTextStreamTest {
         val stopped = CompletableDeferred<Unit>()
         val output = mutableListOf<String>()
         val job = launch {
-            ChatReplyTextStream(parser).display(flowOf("{}")) {
+            ChatReplyTextStream(parser).snapshots(flowOf("{}")) {
                 flow {
                     try { started.complete(Unit); awaitCancellation() }
                     finally { stopped.complete(Unit) }
@@ -79,7 +79,7 @@ class ChatReplyTextStreamTest {
     @Test fun `engine errors propagate without response retries`() = runTest {
         val failure = IllegalStateException("Ошибка модели")
         val result = runCatching {
-            ChatReplyTextStream(parser).display(flow { throw failure }) { error("No retry") }.toList()
+            ChatReplyTextStream(parser).snapshots(flow { throw failure }) { error("No retry") }.toList()
         }
         assertSame(failure, result.exceptionOrNull())
     }

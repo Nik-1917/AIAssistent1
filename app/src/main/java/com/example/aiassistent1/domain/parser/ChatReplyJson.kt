@@ -8,7 +8,7 @@ internal class ChatReplyJson private constructor(private val input: String) {
         var expectingKey = isObject
     }
 
-    private fun reply(): String {
+    private fun reply(partial: Boolean = false): String {
         var position = whitespace(0)
         val first = input.getOrNull(position)
         if (first != '{' && first != '[') {
@@ -22,12 +22,13 @@ internal class ChatReplyJson private constructor(private val input: String) {
         position++
         val fallback = mutableListOf<String>()
         var response: String? = null
-        fun accept(value: String) {
+        fun accept(value: String, closed: Boolean = true) {
             val frame = stack.last()
             if (value.isBlank()) return
             // Field names alone must not hide prose. Only known protocol values/icons are metadata.
             if ((frame.metadata || frame.key in metadataKeys) &&
-                (value in protocolValues || value.none { it.isLetterOrDigit() })) return
+                (value in protocolValues || value.none { it.isLetterOrDigit() } ||
+                    (partial && !closed && protocolValues.any { it.startsWith(value) }))) return
             fallback += value
             if (stack.size == 1 && frame.key == "response" && response == null) response = value
         }
@@ -39,14 +40,17 @@ internal class ChatReplyJson private constructor(private val input: String) {
                 '"', '\'' -> {
                     val token = string(position)
                     position = token.next
-                    if (frame.isObject && frame.expectingKey && token.closed &&
+                    if (frame.isObject && token.closed &&
                         input.getOrNull(whitespace(position)) == ':') {
                         frame.key = token.value
                         position = whitespace(position) + 1
                     } else {
                         // Retain the existing preferred field even in incomplete generated JSON.
+                        // A partial key is not text; a known field's value can stream without its closing quote.
+                        if (partial && frame.isObject && frame.expectingKey &&
+                            whitespace(position) == input.length && !token.value.any(Char::isWhitespace)) break
                         if (stack.size == 1 && frame.key == "reply" && token.value.isNotBlank()) return token.value
-                        accept(token.value)
+                        accept(token.value, token.closed)
                     }
                     frame.expectingKey = false
                 }
@@ -63,7 +67,9 @@ internal class ChatReplyJson private constructor(private val input: String) {
                     val start = position
                     while (position < input.length && input[position] !in ":,{}[]\"'") position++
                     val value = input.substring(start, position).trim()
-                    if (frame.isObject && frame.expectingKey && input.getOrNull(position) == ':') {
+                    if (partial && frame.expectingKey && position == input.length &&
+                        !value.any(Char::isWhitespace)) break
+                    if (frame.isObject && input.getOrNull(position) == ':') {
                         frame.key = value
                         position++
                     } else if (value !in setOf("null", "true", "false") && value.toDoubleOrNull() == null) {
@@ -116,9 +122,10 @@ internal class ChatReplyJson private constructor(private val input: String) {
     }
 
     companion object {
-        private val metadataKeys = setOf("intent", "role", "emoji", "emoticons")
+        private val metadataKeys = setOf("intent", "role", "emoji", "emoticons", "emote")
         private val protocolValues = setOf("assistant", "user", "system", "developer", "tool", "chat", "chat_reply",
             "calendar_add", "calendar_search", "calendar_sum", "calendar_update", "calendar_delete", "calendar_delete_range")
         fun read(text: String): String = ChatReplyJson(text).reply()
+        fun preview(text: String): String? = runCatching { ChatReplyJson(text).reply(partial = true) }.getOrNull()
     }
 }

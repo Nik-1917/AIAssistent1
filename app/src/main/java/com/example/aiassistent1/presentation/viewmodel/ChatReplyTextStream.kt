@@ -1,96 +1,97 @@
 package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.domain.parser.AssistantResponseParser
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.example.aiassistent1.domain.parser.ChatReplyJson
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.takeWhile
 
-/** Keeps a structured chat response out of UI, checkpoints, history and speech. */
+/** Chat-only text snapshots. The calendar continues to consume the original, unmodified flow. */
 internal class ChatReplyTextStream(
     private val parser: AssistantResponseParser,
     private val onInvalidReply: (raw: String, reason: String) -> Unit = { _, _ -> },
 ) {
-    fun display(response: Flow<String>, retry: (suspend () -> Flow<String>)? = null): Flow<String> = flow {
+    fun snapshots(
+        response: Flow<String>,
+        onRepetition: () -> Unit = {},
+        retry: (suspend () -> Flow<String>)? = null,
+    ): Flow<String> = flow {
         val pending = StringBuilder()
-        var shape = Shape.UNDECIDED
-        response.collect { delta ->
-            if (delta.isEmpty()) return@collect
-            when (shape) {
-                Shape.UNDECIDED -> {
-                    pending.append(delta)
-                    shape = classify(pending.toString())
-                    if (shape == Shape.PLAIN) {
-                        emit(pending.toString())
-                        pending.setLength(0)
-                    }
-                }
-                Shape.PLAIN -> emit(delta)
-                Shape.STRUCTURED -> pending.append(delta)
+        val repetitions = ChatRepetitionGuard()
+        var displayed = ""
+        suspend fun publish(finished: Boolean) {
+            val candidate = readable(pending.toString(), finished) ?: return
+            if (candidate.isNotBlank() && candidate != displayed) {
+                displayed = candidate
+                emit(candidate)
             }
         }
-        if (shape == Shape.PLAIN) return@flow
-        val raw = pending.toString()
-        val parsed = if (shape == Shape.STRUCTURED || raw.trimStart().startsWith('[')) plainReply(raw) else
-            raw.takeIf { it.isNotBlank() && it.any { c -> !c.isWhitespace() && c != '\uFEFF' } }
-        if (parsed != null) {
-            emit(parsed)
-        } else {
+        response.takeWhile { delta ->
+            pending.append(delta.take(repetitions.accept(delta)))
+            if (repetitions.stopped) onRepetition()
+            publish(finished = false)
+            // Cancels and joins the upstream producer, without cancelling the chat request.
+            !repetitions.stopped
+        }.collect {}
+        currentCoroutineContext().ensureActive()
+        publish(finished = true)
+        if (displayed.isNotBlank()) return@flow
+        if (repetitions.stopped) {
+            emit(REPETITION_STOP)
+            return@flow
+        }
+        onInvalidReply(pending.toString(), "В ответе нет непустого текста для отображения")
+        if (retry != null) {
             currentCoroutineContext().ensureActive()
-            onInvalidReply(raw, "В ответе нет непустого текста для отображения")
-            if (retry != null) {
-                currentCoroutineContext().ensureActive()
-                // No retry callback on the second attempt; no error/checkpoint is emitted before it.
-                display(retry()).collect { emit(it) }
-            } else emit(INVALID_RESPONSE)
-        }
+            snapshots(retry(), onRepetition).collect { emit(it) }
+        } else emit(INVALID_RESPONSE)
     }
 
-    private fun classify(prefix: String): Shape {
-        val text = prefix.trimStart { it.isWhitespace() || it == '\uFEFF' }
-        if (text.isEmpty()) return Shape.UNDECIDED
-        if (text[0] == '{') return Shape.STRUCTURED
-        if (text[0] == '"' || text[0] == '\'') return Shape.STRUCTURED
-        if (text[0] == '[') {
-            val body = text.drop(1).trimStart()
-            if (body.isEmpty()) return Shape.UNDECIDED
-            if (body.first() in "{[\"']") return Shape.STRUCTURED
-            // A numeric/list-marker prefix is ambiguous until the next separator arrives.
-            val scalar = body.takeWhile { it != ',' && it != ']' }.trim()
-            if (scalar.toDoubleOrNull() != null || listOf("true", "false", "null").any { it.startsWith(scalar) } ||
-                scalar.matches(Regex("[-0-9.eE+]*"))) {
-                if (',' in body) return Shape.STRUCTURED
-                if (']' !in body || body.substringAfter(']').isBlank()) return Shape.UNDECIDED
+    private fun readable(raw: String, finished: Boolean): String? {
+        var text = raw.trimStart { it.isWhitespace() || it == '\uFEFF' }
+        if (text.isEmpty()) return null
+        if (text.startsWith('`')) {
+            if (!finished && text.length < 3) return null
+            if (text.startsWith("```")) {
+                text = text.drop(3)
+                val body = text.indexOfFirst { it == '\n' || it == '{' || it == '[' || it == '"' || it == '\'' }
+                if (body < 0) return if (finished) text.removeSuffix("```").trim().takeIf(String::isNotEmpty) else null
+                text = text.substring(body).trimStart().trimEnd().removeSuffix("```").trimEnd()
             }
         }
-        if (text[0] == '`') {
-            if (text.length < 3 && text.all { it == '`' }) return Shape.UNDECIDED
-            if (text.startsWith("```")) return Shape.STRUCTURED
+        // Also accept field/value envelopes without outer braces, with arbitrary field names.
+        val field = BARE_FIELD.find(text)
+        if (field != null) {
+            val separator = field.range.last
+            text = "{" + text.substring(0, separator) + ":" + text.substring(separator + 1)
         }
-        return Shape.PLAIN
-    }
-
-    private fun plainReply(raw: String): String? {
-        val trimmed = raw.trim { it.isWhitespace() || it == '\uFEFF' }
-        val candidate = if (trimmed.startsWith("```")) {
-            val fenced = trimmed.removePrefix("```").trimStart()
-            val body = when {
-                fenced.startsWith("json", ignoreCase = true) &&
-                    (fenced.length == 4 || fenced[4].isWhitespace() || fenced[4] in "{[\"") -> fenced.drop(4).trimStart()
-                fenced.startsWith('{') || fenced.startsWith('[') || fenced.startsWith('"') -> fenced
-                else -> return raw
-            }
-            body.removeSuffix("```").trim()
-        } else {
-            trimmed
+        // A single opening quote on a field name must not swallow its actual value.
+        val body = if (text.startsWith('{')) text.drop(1).trimStart() else text
+        val brokenKey = BROKEN_FIELD.find(body)
+        if (brokenKey != null) {
+            text = "{\"" + brokenKey.groupValues[1] + "\":" + body.substring(brokenKey.range.last + 1)
         }
-        return parser.parseChatReply(candidate).getOrNull()
+        // XML-like envelopes are display data only, never executable markup.
+        if (text.startsWith('<') && XML_OPEN.containsMatchIn(text)) {
+            text = text.replace(XML_TAG, "").replace(Regex("<[^>]*$"), "")
+                .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&amp;", "&")
+        }
+        val structured = text.startsWith('{') || text.startsWith('"') || text.startsWith('\'') ||
+            (text.startsWith('[') && !LIST_MARKER.containsMatchIn(text))
+        if (!structured) return text
+        return if (finished) parser.parseChatReply(text).getOrNull() else ChatReplyJson.preview(text)
     }
-
-    private enum class Shape { UNDECIDED, PLAIN, STRUCTURED }
 
     companion object {
+        private val BARE_FIELD = Regex("^(?:\"[^\"\\n]+\"|'[^'\\n]+'|[\\p{L}\\p{N}_-]+)\\s*[:=]")
+        private val BROKEN_FIELD = Regex("^[\"']?([\\p{L}\\p{N}_-]+)[\"']?\\s*[:=]")
+        private val LIST_MARKER = Regex("^\\[\\d+][ \\t]+\\S")
+        private val XML_OPEN = Regex("^<[\\p{L}_][^>]*>")
+        private val XML_TAG = Regex("</?[\\p{L}_][^>]*>")
         const val RETRY_INSTRUCTION = "Ответь на последний запрос пользователя обычным непустым текстом, без JSON и служебных полей."
         const val INVALID_RESPONSE = "Не удалось разобрать ответ модели. Попробуйте изменить запрос."
+        const val REPETITION_STOP = "Генерация остановлена: обнаружено пять повторов подряд."
     }
 }

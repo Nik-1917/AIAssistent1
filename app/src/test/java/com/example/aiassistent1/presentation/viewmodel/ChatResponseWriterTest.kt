@@ -34,18 +34,18 @@ class ChatResponseWriterTest {
             val session = Session()
             val deltas = Channel<String>(Channel.UNLIMITED)
             val generation = launch {
-                session.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+                session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(deltas.receiveAsFlow()))
             }
             for (character in source) deltas.send(character.toString())
             runCurrent()
             advanceTimeBy(1_000)
             runCurrent()
-            assertEquals("", session.visible.content)
-            assertTrue(session.writes.isEmpty())
+            assertEquals(expected, session.visible.content)
+            assertEquals(listOf(expected), session.writes.map { it.content }.distinct())
             deltas.close()
             generation.join()
             assertEquals(expected, session.visible.content)
-            assertEquals(listOf(expected), session.writes.map { it.content })
+            assertEquals(listOf(expected), session.writes.map { it.content }.distinct())
         }
     }
 
@@ -54,20 +54,20 @@ class ChatResponseWriterTest {
         val session = Session()
         val deltas = Channel<String>(Channel.UNLIMITED)
         val generation = launch {
-            session.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+            session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(deltas.receiveAsFlow()))
         }
         deltas.send("{\"intent\":\"chat\",\"reply\":\"Привет")
         runCurrent()
         advanceTimeBy(1_000)
         runCurrent()
-        assertEquals("", session.visible.content)
-        assertTrue(session.writes.isEmpty())
+        assertEquals("Привет", session.visible.content)
+        assertEquals(listOf("Привет"), session.writes.map { it.content })
 
         deltas.send("!\",\"params\":{}}")
         deltas.close()
         generation.join()
         assertEquals("Привет!", session.visible.content)
-        assertEquals(listOf("Привет!"), session.writes.map { it.content })
+        assertEquals(listOf("Привет", "Привет!"), session.writes.map { it.content })
     }
 
     @Test
@@ -75,7 +75,7 @@ class ChatResponseWriterTest {
         val plain = Session()
         val deltas = Channel<String>(Channel.UNLIMITED)
         val generation = launch {
-            plain.generate(ChatReplyTextStream(AssistantResponseParser()).display(deltas.receiveAsFlow()))
+            plain.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(deltas.receiveAsFlow()))
         }
         deltas.send("[1] Привет")
         runCurrent()
@@ -86,7 +86,7 @@ class ChatResponseWriterTest {
         assertEquals("[1] Привет! (текст)", plain.writes.single().content)
 
         val fenced = Session()
-        fenced.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+        fenced.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(flowOf(
             "```json\n{\"intent\":\"chat\",\"reply\":\"Готово.\",\"params\":{}}\n```",
         )))
         assertEquals("Готово.", fenced.writes.single().content)
@@ -95,7 +95,7 @@ class ChatResponseWriterTest {
     @Test
     fun `chat metadata does not replace a readable model reply with an error`() = runTest {
         val session = Session()
-        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+        session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(flowOf(
             "{\"intent\":\"calendar_add\",\"reply\":\"Текст модели.\",\"params\":{\"title\":\"Событие\"}}",
         )))
         assertEquals("Текст модели.", session.visible.content)
@@ -111,7 +111,7 @@ class ChatResponseWriterTest {
             "{\"intent\":\"chat\",\"reply\":\"Текст",
         )) {
             val session = Session()
-            session.generate(ChatReplyTextStream(AssistantResponseParser()).display(
+            session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(
                 flowOf(*raw.map { it.toString() }.toTypedArray()),
             ))
             assertEquals(raw, "Текст", session.visible.content)
@@ -122,7 +122,7 @@ class ChatResponseWriterTest {
     @Test
     fun `structured chat without top level reply preserves nested text`() = runTest {
         val session = Session()
-        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
+        session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(flowOf(
             "{\"intent\":\"chat\",\"params\":{\"reply\":\"Данные\"}}",
         )))
         assertEquals("Данные", session.visible.content)
@@ -133,7 +133,7 @@ class ChatResponseWriterTest {
     fun `retry persists only its final readable answer under one message id`() = runTest {
         val session = Session()
         var retries = 0
-        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf("{\"role\":\"assistant\"}")) {
+        session.generateSnapshots(ChatReplyTextStream(AssistantResponseParser()).snapshots(flowOf("{\"role\":\"assistant\"}")) {
             retries++
             assertTrue(session.writes.isEmpty())
             assertEquals("", session.visible.content)
@@ -418,6 +418,15 @@ class ChatResponseWriterTest {
             saveMessage = { beforeSave(it); writes += it },
             onMessageChanged = { message, _ -> visible = message },
         )
+
+        suspend fun generateSnapshots(response: Flow<String>) {
+            try {
+                writer.collectSnapshots(response)
+                writer.complete(visible)
+            } finally {
+                writer.interrupt()
+            }
+        }
 
         suspend fun generate(response: Flow<String>, transform: (ChatMessage) -> ChatMessage = { it }) {
             try {

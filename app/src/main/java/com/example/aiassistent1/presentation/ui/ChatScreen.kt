@@ -1662,6 +1662,7 @@ internal fun ChatMessageItem(
                         StreamingMessageText(
                             text = displayContent,
                             isStreaming = isStreaming,
+                            showPartialWord = message.chatId != "calendar",
                             placeholderText = when {
                                 isStreaming -> "Думаю..."
                                 message.content.isBlank() -> messageText
@@ -1729,6 +1730,7 @@ private fun StreamingMessageText(
     text: String,
     isStreaming: Boolean,
     placeholderText: String?,
+    showPartialWord: Boolean = false,
 ) {
     val enteringAlpha = remember { Animatable(1f) }
     var settledText by remember { mutableStateOf("") }
@@ -1760,7 +1762,9 @@ private fun StreamingMessageText(
                     enteringText = ""
                 }
                 else -> {
-                    val nextSegment = latestText.drop(currentVisible.length).nextCompleteWordOrNull()
+                    val remaining = latestText.drop(currentVisible.length)
+                    val nextSegment = remaining.nextCompleteWordOrNull()
+                        ?: remaining.takeIf { showPartialWord && it.isNotEmpty() }
                     if (nextSegment == null) {
                         delay(STREAM_POLL_INTERVAL_MILLIS)
                     } else {

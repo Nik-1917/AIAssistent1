@@ -689,7 +689,11 @@ class ChatViewModel(
                     },
                 )
                 responseWriter = writer
-                writer.collect(if (currentState.isCalendarMode) response else chatReplyTextStream.display(response) {
+                if (currentState.isCalendarMode) writer.collect(response)
+                else writer.collectSnapshots(chatReplyTextStream.snapshots(response, onRepetition = {
+                    llmEngine.cancelGeneration()
+                    Log.i(TAG, "CHAT_REPETITION_STOP: repetitions=5")
+                }) {
                     currentCoroutineContext().ensureActive()
                     if (uiState.value.activeChatId != currentState.activeChatId ||
                         uiState.value.selectedModel != currentState.selectedModel) {
