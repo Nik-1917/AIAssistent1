@@ -24,8 +24,6 @@ class UserDateTimeFormatter(
 
     fun todayLabel(): String = "Сегодня\n${today.format(TODAY_DATE)}"
 
-    fun todayHeader(): String = "сегодня ${today.format(if (compact) TODAY_DATE else FULL_TODAY_DATE)}"
-
     fun date(value: LocalDate): String = value.format(when {
         !compact || value.year != today.year -> FULL_DATE
         value.month != today.month -> MONTH_DATE
@@ -92,7 +90,6 @@ class UserDateTimeFormatter(
     companion object {
         private val RUSSIAN = Locale.forLanguageTag("ru-RU")
         private val TODAY_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM", RUSSIAN)
-        private val FULL_TODAY_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM uuuu", RUSSIAN)
         private val SHORT_DATE = DateTimeFormatter.ofPattern("d EEEE", RUSSIAN)
         private val MONTH_DATE = DateTimeFormatter.ofPattern("d MMMM EEEE", RUSSIAN)
         private val FULL_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu EEEE", RUSSIAN)

@@ -865,15 +865,6 @@ fun ChatScreen(
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = LocalUserDateTimeFormatter.current.todayHeader(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                    )
                     val pendingDraftCount = uiState.calendarDrafts.drafts.count {
                         it.chatId == uiState.activeChatId && it.savedEventId == null
                     }
