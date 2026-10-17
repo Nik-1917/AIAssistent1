@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
+import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import java.time.DayOfWeek
 import java.time.Instant
@@ -118,12 +119,9 @@ fun CalendarScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    val dateText = remember {
-                        val now = LocalDate.now()
-                        val dayOfWeek = now.dayOfWeek.getDisplayName(TextStyle.FULL, Locale("ru"))
-                        val dayOfMonth = now.dayOfMonth
-                        "сегодня $dayOfWeek $dayOfMonth число"
-                    }
+                    val today = LocalUserDateTimeFormatter.current.today
+                    val dayOfWeek = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale("ru"))
+                    val dateText = "сегодня $dayOfWeek ${today.dayOfMonth} число"
                     Text(
                         text = dateText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -216,8 +214,8 @@ fun CalendarScreen(
             date = uiState.selectedDate,
             event = null,
             onDismiss = { isCreatingEvent = false },
-            onSave = { title, startTime, endTime ->
-                viewModel.createEvent(title, uiState.selectedDate, startTime, endTime)
+            onSave = { title, startTime, endTime, value, notes ->
+                viewModel.createEvent(title, uiState.selectedDate, startTime, endTime, value, notes)
                 isCreatingEvent = false
             },
         )
@@ -228,8 +226,8 @@ fun CalendarScreen(
             date = event.localDate(),
             event = event,
             onDismiss = { eventToEdit = null },
-            onSave = { title, startTime, endTime ->
-                viewModel.updateEvent(event.id, title, event.localDate(), startTime, endTime)
+            onSave = { title, startTime, endTime, value, notes ->
+                viewModel.updateEvent(event.id, title, event.localDate(), startTime, endTime, value, notes)
                 eventToEdit = null
             },
         )
@@ -438,7 +436,11 @@ private fun CalendarEventCard(
                 CalendarNotesText(event.notes)
                 AssistChip(
                     onClick = onEdit,
-                    label = { Text(LocalUserDateTimeFormatter.current.range(event.startsAtEpochMillis, event.endsAtEpochMillis)) },
+                    label = {
+                        Text(if (event.hasEndTime) {
+                            LocalUserDateTimeFormatter.current.range(event.startsAtEpochMillis, event.endsAtEpochMillis)
+                        } else event.localStartTimeText())
+                    },
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
@@ -453,16 +455,22 @@ private fun CalendarEventCard(
 }
 
 @Composable
-private fun CalendarEventEditorDialog(
+internal fun CalendarEventEditorDialog(
     date: LocalDate,
     event: CalendarEvent?,
     onDismiss: () -> Unit,
-    onSave: (title: String, startTime: LocalTime, endTime: LocalTime) -> Unit,
+    onSave: (title: String, startTime: LocalTime, endTime: LocalTime?, value: Long?, notes: String) -> Unit,
 ) {
     var title by remember(event) { mutableStateOf(event?.title.orEmpty()) }
     var startTimeText by remember(event) { mutableStateOf(event?.localStartTimeText() ?: "09:00") }
-    var durationText by remember(event) { mutableStateOf(event?.durationMinutes()?.toString() ?: "60") }
-    var endTimeText by remember(event) { mutableStateOf(event?.localEndTimeText() ?: "10:00") }
+    var durationText by remember(event) {
+        mutableStateOf(event?.let { if (it.hasEndTime) it.durationMinutes().toString() else "" } ?: "60")
+    }
+    var endTimeText by remember(event) {
+        mutableStateOf(event?.let { if (it.hasEndTime) it.localEndTimeText() else "" } ?: "10:00")
+    }
+    var valueText by remember(event) { mutableStateOf(event?.value?.toString().orEmpty()) }
+    var notesText by remember(event) { mutableStateOf(event?.notes.orEmpty()) }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -474,7 +482,6 @@ private fun CalendarEventEditorDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
-                CalendarNotesText(event?.notes)
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -501,6 +508,7 @@ private fun CalendarEventEditorDialog(
                     value = durationText,
                     onValueChange = { value ->
                         durationText = value
+                        if (value.isBlank()) endTimeText = ""
                         runCatching {
                             val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
                             val duration = value.toLong()
@@ -510,6 +518,7 @@ private fun CalendarEventEditorDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Длительность, минут") },
+                    supportingText = { if (durationText.isBlank()) Text("Не заполнено") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                 )
@@ -517,6 +526,7 @@ private fun CalendarEventEditorDialog(
                     value = endTimeText,
                     onValueChange = { value ->
                         endTimeText = value
+                        if (value.isBlank()) durationText = ""
                         runCatching {
                             val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
                             val end = LocalTime.parse(value, TIME_FORMATTER)
@@ -528,7 +538,24 @@ private fun CalendarEventEditorDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Окончание (ЧЧ:ММ)") },
+                    supportingText = { if (endTimeText.isBlank()) Text("Не заполнено") },
                     singleLine = true,
+                )
+                OutlinedTextField(
+                    value = valueText,
+                    onValueChange = { valueText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Ценность события") },
+                    supportingText = { if (valueText.isBlank()) Text("Не заполнено") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = notesText,
+                    onValueChange = { notesText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Примечание") },
+                    supportingText = { if (notesText.isBlank()) Text("Не заполнено") },
+                    minLines = 2,
                 )
                 validationError?.let { error ->
                     Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -540,14 +567,23 @@ private fun CalendarEventEditorDialog(
                 onClick = {
                     val parsed = runCatching {
                         require(title.isNotBlank()) { "Введите название события." }
-                        val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
-                        val end = LocalTime.parse(endTimeText, TIME_FORMATTER)
-                        val duration = java.time.Duration.between(start, end).toMinutes()
-                            .let { if (it <= 0) it + 24 * 60 else it }
-                        require(durationText.toLong() == duration) { "Проверьте длительность и окончание." }
-                        Triple(title, start, end)
+                        val start = CalendarTime.time(startTimeText.trim())
+                        val end = endTimeText.trim().takeIf { it.isNotEmpty() }?.let(CalendarTime::time)
+                        val duration = end?.let {
+                            java.time.Duration.between(start, it).toMinutes()
+                                .let { minutes -> if (minutes <= 0) minutes + 24 * 60 else minutes }
+                        }
+                        if (duration == null) {
+                            require(durationText.isBlank()) { "Проверьте длительность и окончание." }
+                        } else {
+                            require(durationText.trim().toLongOrNull() == duration) { "Проверьте длительность и окончание." }
+                        }
+                        val value = valueText.trim().takeIf { it.isNotEmpty() }?.let {
+                            requireNotNull(it.toLongOrNull()) { "Ценность должна быть целым числом." }
+                        }
+                        CalendarEventEditorResult(title, start, end, value, notesText)
                     }
-                    parsed.onSuccess { (savedTitle, start, end) -> onSave(savedTitle, start, end) }
+                    parsed.onSuccess { (savedTitle, start, end, value, notes) -> onSave(savedTitle, start, end, value, notes) }
                         .onFailure { validationError = it.message ?: "Проверьте введённые данные." }
                 },
             ) { Text("Сохранить") }
@@ -555,6 +591,14 @@ private fun CalendarEventEditorDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
     )
 }
+
+private data class CalendarEventEditorResult(
+    val title: String,
+    val startTime: LocalTime,
+    val endTime: LocalTime?,
+    val value: Long?,
+    val notes: String,
+)
 
 private fun CalendarEvent.localDate(): LocalDate =
     Instant.ofEpochMilli(startsAtEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
