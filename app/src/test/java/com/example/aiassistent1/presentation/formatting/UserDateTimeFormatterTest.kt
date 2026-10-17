@@ -95,8 +95,22 @@ class UserDateTimeFormatterTest {
         for (formatter in listOf(short, full)) {
             assertEquals(raw, formatter.messageText(message))
             assertEquals(raw, formatter.messageText(message.copy(chatId = "general", role = com.example.aiassistent1.domain.model.MessageRole.USER)))
+            assertEquals(
+                "Начало 19 сентября 2026 суббота, 09:05, окончание 19 сентября 2026 суббота, 10:00.",
+                formatter.messageText(message.copy(chatId = "general")),
+            )
         }
-        assertEquals("Начало 19 суббота, 09:05, окончание 19 суббота, 10:00.", short.messageText(message.copy(chatId = "general")))
-        assertEquals("Начало 19 сентября 2026 суббота, 09:05, окончание 19 сентября 2026 суббота, 10:00.", full.messageText(message.copy(chatId = "general")))
+    }
+
+    @Test fun `general assistant keeps month and year for every recognized date`() {
+        val message = com.example.aiassistent1.domain.model.ChatMessage(
+            role = com.example.aiassistent1.domain.model.MessageRole.ASSISTANT,
+            content = "2026-09-19, 2026-10-19, 2027-10-19",
+            chatId = "general",
+        )
+        val expected = "19 сентября 2026 суббота, 19 октября 2026 понедельник, 19 октября 2027 вторник"
+        for (formatter in listOf(short, full)) {
+            assertEquals(expected, formatter.messageText(message))
+        }
     }
 }

@@ -17,9 +17,13 @@ class UserDateTimeFormatter(
     val today: LocalDate = LocalDate.now(),
     val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
+    private val fullDateAssistantFormatter by lazy {
+        UserDateTimeFormatter(compact = false, today = today, zoneId = zoneId)
+    }
+
     fun messageText(message: ChatMessage): String =
         if (message.role == MessageRole.ASSISTANT && message.chatId == "general") {
-            assistantText(message.content)
+            fullDateAssistantFormatter.assistantText(message.content)
         } else message.content
 
     fun todayLabel(): String = "Сегодня\n${today.format(TODAY_DATE)}"
