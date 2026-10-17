@@ -171,6 +171,7 @@ import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.StoredModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
+import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
 import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
 import com.example.aiassistent1.presentation.viewmodel.VoiceDraftState
@@ -928,8 +929,10 @@ fun ChatScreen(
                                 val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
                                 val showDelete = showRetry
                                     
-                                MessageBubble(
+                                ChatMessageItem(
                                     message = message,
+                                    calendarDraft = uiState.calendarDrafts.drafts.firstOrNull { it.requestId == message.id },
+                                    onOpenCalendarDraft = viewModel::openCalendarDraft,
                                     isStopping = uiState.isStopping,
                                     isStreaming = !uiState.isStopping && uiState.isGenerating &&
                                         isLast && message.role == MessageRole.ASSISTANT,
@@ -949,12 +952,6 @@ fun ChatScreen(
                                     },
                                     onSpeak = viewModel::speakMessage,
                                 )
-                                uiState.calendarDrafts.drafts.firstOrNull { it.requestId == message.id }?.let { draft ->
-                                    CalendarDraftCard(
-                                        draft = draft, onOpen = { viewModel.openCalendarDraft(draft.requestId) },
-                                        modifier = Modifier.padding(top = 8.dp),
-                                    )
-                                }
                             }
                         }
                     }
@@ -1602,8 +1599,10 @@ private fun EmptyConversation(
 }
 
 @Composable
-private fun MessageBubble(
+internal fun ChatMessageItem(
     message: ChatMessage,
+    calendarDraft: CalendarEventDraftUiState? = null,
+    onOpenCalendarDraft: (String) -> Unit,
     isStopping: Boolean = false,
     isStreaming: Boolean = false,
     smoothResponseEnabled: Boolean,
@@ -1613,6 +1612,20 @@ private fun MessageBubble(
     onSpeak: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val linkedDraft = calendarDraft?.takeIf {
+        message.chatId == "calendar" && message.role == MessageRole.ASSISTANT &&
+            it.chatId == message.chatId && it.requestId == message.id
+    }
+    if (linkedDraft != null) {
+        // Keep the reply in history for playback; only its visual card is replaced.
+        CalendarDraftCard(
+            draft = linkedDraft,
+            onOpen = { onOpenCalendarDraft(linkedDraft.requestId) },
+            modifier = modifier,
+        )
+        return
+    }
+
     val isUser = message.role == MessageRole.USER
     val dateTimeFormatter = LocalUserDateTimeFormatter.current
     val displayContent = remember(message.content, message.role, message.chatId, dateTimeFormatter) {
