@@ -13,6 +13,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZoneId
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -76,12 +77,45 @@ class CalendarViewModelTest {
         }
     }
 
+    @Test fun `saved event link selects its current month and day`() = runTest {
+        withCalendar { viewModel, repository ->
+            val movedDate = LocalDate.of(2031, 2, 18)
+            val start = movedDate.atTime(14, 30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            repository.existing = CalendarEvent("saved", "Встреча", start, start + 3_600_000, 0, 0)
+
+            assertTrue(viewModel.focusSavedEvent("saved").isSuccess)
+            assertEquals(YearMonth.from(movedDate), viewModel.uiState.value.visibleMonth)
+            assertEquals(movedDate, viewModel.uiState.value.selectedDate)
+            assertEquals("saved", viewModel.uiState.value.focusedEventId)
+
+            viewModel.selectDate(movedDate.plusDays(1))
+            assertEquals(movedDate.plusDays(1), viewModel.uiState.value.selectedDate)
+            assertNull(viewModel.uiState.value.focusedEventId)
+
+            assertTrue(viewModel.focusSavedEvent("saved").isSuccess)
+            viewModel.clearFocusedEvent("saved")
+            assertNull(viewModel.uiState.value.focusedEventId)
+        }
+    }
+
+    @Test fun `deleted saved event does not navigate to an obsolete date`() = runTest {
+        withCalendar { viewModel, _ ->
+            val before = viewModel.uiState.value
+            val result = viewModel.focusSavedEvent("deleted")
+            assertTrue(result.isFailure)
+            assertEquals("Событие не найдено в локальном календаре", result.exceptionOrNull()?.message)
+            assertEquals(before.visibleMonth, viewModel.uiState.value.visibleMonth)
+            assertEquals(before.selectedDate, viewModel.uiState.value.selectedDate)
+        }
+    }
+
     private suspend fun TestScope.withCalendar(block: suspend (CalendarViewModel, RecordingRepository) -> Unit) {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = RecordingRepository()
         val viewModel = CalendarViewModel(
             ObserveCalendarEventsUseCase(repository), CreateCalendarEventUseCase(repository),
             UpdateCalendarEventUseCase(repository), DeleteCalendarEventUseCase(repository),
+            GetCalendarEventUseCase(repository),
             DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope),
         )
         try {
@@ -96,6 +130,7 @@ class CalendarViewModelTest {
     private class RecordingRepository : CalendarEventRepository {
         var created: CalendarEventDraft? = null
         var changed: CalendarEventUpdate? = null
+        var existing: CalendarEvent? = null
         override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> {
             created = draft
             return Result.success(CalendarEvent("new", draft.title, draft.startsAtEpochMillis, draft.endsAtEpochMillis, 0, 0,
@@ -106,7 +141,7 @@ class CalendarViewModelTest {
             return Result.success(CalendarEvent(update.id, update.title, update.startsAtEpochMillis, update.endsAtEpochMillis, 0, 0))
         }
         override fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long) = flowOf(emptyList<CalendarEvent>())
-        override suspend fun getById(id: String): Result<CalendarEvent?> = error("Not used")
+        override suspend fun getById(id: String): Result<CalendarEvent?> = Result.success(existing?.takeIf { it.id == id })
         override suspend fun delete(id: String): Result<Unit> = error("Not used")
         override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<List<CalendarEvent>> = error("Not used")
     }

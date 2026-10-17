@@ -847,7 +847,7 @@ class ChatViewModel(
                         settingsRepository.selectedModel.first { it == nextModel }
                         checkModelPresence(nextModel)
                     }
-                    mutableUiState.update { it.copy(snackbarMessage = "Модель удалена") }
+                    mutableUiState.update { it.copy(snackbarMessage = "Модель удалена", snackbarEventId = null) }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
@@ -872,7 +872,7 @@ class ChatViewModel(
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         val clip = android.content.ClipData.newPlainText("AI Assistant Message", text)
         clipboard.setPrimaryClip(clip)
-        mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован") }
+        mutableUiState.update { it.copy(snackbarMessage = "Текст скопирован", snackbarEventId = null) }
     }
 
     fun setShowDeleteMessageConfirmation(show: Boolean) {
@@ -1086,7 +1086,16 @@ class ChatViewModel(
     }
 
     fun clearSnackbar() {
-        mutableUiState.update { it.copy(snackbarMessage = null) }
+        mutableUiState.update { it.copy(snackbarMessage = null, snackbarEventId = null) }
+    }
+
+    fun showCalendarLinkError(error: Throwable) {
+        val message = if (error is NoSuchElementException) {
+            "Событие не найдено в локальном календаре"
+        } else {
+            "Не удалось открыть событие в календаре. Повторите попытку."
+        }
+        mutableUiState.update { it.copy(error = message) }
     }
 
     fun stopSpeechPlayback() {
@@ -1335,7 +1344,12 @@ class ChatViewModel(
             )
             val outcome = calendarCommandExecutor.execute(command, draft.requestId, confirmed = true).getOrThrow()
             check(outcome is CalendarCommandResult.Completed) { "Не удалось сохранить событие." }
-            mutableUiState.update { it.copy(snackbarMessage = "Событие сохранено в локальном календаре") }
+            mutableUiState.update {
+                it.copy(
+                    snackbarMessage = "Событие сохранено в локальном календаре",
+                    snackbarEventId = outcome.receipt.eventId,
+                )
+            }
             outcome.receipt.eventId
         }
     }

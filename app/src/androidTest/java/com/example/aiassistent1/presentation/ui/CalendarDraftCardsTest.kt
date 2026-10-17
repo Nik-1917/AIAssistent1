@@ -45,15 +45,21 @@ class CalendarDraftCardsTest {
     }
 
     @Test fun notesAreVisibleInBothDraftAndSavedCards() {
+        var openedEventId: String? = null
         var current by androidx.compose.runtime.mutableStateOf(CalendarEventDraftUiState(
             requestId = "notes", title = "Встреча с Анной", date = "2026-10-12", time = "15:00",
             notes = "взять документы",
         ))
-        compose.setContent { MaterialTheme { CalendarDraftCard(current, onOpen = {}) } }
+        compose.setContent {
+            MaterialTheme { CalendarDraftCard(current, onOpen = {}, onOpenSavedEvent = { openedEventId = it }) }
+        }
         compose.onNodeWithText("Примечание: взять документы").assertIsDisplayed()
+        compose.onNodeWithText("Перейти").assertDoesNotExist()
         compose.runOnIdle { current = current.copy(savedEventId = "saved-notes") }
         compose.onNodeWithText("Создано").assertIsDisplayed()
         compose.onNodeWithText("Примечание: взять документы").assertIsDisplayed()
+        compose.onNodeWithText("Перейти").performClick()
+        compose.runOnIdle { assertEquals("saved-notes", openedEventId) }
     }
 
     @Test fun firstEditorSurvivesANewEventAndBothCardsRemainIndependent() {
@@ -73,7 +79,9 @@ class CalendarDraftCardsTest {
                 MaterialTheme {
                     Column {
                         TextButton(onClick = controller::showList) { Text("Черновики · ${state.drafts.count { it.savedEventId == null }}") }
-                        state.drafts.forEach { draft -> CalendarDraftCard(draft, onOpen = { controller.open(draft.requestId) }) }
+                        state.drafts.forEach { draft ->
+                            CalendarDraftCard(draft, onOpen = { controller.open(draft.requestId) }, onOpenSavedEvent = {})
+                        }
                     }
                     state.selected?.let { draft ->
                         key(draft.requestId) {
@@ -85,7 +93,9 @@ class CalendarDraftCardsTest {
                             )
                         }
                     }
-                    if (state.showList) CalendarDraftListSheet(state.drafts.filter { it.savedEventId == null }, controller::open, controller::close)
+                    if (state.showList) CalendarDraftListSheet(
+                        state.drafts.filter { it.savedEventId == null }, controller::open, {}, controller::close,
+                    )
                 }
             }
             compose.onNodeWithText("Дополнить").performClick()

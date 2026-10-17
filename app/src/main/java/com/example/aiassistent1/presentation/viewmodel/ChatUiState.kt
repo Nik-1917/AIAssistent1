@@ -38,6 +38,7 @@ data class ChatUiState(
     val speechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle,
     val error: String? = null,
     val snackbarMessage: String? = null,
+    val snackbarEventId: String? = null,
     val isStopping: Boolean = false,
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,

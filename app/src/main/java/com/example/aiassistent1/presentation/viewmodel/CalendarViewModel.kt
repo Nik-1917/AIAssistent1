@@ -9,10 +9,12 @@ import com.example.aiassistent1.calendar.core.domain.CalendarEventUpdate
 import com.example.aiassistent1.calendar.core.domain.CalendarValueChange
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.GetCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.CalendarViewState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -39,6 +42,7 @@ data class CalendarUiState(
     val isRefreshing: Boolean = false,
     val error: String? = null,
     val snackbarMessage: String? = null,
+    val focusedEventId: String? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,6 +51,7 @@ class CalendarViewModel(
     private val createCalendarEvent: CreateCalendarEventUseCase,
     private val updateCalendarEvent: UpdateCalendarEventUseCase,
     private val deleteCalendarEvent: DeleteCalendarEventUseCase,
+    private val getCalendarEvent: GetCalendarEventUseCase,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(CalendarUiState())
@@ -55,11 +60,12 @@ class CalendarViewModel(
     private var pendingRefreshRequest: Int? = null
     private var refreshStartedAtElapsedMillis = 0L
     private var refreshCompletionJob: Job? = null
+    private val restorePositionJob: Job
 
     val uiState: StateFlow<CalendarUiState> = mutableUiState.asStateFlow()
 
     init {
-        restorePersistedCalendarPosition()
+        restorePositionJob = restorePersistedCalendarPosition()
         viewModelScope.launch {
             combine(visibleMonth, refreshRequests) { month, request -> MonthRefreshRequest(month, request) }
                 .flatMapLatest { request ->
@@ -80,7 +86,7 @@ class CalendarViewModel(
     }
 
     /** Restores the last month/day shown before the app was closed or killed. */
-    private fun restorePersistedCalendarPosition() {
+    private fun restorePersistedCalendarPosition(): Job =
         viewModelScope.launch {
             val persisted = settingsRepository.calendarViewState.first()
             val month = persisted.visibleMonth ?: return@launch
@@ -88,6 +94,34 @@ class CalendarViewModel(
             visibleMonth.value = month
             mutableUiState.update { it.copy(visibleMonth = month, selectedDate = date) }
         }
+
+    /** Follows the saved event, including a date changed after the chat card was created. */
+    suspend fun focusSavedEvent(id: String): Result<Unit> {
+        restorePositionJob.join()
+        val event = try {
+            getCalendarEvent(id).getOrElse { return Result.failure(it) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            return Result.failure(error)
+        } ?: return Result.failure(NoSuchElementException("Событие не найдено в локальном календаре"))
+
+        val date = Instant.ofEpochMilli(event.startsAtEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val month = YearMonth.from(date)
+        try {
+            settingsRepository.setCalendarViewState(CalendarViewState(month, date))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            return Result.failure(error)
+        }
+        visibleMonth.value = month
+        mutableUiState.update { it.copy(visibleMonth = month, selectedDate = date, focusedEventId = event.id) }
+        return Result.success(Unit)
+    }
+
+    fun clearFocusedEvent(id: String) {
+        mutableUiState.update { if (it.focusedEventId == id) it.copy(focusedEventId = null) else it }
     }
 
     fun showPreviousMonth() = showMonth(visibleMonth.value.minusMonths(1))
@@ -95,7 +129,7 @@ class CalendarViewModel(
     fun showNextMonth() = showMonth(visibleMonth.value.plusMonths(1))
 
     fun selectDate(date: LocalDate) {
-        mutableUiState.update { it.copy(selectedDate = date) }
+        mutableUiState.update { it.copy(selectedDate = date, focusedEventId = null) }
         persistCalendarPosition(visibleMonth.value, date)
     }
 
@@ -112,6 +146,7 @@ class CalendarViewModel(
                 isRefreshing = true,
                 visibleMonth = currentMonth,
                 selectedDate = today,
+                focusedEventId = null,
             )
         }
         persistCalendarPosition(currentMonth, today)
@@ -190,6 +225,7 @@ class CalendarViewModel(
             it.copy(
                 visibleMonth = month,
                 selectedDate = resolvedDate,
+                focusedEventId = null,
             )
         }
         persistCalendarPosition(month, resolvedDate)

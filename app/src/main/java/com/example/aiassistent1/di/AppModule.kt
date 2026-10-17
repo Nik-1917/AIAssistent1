@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.example.aiassistent1.calendar.core.domain.CalendarEventRepository
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
+import com.example.aiassistent1.calendar.core.domain.GetCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.SearchCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
@@ -234,6 +235,9 @@ object AppModule {
 
 	fun provideCreateCalendarEventUseCase(context: Context): CreateCalendarEventUseCase =
 		CreateCalendarEventUseCase(provideCalendarEventRepository(context))
+
+	fun provideGetCalendarEventUseCase(context: Context): GetCalendarEventUseCase =
+		GetCalendarEventUseCase(provideCalendarEventRepository(context))
 
 	fun provideSearchCalendarEventsUseCase(context: Context): SearchCalendarEventsUseCase =
 		SearchCalendarEventsUseCase(provideCalendarEventRepository(context))

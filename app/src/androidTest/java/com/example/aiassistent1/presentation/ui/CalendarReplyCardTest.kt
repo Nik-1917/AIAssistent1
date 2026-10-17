@@ -23,11 +23,13 @@ class CalendarReplyCardTest {
         val message = calendarReply(reply)
         var draft by mutableStateOf<CalendarEventDraftUiState?>(null)
         var openedId: String? = null
+        var openedEventId: String? = null
         compose.setContent {
             MaterialTheme {
                 ChatMessageItem(
                     message = message, calendarDraft = draft,
-                    onOpenCalendarDraft = { openedId = it }, smoothResponseEnabled = false,
+                    onOpenCalendarDraft = { openedId = it },
+                    onOpenSavedCalendarEvent = { openedEventId = it }, smoothResponseEnabled = false,
                     onRetry = {}, onDelete = {}, onCopy = {}, onSpeak = {},
                 )
             }
@@ -49,6 +51,8 @@ class CalendarReplyCardTest {
             draft = draft!!.copy(savedEventId = "saved-event")
         }
         compose.onNodeWithText("Создано").assertIsDisplayed()
+        compose.onNodeWithText("Перейти").performClick()
+        compose.runOnIdle { assertEquals("saved-event", openedEventId) }
         compose.onNodeWithText(reply).assertDoesNotExist()
     }
 
@@ -63,7 +67,7 @@ class CalendarReplyCardTest {
         compose.setContent {
             MaterialTheme {
                 ChatMessageItem(
-                    message = calendarReply(parsed.reply), onOpenCalendarDraft = {},
+                    message = calendarReply(parsed.reply), onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
                     smoothResponseEnabled = false, onRetry = { retries++ }, onDelete = { deletions++ },
                     onCopy = {}, onSpeak = { spokenText = it },
                 )
@@ -86,7 +90,7 @@ class CalendarReplyCardTest {
         compose.setContent {
             MaterialTheme {
                 ChatMessageItem(
-                    message = message, onOpenCalendarDraft = {}, smoothResponseEnabled = false,
+                    message = message, onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {}, smoothResponseEnabled = false,
                     onCopy = {}, onSpeak = {},
                 )
             }
@@ -108,7 +112,7 @@ class CalendarReplyCardTest {
         compose.setContent {
             MaterialTheme {
                 ChatMessageItem(
-                    message = message, calendarDraft = draft, onOpenCalendarDraft = {},
+                    message = message, calendarDraft = draft, onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
                     smoothResponseEnabled = false, onCopy = {}, onSpeak = {},
                 )
             }

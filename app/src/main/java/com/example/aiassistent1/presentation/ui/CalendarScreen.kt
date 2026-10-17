@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -93,12 +94,22 @@ fun CalendarScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val calendarListState = rememberLazyListState()
     var eventToEdit by remember { mutableStateOf<CalendarEvent?>(null) }
     var eventToDelete by remember { mutableStateOf<CalendarEvent?>(null) }
     var isCreatingEvent by remember { mutableStateOf(false) }
     val selectedDayEvents = uiState.events.filter { it.localDate() == uiState.selectedDate }
     val eventCounts = remember(uiState.events) {
         uiState.events.groupingBy { it.localDate() }.eachCount()
+    }
+
+    LaunchedEffect(uiState.focusedEventId, selectedDayEvents) {
+        val eventId = uiState.focusedEventId ?: return@LaunchedEffect
+        val eventIndex = selectedDayEvents.indexOfFirst { it.id == eventId }
+        if (eventIndex >= 0) {
+            calendarListState.scrollToItem(3 + eventIndex)
+            viewModel.clearFocusedEvent(eventId)
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -166,6 +177,7 @@ fun CalendarScreen(
             modifier = Modifier.padding(paddingValues),
         ) {
             LazyColumn(
+                state = calendarListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),

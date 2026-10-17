@@ -45,8 +45,14 @@ import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
 
 @Composable
-internal fun CalendarDraftCard(draft: CalendarEventDraftUiState, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val saved = draft.savedEventId != null
+internal fun CalendarDraftCard(
+    draft: CalendarEventDraftUiState,
+    onOpen: () -> Unit,
+    onOpenSavedEvent: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val savedEventId = draft.savedEventId
+    val saved = savedEventId != null
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -74,7 +80,9 @@ internal fun CalendarDraftCard(draft: CalendarEventDraftUiState, onOpen: () -> U
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (!saved) {
+            if (savedEventId != null) {
+                TextButton(onClick = { onOpenSavedEvent(savedEventId) }) { Text("Перейти") }
+            } else {
                 if (draft.isSaving) Text("Сохранение события…", style = MaterialTheme.typography.bodySmall)
                 else if (draft.saveRequested) Text("Сохранение требует проверки", style = MaterialTheme.typography.bodySmall)
                 draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
@@ -93,7 +101,10 @@ internal fun CalendarDraftCard(draft: CalendarEventDraftUiState, onOpen: () -> U
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CalendarDraftListSheet(
-    drafts: List<CalendarEventDraftUiState>, onOpen: (String) -> Unit, onDismiss: () -> Unit,
+    drafts: List<CalendarEventDraftUiState>,
+    onOpen: (String) -> Unit,
+    onOpenSavedEvent: (String) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         LazyColumn(
@@ -103,7 +114,11 @@ internal fun CalendarDraftListSheet(
             item { Text("Черновики · ${drafts.size}", style = MaterialTheme.typography.headlineSmall) }
             if (drafts.isEmpty()) item { Text("Нет незавершённых событий") }
             items(drafts, key = { it.requestId }) { draft ->
-                CalendarDraftCard(draft, onOpen = { onOpen(draft.requestId) })
+                CalendarDraftCard(
+                    draft,
+                    onOpen = { onOpen(draft.requestId) },
+                    onOpenSavedEvent = onOpenSavedEvent,
+                )
             }
             item { TextButton(onClick = onDismiss) { Text("Закрыть") } }
         }

@@ -87,6 +87,7 @@ class DataStoreSettingsRepository(
     private val speechCardYdpKey = floatPreferencesKey("speech_card_y_dp")
     private val calendarButtonXdpKey = floatPreferencesKey("calendar_button_x_dp")
     private val calendarButtonYdpKey = floatPreferencesKey("calendar_button_y_dp")
+    private val floatingControlsRelativeToHeaderKey = booleanPreferencesKey("floating_controls_relative_to_header")
     private val calendarVisibleMonthKey = stringPreferencesKey("calendar_visible_month")
     private val calendarSelectedDateKey = stringPreferencesKey("calendar_selected_date")
     private val isFirstRunKey = booleanPreferencesKey("is_first_run")
@@ -285,11 +286,20 @@ class DataStoreSettingsRepository(
 
     override val floatingControlPositions: kotlinx.coroutines.flow.Flow<FloatingControlPositions> = dataStore.data
         .map { preferences ->
+            val hasSavedPositions = listOf(speechCardXdpKey, speechCardYdpKey, calendarButtonXdpKey, calendarButtonYdpKey)
+                .any { preferences[it] != null }
+            val defaults = if (hasSavedPositions) {
+                // Older versions stored offsets from the middle of the available area.
+                FloatingControlPositions(0f, 0f, 0f, 0f, isRelativeToHeader = false)
+            } else {
+                FloatingControlPositions()
+            }
             FloatingControlPositions(
-                speechCardXdp = preferences[speechCardXdpKey] ?: 0f,
-                speechCardYdp = preferences[speechCardYdpKey] ?: 0f,
-                calendarButtonXdp = preferences[calendarButtonXdpKey] ?: 0f,
-                calendarButtonYdp = preferences[calendarButtonYdpKey] ?: 0f,
+                speechCardXdp = preferences[speechCardXdpKey] ?: defaults.speechCardXdp,
+                speechCardYdp = preferences[speechCardYdpKey] ?: defaults.speechCardYdp,
+                calendarButtonXdp = preferences[calendarButtonXdpKey] ?: defaults.calendarButtonXdp,
+                calendarButtonYdp = preferences[calendarButtonYdpKey] ?: defaults.calendarButtonYdp,
+                isRelativeToHeader = preferences[floatingControlsRelativeToHeaderKey] ?: defaults.isRelativeToHeader,
             )
         }
 
@@ -448,6 +458,7 @@ class DataStoreSettingsRepository(
             preferences[speechCardYdpKey] = positions.speechCardYdp
             preferences[calendarButtonXdpKey] = positions.calendarButtonXdp
             preferences[calendarButtonYdpKey] = positions.calendarButtonYdp
+            preferences[floatingControlsRelativeToHeaderKey] = positions.isRelativeToHeader
         }
     }
 

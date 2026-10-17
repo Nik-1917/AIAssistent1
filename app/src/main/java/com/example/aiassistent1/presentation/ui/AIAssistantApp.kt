@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AIAssistantApp(
@@ -33,6 +35,7 @@ fun AIAssistantApp(
     onContentReady: () -> Unit = {},
 ) {
     val uiState by chatViewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     val navigation = uiState.navigationState
     if (navigation == null) {
         if (uiState.sessionError != null) {
@@ -76,6 +79,14 @@ fun AIAssistantApp(
                 AppDestination.CHAT -> ChatScreen(
                     viewModel = chatViewModel,
                     onOpenCalendar = chatViewModel::openCalendar,
+                    onOpenSavedCalendarEvent = { eventId ->
+                        chatViewModel.clearSnackbar()
+                        scope.launch {
+                            calendarViewModel.focusSavedEvent(eventId)
+                                .onSuccess { chatViewModel.openCalendar() }
+                                .onFailure(chatViewModel::showCalendarLinkError)
+                        }
+                    },
                 )
 
                 AppDestination.CALENDAR -> CalendarScreen(
