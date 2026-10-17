@@ -1,0 +1,412 @@
+{
+  "StartedUtc": "2026-10-17T18:51:43.4810846+00:00",
+  "CompletedUtc": "2026-10-17T18:51:49.1451677+00:00",
+  "Status": "ALL_TARGETS_DELETED",
+  "WorkspaceRoot": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1",
+  "BuildRoot": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build",
+  "VoicePreserved": true,
+  "ExpectedDeletedBytes": 210063206809,
+  "ExpectedDeletedFiles": 11882,
+  "ProtectedPaths": [
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-apm-android",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-apm-source",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-avd",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-avd-home",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-lame-source",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-python",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\audio-webrtc-source",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_local_gpu_venv",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_models\\Qwen3-0.6B",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_models\\Qwen3-1.7B",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_gguf_20260907",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen35_venv",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_notes_reply_review",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_notes_reply_review_final",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_review",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_review_cleanup_20261009",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_semantic_review_20261011",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_67_title_reply_review",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_06b\\Qwen3-0.6B_source_lock.json",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_17b\\Qwen3-1.7B_source_lock.json",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_manual_semantics_20261011",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_manual_semantics_recheck_20261011",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_qwen3_06b",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_qwen3_06b_batch2",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_qwen3_06b_q8_comparison",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_qwen3_17b",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_qwen3_17b_20261013",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_67_semantic_fix_20261011",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama-b10621-bin-win-cpu-x64",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\llama.cpp-v0.3.0",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\metric_kws_reference",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\metric_kws_ru",
+    "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\sherpa-api"
+  ],
+  "Targets": [
+    {
+      "RelativePath": "calendar_v12_66_qwen3_4b",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_4b",
+      "ExpectedBytes": 33289760194,
+      "ExpectedFiles": 2223
+    },
+    {
+      "RelativePath": "calendar_small_models_20261003_v2",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_small_models_20261003_v2",
+      "ExpectedBytes": 22952916224,
+      "ExpectedFiles": 2298
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen35",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen35",
+      "ExpectedBytes": 17092113056,
+      "ExpectedFiles": 1898
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen3_17b/qwen3_1_7b",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_17b\\qwen3_1_7b",
+      "ExpectedBytes": 16953034492,
+      "ExpectedFiles": 2176
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen3_06b/qwen3_0_6b",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_v12_66_qwen3_06b\\qwen3_0_6b",
+      "ExpectedBytes": 9181503826,
+      "ExpectedFiles": 2109
+    },
+    {
+      "RelativePath": "calendar_sft_v12_3_q4_work_20260909",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_3_q4_work_20260909",
+      "ExpectedBytes": 8061119521,
+      "ExpectedFiles": 37
+    },
+    {
+      "RelativePath": "calendar_sft_v12_53_q4_work_20260910",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_53_q4_work_20260910",
+      "ExpectedBytes": 8061041370,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_63_q4_work_20261001",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_63_q4_work_20261001",
+      "ExpectedBytes": 8061029250,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_57_q4_work_20260914",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_57_q4_work_20260914",
+      "ExpectedBytes": 8061028714,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_61_q4_work_20260928",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_61_q4_work_20260928",
+      "ExpectedBytes": 8061028635,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_62_q4_work_20260929",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_62_q4_work_20260929",
+      "ExpectedBytes": 8061028628,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_6_q4_work_20260914",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_6_q4_work_20260914",
+      "ExpectedBytes": 8061028588,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_55_q4_work_20260912",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_55_q4_work_20260912",
+      "ExpectedBytes": 8061028552,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_54_q4_work_20260911",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_54_q4_work_20260911",
+      "ExpectedBytes": 8061028551,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_v12_56_q4_work_20260913",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v12_56_q4_work_20260913",
+      "ExpectedBytes": 8061028548,
+      "ExpectedFiles": 23
+    },
+    {
+      "RelativePath": "calendar_sft_models/Qwen3-4B-Instruct-2507",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_models\\Qwen3-4B-Instruct-2507",
+      "ExpectedBytes": 8060911665,
+      "ExpectedFiles": 12
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_merged_bf16_20260907",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_merged_bf16_20260907",
+      "ExpectedBytes": 8060897829,
+      "ExpectedFiles": 12
+    },
+    {
+      "RelativePath": "calendar_sft_models/Qwen3.5-2B",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_models\\Qwen3.5-2B",
+      "ExpectedBytes": 4571273746,
+      "ExpectedFiles": 25
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_63_epoch1_20261001",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_63_epoch1_20261001",
+      "ExpectedBytes": 1536251466,
+      "ExpectedFiles": 346
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_61_resume_20260929",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_61_resume_20260929",
+      "ExpectedBytes": 582280370,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_54_epoch1_20260911",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_54_epoch1_20260911",
+      "ExpectedBytes": 579792891,
+      "ExpectedFiles": 44
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_62_epoch1_20260929",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_62_epoch1_20260929",
+      "ExpectedBytes": 579668548,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_6_epoch1_20260914",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_6_epoch1_20260914",
+      "ExpectedBytes": 579664957,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_57_epoch1_20260914",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_57_epoch1_20260914",
+      "ExpectedBytes": 579664616,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_56_epoch1_20260913",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_56_epoch1_20260913",
+      "ExpectedBytes": 579664595,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_53_epoch1_20260910",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_53_epoch1_20260910",
+      "ExpectedBytes": 579664423,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_55_epoch1_20260912",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_55_epoch1_20260912",
+      "ExpectedBytes": 579664259,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_v6_epoch1_20260827",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v6_epoch1_20260827",
+      "ExpectedBytes": 579659713,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_local_epoch1_model",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_local_epoch1_model",
+      "ExpectedBytes": 579659691,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_local_epoch2_model",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_local_epoch2_model",
+      "ExpectedBytes": 579659684,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_v5_epoch1_20260827",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_v5_epoch1_20260827",
+      "ExpectedBytes": 579659290,
+      "ExpectedFiles": 40
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_61_epoch1_20260928",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_qwen3_v12_61_epoch1_20260928",
+      "ExpectedBytes": 431581658,
+      "ExpectedFiles": 30
+    },
+    {
+      "RelativePath": "calendar_sft_local_pilot",
+      "AbsolutePath": "C:\\Users\\007\\AndroidStudioProjects\\AIAssistent1\\build\\calendar_sft_local_pilot",
+      "ExpectedBytes": 363869259,
+      "ExpectedFiles": 25
+    }
+  ],
+  "DeletionResults": [
+    {
+      "RelativePath": "calendar_v12_66_qwen3_4b",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_small_models_20261003_v2",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen35",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen3_17b/qwen3_1_7b",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_v12_66_qwen3_06b/qwen3_0_6b",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_3_q4_work_20260909",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_53_q4_work_20260910",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_63_q4_work_20261001",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_57_q4_work_20260914",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_61_q4_work_20260928",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_62_q4_work_20260929",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_6_q4_work_20260914",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_55_q4_work_20260912",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_54_q4_work_20260911",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v12_56_q4_work_20260913",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_models/Qwen3-4B-Instruct-2507",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_merged_bf16_20260907",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_models/Qwen3.5-2B",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_63_epoch1_20261001",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_61_resume_20260929",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_54_epoch1_20260911",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_62_epoch1_20260929",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_6_epoch1_20260914",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_57_epoch1_20260914",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_56_epoch1_20260913",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_53_epoch1_20260910",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_55_epoch1_20260912",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v6_epoch1_20260827",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_local_epoch1_model",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_local_epoch2_model",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_v5_epoch1_20260827",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_qwen3_v12_61_epoch1_20260928",
+      "Status": "DELETED",
+      "Error": null
+    },
+    {
+      "RelativePath": "calendar_sft_local_pilot",
+      "Status": "DELETED",
+      "Error": null
+    }
+  ]
+}
