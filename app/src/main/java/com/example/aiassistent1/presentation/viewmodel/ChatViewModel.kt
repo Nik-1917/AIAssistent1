@@ -103,8 +103,14 @@ class ChatViewModel(
     private var contextCancelResumeJob: Job? = null
     private data class PendingContextRequest(val job: Job, val chatId: String, val modelName: String)
     private val chatContextSession = ChatContextSession(llmEngine, chatContextRepository, modelContextBuilder)
-    private val chatReplyTextStream = ChatReplyTextStream(assistantResponseParser) { reason ->
+    private val chatReplyTextStream = ChatReplyTextStream(assistantResponseParser) { raw, reason ->
         Log.w(TAG, "CHAT_REPLY_PARSE_ERROR: $reason")
+        if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            Log.d(TAG, "CHAT_RAW_MODEL_RESPONSE: ${raw.length} chars, first $MAX_LOGCAT_PAYLOAD_LENGTH")
+            raw.take(MAX_LOGCAT_PAYLOAD_LENGTH).chunked(800).forEachIndexed { index, part ->
+                Log.d(TAG, "CHAT_RAW_MODEL_RESPONSE[$index]: $part")
+            }
+        }
     }
     private val pendingChatMessages = PendingChatMessages()
     private var activeChatJob: Job? = null
@@ -625,16 +631,9 @@ class ChatViewModel(
                 backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 backgroundSession.awaitReady()
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
-                val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
-                    modelContextBuilder.build(
-                        currentState.messages,
-                        appendChatStyleInstruction = !currentState.isCalendarMode,
-                        isCalendarMode = currentState.isCalendarMode,
-                    ),
-                    useSystemPrompt = true,
-                    isCalendarMode = currentState.isCalendarMode,
-                    onReady = onReady,
-                ) else Result.success(chatContextSession.respond(currentState.activeChatId, currentState.messages, onReady) { pressure ->
+                fun chatResponse(instruction: String? = null) = chatContextSession.respond(
+                    currentState.activeChatId, currentState.messages, onReady, responseInstruction = instruction,
+                ) { pressure ->
                     if (uiState.value.activeChatId != currentState.activeChatId ||
                         uiState.value.selectedModel != currentState.selectedModel) {
                         throw CancellationException("Чат или модель изменились")
@@ -658,7 +657,17 @@ class ChatViewModel(
                         backgroundSession?.awaitReady()
                     }
                     choice
-                })
+                }
+                val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
+                    modelContextBuilder.build(
+                        currentState.messages,
+                        appendChatStyleInstruction = !currentState.isCalendarMode,
+                        isCalendarMode = currentState.isCalendarMode,
+                    ),
+                    useSystemPrompt = true,
+                    isCalendarMode = currentState.isCalendarMode,
+                    onReady = onReady,
+                ) else Result.success(chatResponse())
                 val response = responseFlowResult.getOrElse { error ->
                     mutableUiState.update { it.copy(error = error.userMessage()) }
                     return@launch
@@ -680,7 +689,14 @@ class ChatViewModel(
                     },
                 )
                 responseWriter = writer
-                writer.collect(if (currentState.isCalendarMode) response else chatReplyTextStream.display(response))
+                writer.collect(if (currentState.isCalendarMode) response else chatReplyTextStream.display(response) {
+                    currentCoroutineContext().ensureActive()
+                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                        uiState.value.selectedModel != currentState.selectedModel) {
+                        throw CancellationException("Чат или модель изменились")
+                    }
+                    chatResponse(ChatReplyTextStream.RETRY_INSTRUCTION)
+                })
 
                 // Сохраняем в БД только если есть контент
                 val finalMessage = assistantMessage
@@ -1113,7 +1129,10 @@ class ChatViewModel(
                                 is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Found -> {
                                     val resultsText = if (outcome.events.isNotEmpty()) {
                                         "\n\nНайдено:\n" + outcome.events.joinToString("\n") {
-                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}, ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин)".withCalendarNotes(it.notes)
+                                            val duration = if (it.hasEndTime) {
+                                                ", ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин"
+                                            } else ""
+                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}$duration)".withCalendarNotes(it.notes)
                                         }
                                     } else "\n\nНичего не найдено."
                                     replaceAssistantReply(messageId, response.reply + resultsText)

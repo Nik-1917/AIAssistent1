@@ -175,6 +175,20 @@ class ChatContextSessionTest {
         assertFalse(engine.inputs.single().any { it.chatId == "calendar" })
     }
 
+    @Test fun `retry instruction is transient and preserves one copy of the current request`() = runBlocking {
+        val source = history()
+        val engine = Engine().apply { budget = 1000 }
+        val store = Store()
+        ChatContextSession(engine, store).respond("general", source,
+            responseInstruction = "Ответь обычным текстом.") { error("No pressure") }.toList()
+        val actual = engine.inputs.single()
+        assertTrue(actual.first().content.endsWith("\nОтветь обычным текстом."))
+        assertEquals(source.map { it.id }, actual.filterNot { it.role == MessageRole.SYSTEM }.map { it.id })
+        assertEquals(1, actual.count { it.id == "u4" })
+        assertFalse(source.any { it.content.contains("Ответь обычным текстом.") })
+        assertTrue(store.writes.isEmpty())
+    }
+
     private class Store : ChatContextRepository {
         val value = MutableStateFlow(ChatContextSettings())
         val writes = mutableListOf<ChatContextSettings>()

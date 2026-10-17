@@ -120,13 +120,28 @@ class ChatResponseWriterTest {
     }
 
     @Test
-    fun `structured chat with no reply never displays metadata`() = runTest {
+    fun `structured chat without top level reply preserves nested text`() = runTest {
         val session = Session()
         session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf(
             "{\"intent\":\"chat\",\"params\":{\"reply\":\"Данные\"}}",
         )))
-        assertEquals("Не удалось разобрать ответ модели. Попробуйте изменить запрос.", session.visible.content)
+        assertEquals("Данные", session.visible.content)
         assertEquals(session.visible, session.writes.single())
+    }
+
+    @Test
+    fun `retry persists only its final readable answer under one message id`() = runTest {
+        val session = Session()
+        var retries = 0
+        session.generate(ChatReplyTextStream(AssistantResponseParser()).display(flowOf("{\"role\":\"assistant\"}")) {
+            retries++
+            assertTrue(session.writes.isEmpty())
+            assertEquals("", session.visible.content)
+            flowOf("{\"unknown\":{\"answer\":\"Восстановленный ответ\"}}")
+        })
+        assertEquals(1, retries)
+        assertEquals("Восстановленный ответ", session.visible.content)
+        assertEquals(listOf(session.visible), session.writes)
     }
 
     @Test

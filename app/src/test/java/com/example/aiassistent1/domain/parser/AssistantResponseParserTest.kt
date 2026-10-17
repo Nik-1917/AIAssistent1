@@ -36,17 +36,21 @@ class AssistantResponseParserTest {
     }
 
     @Test
-    fun `uses default title when calendar add response has an empty title`() {
+    fun `keeps blank calendar titles missing so the draft must request a title`() {
         for (title in listOf("", "   ")) {
             val response = parser.parseResult(
                 """{"intent":"calendar_add","reply":"x","params":{"title":"$title","starts_at":"2026-09-13T17:00","ends_at":"2026-09-13T20:00"}}""",
             ).getOrThrow()
 
             val params = response.params as CalendarAddParams
-            assertEquals("Событие", params.title)
+            assertNull(params.title)
             assertEquals("2026-09-13T17:00", params.startsAt)
             assertEquals(180, params.durationMin)
         }
+        val namedEvent = parser.parseResult(
+            """{"intent":"calendar_add","reply":"x","params":{"title":"Событие"}}""",
+        ).getOrThrow().params as CalendarAddParams
+        assertEquals("Событие", namedEvent.title)
         assertTrue(parser.parseResult("""{"intent":"calendar_add","reply":"x","params":{"title":null}}""").isFailure)
     }
 
@@ -204,12 +208,10 @@ class AssistantResponseParserTest {
     }
 
     @Test
-    fun `response alias never substitutes nested or nontext metadata`() {
+    fun `chat without text still rejects empty response and emoji metadata`() {
         for (raw in listOf(
-            """{"params":{"response":"Метаданные"}}""",
             """{"response":null,"emoji":"✨"}""",
             """{"response":"","emoji":"✨"}""",
-            """{"response":{"text":"Метаданные"}}""",
         )) assertTrue(raw, parser.parseChatReply(raw).isFailure)
     }
 
@@ -250,11 +252,11 @@ class AssistantResponseParserTest {
     }
 
     @Test
-    fun `chat extractor never substitutes metadata for a missing reply`() {
+    fun `chat extractor never substitutes protocol fields for missing text`() {
         for (raw in listOf(
-            """{"params":{"reply":"Вложенное значение"}}""",
+            """{"intent":"chat","role":"assistant"}""",
             """{"intent":"chat","reply":"","params":{}}""",
-            """{"reply":null,"params":{"text":"Данные"}}""",
+            """{"reply":null,"params":{}}""",
         )) assertTrue(parser.parseChatReply(raw).isFailure)
     }
 

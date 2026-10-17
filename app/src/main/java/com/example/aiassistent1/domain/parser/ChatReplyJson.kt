@@ -1,47 +1,80 @@
 package com.example.aiassistent1.domain.parser
 
-/** Reads top-level reply/response text without applying the calendar schema to chat metadata. */
+/** Best-effort text presentation only. Never use this reader to validate or execute commands. */
 internal class ChatReplyJson private constructor(private val input: String) {
     private data class Text(val value: String, val next: Int, val closed: Boolean)
+    private class Frame(val isObject: Boolean, val metadata: Boolean = false) {
+        var key: String? = null
+        var expectingKey = isObject
+    }
 
     private fun reply(): String {
         var position = whitespace(0)
-        require(input.getOrNull(position) == '{') { "Ответ не начинается с объекта" }
+        val first = input.getOrNull(position)
+        if (first != '{' && first != '[') {
+            val text = if (first == '"' || first == '\'') {
+                val quoted = string(position)
+                if (quoted.closed && input.substring(quoted.next).isNotBlank()) input.trim() else quoted.value
+            } else input.trim()
+            return text.takeIf(String::isNotBlank) ?: error("В ответе нет текста")
+        }
+        val stack = mutableListOf(Frame(first == '{'))
         position++
-        var depth = 1
-        var expectingKey = true
+        val fallback = mutableListOf<String>()
         var response: String? = null
-        while (position < input.length && depth > 0) {
+        fun accept(value: String) {
+            val frame = stack.last()
+            if (value.isBlank()) return
+            // Field names alone must not hide prose. Only known protocol values/icons are metadata.
+            if ((frame.metadata || frame.key in metadataKeys) &&
+                (value in protocolValues || value.none { it.isLetterOrDigit() })) return
+            fallback += value
+            if (stack.size == 1 && frame.key == "response" && response == null) response = value
+        }
+        while (position < input.length && stack.isNotEmpty()) {
+            position = whitespace(position)
+            if (position >= input.length) break
+            val frame = stack.last()
             when (input[position]) {
                 '"', '\'' -> {
                     val token = string(position)
                     position = token.next
-                    if (depth == 1 && expectingKey && token.closed) {
-                        position = whitespace(position)
-                        if (input.getOrNull(position) == ':') {
-                            position = whitespace(position + 1)
-                            if ((token.value == "reply" || token.value == "response") &&
-                                (input.getOrNull(position) == '"' || input.getOrNull(position) == '\'')) {
-                                // An output limit can cut the quote or the object after useful text.
-                                val value = string(position)
-                                position = value.next
-                                if (value.value.isNotBlank()) {
-                                    // Prefer the established reply field regardless of field order.
-                                    if (token.value == "reply") return value.value
-                                    if (response == null) response = value.value
-                                }
-                            }
-                        }
-                        expectingKey = false
+                    if (frame.isObject && frame.expectingKey && token.closed &&
+                        input.getOrNull(whitespace(position)) == ':') {
+                        frame.key = token.value
+                        position = whitespace(position) + 1
+                    } else {
+                        // Retain the existing preferred field even in incomplete generated JSON.
+                        if (stack.size == 1 && frame.key == "reply" && token.value.isNotBlank()) return token.value
+                        accept(token.value)
                     }
+                    frame.expectingKey = false
                 }
-                '{', '[' -> { depth++; position++ }
-                '}', ']' -> { depth--; position++ }
-                ',' -> { if (depth == 1) expectingKey = true; position++ }
-                else -> position++
+                '{', '[' -> {
+                    stack += Frame(input[position] == '{', frame.metadata || frame.key in metadataKeys)
+                    frame.expectingKey = false
+                    position++
+                }
+                '}', ']' -> { stack.removeAt(stack.lastIndex); position++ }
+                ',' -> { frame.key = null; frame.expectingKey = frame.isObject; position++ }
+                ':' -> { frame.expectingKey = false; position++ }
+                else -> {
+                    // Tolerate unquoted keys/values as presentation text, not as valid JSON.
+                    val start = position
+                    while (position < input.length && input[position] !in ":,{}[]\"'") position++
+                    val value = input.substring(start, position).trim()
+                    if (frame.isObject && frame.expectingKey && input.getOrNull(position) == ':') {
+                        frame.key = value
+                        position++
+                    } else if (value !in setOf("null", "true", "false") && value.toDoubleOrNull() == null) {
+                        accept(value)
+                    }
+                    frame.expectingKey = false
+                }
             }
         }
-        return response ?: error("В ответе отсутствует непустое текстовое поле reply или response")
+        return response ?: fallback.takeIf { it.isNotEmpty() }?.joinToString("\n")
+            ?: error("В ответе нет непустого текста для отображения")
     }
 
     private fun string(start: Int): Text {
@@ -83,6 +116,9 @@ internal class ChatReplyJson private constructor(private val input: String) {
     }
 
     companion object {
+        private val metadataKeys = setOf("intent", "role", "emoji", "emoticons")
+        private val protocolValues = setOf("assistant", "user", "system", "developer", "tool", "chat", "chat_reply",
+            "calendar_add", "calendar_search", "calendar_sum", "calendar_update", "calendar_delete", "calendar_delete_range")
         fun read(text: String): String = ChatReplyJson(text).reply()
     }
 }
