@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
 
@@ -124,10 +125,15 @@ internal fun CalendarDraftEditorSheet(
 ) {
     var confirmDelete by remember(draft.requestId) { mutableStateOf(false) }
     val editable = draft.isEditable && !draft.isFormatting
+    val dateFormatter = LocalUserDateTimeFormatter.current
+    val dateInput = draft.fieldText(CalendarEventField.Date).trim()
+    val dateLabel = if (dateInput.isEmpty()) "Не заполнено" else runCatching {
+        dateFormatter.eventEditorDate(CalendarTime.date(dateInput))
+    }.getOrDefault("Проверьте дату")
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f).imePadding().padding(horizontal = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Черновик события", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                Text("Дата: $dateLabel", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
                 IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Закрыть редактор") }
             }
             Text("Можно закрыть и продолжить позже", style = MaterialTheme.typography.bodySmall)

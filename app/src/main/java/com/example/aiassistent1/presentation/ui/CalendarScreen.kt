@@ -475,13 +475,15 @@ internal fun CalendarEventEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (event == null) "Новое событие" else "Изменить событие") },
+        title = {
+            Text(if (event == null) "Дата: ${LocalUserDateTimeFormatter.current.eventEditorDate(date)}" else "Изменить событие")
+        },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
+                if (event != null) Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },

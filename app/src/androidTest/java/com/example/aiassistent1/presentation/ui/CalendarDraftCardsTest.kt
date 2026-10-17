@@ -104,7 +104,7 @@ class CalendarDraftCardsTest {
             compose.onNodeWithText("Создать событие").assertIsEnabled()
             compose.onNodeWithContentDescription("Закрыть редактор").performClick()
             compose.onNodeWithText("Проверить и создать").performClick()
-            compose.onNodeWithText("Черновик события").assertExists()
+            compose.onNodeWithText("Дата: 1 октября четверг").assertExists()
             val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "calendar-draft-editor.png")
             InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().let { bitmap ->
                 screenshot.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
