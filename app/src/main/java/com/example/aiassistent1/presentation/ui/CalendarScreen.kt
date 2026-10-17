@@ -518,7 +518,7 @@ internal fun CalendarEventEditorDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Длительность, минут") },
-                    supportingText = { if (durationText.isBlank()) Text("Не заполнено") },
+                    supportingText = if (durationText.isBlank()) { { Text("Не заполнено") } } else null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                 )
@@ -538,7 +538,7 @@ internal fun CalendarEventEditorDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Окончание (ЧЧ:ММ)") },
-                    supportingText = { if (endTimeText.isBlank()) Text("Не заполнено") },
+                    supportingText = if (endTimeText.isBlank()) { { Text("Не заполнено") } } else null,
                     singleLine = true,
                 )
                 OutlinedTextField(
@@ -546,7 +546,7 @@ internal fun CalendarEventEditorDialog(
                     onValueChange = { valueText = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Ценность события") },
-                    supportingText = { if (valueText.isBlank()) Text("Не заполнено") },
+                    supportingText = if (valueText.isBlank()) { { Text("Не заполнено") } } else null,
                     singleLine = true,
                 )
                 OutlinedTextField(
@@ -554,7 +554,7 @@ internal fun CalendarEventEditorDialog(
                     onValueChange = { notesText = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Примечание") },
-                    supportingText = { if (notesText.isBlank()) Text("Не заполнено") },
+                    supportingText = if (notesText.isBlank()) { { Text("Не заполнено") } } else null,
                     minLines = 2,
                 )
                 validationError?.let { error ->

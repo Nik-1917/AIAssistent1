@@ -66,8 +66,8 @@ class CalendarNotesStorageTest {
             java.time.LocalTime.of(23, 40), null, value = 0, notes = text, endsAt = end)
         val draft = executor.execute(command, "end-create").getOrThrow() as CalendarCommandResult.AddDraft
         assertEquals(40, draft.command.durationMinutes)
-        val incomplete = executor.execute(command.copy(value = null), "missing-value").getOrThrow() as CalendarCommandResult.NeedsFields
-        assertEquals(listOf(MissingCalendarField.VALUE), incomplete.fields)
+        val withoutValue = executor.execute(command.copy(value = null), "missing-value").getOrThrow() as CalendarCommandResult.AddDraft
+        assertNull(withoutValue.command.value)
         assertTrue(executor.execute(command.copy(durationMinutes = 20), "conflict", confirmed = true).isFailure)
         assertTrue(repo.search("", 0, Long.MAX_VALUE).getOrThrow().isEmpty())
         val result = executor.execute(command, "end-create", confirmed = true).getOrThrow() as CalendarCommandResult.Completed
@@ -132,6 +132,80 @@ class CalendarNotesStorageTest {
         for (notes in listOf(null, "", "  ")) {
             assertNull(repo.create(CalendarEventDraft("Встреча", 60000, 120000, notes = notes)).getOrThrow().notes)
         }
+    }
+
+    @Test fun manualValueAndNotesSurviveReopenAndOnlyValueAffectsSum() = runTest {
+        val name = newName()
+        val database = open(name)
+        val repo = repository(database)
+        val positive = repo.create(CalendarEventDraft("Встреча", 60000, 120000, 12500, text)).getOrThrow()
+        val zero = repo.create(CalendarEventDraft("Ноль", 60000, 120000, 0)).getOrThrow()
+        val negative = repo.create(CalendarEventDraft("Возврат", 60000, 120000, -500)).getOrThrow()
+        val absent = repo.create(CalendarEventDraft("Без ценности", 60000, 120000, notes = "999999")).getOrThrow()
+        database.close()
+        val reopened = repository(open(name))
+        for (event in listOf(positive, zero, negative, absent)) {
+            assertEquals(event, reopened.getById(event.id).getOrThrow())
+        }
+        val sum = CalendarCommandExecutor(reopened).execute(CalendarCommand.Sum(null, CalendarRange(0, 180000)), "manual-sum")
+            .getOrThrow() as CalendarCommandResult.Sum
+        assertEquals(java.math.BigInteger.valueOf(12000), sum.total)
+        assertEquals(4, sum.matchedCount)
+        assertEquals(3, sum.valueCount)
+    }
+
+    @Test fun explicitClearAndRefillPreserveEventIdentityAndCreationTime() = runTest {
+        val name = newName()
+        val database = open(name)
+        val repo = repository(database)
+        val created = repo.create(CalendarEventDraft("Встреча", 60000, 120000, 17, text)).getOrThrow()
+        val cleared = repo.update(CalendarEventUpdate(created.id, created.title, 60000, 60000,
+            valueChange = CalendarValueChange.Clear, expectedRevision = created.revision, clearNotes = true)).getOrThrow()
+        assertNull(cleared.value)
+        assertNull(cleared.notes)
+        assertFalse(cleared.hasEndTime)
+        assertEquals(created.createdAtEpochMillis, cleared.createdAtEpochMillis)
+        assertEquals(created.revision + 1, cleared.revision)
+        database.close()
+        val reopened = repository(open(name))
+        assertEquals(cleared, reopened.getById(created.id).getOrThrow())
+        val filled = reopened.update(CalendarEventUpdate(created.id, created.title, 60000, 120000,
+            valueChange = CalendarValueChange.Set(0), notes = text, expectedRevision = cleared.revision)).getOrThrow()
+        assertEquals(0L, filled.value)
+        assertEquals(text, filled.notes)
+        assertTrue(filled.hasEndTime)
+        assertEquals(created.id, filled.id)
+        assertEquals(created.createdAtEpochMillis, filled.createdAtEpochMillis)
+        assertEquals(1, reopened.search("", 0, 180000).getOrThrow().size)
+    }
+
+    @Test fun startOnlyEventsAreFoundAtRangeStartButNotRangeEndAndCommitIsIdempotent() = runTest {
+        val name = newName()
+        val database = open(name)
+        val repo = repository(database)
+        val zone = java.time.ZoneOffset.UTC
+        val day = java.time.LocalDate.of(2026, 11, 1)
+        val start = CalendarTime.toEpochMillis(day.atStartOfDay(), zone)
+        val end = CalendarTime.toEpochMillis(day.plusDays(1).atStartOfDay(), zone)
+        val executor = CalendarCommandExecutor(repo, zone)
+        val command = CalendarCommand.Add("В начале месяца", day, java.time.LocalTime.MIDNIGHT, null)
+        val receipt = (executor.execute(command, "point", confirmed = true).getOrThrow() as CalendarCommandResult.Completed).receipt
+        assertEquals(receipt, (executor.execute(command, "point", confirmed = true).getOrThrow() as CalendarCommandResult.Completed).receipt)
+        val included = repo.getById(receipt.eventId).getOrThrow()!!
+        assertEquals(start, included.startsAtEpochMillis)
+        assertEquals(start, included.endsAtEpochMillis)
+        assertNull(included.value)
+        assertNull(included.notes)
+        repo.create(CalendarEventDraft("Перед периодом", start - 60000, start)).getOrThrow()
+        repo.create(CalendarEventDraft("На правой границе", end, end, 500)).getOrThrow()
+        assertEquals(listOf(included), repo.search("", start, end).getOrThrow())
+        assertEquals(listOf(included), repo.observeInRange(start, end).first())
+        val sum = executor.execute(CalendarCommand.Sum(null, CalendarRange(start, end)), "point-sum")
+            .getOrThrow() as CalendarCommandResult.Sum
+        assertEquals(1, sum.matchedCount)
+        assertEquals(0, sum.valueCount)
+        database.close()
+        assertEquals(listOf(included), repository(open(name)).search("", start, end).getOrThrow())
     }
 
     @Test fun migrateV1AndV2() = runTest {

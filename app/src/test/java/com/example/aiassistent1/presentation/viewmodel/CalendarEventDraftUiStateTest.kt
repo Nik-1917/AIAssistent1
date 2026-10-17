@@ -20,8 +20,8 @@ class CalendarEventDraftUiStateTest {
 
         assertEquals("16:00", draft.endDisplayText(ZoneOffset.UTC))
         assertNull(draft.endsAt)
-        assertEquals(CalendarEventField.Value, draft.activeField)
-        assertFalse(draft.isComplete)
+        assertNull(draft.activeField)
+        assertTrue(draft.isComplete)
         assertTrue(draft.copy(value = 0).withNextField().isComplete)
     }
 
@@ -45,7 +45,8 @@ class CalendarEventDraftUiStateTest {
 
         val withoutDuration = filled.copy(durationMinutes = null).withNextField()
         assertNull(withoutDuration.endDisplayText(ZoneOffset.UTC))
-        assertEquals(CalendarEventField.DurationMinutes, withoutDuration.activeField)
+        assertNull(withoutDuration.activeField)
+        assertTrue(withoutDuration.isComplete)
         assertEquals("15:00", withoutDuration.copy(durationMinutes = 30).withNextField().endDisplayText(ZoneOffset.UTC))
         assertNull(filled.copy(date = null).endDisplayText(ZoneOffset.UTC))
     }
@@ -63,7 +64,7 @@ class CalendarEventDraftUiStateTest {
         assertEquals(90, filled.durationMinutes)
         assertEquals("16:00", filled.endDisplayText(ZoneOffset.UTC))
         assertEquals("2026-09-18T16:00", filled.endsAt)
-        assertEquals(CalendarEventField.Value, filled.activeField)
+        assertNull(filled.activeField)
     }
 
     @Test
@@ -96,15 +97,15 @@ class CalendarEventDraftUiStateTest {
 
     @Test
     fun `notes survive field completion but are never required`() {
-        val incomplete = CalendarEventDraftUiState(
+        val withoutValue = CalendarEventDraftUiState(
             title = "Встреча", date = "2026-09-11", time = "14:30",
             durationMinutes = 20, notes = "  Текст\n12500  ",
         ).withNextField()
-        assertEquals(CalendarEventField.Value, incomplete.activeField)
-        assertFalse(incomplete.isComplete)
-        val complete = incomplete.copy(value = 0).withNextField()
+        assertNull(withoutValue.activeField)
+        assertTrue(withoutValue.isComplete)
+        val complete = withoutValue.copy(value = 0).withNextField()
         assertTrue(complete.isComplete)
-        assertEquals(incomplete.notes, complete.notes)
+        assertEquals(withoutValue.notes, complete.notes)
         assertEquals(null, complete.activeField)
         assertTrue(complete.copy(notes = null).isComplete)
     }
@@ -137,16 +138,51 @@ class CalendarEventDraftUiStateTest {
     }
 
     @Test
-    fun `requests value when the model omitted it`() {
+    fun `only title date and time are required when optional fields are omitted`() {
         val draft = CalendarEventDraftUiState(
             title = "Проверка отчёта",
             date = "2030-12-07",
             time = "15:00",
-            durationMinutes = 120,
         ).withNextField()
 
-        assertEquals(CalendarEventField.Value, draft.activeField)
-        assertFalse(draft.isComplete)
+        assertNull(draft.activeField)
+        assertTrue(draft.isComplete)
+        assertTrue(draft.missingFields.isEmpty())
+        assertNull(draft.value)
+        assertNull(draft.durationMinutes)
+        assertNull(draft.endDisplayText())
+        for (field in listOf(CalendarEventField.Title, CalendarEventField.Date, CalendarEventField.Time)) {
+            val missing = draft.copy(fieldInputs = mapOf(field to " "))
+            assertEquals(listOf(field), missing.missingFields)
+            assertFalse(missing.resolveInputs().isComplete)
+        }
+    }
+
+    @Test
+    fun `clearing optional fields removes old values and explicit end`() {
+        val draft = CalendarEventDraftUiState(
+            title = "Встреча", date = "2030-12-07", time = "15:00",
+            durationMinutes = 60, endsAt = "2030-12-07T16:00", value = 17,
+            fieldInputs = mapOf(CalendarEventField.DurationMinutes to "", CalendarEventField.Value to " "),
+        ).resolveInputs()
+        assertTrue(draft.isComplete)
+        assertNull(draft.durationMinutes)
+        assertNull(draft.endsAt)
+        assertNull(draft.value)
+    }
+
+    @Test
+    fun `populated optional fields must still be valid numbers`() {
+        val draft = CalendarEventDraftUiState(title = "Встреча", date = "2030-12-07", time = "15:00")
+        for (value in listOf("текст", "1.5", "9223372036854775808")) {
+            assertTrue(runCatching { draft.copy(fieldInputs = mapOf(CalendarEventField.Value to value)).resolveInputs() }.isFailure)
+        }
+        for (duration in listOf("0", "-1", "1.5", "2147483648")) {
+            assertTrue(runCatching { draft.copy(fieldInputs = mapOf(CalendarEventField.DurationMinutes to duration)).resolveInputs() }.isFailure)
+        }
+        for (value in listOf(0L, -17L, Long.MIN_VALUE, Long.MAX_VALUE)) {
+            assertEquals(value, draft.copy(fieldInputs = mapOf(CalendarEventField.Value to value.toString())).resolveInputs().value)
+        }
     }
 
     @Test

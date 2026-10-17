@@ -8,12 +8,12 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-enum class CalendarEventField(val label: String) {
+enum class CalendarEventField(val label: String, val isRequired: Boolean = true) {
     Title("Название события"),
     Date("Дата (ГГГГ-ММ-ДД)"),
     Time("Время (ЧЧ:ММ)"),
-    DurationMinutes("Длительность в минутах"),
-    Value("Ценность события"),
+    DurationMinutes("Длительность в минутах", isRequired = false),
+    Value("Ценность события", isRequired = false),
 }
 
 data class CalendarEventDraftUiState(
@@ -57,7 +57,7 @@ data class CalendarEventDraftUiState(
     }.getOrNull()
 
     val missingFields: List<CalendarEventField>
-        get() = CalendarEventField.entries.filter { fieldText(it).isBlank() }
+        get() = CalendarEventField.entries.filter { it.isRequired && fieldText(it).isBlank() }
 
     /** Validate every edited field together; never silently save an older valid value. */
     fun resolveInputs(): CalendarEventDraftUiState {
@@ -87,8 +87,7 @@ data class CalendarEventDraftUiState(
         get() = if (date.isNullOrBlank() || time.isNullOrBlank()) null else "$date" + "T" + "$time"
 
     val isComplete: Boolean
-        get() = !title.isNullOrBlank() && !date.isNullOrBlank() && !time.isNullOrBlank() &&
-            durationMinutes != null && value != null
+        get() = !title.isNullOrBlank() && !date.isNullOrBlank() && !time.isNullOrBlank()
 
     // Display-only: keep the model's explicit endpoint separate from a derived end.
     // Use elapsed minutes, matching CalendarCommandExecutor when saving the event.
@@ -142,8 +141,6 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
         title.isNullOrBlank() -> CalendarEventField.Title
         date.isNullOrBlank() -> CalendarEventField.Date
         time.isNullOrBlank() -> CalendarEventField.Time
-        resolvedDuration == null -> CalendarEventField.DurationMinutes
-        value == null -> CalendarEventField.Value
         else -> null
     }
     return copy(durationMinutes = resolvedDuration, activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)

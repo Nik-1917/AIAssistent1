@@ -33,7 +33,7 @@ sealed interface CalendarMutation {
 data class CalendarReceipt(val requestId: String, val kind: String, val eventId: String, val title: String, val notes: String? = null)
 class CalendarConflictException : IllegalStateException("Событие изменилось после выбора. Повторите запрос с актуальными данными.")
 
-enum class MissingCalendarField { TITLE, TIME, DURATION, VALUE, QUERY, RANGE }
+enum class MissingCalendarField { TITLE, TIME, QUERY, RANGE }
 
 sealed interface CalendarCommandResult {
     data class NeedsFields(val command: CalendarCommand, val fields: List<MissingCalendarField>) : CalendarCommandResult
@@ -67,8 +67,6 @@ class CalendarCommandExecutor(
                 val missing = buildList {
                     if (command.title == null) add(MissingCalendarField.TITLE)
                     if (command.time == null) add(MissingCalendarField.TIME)
-                    if (duration == null && command.endsAt == null) add(MissingCalendarField.DURATION)
-                    if (command.value == null) add(MissingCalendarField.VALUE)
                 }
                 if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(resolved, missing)
                 else if (!confirmed) CalendarCommandResult.AddDraft(resolved)
@@ -76,7 +74,8 @@ class CalendarCommandExecutor(
                     val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), zoneId)
                     val draft = CalendarEventDraft(command.title!!, start,
                         command.endsAt?.let { CalendarTime.toEpochMillis(it, zoneId) }
-                            ?: Math.addExact(start, Math.multiplyExact(duration!!.toLong(), 60_000L)), command.value, command.notes)
+                            ?: duration?.let { Math.addExact(start, Math.multiplyExact(it.toLong(), 60_000L)) }
+                            ?: start, command.value, command.notes)
                     CalendarCommandResult.Completed(repository.commit(requestId, CalendarMutation.Create(draft)).getOrThrow())
                 }
             }

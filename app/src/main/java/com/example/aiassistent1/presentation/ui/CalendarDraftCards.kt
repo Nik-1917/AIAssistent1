@@ -68,7 +68,8 @@ internal fun CalendarDraftCard(draft: CalendarEventDraftUiState, onOpen: () -> U
                 Text("Не указаны: ${draft.missingFields.joinToString { it.shortLabel() }}", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    "${draft.fieldText(CalendarEventField.DurationMinutes)} мин · Ценность: ${draft.fieldText(CalendarEventField.Value)}",
+                    "Длительность: ${draft.fieldText(CalendarEventField.DurationMinutes).let { if (it.isBlank()) "Не заполнено" else "$it мин" }} · " +
+                        "Ценность: ${draft.fieldText(CalendarEventField.Value).ifBlank { "Не заполнено" }}",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -137,6 +138,9 @@ internal fun CalendarDraftEditorSheet(
                             value = draft.fieldText(field), onValueChange = { onValueChange(field, it) },
                             label = { Text(field.label) }, modifier = Modifier.fillMaxWidth(),
                             singleLine = true, enabled = editable,
+                            supportingText = if (!field.isRequired && draft.fieldText(field).isBlank()) {
+                                { Text("Не заполнено") }
+                            } else null,
                             trailingIcon = {
                                 Row {
                                     if (field != CalendarEventField.Title && draft.fieldText(field).isNotBlank()) {
@@ -163,6 +167,7 @@ internal fun CalendarDraftEditorSheet(
                     OutlinedTextField(
                         value = draft.notes.orEmpty(), onValueChange = onNotesChange, enabled = editable,
                         label = { Text("Примечание (необязательно)") }, modifier = Modifier.fillMaxWidth(), minLines = 2,
+                        supportingText = if (draft.notes.isNullOrBlank()) { { Text("Не заполнено") } } else null,
                     )
                 }
                 item {

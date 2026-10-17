@@ -153,7 +153,7 @@ class CalendarDraftControllerTest {
         assertNull(controller.find("a"))
     }
 
-    @Test fun `invalid or blank edits never save the previous valid values`() = runTest {
+    @Test fun `invalid input and blank required fields never save previous valid values`() = runTest {
         val controller = CalendarDraftController(Repository(), this)
         controller.add(draft("a")); runCurrent()
         controller.edit("a", CalendarEventField.Time, "25:99")
@@ -161,10 +161,42 @@ class CalendarDraftControllerTest {
         assertNotNull(controller.find("a")!!.error)
         assertFalse(controller.find("a")!!.saveRequested)
         controller.edit("a", CalendarEventField.Time, "15:00")
-        controller.edit("a", CalendarEventField.Value, "")
+        controller.edit("a", CalendarEventField.Value, "не число")
         controller.save("a") { error("Must not commit") }; runCurrent()
         assertNotNull(controller.find("a")!!.error)
-        assertEquals("", controller.find("a")!!.fieldText(CalendarEventField.Value))
+        assertEquals("не число", controller.find("a")!!.fieldText(CalendarEventField.Value))
+        controller.edit("a", CalendarEventField.Value, "")
+        controller.edit("a", CalendarEventField.Time, "")
+        controller.save("a") { error("Must not commit") }; runCurrent()
+        assertNotNull(controller.find("a")!!.error)
+        assertFalse(controller.find("a")!!.saveRequested)
+    }
+
+    @Test fun `cleared optional fields remain absent through save and restoration`() = runTest {
+        val repository = Repository()
+        val controller = CalendarDraftController(repository, this)
+        controller.add(draft("optional").copy(endsAt = "2026-10-01T16:00", notes = "Прежний текст"))
+        runCurrent()
+        controller.edit("optional", CalendarEventField.DurationMinutes, "")
+        controller.edit("optional", CalendarEventField.Value, "")
+        controller.editNotes("optional", "")
+        controller.save("optional") {
+            assertTrue(it.isComplete)
+            assertNull(it.durationMinutes)
+            assertNull(it.endsAt)
+            assertNull(it.value)
+            assertNull(it.notes)
+            "event-optional"
+        }
+        runCurrent()
+        val restored = CalendarDraftController(repository, this)
+        runCurrent()
+        val saved = restored.find("optional")!!
+        assertEquals("event-optional", saved.savedEventId)
+        assertNull(saved.value)
+        assertNull(saved.notes)
+        assertNull(saved.durationMinutes)
+        assertNull(saved.endsAt)
     }
 
     @Test fun `read failure is surfaced without overwriting persisted data`() = runTest {

@@ -29,6 +29,21 @@ import java.util.UUID
 class CalendarDraftCardsTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun minimalDraftShowsEmptyOptionalFieldsAndAllowsCreation() {
+        var createClicks = 0
+        val draft = CalendarEventDraftUiState(requestId = "minimal", title = "Встреча", date = "2030-09-12", time = "09:00")
+        compose.setContent {
+            MaterialTheme {
+                CalendarDraftEditorSheet(draft, onValueChange = { _, _ -> }, onNotesChange = {}, onFormat = {},
+                    onVoiceInput = {}, onCreate = { createClicks++ }, onDelete = {}, onDismiss = {})
+            }
+        }
+        compose.onNodeWithText("Создать событие").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, createClicks) }
+        compose.onNode(hasSetTextAction() and hasText("Ценность события")).performScrollTo()
+        compose.onNode(hasSetTextAction() and hasText("Примечание (необязательно)")).performScrollTo()
+    }
+
     @Test fun notesAreVisibleInBothDraftAndSavedCards() {
         var current by androidx.compose.runtime.mutableStateOf(CalendarEventDraftUiState(
             requestId = "notes", title = "Встреча с Анной", date = "2026-10-12", time = "15:00",
@@ -51,7 +66,7 @@ class CalendarDraftCardsTest {
         val controller = CalendarDraftController(repository, scope)
         try {
             controller.add(CalendarEventDraftUiState(
-                requestId = "a", title = "Встреча с Иваном", date = "2026-10-01", time = "15:00", durationMinutes = 60,
+                requestId = "a", title = "Встреча с Иваном", date = "2026-10-01", durationMinutes = 60,
             ))
             compose.setContent {
                 val state by controller.state.collectAsState()
@@ -83,7 +98,7 @@ class CalendarDraftCardsTest {
             compose.onNodeWithContentDescription("Закрыть редактор").performClick()
             compose.onNodeWithText("Черновики · 2").assertExists()
             compose.onNodeWithText("Купить лекарства").assertExists()
-            compose.onAllNodesWithText("Дополнить")[0].performClick()
+            compose.onNodeWithText("Проверить и создать").performClick()
             compose.onNode(hasSetTextAction() and hasText("17:45")).assertExists()
             compose.onNode(hasSetTextAction() and hasText("Ценность события")).performScrollTo().performTextReplacement("0")
             compose.onNodeWithText("Создать событие").assertIsEnabled()

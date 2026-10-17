@@ -61,7 +61,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                     resolved.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
                 }
                 val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
-                CalendarAddParams(p.string("title", allowEmpty = true)?.ifBlank { "Событие" }, start, duration,
+                CalendarAddParams(p.string("title", allowEmpty = true)?.takeIf { it.isNotBlank() }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
                     p.eventValue("priority"), p.notes(), end)
             }

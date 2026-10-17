@@ -91,7 +91,9 @@ class RoomCalendarEventRepository(
 
     private fun validate(title: String, startsAtEpochMillis: Long, endsAtEpochMillis: Long) {
         require(title.isNotBlank()) { "Event title must not be blank." }
-        validateRange(startsAtEpochMillis, endsAtEpochMillis)
+        require(startsAtEpochMillis <= endsAtEpochMillis) {
+            "The event end must not be earlier than its start."
+        }
     }
 
     private fun validateRange(startEpochMillis: Long, endEpochMillis: Long) {

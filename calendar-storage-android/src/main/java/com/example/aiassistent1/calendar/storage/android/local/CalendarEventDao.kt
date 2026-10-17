@@ -21,7 +21,8 @@ abstract class CalendarEventDao {
         """
         SELECT * FROM calendar_events
         WHERE startsAtEpochMillis < :rangeEndEpochMillis
-          AND endsAtEpochMillis > :rangeStartEpochMillis
+          AND (endsAtEpochMillis > :rangeStartEpochMillis
+               OR (endsAtEpochMillis = startsAtEpochMillis AND startsAtEpochMillis >= :rangeStartEpochMillis))
         ORDER BY startsAtEpochMillis ASC, id ASC
         """,
     )
@@ -40,7 +41,8 @@ abstract class CalendarEventDao {
         """
         SELECT * FROM calendar_events
         WHERE startsAtEpochMillis < :rangeEndEpochMillis
-          AND endsAtEpochMillis > :rangeStartEpochMillis
+          AND (endsAtEpochMillis > :rangeStartEpochMillis
+               OR (endsAtEpochMillis = startsAtEpochMillis AND startsAtEpochMillis >= :rangeStartEpochMillis))
         ORDER BY startsAtEpochMillis ASC, id ASC
         """,
     )
@@ -57,12 +59,12 @@ abstract class CalendarEventDao {
 
     @Transaction
     open suspend fun updateChecked(update: CalendarEventUpdate, now: Long): CalendarEventEntity {
-        require(update.title.isNotBlank() && update.startsAtEpochMillis < update.endsAtEpochMillis)
+        require(update.title.isNotBlank() && update.startsAtEpochMillis <= update.endsAtEpochMillis)
         val existing = getById(update.id) ?: throw NoSuchElementException("Событие не найдено")
         if (update.expectedRevision != null && existing.revision != update.expectedRevision) throw CalendarConflictException()
         val changed = existing.copy(title = update.title.trim(), startsAtEpochMillis = update.startsAtEpochMillis,
             endsAtEpochMillis = update.endsAtEpochMillis, value = update.valueChange.applyTo(existing.value),
-            notes = update.notes?.takeIf { it.isNotBlank() } ?: existing.notes,
+            notes = if (update.clearNotes) null else update.notes?.takeIf { it.isNotBlank() } ?: existing.notes,
             updatedAtEpochMillis = now, revision = Math.addExact(existing.revision, 1))
         check(update(changed) == 1) { "Событие не обновлено" }
         return changed
@@ -77,7 +79,7 @@ abstract class CalendarEventDao {
         when (mutation) {
             is CalendarMutation.Create -> {
                 val draft = mutation.draft
-                require(draft.title.isNotBlank() && draft.startsAtEpochMillis < draft.endsAtEpochMillis)
+                require(draft.title.isNotBlank() && draft.startsAtEpochMillis <= draft.endsAtEpochMillis)
                 event = CalendarEventEntity(newId, draft.title.trim(), draft.startsAtEpochMillis,
                     draft.endsAtEpochMillis, now, now, draft.value, notes = draft.notes?.takeIf { it.isNotBlank() })
                 insert(event)

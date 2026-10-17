@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
 import com.example.aiassistent1.calendar.core.domain.CalendarEventDraft
 import com.example.aiassistent1.calendar.core.domain.CalendarEventUpdate
+import com.example.aiassistent1.calendar.core.domain.CalendarValueChange
 import com.example.aiassistent1.calendar.core.domain.CreateCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.DeleteCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
@@ -117,9 +118,16 @@ class CalendarViewModel(
         refreshRequests.value = requestId
     }
 
-    fun createEvent(title: String, date: LocalDate, startTime: LocalTime, endTime: LocalTime) {
+    fun createEvent(
+        title: String,
+        date: LocalDate,
+        startTime: LocalTime,
+        endTime: LocalTime?,
+        value: Long?,
+        notes: String?,
+    ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime, value, notes).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -134,10 +142,12 @@ class CalendarViewModel(
         title: String,
         date: LocalDate,
         startTime: LocalTime,
-        endTime: LocalTime,
+        endTime: LocalTime?,
+        value: Long?,
+        notes: String?,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime, value, notes).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -147,6 +157,9 @@ class CalendarViewModel(
                     title = draft.title,
                     startsAtEpochMillis = draft.startsAtEpochMillis,
                     endsAtEpochMillis = draft.endsAtEpochMillis,
+                    valueChange = value?.let(CalendarValueChange::Set) ?: CalendarValueChange.Clear,
+                    notes = draft.notes,
+                    clearNotes = draft.notes == null,
                 ),
             ).onSuccess {
                 mutableUiState.update { it.copy(snackbarMessage = "Событие изменено") }
@@ -192,16 +205,22 @@ class CalendarViewModel(
         title: String,
         date: LocalDate,
         startTime: LocalTime,
-        endTime: LocalTime,
+        endTime: LocalTime?,
+        value: Long?,
+        notes: String?,
     ): Result<CalendarEventDraft> = runCatching {
-        val endDate = resolveCalendarEndDate(date, startTime, endTime)
+        require(title.isNotBlank()) { "Введите название события." }
         val start = LocalDateTime.of(date, startTime).toEpochMillis()
-        val end = LocalDateTime.of(endDate, endTime).toEpochMillis()
-        require(end > start) { "Окончание события должно быть позже начала." }
+        val end = endTime?.let {
+            LocalDateTime.of(resolveCalendarEndDate(date, startTime, it), it).toEpochMillis()
+                .also { end -> require(end > start) { "Окончание события должно быть позже начала." } }
+        } ?: start
         CalendarEventDraft(
             title = title,
             startsAtEpochMillis = start,
             endsAtEpochMillis = end,
+            value = value,
+            notes = notes?.takeIf { it.isNotBlank() },
         )
     }
 

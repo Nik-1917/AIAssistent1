@@ -1,6 +1,6 @@
 package com.example.aiassistent1.calendar.core.domain
 
-/** A locally stored calendar event. All timestamps are UTC epoch milliseconds. */
+/** UTC timestamps. Equal start/end represents an event whose end was not specified. */
 data class CalendarEvent(
     val id: String,
     val title: String,
@@ -11,7 +11,9 @@ data class CalendarEvent(
     val value: Long? = null,
     val revision: Long = 0,
     val notes: String? = null,
-)
+) {
+    val hasEndTime: Boolean get() = endsAtEpochMillis > startsAtEpochMillis
+}
 
 data class CalendarEventDraft(
     val title: String,
@@ -30,6 +32,8 @@ data class CalendarEventUpdate(
     val expectedRevision: Long? = null,
     /** Null or blank preserves the stored notes. */
     val notes: String? = null,
+    /** An explicit editor action; omitted notes alone must never erase stored text. */
+    val clearNotes: Boolean = false,
 )
 
 sealed interface CalendarValueChange {

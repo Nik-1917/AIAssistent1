@@ -108,7 +108,7 @@ class RoomCalendarEventRepositoryInstrumentedTest {
     @Test
     fun `rejects invalid event data`() = runTest {
         val blankTitle = repository.create(CalendarEventDraft(" ", 10L, 20L))
-        val invertedRange = repository.create(CalendarEventDraft("Meeting", 20L, 20L))
+        val invertedRange = repository.create(CalendarEventDraft("Meeting", 20L, 10L))
 
         assertTrue(blankTitle.isFailure)
         assertTrue(invertedRange.isFailure)

@@ -23,20 +23,30 @@ class CalendarNotesCommandTest {
         assertEquals(1, result.valueCount)
     }
 
-    @Test fun `notes are optional and do not satisfy missing value`() = runTest {
+    @Test fun `duration value and notes are optional and explicit zero stays zero`() = runTest {
         for (notes in listOf(null, "", "Текст 12500")) {
+          for (value in listOf(null, 0L, -17L)) {
             val repository = RecordingRepository()
             val executor = CalendarCommandExecutor(repository, ZoneOffset.UTC)
-            val command = CalendarCommand.Add("Встреча", LocalDate.of(2026, 9, 11), LocalTime.of(14, 30), 20, notes = notes)
-            val incomplete = executor.execute(command, "request", confirmed = true).getOrThrow() as CalendarCommandResult.NeedsFields
-            assertEquals(listOf(MissingCalendarField.VALUE), incomplete.fields)
+            val command = CalendarCommand.Add("Встреча", LocalDate.of(2026, 9, 11), LocalTime.of(14, 30), null, value, notes)
+            assertTrue(executor.execute(command, "request").getOrThrow() is CalendarCommandResult.AddDraft)
             assertNull(repository.created)
-            assertTrue(executor.execute(command.copy(value = 0), "request").getOrThrow() is CalendarCommandResult.AddDraft)
-            assertNull(repository.created)
-            executor.execute(command.copy(value = 0), "request", confirmed = true).getOrThrow()
+            executor.execute(command, "request", confirmed = true).getOrThrow()
             assertEquals(notes, repository.created!!.notes)
-            assertEquals(0L, repository.created!!.value)
+            assertEquals(value, repository.created!!.value)
+            assertEquals(repository.created!!.startsAtEpochMillis, repository.created!!.endsAtEpochMillis)
+          }
         }
+    }
+
+    @Test fun `title and start time remain mandatory`() = runTest {
+        val repository = RecordingRepository()
+        val command = CalendarCommand.Add(null, LocalDate.of(2026, 9, 11), null, null)
+        val result = CalendarCommandExecutor(repository).execute(command, "missing", confirmed = true)
+            .getOrThrow() as CalendarCommandResult.NeedsFields
+        assertEquals(listOf(MissingCalendarField.TITLE, MissingCalendarField.TIME), result.fields)
+        assertNull(repository.created)
+        assertTrue(CalendarCommandExecutor(repository).execute(command.copy(title = " "), "blank", confirmed = true).isFailure)
     }
 
     private class RecordingRepository(private val events: List<CalendarEvent> = emptyList()) : CalendarEventRepository {

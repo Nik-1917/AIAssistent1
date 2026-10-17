@@ -12,7 +12,7 @@ class CalendarEndTimeTest {
     private val parser = AssistantResponseParser(ZoneOffset.UTC)
     private fun parse(fields: String) = parser.parseResult("""{"intent":"calendar_add","reply":"Событие","params":{$fields}}""")
 
-    @Test fun `endpoints derive duration while retaining optional notes and required value`() {
+    @Test fun `endpoints derive duration while notes and value remain optional`() {
         val params = parse(""""title":"Встреча","starts_at":"2026-09-11T14:30","ends_at":"2026-09-11T15:00","notes":"Текст"""").getOrThrow().params as CalendarAddParams
         assertEquals(30, params.durationMin)
         assertEquals("2026-09-11T15:00", params.endsAt)
@@ -23,7 +23,8 @@ class CalendarEndTimeTest {
         val draft = CalendarEventDraftUiState(title = params.title, date = "2026-09-11", time = "14:30",
             endsAt = params.endsAt, notes = params.notes).withNextField()
         assertEquals(30, draft.durationMinutes)
-        assertEquals(CalendarEventField.Value, draft.activeField)
+        assertNull(draft.activeField)
+        assertTrue(draft.isComplete)
         assertTrue(draft.copy(value = 0).withNextField().isComplete)
     }
 
@@ -40,10 +41,17 @@ class CalendarEndTimeTest {
 
     @Test fun `date with shorthand endpoints derives duration and normalizes end`() {
         val params = parse(""""title":"","date":"2026-09-15","starts_at":"14:15","ends_at":"18:19","value":18""").getOrThrow().params as CalendarAddParams
-        assertEquals("Событие", params.title)
+        assertNull(params.title)
         assertEquals("14:15", params.time)
         assertEquals("2026-09-15T18:19", params.endsAt)
         assertEquals(244, params.durationMin)
+        val draft = CalendarEventDraftUiState(
+            title = params.title, date = params.date, time = params.time,
+            durationMinutes = params.durationMin, value = params.value, endsAt = params.endsAt,
+        ).withNextField()
+        assertEquals(CalendarEventField.Title, draft.activeField)
+        assertEquals(listOf(CalendarEventField.Title), draft.missingFields)
+        assertFalse(draft.isComplete)
     }
 
     @Test fun `shorthand end before start rolls over to the following day`() {
@@ -59,7 +67,8 @@ class CalendarEndTimeTest {
         assertEquals(CalendarEventField.Time, draft.activeField)
         val filled = draft.copy(time = "14:30").withNextField()
         assertEquals(30, filled.durationMinutes)
-        assertEquals(CalendarEventField.Value, filled.activeField)
+        assertNull(filled.activeField)
+        assertTrue(filled.isComplete)
     }
 
     @Test fun `rejects reversed equal conflicting malformed and excessive intervals`() {
