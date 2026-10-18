@@ -103,7 +103,13 @@ class SpeechPlaybackController(
                 }
                 val result = speechPlayback.speakWhenReady(normalizedText,
                     awaitReady = { withContext(Dispatchers.Main.immediate) { awaitInputReady() } }) {
-                    if (activeSessionId == sessionId) mutableState.value = SpeechPlaybackState.Playing
+                    // The player reports startup from its audio thread; service sessions belong to Main.
+                    scope.launch {
+                        if (activeSessionId == sessionId && backgroundSession === session) {
+                            mutableState.value = SpeechPlaybackState.Playing
+                            session?.markPlaybackStarted()
+                        }
+                    }
                 }
                 if (!isActive || activeSessionId != sessionId) return@launch
                 result.getOrThrow()

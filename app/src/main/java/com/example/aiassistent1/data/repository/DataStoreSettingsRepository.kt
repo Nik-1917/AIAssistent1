@@ -80,6 +80,7 @@ class DataStoreSettingsRepository(
     private val compactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
     private val orientationLockedKey = booleanPreferencesKey("screen_orientation_locked")
     private val screenOrientationKey = stringPreferencesKey("screen_orientation")
+    private val proximityScreenOffEnabledKey = booleanPreferencesKey("proximity_screen_off_enabled")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
@@ -264,12 +265,17 @@ class DataStoreSettingsRepository(
             orientation = ScreenOrientation.entries.firstOrNull {
                 it.name == preferences[screenOrientationKey]
             } ?: ScreenOrientation.PORTRAIT,
+            proximityScreenOffEnabled = preferences[proximityScreenOffEnabledKey] ?: true,
         )
     }.distinctUntilChanged()
 
     override suspend fun setOrientationLocked(locked: Boolean) {
         // Keep the chosen orientation when the lock is disabled.
         dataStore.edit { it[orientationLockedKey] = locked }
+    }
+
+    override suspend fun setProximityScreenOffEnabled(enabled: Boolean) {
+        dataStore.edit { it[proximityScreenOffEnabledKey] = enabled }
     }
 
     override suspend fun setScreenOrientation(orientation: ScreenOrientation) {

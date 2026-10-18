@@ -70,10 +70,8 @@ class BackgroundWorkInstrumentedTest {
                 }
                 assertTrue(runningService()?.foreground == true)
                 assertTrue(hasActiveLock("aiassistent1:assistantCpu"))
-                val power = context.getSystemService(PowerManager::class.java)
-                if (power.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
-                    assertTrue(hasActiveLock("aiassistent1:assistantProximity"))
-                }
+                // Acquiring a speech session only starts preparation, not listening.
+                assertFalse(hasActiveLock("aiassistent1:assistantProximity"))
             } finally {
                 withContext(Dispatchers.Main) { generation?.close(); speech?.close() }
             }

@@ -1155,6 +1155,7 @@ fun ChatScreen(
                 screenPreferences = uiState.screenPreferences,
                 onOrientationLockedChange = viewModel::setOrientationLocked,
                 onScreenOrientationChange = viewModel::setScreenOrientation,
+                onProximityScreenOffChange = viewModel::setProximityScreenOffEnabled,
                 smoothResponseEnabled = uiState.smoothResponseEnabled,
                 dialogueModeEnabled = uiState.dialogueModeEnabled,
                 autoPlaybackEnabled = uiState.autoPlaybackEnabled,
@@ -2119,6 +2120,7 @@ fun ModelSettingsDialog(
     screenPreferences: ScreenPreferences? = null,
     onOrientationLockedChange: (Boolean) -> Unit = {},
     onScreenOrientationChange: (ScreenOrientation) -> Unit = {},
+    onProximityScreenOffChange: (Boolean) -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2442,6 +2444,7 @@ fun ModelSettingsDialog(
                         preferences = screenPreferences,
                         onOrientationLockedChange = onOrientationLockedChange,
                         onOrientationChange = onScreenOrientationChange,
+                        onProximityScreenOffChange = onProximityScreenOffChange,
                     )
                 }
 

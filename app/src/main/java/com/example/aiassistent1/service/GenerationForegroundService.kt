@@ -10,17 +10,47 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import androidx.annotation.MainThread
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.aiassistent1.MainActivity
 import com.example.aiassistent1.R
+import com.example.aiassistent1.di.AppModule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /** Keeps user-started work alive across screen-off and activity background transitions. */
 class GenerationForegroundService : Service() {
     private var cpuLock: PowerManager.WakeLock? = null
     private var proximityLock: PowerManager.WakeLock? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    // Wait for storage so a saved "off" never briefly enables the sensor on startup.
+    private var proximityScreenOffEnabled = false
+
+    override fun onCreate() {
+        super.onCreate()
+        scope.launch {
+            AppModule.provideSettingsRepository(applicationContext).screenPreferences
+                .map { it.proximityScreenOffEnabled }
+                .distinctUntilChanged()
+                .catch { error ->
+                    Log.w("GenerationForeground", "Не удалось прочитать настройку погашения экрана", error)
+                    emit(false)
+                }
+                .collect { enabled ->
+                    proximityScreenOffEnabled = enabled
+                    updateProximityLock()
+                }
+        }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         instance = this
@@ -67,21 +97,36 @@ class GenerationForegroundService : Service() {
             cpuLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName:assistantCpu")
                 .apply { setReferenceCounted(false); acquire() }
         }
+        updateProximityLock()
+        sessions.forEach { it.ready.complete(Unit) }
+    }
+
+    private fun updateProximityLock() {
+        val playing = sessions.any { it.kind == Kind.Speech && it.playbackStarted }
+        if (!proximityScreenOffEnabled || !playing) {
+            releaseProximityLock()
+            return
+        }
+        val power = getSystemService(PowerManager::class.java)
         if (proximityLock == null && power.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
             proximityLock = power.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "$packageName:assistantProximity")
                 .apply { setReferenceCounted(false); acquire() }
         }
-        sessions.forEach { it.ready.complete(Unit) }
+    }
+
+    private fun releaseProximityLock() {
+        proximityLock?.let { if (it.isHeld) it.release() }
+        proximityLock = null
     }
 
     private fun releaseLocks() {
-        proximityLock?.let { if (it.isHeld) it.release() }
-        proximityLock = null
+        releaseProximityLock()
         cpuLock?.let { if (it.isHeld) it.release() }
         cpuLock = null
     }
 
     override fun onDestroy() {
+        scope.cancel()
         if (instance === this) {
             instance = null
             sessions.forEach { it.ready.completeExceptionally(IllegalStateException("Фоновый сервис остановлен")) }
@@ -95,7 +140,17 @@ class GenerationForegroundService : Service() {
 
     class Session internal constructor(internal val kind: Kind) : AutoCloseable {
         internal val ready = CompletableDeferred<Unit>()
+        internal var playbackStarted = false
+            private set
         suspend fun awaitReady() = ready.await()
+
+        /** Speech preparation keeps the CPU awake; proximity begins only with audio playback. */
+        @MainThread
+        fun markPlaybackStarted() {
+            if (kind != Kind.Speech || this !in sessions || playbackStarted) return
+            playbackStarted = true
+            instance?.updateProximityLock()
+        }
 
         @MainThread
         override fun close() {

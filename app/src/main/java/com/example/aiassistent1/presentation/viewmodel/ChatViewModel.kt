@@ -1370,6 +1370,10 @@ class ChatViewModel(
         viewModelScope.launch { settingsRepository.setScreenOrientation(orientation) }
     }
 
+    fun setProximityScreenOffEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setProximityScreenOffEnabled(enabled) }
+    }
+
     fun setSmoothResponseEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSmoothResponseEnabled(enabled)

@@ -33,19 +33,24 @@ class ScreenSettingsTest {
                     preferences.value,
                     onOrientationLockedChange = { preferences.value = preferences.value.copy(orientationLocked = it) },
                     onOrientationChange = { preferences.value = preferences.value.copy(orientation = it) },
+                    onProximityScreenOffChange = { preferences.value = preferences.value.copy(proximityScreenOffEnabled = it) },
                 )
             }
         }
         val lock = compose.onNodeWithContentDescription("Фиксация ориентации")
         val orientation = compose.onNodeWithContentDescription("Ориентация экрана")
+        val proximity = compose.onNodeWithContentDescription("Гасить экран у уха")
+        proximity.assertIsEnabled().assertIsOn()
         orientation.assertIsNotEnabled().assertIsOff().performTouchInput { click() }
         compose.runOnIdle { assertEquals(ScreenPreferences(), preferences.value) }
+        proximity.performClick().assertIsOff()
 
         lock.performClick()
         orientation.assertIsEnabled().performClick().assertIsOn()
         compose.onNodeWithText("Горизонтально").assertExists()
         lock.performClick()
         orientation.assertIsNotEnabled().assertIsOn().performTouchInput { click() }
+        proximity.assertIsEnabled().assertIsOff().performClick().assertIsOn()
         compose.runOnIdle { assertEquals(ScreenOrientation.LANDSCAPE, preferences.value.orientation) }
         lock.performClick()
         orientation.assertIsEnabled().assertIsOn().performClick().assertIsOff()
@@ -56,11 +61,12 @@ class ScreenSettingsTest {
     fun controlsWaitForSavedPreferences() {
         compose.setContent {
             MaterialTheme {
-                ScreenSettingsControls(null, {}, {})
+                ScreenSettingsControls(null, {}, {}, {})
             }
         }
         compose.onNodeWithContentDescription("Фиксация ориентации").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Ориентация экрана").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Гасить экран у уха").assertIsNotEnabled()
     }
 
     @Test

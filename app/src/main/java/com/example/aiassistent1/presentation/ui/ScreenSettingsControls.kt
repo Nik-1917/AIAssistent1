@@ -22,12 +22,33 @@ internal fun ScreenSettingsControls(
     preferences: ScreenPreferences?,
     onOrientationLockedChange: (Boolean) -> Unit,
     onOrientationChange: (ScreenOrientation) -> Unit,
+    onProximityScreenOffChange: (Boolean) -> Unit,
 ) {
     val locked = preferences?.orientationLocked == true
     val landscape = preferences?.orientation == ScreenOrientation.LANDSCAPE
     val orientationLabel = if (landscape) "Горизонтально" else "Вертикально"
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Гасить экран у уха")
+                Text(
+                    "Во время прослушивания",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = preferences?.proximityScreenOffEnabled ?: true,
+                onCheckedChange = onProximityScreenOffChange,
+                enabled = preferences != null,
+                modifier = Modifier.semantics { contentDescription = "Гасить экран у уха" },
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

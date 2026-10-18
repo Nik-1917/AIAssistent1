@@ -8,4 +8,5 @@ enum class ScreenOrientation {
 data class ScreenPreferences(
     val orientationLocked: Boolean = false,
     val orientation: ScreenOrientation = ScreenOrientation.PORTRAIT,
+    val proximityScreenOffEnabled: Boolean = true,
 )

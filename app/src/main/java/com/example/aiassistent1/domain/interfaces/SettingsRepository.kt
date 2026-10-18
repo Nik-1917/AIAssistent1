@@ -43,10 +43,11 @@ interface SettingsRepository {
     val compactDatesEnabled: StateFlow<Boolean>
     suspend fun setCompactDatesEnabled(enabled: Boolean)
 
-    /** Emits the saved pair together, without a temporary default snapshot. */
+    /** Emits saved screen settings together, without a temporary default snapshot. */
     val screenPreferences: Flow<ScreenPreferences>
     suspend fun setOrientationLocked(locked: Boolean)
     suspend fun setScreenOrientation(orientation: ScreenOrientation)
+    suspend fun setProximityScreenOffEnabled(enabled: Boolean)
 
     val smoothResponseEnabled: StateFlow<Boolean>
     suspend fun setSmoothResponseEnabled(enabled: Boolean)

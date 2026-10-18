@@ -14,10 +14,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -32,6 +35,7 @@ class ScreenPreferencesRepositoryTest {
         val repository = DataStoreSettingsRepository(store, backgroundScope)
 
         assertEquals(ScreenPreferences(), repository.screenPreferences.first())
+        assertTrue(repository.screenPreferences.first().proximityScreenOffEnabled)
         assertEquals(emptyMap<Any, Any>(), store.data.first().asMap())
     }
 
@@ -41,6 +45,7 @@ class ScreenPreferencesRepositoryTest {
         val store = TestPreferencesDataStore(preferencesOf(
             booleanPreferencesKey("screen_orientation_locked") to true,
             stringPreferencesKey("screen_orientation") to "LANDSCAPE",
+            booleanPreferencesKey("proximity_screen_off_enabled") to false,
         ), readGate)
         val repository = DataStoreSettingsRepository(store, backgroundScope)
         val first = async { repository.screenPreferences.first() }
@@ -48,7 +53,7 @@ class ScreenPreferencesRepositoryTest {
         assertFalse(first.isCompleted)
 
         readGate.complete(Unit)
-        assertEquals(ScreenPreferences(true, ScreenOrientation.LANDSCAPE), first.await())
+        assertEquals(ScreenPreferences(true, ScreenOrientation.LANDSCAPE, false), first.await())
     }
 
     @Test
@@ -103,6 +108,48 @@ class ScreenPreferencesRepositoryTest {
     }
 
     @Test
+    fun `proximity changes are emitted immediately and stay independent of orientation`() = runTest {
+        val repository = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
+        val observed = mutableListOf<ScreenPreferences>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.screenPreferences.collect { observed += it }
+        }
+        assertEquals(listOf(ScreenPreferences()), observed)
+
+        repository.setProximityScreenOffEnabled(false)
+        assertEquals(ScreenPreferences(proximityScreenOffEnabled = false), observed.last())
+        repository.setOrientationLocked(true)
+        repository.setScreenOrientation(ScreenOrientation.LANDSCAPE)
+        repository.setOrientationLocked(false)
+        assertEquals(ScreenPreferences(false, ScreenOrientation.LANDSCAPE, false), observed.last())
+
+        repository.setProximityScreenOffEnabled(true)
+        assertEquals(ScreenPreferences(false, ScreenOrientation.LANDSCAPE, true), observed.last())
+    }
+
+    @Test
+    fun `both proximity values survive reopening the preferences file`() = runTest {
+        for (enabled in listOf(false, true)) {
+            val savedStore = TestPreferencesDataStore()
+            val writer = DataStoreSettingsRepository(savedStore, backgroundScope)
+            writer.setProximityScreenOffEnabled(enabled)
+
+            val file = File(temporaryFolder.newFolder(), "screen-settings.preferences_pb")
+            val writerJob = Job(backgroundScope.coroutineContext[Job])
+            val writerStore = PreferenceDataStoreFactory.create(
+                scope = CoroutineScope(backgroundScope.coroutineContext + writerJob),
+                produceFile = { file },
+            )
+            writerStore.updateData { savedStore.data.first() }
+            writerJob.cancelAndJoin()
+
+            val readerStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+            val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
+            assertEquals(ScreenPreferences(proximityScreenOffEnabled = enabled), reader.screenPreferences.first())
+        }
+    }
+
+    @Test
     fun `screen changes preserve all existing preferences`() = runTest {
         val original = preferencesOf(
             stringPreferencesKey("last_app_destination") to "CALENDAR",
@@ -118,6 +165,8 @@ class ScreenPreferencesRepositoryTest {
         repository.setScreenOrientation(ScreenOrientation.LANDSCAPE)
         repository.setOrientationLocked(false)
 
+        repository.setProximityScreenOffEnabled(false)
+        repository.setProximityScreenOffEnabled(true)
         assertEquals(audio, repository.readAudioPreferences())
         val saved = store.data.first().asMap()
         for ((key, value) in original.asMap()) assertEquals(value, saved[key])
