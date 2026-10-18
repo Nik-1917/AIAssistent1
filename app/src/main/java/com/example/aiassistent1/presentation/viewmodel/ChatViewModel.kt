@@ -30,6 +30,7 @@ import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.AppDestination
+import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.ModelProfile
@@ -101,7 +102,8 @@ class ChatViewModel(
     private val contextDecisions = ChatContextDecisionGate()
     private var pendingContextRequest: PendingContextRequest? = null
     private var contextCancelResumeJob: Job? = null
-    private data class PendingContextRequest(val job: Job, val chatId: String, val modelName: String)
+    private data class PendingContextRequest(val job: Job, val chatId: String, val modelName: String,
+        val conversation: ConversationVoiceSession.Ticket?)
     private val chatContextSession = ChatContextSession(llmEngine, chatContextRepository, modelContextBuilder)
     private val chatReplyTextStream = ChatReplyTextStream(assistantResponseParser) { raw, reason ->
         Log.w(TAG, "CHAT_REPLY_PARSE_ERROR: $reason")
@@ -117,6 +119,12 @@ class ChatViewModel(
     private var voiceDraftRestored = false
     private var openVoiceDraftAfterRestore = false
     private var activeVoiceInputSessionId: Long? = null
+    private var activeVoiceConversation: ConversationVoiceSession.Ticket? = null
+    private val voiceConversation = ConversationVoiceSession()
+    private val navigationWrites = Mutex()
+    private var navigationRequestId = 0L
+    private var requestedNavigation: AppNavigationState? = null
+    private var nextVoiceModeNoticeId = 0L
     private var voiceStartJob: Job? = null
     private var voiceBackgroundSession: GenerationForegroundService.Session? = null
     private var paramsJob: Job? = null
@@ -126,6 +134,7 @@ class ChatViewModel(
     val automaticGeneration = llmEngine.automaticState
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
+    private var speechPlaybackConversation: ConversationVoiceSession.Ticket? = null
     private var isManualMessagePlayback = false
     private var awaitingInterruptedInput = false
     private var manualVoiceInput = false
@@ -197,7 +206,8 @@ class ChatViewModel(
         viewModelScope.launch { voiceInput?.observeActivity()?.collect { mutableAudioActivity.value = it } }
         viewModelScope.launch {
             voiceInput?.observeSpeechStart()?.collect { sessionId ->
-                if (sessionId == activeVoiceInputSessionId && uiState.value.isVoiceMode &&
+                if (sessionId == activeVoiceInputSessionId &&
+                    voiceConversation.accepts(activeVoiceConversation, uiState.value.activeChatId) && uiState.value.isVoiceMode &&
                     settingsRepository.bargeInEnabled.value &&
                     (uiState.value.speechPlaybackState is SpeechPlaybackState.Playing ||
                         uiState.value.speechPlaybackState is SpeechPlaybackState.Generating)) {
@@ -505,31 +515,70 @@ class ChatViewModel(
     }
 
     fun setChatMode(isCalendar: Boolean) {
+        navigateTo(AppNavigationState(AppDestination.CHAT, isCalendar))
+    }
+
+    fun openCalendar() = navigateTo(AppNavigationState(AppDestination.CALENDAR, isCalendarMode = true))
+
+    fun returnToConversation() = setChatMode(isCalendar = true)
+
+    private fun navigateTo(navigation: AppNavigationState) {
+        val target = navigation.normalized()
+        val requestId = ++navigationRequestId
+        requestedNavigation = target
+        // Invalidate the old capture synchronously, before DataStore/history can suspend.
+        moveVoiceConversation(target.chatId)
         viewModelScope.launch {
             try {
-                settingsRepository.setSystemPromptEnabled(isCalendar)
+                navigationWrites.withLock {
+                    if (requestId != navigationRequestId) return@withLock
+                    settingsRepository.setNavigationState(target)
+                }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
+                if (requestId != navigationRequestId) return@launch
+                requestedNavigation = null
+                uiState.value.navigationState?.let { moveVoiceConversation(it.chatId) }
                 mutableUiState.update { it.copy(error = error.userMessage()) }
             }
         }
     }
 
-    fun openCalendar() = navigateTo(AppDestination.CALENDAR)
-
-    fun returnToConversation() = navigateTo(AppDestination.CHAT)
-
-    private fun navigateTo(destination: AppDestination) {
+    private fun moveVoiceConversation(chatId: String) {
+        val previousChatId = voiceConversation.chatId
+        if (!voiceConversation.moveTo(chatId)) return
+        val state = uiState.value
+        val microphoneWasEnabled = state.isVoiceMode || state.voiceDraft.isRecording ||
+            calendarDraftVoiceTarget != null || activeVoiceInputSessionId != null ||
+            voiceStartJob?.isActive == true || listenOnVoiceReply
         cancelContextVoiceResume()
-        viewModelScope.launch {
-            try {
-                settingsRepository.setAppDestination(destination)
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                mutableUiState.update { it.copy(error = error.userMessage()) }
-            }
+        cancelPendingVoiceModeShutdown()
+        listenOnVoiceReply = false
+        openVoiceDraftAfterRestore = false
+        isManualMessagePlayback = false
+        speechPlaybackConversation = null
+        persistVoiceDraft(state.voiceDraft.text)
+        stopVoiceInput()
+        speechPlaybackController?.stop(SpeechStopReason.ConversationChanged)
+        voiceBackgroundSession?.close()
+        voiceBackgroundSession = null
+        val notice = if (microphoneWasEnabled) VoiceModeNotice(++nextVoiceModeNoticeId,
+            if (previousChatId == "calendar") "Вы покинули режим календарь. Микрофон выключен."
+            else "Вы покинули режим чат. Микрофон выключен.") else null
+        mutableUiState.update {
+            it.copy(isVoiceMode = false, voiceDraft = it.voiceDraft.copy(isRecording = false),
+                voiceModeNotice = notice)
         }
     }
+
+    fun clearVoiceModeNotice(id: Long) {
+        mutableUiState.update { if (it.voiceModeNotice?.id == id) it.copy(voiceModeNotice = null) else it }
+    }
+
+    internal fun voiceInteractionTicket() = voiceConversation.ticket(uiState.value.activeChatId)
+
+    internal fun isVoiceInteractionCurrent(ticket: ConversationVoiceSession.Ticket?) =
+        voiceConversation.accepts(ticket, uiState.value.activeChatId)
 
     fun resolveChatContext(id: String, choice: ChatContextChoice) {
         val request = pendingContextRequest ?: return
@@ -540,7 +589,7 @@ class ChatViewModel(
             request.job.join()
             val current = uiState.value
             if (generationJob === request.job && current.activeChatId == request.chatId &&
-                current.selectedModel == request.modelName
+                current.selectedModel == request.modelName && voiceConversation.accepts(request.conversation, current.activeChatId)
             ) {
                 resumeDialogueVoiceInput()
             }
@@ -567,6 +616,7 @@ class ChatViewModel(
         val state = mutableUiState.value
         val messageLimit = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(state.isCalendarMode)
         when {
+            voiceConversation.ticket(state.activeChatId) == null -> return false
             trimmedText.isEmpty() -> return false
             trimmedText.length > messageLimit -> {
                 mutableUiState.update { it.copy(error = "Сообщение не должно превышать $messageLimit символов") }
@@ -605,6 +655,7 @@ class ChatViewModel(
         requestState: ChatUiState = mutableUiState.value,
         newUserMessage: ChatMessage? = null,
     ) {
+        val requestConversation = voiceConversation.ticket(requestState.activeChatId)
         generationJob = viewModelScope.launch {
             val requestJob = coroutineContext[Job] ?: error("Нет корутины текущего запроса")
             var assistantMessage: ChatMessage? = null
@@ -634,21 +685,21 @@ class ChatViewModel(
                 fun chatResponse(instruction: String? = null) = chatContextSession.respond(
                     currentState.activeChatId, currentState.messages, onReady, responseInstruction = instruction,
                 ) { pressure ->
-                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                    if (!voiceConversation.accepts(requestConversation, uiState.value.activeChatId) ||
                         uiState.value.selectedModel != currentState.selectedModel) {
                         throw CancellationException("Чат или модель изменились")
                     }
                     // Release the generation session while the user chooses history; the engine mutex is already free.
                     backgroundSession?.close()
                     backgroundSession = null
-                    val pending = PendingContextRequest(requestJob, currentState.activeChatId, currentState.selectedModel)
+                    val pending = PendingContextRequest(requestJob, currentState.activeChatId, currentState.selectedModel, requestConversation)
                     pendingContextRequest = pending
                     val choice = try {
                         contextDecisions.await(pressure)
                     } finally {
                         if (pendingContextRequest === pending) pendingContextRequest = null
                     }
-                    if (uiState.value.activeChatId != currentState.activeChatId ||
+                    if (!voiceConversation.accepts(requestConversation, uiState.value.activeChatId) ||
                         uiState.value.selectedModel != currentState.selectedModel) {
                         throw CancellationException("Чат или модель изменились")
                     }
@@ -754,10 +805,11 @@ class ChatViewModel(
                 }
 
                 val spokenContent = assistantMessage?.content?.takeIf(String::isNotBlank)
-                val playbackStarted = if (mutableUiState.value.autoPlaybackEnabled && spokenContent != null) {
+                val playbackStarted = if (voiceConversation.accepts(requestConversation, uiState.value.activeChatId) &&
+                    mutableUiState.value.autoPlaybackEnabled && spokenContent != null) {
                     // Direct voice input also permits interruption of its automatically spoken reply.
                     if (listenOnVoiceReply) mutableUiState.update { it.copy(isVoiceMode = true) }
-                    speechPlaybackController?.speak(spokenContent) ?: false
+                    speakInConversation(spokenContent, requestConversation)
                 } else {
                     false
                 }
@@ -765,7 +817,7 @@ class ChatViewModel(
                 if (!playbackStarted) {
                     viewModelScope.launch {
                         kotlinx.coroutines.yield()
-                        resumeDialogueVoiceInput()
+                        if (voiceConversation.accepts(requestConversation, uiState.value.activeChatId)) resumeDialogueVoiceInput()
                     }
                 }
             } catch (error: CancellationException) {
@@ -949,6 +1001,7 @@ class ChatViewModel(
 
     fun onMicrophoneTap(forceStart: Boolean = false) {
         val state = mutableUiState.value
+        if (voiceConversation.ticket(state.activeChatId) == null) return
         if (forceStart || isSpeechPlaybackActive()) {
             cancelPendingVoiceModeShutdown()
             persistVoiceDraft(state.voiceDraft.text)
@@ -973,6 +1026,7 @@ class ChatViewModel(
 
     fun startVoiceDraft(forceStart: Boolean = false) {
         val state = mutableUiState.value
+        if (voiceConversation.ticket(state.activeChatId) == null) return
         val wasSpeaking = forceStart || isSpeechPlaybackActive()
         if (wasSpeaking) {
             cancelPendingVoiceModeShutdown()
@@ -1036,6 +1090,7 @@ class ChatViewModel(
         }
 
         val activeGeneration = generationJob
+        val conversation = voiceConversation.ticket(uiState.value.activeChatId)
 
         // Устанавливаем флаг остановки для изменения текста в UI
         mutableUiState.update { it.copy(isStopping = true) }
@@ -1050,7 +1105,7 @@ class ChatViewModel(
         if (resumeDialogue) {
             viewModelScope.launch {
                 activeGeneration?.join()
-                resumeDialogueVoiceInput()
+                if (voiceConversation.accepts(conversation, uiState.value.activeChatId)) resumeDialogueVoiceInput()
             }
         }
     }
@@ -1110,15 +1165,25 @@ class ChatViewModel(
 
     fun speakMessage(text: String) {
         if (text.isBlank()) return
-        val controller = speechPlaybackController ?: return
+        val conversation = voiceInteractionTicket() ?: return
+        if (speechPlaybackController == null) return
 
         cancelPendingVoiceModeShutdown()
         isManualMessagePlayback = true
         stopVoiceInput()
-        if (!controller.speak(text)) {
+        if (!speakInConversation(text, conversation)) {
             isManualMessagePlayback = false
             resumeDialogueVoiceInput()
         }
+    }
+
+    private fun speakInConversation(text: String, conversation: ConversationVoiceSession.Ticket?): Boolean {
+        if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return false
+        val controller = speechPlaybackController ?: return false
+        speechPlaybackConversation = conversation
+        val started = controller.speak(text)
+        if (!started) speechPlaybackConversation = null
+        return started
     }
 
     private fun handleParsedResponse(
@@ -1359,6 +1424,7 @@ class ChatViewModel(
     }
 
     fun startCalendarDraftVoiceInput(id: String, field: CalendarEventField) {
+        if (voiceInteractionTicket() == null) return
         speechPlaybackController?.stop(SpeechStopReason.VoiceInput)
         val draft = calendarDraftController.find(id) ?: return
         if (!draft.isEditable || draft.isFormatting || calendarDraftController.state.value.selectedId != id) return
@@ -1485,6 +1551,12 @@ class ChatViewModel(
         viewModelScope.launch {
             controller.state.collect { playbackState ->
                 mutableUiState.update { it.copy(speechPlaybackState = playbackState) }
+                // A delayed Stopped -> Idle from the old mode cannot close a newly enabled mic.
+                if (!voiceConversation.accepts(speechPlaybackConversation, uiState.value.activeChatId)) {
+                    isManualMessagePlayback = false
+                    previousSpeechPlaybackState = playbackState
+                    return@collect
+                }
                 if (playbackState is SpeechPlaybackState.Playing || playbackState is SpeechPlaybackState.Generating) {
                     if (!settingsRepository.bargeInEnabled.value) stopVoiceInput()
                     else if (calendarDraftVoiceTarget == null && uiState.value.isVoiceMode) startVoiceInput(bargeIn = true)
@@ -1528,9 +1600,12 @@ class ChatViewModel(
 
     private fun scheduleVoiceModeShutdown() {
         cancelPendingVoiceModeShutdown()
+        if (!uiState.value.isVoiceMode) return
+        val conversation = voiceConversation.ticket(uiState.value.activeChatId) ?: return
         voiceModeShutdownJob = viewModelScope.launch {
             delay(VOICE_MODE_SHUTDOWN_DELAY_MILLIS)
-            if (uiState.value.speechPlaybackState is SpeechPlaybackState.Idle) {
+            if (voiceConversation.accepts(conversation, uiState.value.activeChatId) &&
+                uiState.value.speechPlaybackState is SpeechPlaybackState.Idle) {
                 setVoiceMode(false)
             }
         }
@@ -1556,6 +1631,7 @@ class ChatViewModel(
             inputProvider.observeInput().collect { event ->
                 if (event.sessionId != activeVoiceInputSessionId) return@collect
                 val state = mutableUiState.value
+                if (!voiceConversation.accepts(activeVoiceConversation, state.activeChatId)) return@collect
                 when {
                     calendarDraftVoiceTarget != null -> {
                         val target = calendarDraftVoiceTarget
@@ -1588,14 +1664,17 @@ class ChatViewModel(
 
     private fun startVoiceInput(continuous: Boolean = false, bargeIn: Boolean = false) {
         if (voiceInput == null) return
+        val conversation = voiceConversation.ticket(uiState.value.activeChatId) ?: return
         voiceStartJob?.cancel()
         voiceStartJob = viewModelScope.launch {
             try {
                 val prefs = settingsRepository.readAudioPreferences()
+                if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return@launch
                 val capture = VoicePlaybackInputPolicy.capture(prefs, isSpeechPlaybackActive(),
                     continuous || manualVoiceInput || calendarDraftVoiceTarget != null)
                 if (capture == VoicePlaybackInputPolicy.Capture.STOP) {
                     activeVoiceInputSessionId = null
+                    activeVoiceConversation = null
                     voiceInput.stop()
                     return@launch
                 }
@@ -1603,27 +1682,33 @@ class ChatViewModel(
                     context, GenerationForegroundService.Kind.Microphone,
                 ).also { voiceBackgroundSession = it }
                 background.awaitReady()
+                if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return@launch
                 // A toggle can change while the foreground service is starting.
                 if (isSpeechPlaybackActive() && !settingsRepository.readAudioPreferences().bargeIn) {
                     if (manualVoiceInput || continuous || calendarDraftVoiceTarget != null) {
                         speechPlaybackController?.stop(SpeechStopReason.VoiceInput)
                     } else {
                         activeVoiceInputSessionId = null
+                        activeVoiceConversation = null
                         voiceInput.stop()
                         return@launch
                     }
                 }
+                currentCoroutineContext().ensureActive()
+                if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return@launch
                 activeVoiceInputSessionId = when {
                     capture == VoicePlaybackInputPolicy.Capture.ACTIVATION -> voiceInput.startWakeWord()
                     continuous || manualVoiceInput -> voiceInput.startContinuous()
                     bargeIn -> voiceInput.startBargeIn()
                     else -> voiceInput.start()
                 }
+                activeVoiceConversation = conversation
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
                 stopCalendarDraftVoiceInput()
                 activeVoiceInputSessionId = null
+                activeVoiceConversation = null
                 voiceBackgroundSession?.close()
                 voiceBackgroundSession = null
                 mutableUiState.update {
@@ -1643,6 +1728,7 @@ class ChatViewModel(
             inputProvider.observeErrors().collect { event ->
                 if (event.sessionId != activeVoiceInputSessionId) return@collect
                 val state = mutableUiState.value
+                if (!voiceConversation.accepts(activeVoiceConversation, state.activeChatId)) return@collect
                 if (!state.isVoiceMode && !state.voiceDraft.isRecording &&
                     state.calendarEventDraft?.isVoiceInputActive != true
                 ) return@collect
@@ -1656,6 +1742,7 @@ class ChatViewModel(
                 }
                 stopCalendarDraftVoiceInput()
                 activeVoiceInputSessionId = null
+                activeVoiceConversation = null
             }
         }
     }
@@ -1686,6 +1773,7 @@ class ChatViewModel(
         voiceStartJob?.cancel()
         voiceStartJob = null
         activeVoiceInputSessionId = null
+        activeVoiceConversation = null
         voiceInput?.stop()
     }
 
@@ -1773,6 +1861,11 @@ class ChatViewModel(
         activeChatJob = viewModelScope.launch {
             try {
                 ObserveAppSessionUseCase(settingsRepository, chatRepository)().collect { session ->
+                    // An older in-flight write/history read cannot undo the latest navigation intent.
+                    // Retain the latest target even after observing it: an old buffered result must
+                    // not undo a rapid Calendar -> Chat -> Calendar round trip.
+                    if (requestedNavigation != null && requestedNavigation != session.navigation) return@collect
+                    moveVoiceConversation(session.navigation.chatId)
                     if (uiState.value.activeChatId != session.navigation.chatId) cancelContextVoiceResume()
                     if (uiState.value.activeChatId != session.navigation.chatId && contextDecisions.pressure.value != null) {
                         stopGeneration(resumeDialogue = false)

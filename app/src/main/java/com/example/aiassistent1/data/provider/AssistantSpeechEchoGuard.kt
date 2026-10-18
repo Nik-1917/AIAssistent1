@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withLock
 /** A bounded, in-memory identity of the narrator. It never enrolls or persists a user's voice. */
 internal class AssistantSpeechEchoGuard(private val speaker: SpeakerIdentifier? = null,
     private val clock: () -> Long = System::nanoTime) {
-    internal class Reference(val text: List<String>, val pcm: FloatArray, val preparedAt: Long) {
+    internal class Reference(val text: List<String>, val pcm: FloatArray, val preparedAt: Long, val playbackId: Long) {
         var firstNs = Long.MAX_VALUE
         var endNs = Long.MIN_VALUE
         var embeddingReady = false
@@ -31,15 +31,18 @@ internal class AssistantSpeechEchoGuard(private val speaker: SpeakerIdentifier? 
 
     private val references = linkedMapOf<Long, Reference>()
     private var nextId = 0L
+    private var nextPlaybackId = 0L
     private val modelMutex = Mutex()
     private val mutableDiagnostics = MutableStateFlow(Diagnostics())
     val diagnostics = mutableDiagnostics.asStateFlow()
 
-    @Synchronized fun prepare(text: String, samples: FloatArray): Long {
+    @Synchronized fun beginPlayback(): Long = ++nextPlaybackId
+
+    @Synchronized fun prepare(text: String, samples: FloatArray, playbackId: Long = 0): Long {
         prune()
         val id = ++nextId
         // A speaker signature needs only a short reference, not a copy of the whole reply.
-        references[id] = Reference(tokens(text), samples.copyOf(minOf(samples.size, 48_000)), clock())
+        references[id] = Reference(tokens(text), samples.copyOf(minOf(samples.size, 48_000)), clock(), playbackId)
         while (references.size > 12) references.remove(references.keys.first())
         return id
     }
@@ -91,9 +94,12 @@ internal class AssistantSpeechEchoGuard(private val speaker: SpeakerIdentifier? 
         if (assessment.narrator) return true
         if (!assessment.needsTextCheck) return false
         val candidate = tokens(transcript)
-        val rejected = candidate.isNotEmpty() && assessment.context.references.any { reference ->
-            candidate.size <= reference.text.size && (0..reference.text.size - candidate.size).any { start ->
-                candidate.indices.all { index -> sameToken(candidate[index], reference.text[start + index]) }
+        // A VAD utterance can contain the end of one TTS sentence and the beginning of the next.
+        // Join only captured references from the same reply; never invent a match between replies.
+        val rejected = candidate.isNotEmpty() && assessment.context.references.groupBy { it.playbackId }.values.any { references ->
+            val text = references.flatMap { it.text }
+            candidate.size <= text.size && (0..text.size - candidate.size).any { start ->
+                candidate.indices.all { index -> sameToken(candidate[index], text[start + index]) }
             }
         }
         if (rejected) record(assessment, true, "narrator_text")
@@ -139,15 +145,24 @@ internal class AssistantSpeechEchoGuard(private val speaker: SpeakerIdentifier? 
 
         fun sameToken(a: String, b: String): Boolean {
             if (a == b) return true
-            if (minOf(a.length, b.length) < 5 || kotlin.math.abs(a.length - b.length) > 1) return false
-            var i = 0; var j = 0; var changes = 0
-            while (i < a.length && j < b.length) {
-                if (a[i] == b[j]) { i++; j++; continue }
-                if (++changes > 1) return false
-                if (a.length >= b.length) i++
-                if (b.length >= a.length) j++
+            val length = minOf(a.length, b.length)
+            if (length < 5) return false
+            val limit = if (length >= 8) 2 else 1
+            if (kotlin.math.abs(a.length - b.length) > limit) return false
+            var previous = IntArray(b.length + 1) { it }
+            var current = IntArray(b.length + 1)
+            for (i in a.indices) {
+                current[0] = i + 1
+                var minimum = current[0]
+                for (j in b.indices) {
+                    current[j + 1] = minOf(current[j] + 1, previous[j + 1] + 1,
+                        previous[j] + if (a[i] == b[j]) 0 else 1)
+                    minimum = minOf(minimum, current[j + 1])
+                }
+                if (minimum > limit) return false
+                val swap = previous; previous = current; current = swap
             }
-            return changes + (a.length - i) + (b.length - j) <= 1
+            return previous[b.length] <= limit
         }
     }
 }

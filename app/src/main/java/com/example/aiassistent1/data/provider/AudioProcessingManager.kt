@@ -18,7 +18,9 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
     private var active: Session? = null
     internal val speechEchoGuard = AssistantSpeechEchoGuard(speakerIdentifier)
 
-    internal fun prepareOutput(text: String, samples: FloatArray) = speechEchoGuard.prepare(text, samples)
+    internal fun beginOutput() = speechEchoGuard.beginPlayback()
+    internal fun prepareOutput(text: String, samples: FloatArray, playbackId: Long) =
+        speechEchoGuard.prepare(text, samples, playbackId)
 
     @Synchronized fun open(recorder: AudioRecord, enabled: Boolean, echo: Boolean,
         backend: EchoBackend = EchoBackend.WEBRTC): Session {

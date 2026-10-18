@@ -188,12 +188,21 @@ class DataStoreSettingsRepository(
                 it.name == preferences[appDestinationKey]
             } ?: AppDestination.CHAT,
             isCalendarMode = preferences[systemPromptEnabledKey] ?: true,
-        )
+        ).normalized()
     }.distinctUntilChanged()
 
     override suspend fun setAppDestination(destination: AppDestination) {
         dataStore.edit { preferences ->
             preferences[appDestinationKey] = destination.name
+            if (destination == AppDestination.CALENDAR) preferences[systemPromptEnabledKey] = true
+        }
+    }
+
+    override suspend fun setNavigationState(state: AppNavigationState) {
+        val target = state.normalized()
+        dataStore.edit { preferences ->
+            preferences[appDestinationKey] = target.destination.name
+            preferences[systemPromptEnabledKey] = target.isCalendarMode
         }
     }
 

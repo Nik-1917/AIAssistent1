@@ -85,6 +85,59 @@ class AssistantSpeechEchoGuardTest {
         assertEquals(0, guard.diagnostics.value.evaluated)
     }
 
+    @Test fun narratorFragmentAcrossAdjacentSentencesIsRejectedBeforeItCanInterrupt() = runTest {
+        val guard = guard()
+        val reply = guard.beginPlayback()
+        val first = guard.prepare("Самая большая планета — Юпитер.", FloatArray(16_000), reply)
+        val next = guard.prepare("Его атмосфера состоит из газа.", FloatArray(16_000), reply)
+        guard.queued(first, now, 16_000)
+        guard.queued(next, now + second, 16_000)
+        val source = guard.assess(FloatArray(4000), guard.snapshot(now, now + 2 * second))
+        assertTrue(guard.rejectsText(source, "Юпитер его атмосфера"))
+        assertFalse(guard.rejectsText(source, "стоп расскажи о Земле"))
+    }
+
+    @Test fun differentRepliesCannotBeJoinedIntoAnImaginaryNarratorPhrase() = runTest {
+        val guard = guard()
+        val first = guard.prepare("Планета Юпитер.", FloatArray(16_000), guard.beginPlayback())
+        val next = guard.prepare("Его атмосфера состоит из газа.", FloatArray(16_000), guard.beginPlayback())
+        guard.queued(first, now, 16_000)
+        guard.queued(next, now + second, 16_000)
+        val source = guard.assess(FloatArray(4000), guard.snapshot(now, now + 2 * second))
+        assertFalse(guard.rejectsText(source, "Юпитер его атмосфера"))
+    }
+
+    @Test fun shortEchoWithTwoCharacterErrorsInALongWordIsRejected() = runTest {
+        val guard = guard()
+        val source = guard.assess(FloatArray(4000), playing(guard, "Астрономические наблюдения."))
+        assertTrue(guard.rejectsText(source, "астраномическе наблюдения"))
+        assertFalse(guard.rejectsText(source, "отмени наблюдения"))
+        assertFalse(guard.rejectsText(source, "не продолжай"))
+    }
+
+    @Test fun distinctUserVoiceCanStillRepeatTheNarratorAcrossSentenceBoundaries() = runTest {
+        val guard = guard(withSpeaker = true)
+        val reply = guard.beginPlayback()
+        val first = guard.prepare("Планета Юпитер.", FloatArray(16_000) { .1f }, reply)
+        val next = guard.prepare("Его атмосфера.", FloatArray(16_000) { .1f }, reply)
+        guard.queued(first, now, 16_000)
+        guard.queued(next, now + second, 16_000)
+        val source = guard.assess(FloatArray(16_000) { .3f }, guard.snapshot(now, now + 2 * second))
+        assertTrue(source.distinctVoice)
+        assertFalse(guard.rejectsText(source, "Юпитер его атмосфера"))
+    }
+
+    @Test fun futureSentenceOfTheSameReplyCannotRejectEarlierUserSpeech() = runTest {
+        val guard = guard()
+        val reply = guard.beginPlayback()
+        val first = guard.prepare("Планета Юпитер.", FloatArray(16_000), reply)
+        val future = guard.prepare("Расскажи о Земле.", FloatArray(16_000), reply)
+        guard.queued(first, now, 16_000)
+        guard.queued(future, now + 5 * second, 16_000)
+        val source = guard.assess(FloatArray(4000), guard.snapshot(now, now + second))
+        assertFalse(guard.rejectsText(source, "Юпитер расскажи о Земле"))
+    }
+
     private val speaker = object : SpeakerIdentifier {
         override suspend fun prepare() = Unit
         override suspend fun computeEmbedding(samples: FloatArray): FloatArray? = FloatArray(16).also { vector ->

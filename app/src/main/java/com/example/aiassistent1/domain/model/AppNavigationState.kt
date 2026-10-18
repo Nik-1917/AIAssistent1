@@ -10,6 +10,11 @@ data class AppNavigationState(
     val isCalendarMode: Boolean = true,
 ) {
     val chatId: String get() = if (isCalendarMode) "calendar" else "general"
+
+    /** Commands issued on the calendar page always belong to the calendar conversation. */
+    fun normalized(): AppNavigationState = if (destination == AppDestination.CALENDAR && !isCalendarMode) {
+        copy(isCalendarMode = true)
+    } else this
 }
 
 data class AppSession(

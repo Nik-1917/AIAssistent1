@@ -39,6 +39,7 @@ data class ChatUiState(
     val error: String? = null,
     val snackbarMessage: String? = null,
     val snackbarEventId: String? = null,
+    val voiceModeNotice: VoiceModeNotice? = null,
     val isStopping: Boolean = false,
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,

@@ -251,9 +251,14 @@ class SherpaOnnxVoiceInputProvider(
                     // A decoded word alone does not establish that the user spoke. Check the
                     // captured narrator reference before any KWS activation or interruption event.
                     val source = processing.speechEchoGuard.assess(segment, playbackContext)
-                    if (source.narrator) continue
+                    if (source.narrator) {
+                        traceVoiceSource(id, segment.size, source, rejected = true)
+                        continue
+                    }
                     val sourceTranscript = if (source.needsTextCheck) recognizer.recognize(segment).getOrThrow() else null
-                    if (sourceTranscript != null && processing.speechEchoGuard.rejectsText(source, sourceTranscript)) continue
+                    val rejected = sourceTranscript != null && processing.speechEchoGuard.rejectsText(source, sourceTranscript)
+                    traceVoiceSource(id, segment.size, source, rejected)
+                    if (rejected) continue
                     if (activePolicy != policy) { activatedUntil = 0; activePolicy = policy }
                     if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
                         shadowSegments?.trySend(segment.copyOf())
@@ -322,7 +327,7 @@ class SherpaOnnxVoiceInputProvider(
             val pcm = ShortArray(512)
             val sampleClock = RecordingSampleClock()
             val preRoll = VoiceUtterancePreRoll()
-            var vadOriginNs: Long? = null
+            val timeline = VoiceCaptureTimeline()
             var keywordDetected = false
             var wasSpeech = false
             var speechStartedAt = 0L
@@ -334,13 +339,13 @@ class SherpaOnnxVoiceInputProvider(
                 if (!feedbackPlaying.get() && resetAfterFeedback.getAndSet(false)) {
                     vad.reset(); keywordSpotter.reset()
                     preRoll.reset()
-                    vadOriginNs = null
+                    timeline.reset()
                     processor.discardBufferedInput()
                     keywordDetected = false; wasSpeech = false; speechStartedAt = 0L
                 }
                 val samples = processor.process(FloatArray(read) { pcm[it] / 32768f }, firstSampleTime)
                 if (samples.isEmpty() || feedbackPlaying.get()) continue
-                if (vadOriginNs == null) vadOriginNs = processor.outputStartTimeNs
+                timeline.append(samples.size, processor.outputStartTimeNs)
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
                 preRoll.append(samples)
                 val completed = vad.acceptTimed(samples)
@@ -359,9 +364,10 @@ class SherpaOnnxVoiceInputProvider(
                         return@coroutineScope
                     }
                     val prefixSize = segment.size - timed.samples.size
-                    val startNs = checkNotNull(vadOriginNs) + (timed.startSample - prefixSize) * PlaybackEchoReference.NANOS_PER_SAMPLE
-                    val playbackContext = processing.speechEchoGuard.snapshot(startNs,
-                        startNs + segment.size * PlaybackEchoReference.NANOS_PER_SAMPLE)
+                    val captured = checkNotNull(timeline.range(timed.startSample - prefixSize, segment.size)) {
+                        "Не удалось определить время голосового фрагмента. Повторите запрос."
+                    }
+                    val playbackContext = processing.speechEchoGuard.snapshot(captured.startNs, captured.endNs)
                     check(segments.trySend(CapturedUtterance(segment, keywordDetected,
                         speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime(), playbackContext)).isSuccess) {
                         "Распознавание не успевает за речью. Повторите запрос."
@@ -389,6 +395,13 @@ class SherpaOnnxVoiceInputProvider(
             }
         }
     }
+
+    private fun traceVoiceSource(id: Long, samples: Int, source: AssistantSpeechEchoGuard.Assessment, rejected: Boolean) {
+        if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE == 0) return
+        android.util.Log.d("VoiceInput", "VOICE_SOURCE session=$id samples=$samples " +
+            "overlap=${source.context.overlapsNarrator} similarity=${source.similarity} " +
+            "textCheck=${source.needsTextCheck} rejected=$rejected")
+    }
 }
 
 class SherpaOnnxSpeechPlayback(
@@ -409,6 +422,7 @@ class SherpaOnnxSpeechPlayback(
                 check(!closed.get()) { "Воспроизведение закрыто" }
                 stopped.set(false)
                 var started = false
+                val playbackId = processing.beginOutput()
                 var output: AudioTrack? = null
                 var writtenFrames = 0L
                 val clock = PlaybackSampleClock()
@@ -421,7 +435,7 @@ class SherpaOnnxSpeechPlayback(
                         val speech = synthesizer.synthesize(chunk).getOrThrow()
                         val samples = PcmResampler.to16k(speech.samples, speech.sampleRate)
                         if (stopped.get()) break
-                        val utteranceId = processing.prepareOutput(chunk, samples)
+                        val utteranceId = processing.prepareOutput(chunk, samples, playbackId)
                         withContext(Dispatchers.IO) {
                             val active = output ?: run {
                                 val minimum = AudioTrack.getMinBufferSize(16_000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)

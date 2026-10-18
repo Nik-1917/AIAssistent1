@@ -78,8 +78,8 @@ class ObserveAppSessionUseCaseTest {
             settings.setAppDestination(state.destination)
             val reopenedSettings = DataStoreSettingsRepository(store, backgroundScope)
             val restored = ObserveAppSessionUseCase(reopenedSettings, history)().first()
-            assertEquals(state, restored.navigation)
-            assertEquals(if (state.isCalendarMode) originalCalendar else originalGeneral, restored.messages)
+            assertEquals(state.normalized(), restored.navigation)
+            assertEquals(if (state.normalized().isCalendarMode) originalCalendar else originalGeneral, restored.messages)
             assertEquals(scroll, restored.scrollPosition)
         }
 

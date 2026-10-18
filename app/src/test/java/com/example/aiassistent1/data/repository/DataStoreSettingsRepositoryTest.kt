@@ -80,14 +80,14 @@ class DataStoreSettingsRepositoryTest {
     }
 
     @Test
-    fun `calendar page remembers conversation mode when returning`() = runTest {
+    fun `opening calendar selects calendar commands and returning retains them`() = runTest {
         val repository = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
         for (isCalendar in listOf(false, true)) {
             repository.setSystemPromptEnabled(isCalendar)
             repository.setAppDestination(AppDestination.CALENDAR)
-            assertEquals(AppNavigationState(AppDestination.CALENDAR, isCalendar), repository.navigationState.first())
+            assertEquals(AppNavigationState(AppDestination.CALENDAR, true), repository.navigationState.first())
             repository.setAppDestination(AppDestination.CHAT)
-            assertEquals(AppNavigationState(AppDestination.CHAT, isCalendar), repository.navigationState.first())
+            assertEquals(AppNavigationState(AppDestination.CHAT, true), repository.navigationState.first())
         }
     }
 
@@ -112,7 +112,57 @@ class DataStoreSettingsRepositoryTest {
 
             val readerStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
             val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
-            assertEquals(state, reader.navigationState.first())
+            assertEquals(state.normalized(), reader.navigationState.first())
+        }
+    }
+
+    @Test
+    fun `switching from general chat to calendar stores page and calendar mode atomically`() = runTest {
+        val repository = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
+        repository.setSystemPromptEnabled(false)
+        val states = mutableListOf<AppNavigationState>()
+        backgroundScope.launch { repository.navigationState.collect { states += it } }
+        runCurrent()
+
+        repository.setNavigationState(AppNavigationState(AppDestination.CALENDAR, false))
+        runCurrent()
+        repository.setNavigationState(AppNavigationState(AppDestination.CHAT, true))
+        runCurrent()
+        repository.setNavigationState(AppNavigationState(AppDestination.CHAT, false))
+        runCurrent()
+
+        assertEquals(listOf(AppNavigationState(AppDestination.CHAT, false),
+            AppNavigationState(AppDestination.CALENDAR, true), AppNavigationState(AppDestination.CHAT, true),
+            AppNavigationState(AppDestination.CHAT, false)), states)
+    }
+
+    @Test
+    fun `reading legacy calendar with general flag repairs routing without rewriting preferences`() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(
+            stringPreferencesKey("last_app_destination") to AppDestination.CALENDAR.name,
+            booleanPreferencesKey("system_prompt_enabled") to false,
+        ))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals("calendar", repository.navigationState.first().chatId)
+        assertEquals(false, store.data.first()[booleanPreferencesKey("system_prompt_enabled")])
+    }
+
+    @Test
+    fun `navigation never changes activation voice identity or interruption preferences`() = runTest {
+        val original = preferencesOf(
+            booleanPreferencesKey("wake_word_enabled") to true,
+            stringPreferencesKey("wake_word_engine") to "METRIC_KWS",
+            booleanPreferencesKey("voice_id_enabled") to true,
+            booleanPreferencesKey("barge_in_enabled") to true,
+        )
+        val store = TestPreferencesDataStore(original)
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        val audio = repository.readAudioPreferences()
+        for (navigation in listOf(AppNavigationState(AppDestination.CHAT, false),
+            AppNavigationState(AppDestination.CALENDAR, true), AppNavigationState(AppDestination.CHAT, true))) {
+            repository.setNavigationState(navigation)
+            assertEquals(audio, repository.readAudioPreferences())
+            for ((key, value) in original.asMap()) assertEquals(value, store.data.first().asMap()[key])
         }
     }
     @Test

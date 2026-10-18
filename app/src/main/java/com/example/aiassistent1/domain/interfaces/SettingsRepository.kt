@@ -21,6 +21,7 @@ interface SettingsRepository {
     suspend fun setRecordingDirectory(uri: String?)
     val navigationState: Flow<AppNavigationState>
     suspend fun setAppDestination(destination: AppDestination)
+    suspend fun setNavigationState(state: AppNavigationState)
 
     val selectedModel: StateFlow<String?>
     suspend fun setSelectedModel(modelName: String)

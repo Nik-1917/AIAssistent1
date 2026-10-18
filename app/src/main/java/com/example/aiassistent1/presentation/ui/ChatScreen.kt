@@ -208,7 +208,13 @@ fun ChatScreen(
     val lastMessage = uiState.messages.lastOrNull()
     var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
     var pendingMicrophoneInterruptedPlayback by remember { mutableStateOf(false) }
+    var pendingMicrophoneConversation by remember {
+        mutableStateOf<com.example.aiassistent1.presentation.viewmodel.ConversationVoiceSession.Ticket?>(null)
+    }
     var pendingCalendarMicrophone by remember { mutableStateOf<Pair<String, CalendarEventField>?>(null) }
+    var pendingCalendarMicrophoneConversation by remember {
+        mutableStateOf<com.example.aiassistent1.presentation.viewmodel.ConversationVoiceSession.Ticket?>(null)
+    }
     var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showConferences by rememberSaveable { mutableStateOf(false) }
     val audioActivity by viewModel.audioActivity.collectAsStateWithLifecycle()
@@ -292,9 +298,11 @@ fun ChatScreen(
     ) { granted ->
         val action = pendingMicrophoneAction
         val forceStart = pendingMicrophoneInterruptedPlayback
+        val conversation = pendingMicrophoneConversation
         pendingMicrophoneAction = null
         pendingMicrophoneInterruptedPlayback = false
-        if (granted) {
+        pendingMicrophoneConversation = null
+        if (granted && viewModel.isVoiceInteractionCurrent(conversation)) {
             when (action) {
                 MicrophoneAction.TAP -> viewModel.onMicrophoneTap(forceStart)
                 MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft(forceStart)
@@ -304,8 +312,12 @@ fun ChatScreen(
     }
     val calendarMicrophonePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val target = pendingCalendarMicrophone
+        val conversation = pendingCalendarMicrophoneConversation
         pendingCalendarMicrophone = null
-        if (granted && target != null) viewModel.startCalendarDraftVoiceInput(target.first, target.second)
+        pendingCalendarMicrophoneConversation = null
+        if (granted && target != null && viewModel.isVoiceInteractionCurrent(conversation)) {
+            viewModel.startCalendarDraftVoiceInput(target.first, target.second)
+        }
     }
 
     val requestMicrophoneAction: (MicrophoneAction) -> Unit = { action ->
@@ -318,6 +330,7 @@ fun ChatScreen(
         } else {
             pendingMicrophoneAction = action
             pendingMicrophoneInterruptedPlayback = interrupted
+            pendingMicrophoneConversation = viewModel.voiceInteractionTicket()
             microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -399,7 +412,7 @@ fun ChatScreen(
 
     LaunchedEffect(uiState.snackbarMessage, uiState.snackbarEventId) {
         if (uiState.snackbarMessage != null) {
-            delay(5000)
+            delay(INFORMATION_NOTICE_DURATION_MILLIS)
             viewModel.clearSnackbar()
         }
     }
@@ -1099,43 +1112,29 @@ fun ChatScreen(
 
             }
 
-            // Информационное уведомление
-            androidx.compose.animation.AnimatedVisibility(
-                visible = uiState.snackbarMessage != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+            // Stack notices below the header without covering the saved-event action.
+            Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 10.dp)
+                    .padding(top = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    val savedEventId = uiState.snackbarEventId
-                    Row(
-                        modifier = Modifier.padding(start = 16.dp, end = if (savedEventId == null) 16.dp else 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = uiState.snackbarMessage ?: "",
-                            modifier = Modifier.weight(1f, fill = false),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        if (savedEventId != null) {
-                            TextButton(onClick = {
-                                viewModel.clearSnackbar()
-                                onOpenSavedCalendarEvent(savedEventId)
-                            }) {
-                                Text("Перейти")
-                            }
+                val savedEventId = uiState.snackbarEventId
+                TopInformationNotice(
+                    visible = uiState.snackbarMessage != null,
+                    text = uiState.snackbarMessage.orEmpty(),
+                    actionLabel = if (savedEventId != null) "Перейти" else null,
+                    onAction = if (savedEventId != null) {
+                        {
+                            viewModel.clearSnackbar()
+                            onOpenSavedCalendarEvent(savedEventId)
                         }
-                    }
-                }
+                    } else null,
+                )
+                VoiceModeNoticeCard(uiState.voiceModeNotice.takeIf {
+                    uiState.navigationState?.destination == com.example.aiassistent1.domain.model.AppDestination.CHAT
+                })
             }
         }
     }
@@ -1184,6 +1183,7 @@ fun ChatScreen(
                         viewModel.startCalendarDraftVoiceInput(draft.requestId, field)
                     } else {
                         pendingCalendarMicrophone = draft.requestId to field
+                        pendingCalendarMicrophoneConversation = viewModel.voiceInteractionTicket()
                         calendarMicrophonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 },

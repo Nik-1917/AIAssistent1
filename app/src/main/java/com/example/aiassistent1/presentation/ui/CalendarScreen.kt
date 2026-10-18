@@ -74,6 +74,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.calendar.core.domain.CalendarEvent
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
+import com.example.aiassistent1.presentation.viewmodel.VoiceModeNotice
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -91,6 +92,7 @@ fun CalendarScreen(
     onNavigateBack: () -> Unit,
     onOpenChat: () -> Unit,
     modifier: Modifier = Modifier,
+    voiceModeNotice: VoiceModeNotice? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -218,6 +220,10 @@ fun CalendarScreen(
                     }
                 }
             }
+            VoiceModeNoticeCard(
+                notice = voiceModeNotice,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp),
+            )
         }
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -26,6 +27,7 @@ import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 @Composable
 fun AIAssistantApp(
@@ -36,6 +38,13 @@ fun AIAssistantApp(
 ) {
     val uiState by chatViewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val voiceNotice = uiState.voiceModeNotice
+    LaunchedEffect(voiceNotice?.id) {
+        if (voiceNotice != null) {
+            delay(INFORMATION_NOTICE_DURATION_MILLIS)
+            chatViewModel.clearVoiceModeNotice(voiceNotice.id)
+        }
+    }
     val navigation = uiState.navigationState
     if (navigation == null) {
         if (uiState.sessionError != null) {
@@ -91,11 +100,9 @@ fun AIAssistantApp(
 
                 AppDestination.CALENDAR -> CalendarScreen(
                     viewModel = calendarViewModel,
-                    onNavigateBack = {
-                        chatViewModel.setChatMode(true)
-                        chatViewModel.returnToConversation()
-                    },
+                    onNavigateBack = chatViewModel::returnToConversation,
                     onOpenChat = { chatViewModel.setChatMode(false) },
+                    voiceModeNotice = voiceNotice.takeIf { navigation.destination == AppDestination.CALENDAR },
                 )
             }
         }

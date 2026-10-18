@@ -36,6 +36,7 @@ enum class SpeechStopReason(val label: String) {
     User("Остановлено пользователем"),
     VoiceInput("Остановлено для голосового ввода"),
     NewMessage("Остановлено новым сообщением"),
+    ConversationChanged("Остановлено при смене режима"),
     Background("Остановлено в фоне"),
     AudioFocus("Остановлено: другое приложение использует звук"),
     NoisyOutput("Остановлено: отключены наушники"),
