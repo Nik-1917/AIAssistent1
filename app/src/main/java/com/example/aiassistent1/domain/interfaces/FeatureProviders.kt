@@ -19,12 +19,13 @@ interface InputProvider {
     fun start(): Long
     fun startContinuous() = start()
     fun startWakeWord() = start()
-    fun startBargeIn() = start()
     /** Completes only for this live capture session, after microphone processing is ready. */
     suspend fun awaitReady(sessionId: Long) = Unit
     /** One VAD utterance; implementations must share their existing capture ownership. */
     suspend fun captureEnrollmentSegment(): FloatArray = error("Запись ключевой фразы недоступна")
     fun stop()
+    /** Invalidates capture immediately and awaits release of its recorder/processing session. */
+    suspend fun stopAndAwait() { stop() }
 }
 
 interface SpeechRecognizer : AutoCloseable {

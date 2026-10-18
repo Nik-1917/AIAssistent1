@@ -33,7 +33,7 @@ import org.junit.rules.Timeout
 class VoiceSelfEchoDeviceTest {
     @get:Rule val timeout: Timeout = Timeout.seconds(120)
 
-    @Test fun realNarratorCannotBecomeUserInputInDirectMode() = runBlocking {
+    @Test fun realNarratorCannotBecomeUserInputInSelectedMode() = runBlocking {
         assumeTrue("Requires -e liveAudio true and a silent user",
             InstrumentationRegistry.getArguments().getString("liveAudio") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -67,9 +67,10 @@ class VoiceSelfEchoDeviceTest {
         }
         val settings = AppModule.provideSettingsRepository(context)
         val preferences = settings.readAudioPreferences()
-        check(preferences.activationMode == VoiceActivationMode.DIRECT && !preferences.voiceIdEnabled && preferences.bargeIn) {
-            "Для воспроизведения сбоя выберите обычный ввод, включите перебивание и выключите Voice ID"
+        check(!preferences.voiceIdEnabled) {
+            "Проверка без речи пользователя требует выключенного Voice ID"
         }
+        report.appendText("mode=${preferences.activationMode}\n")
         val provider = AppModule.provideVoiceInputProvider(context) as SherpaOnnxVoiceInputProvider
         val controller = withContext(Dispatchers.Main) {
             SpeechPlaybackController(context, AppModule.provideSpeechPlayback(context))
@@ -100,12 +101,20 @@ class VoiceSelfEchoDeviceTest {
         }
         try {
             foreground.awaitReady()
-            val captureSession = provider.startBargeIn()
+            val captureSession = if (preferences.activationMode == VoiceActivationMode.DIRECT) provider.startContinuous() else provider.startWakeWord()
+            // Paused input must release a genuinely running recorder, not just cancel allocation.
+            if (!preferences.voiceInterruptionEnabled) withTimeout(30_000) { provider.awaitReady(captureSession) }
             withContext(Dispatchers.Main) {
-                // Start TTS immediately. Its production barrier, not a test-only Listening wait,
-                // must confirm actual capture/AEC readiness before the first sound.
+                // Activation waits for actual readiness; direct input waits for actual release.
                 assertTrue(controller.speak(TEXT) {
-                    withTimeout(30_000) { provider.awaitReady(captureSession) }
+                    withTimeout(30_000) {
+                        if (preferences.voiceInterruptionEnabled) provider.awaitReady(captureSession)
+                        else {
+                            provider.stopAndAwait()
+                            assertNull("Paused capture was not released before sound",
+                                AppModule.provideAudioProcessingManager(context).captureStatistics())
+                        }
+                    }
                     if (readyAt == 0L) readyAt = SystemClock.elapsedRealtime()
                 })
             }
@@ -113,8 +122,8 @@ class VoiceSelfEchoDeviceTest {
                 controller.state.first { it is SpeechPlaybackState.Playing || it is SpeechPlaybackState.Error }
             }
             assertTrue("TTS did not begin: ${controller.state.value}", controller.state.value is SpeechPlaybackState.Playing)
-            assertTrue("Speech started before microphone readiness", readyAt > 0)
-            report.appendText("captureReadyAtMs=${readyAt - beganAt} playingObservedAtMs=${SystemClock.elapsedRealtime() - beganAt}\n")
+            assertTrue("Speech started before input policy readiness", readyAt > 0)
+            report.appendText("inputPreparedAtMs=${readyAt - beganAt} playingObservedAtMs=${SystemClock.elapsedRealtime() - beganAt}\n")
             withTimeout(40_000) {
                 controller.state.first { it is SpeechPlaybackState.Idle || it is SpeechPlaybackState.Error }
             }
@@ -125,9 +134,18 @@ class VoiceSelfEchoDeviceTest {
             report.appendText("capture=$statistics guard=${processing.speechEchoGuard.diagnostics.value}\n")
             report.appendText("commands=${commands.get()} interruptions=${interruptions.get()} errors=$failures\n")
             assertTrue("Capture failed: $failures", failures.isEmpty())
-            assertNotNull("Microphone session was not active", statistics)
-            assertTrue("No microphone sound or render reference was measured: $statistics",
-                statistics!!.samples > 16_000 && statistics.rawRms > .00001 && statistics.referenceSamples > 1600)
+            if (preferences.voiceInterruptionEnabled) {
+                assertNotNull("Activation microphone was not active", statistics)
+                assertTrue("No microphone sound or render reference was measured: $statistics",
+                    statistics!!.samples > 16_000 && statistics.rawRms > .00001 && statistics.referenceSamples > 1600)
+            } else {
+                assertNull("Paused input reopened during narration", statistics)
+                val resumed = if (preferences.activationMode == VoiceActivationMode.DIRECT) provider.startContinuous() else provider.startWakeWord()
+                withTimeout(30_000) { provider.awaitReady(resumed) }
+                delay(2_000)
+                assertNotNull("Input did not resume after narration", processing.captureStatistics())
+                report.appendText("captureResumed=true\n")
+            }
             assertEquals("Narrator was accepted as an interrupting voice", 0, interruptions.get())
             assertEquals("Narrator was accepted as a user message", 0, commands.get())
         } finally {

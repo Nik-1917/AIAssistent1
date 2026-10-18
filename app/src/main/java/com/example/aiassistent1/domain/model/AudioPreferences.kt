@@ -6,7 +6,6 @@ data class AudioPreferences(
     val revision: Long = 0,
     val wakeWord: String = "Ассистент",
     val wakeWordEnabled: Boolean = false,
-    val bargeIn: Boolean = true,
     val autoSummary: Boolean = false,
     val conferenceEffects: Boolean = false,
     val soundUri: String? = null,
@@ -14,18 +13,22 @@ data class AudioPreferences(
     val recordingDirectory: String? = null,
     val wakeWordEngine: WakeWordEngine = WakeWordEngine.LEGACY_ASR,
     val policyRevision: Long = 0,
+    val allowVoiceInterruption: Boolean = false,
 ) {
     val activationMode: VoiceActivationMode get() = when {
         !wakeWordEnabled -> VoiceActivationMode.DIRECT
         wakeWordEngine == WakeWordEngine.METRIC_KWS -> VoiceActivationMode.PERSONAL_WORD
         else -> VoiceActivationMode.NAME
     }
+    /** A saved opt-in applies only to activation modes, never to unrestricted direct input. */
+    val voiceInterruptionEnabled: Boolean get() = allowVoiceInterruption && activationMode != VoiceActivationMode.DIRECT
     fun inputPolicy() = VoiceInputPolicy(activationMode, wakeWordEngine, voiceIdEnabled,
         if (voiceIdEnabled) revision else 0, voiceIdEnabled && needsEnrollment,
-        if (activationMode == VoiceActivationMode.NAME) wakeWord else "", policyRevision)
+        if (activationMode == VoiceActivationMode.NAME) wakeWord else "", policyRevision, voiceInterruptionEnabled)
 }
 
 enum class VoiceActivationMode { DIRECT, NAME, PERSONAL_WORD }
 
 data class VoiceInputPolicy(val activation: VoiceActivationMode, val engine: WakeWordEngine,
-    val voiceId: Boolean, val voiceRevision: Long, val enrollment: Boolean, val name: String, val revision: Long)
+    val voiceId: Boolean, val voiceRevision: Long, val enrollment: Boolean, val name: String, val revision: Long,
+    val voiceInterruption: Boolean = false)

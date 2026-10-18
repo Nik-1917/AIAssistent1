@@ -90,8 +90,7 @@ fun AudioSettingsSection(keywordControls: PersonalKeywordControls? = null, voice
             "Активация по имени: локальное распознавание речи после паузы.",
             style = MaterialTheme.typography.bodySmall)
         VoiceProfileSettings(voiceControls, current, controlsBusy) { profileBusy = it }
-        AudioToggle("Прерывать ответ голосом", "Останавливает озвучку после подтверждённой фразы или активации. Нажатие на микрофон всегда останавливает озвучку.",
-            current.bargeIn, !saving) { save { settings.setBargeInEnabled(it) } }
+        VoiceInterruptionSetting(current, !saving) { value -> save { settings.setVoiceInterruptionEnabled(value) } }
         PlaybackCaptureSettings()
         AudioToggle("Вибрация перед ответом", "", current.haptics, !saving) { save { settings.setHapticFeedbackEnabled(it) } }
         Text(if (current.soundUri == null) "Звук активации: колокольчик" else "Звук активации: выбранный файл",
@@ -200,6 +199,23 @@ internal fun PersonalKeywordSettings(controls: PersonalKeywordControls?, current
     }
     fallback?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
     message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+}
+
+@Composable
+internal fun VoiceInterruptionSetting(current: AudioPreferences, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    if (current.activationMode == VoiceActivationMode.DIRECT) {
+        Text("Во время ответа голосовой ввод приостановлен. Чтобы сказать новую команду, нажмите микрофон.",
+            style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    val description = if (!current.allowVoiceInterruption) {
+        "В голосовом режиме микрофон приостановлен на время ответа. После ответа ожидание активации возобновляется."
+    } else if (current.activationMode == VoiceActivationMode.NAME) {
+        "Чтобы остановить диктора, обратитесь по выбранному имени."
+    } else {
+        "Чтобы остановить диктора, произнесите персональное слово, дождитесь сигнала и скажите команду."
+    }
+    AudioToggle("Прерывать ответ голосом", description, current.allowVoiceInterruption, enabled, onChange)
 }
 
 @Composable

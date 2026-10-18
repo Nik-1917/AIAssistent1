@@ -968,12 +968,12 @@ fun ChatScreen(
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
                     InputPanel(
-                        textInputEnabled = !uiState.isProcessing &&
+                        textInputEnabled = !uiState.isProcessing && !uiState.isClearingChat &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
                             uiState.modelAvailability == ModelAvailability.Available &&
                             !uiState.voiceDraft.isVisible,
-                        microphoneEnabled = uiState.speechPlaybackState is SpeechPlaybackState.Playing ||
+                        microphoneEnabled = if (uiState.isClearingChat) uiState.isVoiceMode else uiState.speechPlaybackState is SpeechPlaybackState.Playing ||
                             uiState.speechPlaybackState is SpeechPlaybackState.Generating || (!uiState.isProcessing &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&

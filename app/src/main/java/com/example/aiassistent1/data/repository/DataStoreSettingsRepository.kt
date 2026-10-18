@@ -96,6 +96,8 @@ class DataStoreSettingsRepository(
     private val voiceRevisionKey = androidx.datastore.preferences.core.longPreferencesKey("voice_id_revision")
     private val audioPolicyRevisionKey = androidx.datastore.preferences.core.longPreferencesKey("audio_policy_revision")
     private val wakeWordEnabledKey = booleanPreferencesKey("wake_word_enabled")
+    // New opt-in: the removed legacy barge_in_enabled value must not enable interruption.
+    private val voiceInterruptionEnabledKey = booleanPreferencesKey("activation_voice_interruption_enabled")
     private val recordingDirectoryKey = stringPreferencesKey("conference_recording_directory")
     override suspend fun setRecordingDirectory(uri: String?) {
         dataStore.edit { if (uri == null) it.remove(recordingDirectoryKey) else it[recordingDirectoryKey] = uri }
@@ -108,7 +110,7 @@ class DataStoreSettingsRepository(
             policyRevision = p[audioPolicyRevisionKey] ?: 0L,
             wakeWord = p[customWakeWordKey] ?: "Ассистент",
             wakeWordEnabled = p[wakeWordEnabledKey] ?: false,
-            bargeIn = p[bargeInEnabledKey] ?: true,
+            allowVoiceInterruption = p[voiceInterruptionEnabledKey] ?: false,
             autoSummary = p[autoSummaryEnabledKey] ?: false,
             conferenceEffects = p[conferenceModeEffectsEnabledKey] ?: false,
             soundUri = p[activationSoundUriKey], haptics = p[hapticFeedbackEnabledKey] ?: true,
@@ -149,6 +151,14 @@ class DataStoreSettingsRepository(
             }
         }
     }
+    override suspend fun setVoiceInterruptionEnabled(enabled: Boolean) {
+        dataStore.edit {
+            if ((it[voiceInterruptionEnabledKey] ?: false) != enabled) {
+                it[voiceInterruptionEnabledKey] = enabled
+                invalidateAudioPolicy(it)
+            }
+        }
+    }
     private fun invalidateAudioPolicy(p: androidx.datastore.preferences.core.MutablePreferences) {
         p[audioPolicyRevisionKey] = (p[audioPolicyRevisionKey] ?: 0L) + 1L
     }
@@ -175,7 +185,6 @@ class DataStoreSettingsRepository(
     private val assistantDisplayNameKey = stringPreferencesKey("assistant_display_name")
     private val autoSummaryEnabledKey = booleanPreferencesKey("auto_summary_enabled")
     private val conferenceModeEffectsEnabledKey = booleanPreferencesKey("conference_mode_effects_enabled")
-    private val bargeInEnabledKey = booleanPreferencesKey("barge_in_enabled")
     private val activationSoundUriKey = stringPreferencesKey("activation_sound_uri")
     private val hapticFeedbackEnabledKey = booleanPreferencesKey("haptic_feedback_enabled")
     
@@ -546,14 +555,6 @@ class DataStoreSettingsRepository(
 
     override suspend fun setConferenceModeEffectsEnabled(enabled: Boolean) {
         dataStore.edit { it[conferenceModeEffectsEnabledKey] = enabled }
-    }
-
-    override val bargeInEnabled: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[bargeInEnabledKey] ?: true }
-        .stateIn(scope, SharingStarted.Eagerly, true)
-
-    override suspend fun setBargeInEnabled(enabled: Boolean) {
-        dataStore.edit { it[bargeInEnabledKey] = enabled }
     }
 
     override val activationSoundUri: StateFlow<String?> = dataStore.data

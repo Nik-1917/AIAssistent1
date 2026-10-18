@@ -33,6 +33,7 @@ data class ChatUiState(
     val calendarChatPrompt: CalendarChatPromptUiState? = null,
     val isProcessing: Boolean = false,
     val isCheckingRequest: Boolean = false,
+    val isClearingChat: Boolean = false,
     val isVoiceMode: Boolean = false,
     val voiceDraft: VoiceDraftState = VoiceDraftState(),
     val speechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle,

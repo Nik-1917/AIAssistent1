@@ -19,6 +19,13 @@ internal class ConversationVoiceSession {
 
     fun ticket(chatId: String): Ticket? = if (this.chatId == chatId) Ticket(chatId, revision) else null
 
+    /** Clearing history ends old async input/replies without leaving the selected conversation. */
+    fun restart(chatId: String): Ticket? {
+        if (this.chatId != chatId) return null
+        revision++
+        return ticket(chatId)
+    }
+
     fun accepts(ticket: Ticket?, chatId: String): Boolean = ticket != null && ticket == this.ticket(chatId)
 }
 

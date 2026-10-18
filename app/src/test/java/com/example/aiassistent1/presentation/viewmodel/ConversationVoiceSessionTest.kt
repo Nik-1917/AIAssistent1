@@ -58,6 +58,20 @@ class ConversationVoiceSessionTest {
         assertFalse(session.accepts(null, calendar.chatId))
     }
 
+    @Test fun clearingHistoryRevokesOldAsyncWorkWithoutChangingTheSelectedConversation() {
+        val session = ConversationVoiceSession()
+        session.moveTo("general")
+        val old = session.ticket("general")
+        val afterClear = session.restart("general")
+        assertNotEquals(old, afterClear)
+        assertFalse(session.accepts(old, "general"))
+        assertTrue(session.accepts(afterClear, "general"))
+        assertEquals("general", session.chatId)
+        assertFalse(session.moveTo("general"))
+        assertNull(session.restart("calendar"))
+        assertTrue(session.accepts(afterClear, "general"))
+    }
+
     @Test fun legacyCalendarPageWithChatFlagStillUsesCalendarCommands() {
         assertEquals(calendar, AppNavigationState(AppDestination.CALENDAR, false).normalized())
         assertEquals(general, general.normalized())

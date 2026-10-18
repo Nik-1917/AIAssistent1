@@ -9,8 +9,12 @@ object VoicePlaybackInputPolicy {
 
     fun capture(preferences: AudioPreferences, playbackActive: Boolean, manualInput: Boolean = false): Capture = when {
         manualInput -> Capture.DIRECT
-        playbackActive && !preferences.bargeIn -> Capture.STOP
+        playbackActive && !preferences.voiceInterruptionEnabled -> Capture.STOP
         preferences.activationMode == VoiceActivationMode.DIRECT -> Capture.DIRECT
         else -> Capture.ACTIVATION
     }
+
+    fun acceptsInterruption(preferences: AudioPreferences,
+        capturePolicy: com.example.aiassistent1.domain.model.VoiceInputPolicy?): Boolean =
+        preferences.voiceInterruptionEnabled && preferences.inputPolicy() == capturePolicy
 }

@@ -104,7 +104,6 @@ class SherpaOnnxVoiceInputProvider(
     override fun start() = startCapture(false)
     override fun startContinuous() = startCapture(false)
     override fun startWakeWord() = startCapture(true)
-    override fun startBargeIn() = startCapture(false)
     override suspend fun awaitReady(sessionId: Long) = readiness.await(sessionId)
 
     override suspend fun captureEnrollmentSegment(): FloatArray {
@@ -183,6 +182,14 @@ class SherpaOnnxVoiceInputProvider(
         recordingJob?.cancel()
         activity.value = AudioSessionState.Idle
     }
+    override suspend fun stopAndAwait() {
+        val stopping = synchronized(lock) {
+            stop()
+            recordingJob
+        }
+        stopping?.join()
+        traceVoiceStartup("capture_released")
+    }
     private fun isCurrent(id: Long) = synchronized(lock) { activeSessionId == id }
     override fun close() {
         stop(); warmUpJob.cancel()
@@ -251,7 +258,7 @@ class SherpaOnnxVoiceInputProvider(
                     verifySpeaker = voiceProfileManager::verify,
                     recognize = { recognizer.recognize(it).getOrThrow() },
                     onActivation = { activationFeedback() },
-                    onVerifiedSpeech = { if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id) },
+                    onVerifiedSpeech = { if (isCurrent(id) && settingsRepository.readAudioPreferences().voiceInterruptionEnabled) speechStarts.emit(id) },
                     clock = SystemClock::elapsedRealtime,
                     speakerReady = { !voiceProfileManager.needsEnrollment() },
                 )
@@ -315,7 +322,7 @@ class SherpaOnnxVoiceInputProvider(
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
                     if (requireName) {
                         // An accepted name/KWS activation is intentional input, unlike provisional VAD.
-                        if (settingsRepository.readAudioPreferences().bargeIn && isCurrent(id)) speechStarts.emit(id)
+                        if (settingsRepository.readAudioPreferences().voiceInterruptionEnabled && isCurrent(id)) speechStarts.emit(id)
                         activationFeedback()
                         activatedUntil = SystemClock.elapsedRealtime() + 10_000
                     }
@@ -326,7 +333,7 @@ class SherpaOnnxVoiceInputProvider(
                     if (VoiceCommandAcceptance.hasSpeechText(transcript) && isCurrent(id)) {
                         activationIssue.value = null
                         // Empty ASR, rejected activation and failed Voice ID never stop playback.
-                        if (settingsRepository.readAudioPreferences().bargeIn) speechStarts.emit(id)
+                        if (settingsRepository.readAudioPreferences().voiceInterruptionEnabled) speechStarts.emit(id)
                         input.emit(VoiceInputEvent(id, transcript))
                         activatedUntil = 0
                         activity.value = if (wake) AudioSessionState.Waiting else AudioSessionState.Listening

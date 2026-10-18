@@ -2,10 +2,30 @@ package com.example.aiassistent1.data.repository
 
 import androidx.datastore.preferences.core.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Test
 
 class AudioPreferencesTest {
+    @Test fun legacyInterruptionSwitchCannotOverrideSelectedActivationMode() = runTest {
+        for (legacy in listOf(false, true)) {
+            val store = TestPreferencesDataStore(preferencesOf(
+                booleanPreferencesKey("barge_in_enabled") to legacy,
+                booleanPreferencesKey("voice_id_enabled") to true,
+                stringPreferencesKey("custom_wake_word") to "Ассистент",
+            ))
+            val writer = DataStoreSettingsRepository(store, backgroundScope)
+            for (mode in com.example.aiassistent1.domain.model.VoiceActivationMode.entries) {
+                writer.setVoiceActivationMode(mode)
+                val restored = DataStoreSettingsRepository(store, backgroundScope).readAudioPreferences()
+                assertEquals(mode, restored.activationMode)
+                assertFalse(restored.allowVoiceInterruption)
+                assertFalse(restored.voiceInterruptionEnabled)
+                assertTrue(restored.voiceIdEnabled)
+                assertEquals(legacy, store.data.first()[booleanPreferencesKey("barge_in_enabled")])
+            }
+        }
+    }
     @Test fun legacyDefaultAndUnknownFutureEngineAreSafe() = runTest {
         val legacy = com.example.aiassistent1.domain.model.WakeWordEngine.LEGACY_ASR
         val fresh = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)

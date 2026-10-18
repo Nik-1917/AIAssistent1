@@ -17,6 +17,7 @@ interface SettingsRepository {
     suspend fun setWakeWordEnabled(enabled: Boolean)
     suspend fun setWakeWordEngine(engine: com.example.aiassistent1.domain.model.WakeWordEngine)
     suspend fun setVoiceActivationMode(mode: com.example.aiassistent1.domain.model.VoiceActivationMode)
+    suspend fun setVoiceInterruptionEnabled(enabled: Boolean)
     suspend fun invalidateAudioSession()
     suspend fun setRecordingDirectory(uri: String?)
     val navigationState: Flow<AppNavigationState>
@@ -86,8 +87,6 @@ interface SettingsRepository {
     val conferenceModeEffectsEnabled: StateFlow<Boolean>
     suspend fun setConferenceModeEffectsEnabled(enabled: Boolean)
 
-    val bargeInEnabled: StateFlow<Boolean>
-    suspend fun setBargeInEnabled(enabled: Boolean)
 
     val activationSoundUri: StateFlow<String?>
     suspend fun setActivationSoundUri(uri: String?)
