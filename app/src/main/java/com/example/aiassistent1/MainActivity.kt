@@ -1,5 +1,6 @@
 package com.example.aiassistent1
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.View
 import android.view.ViewTreeObserver
@@ -9,11 +10,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.aiassistent1.di.AppModule
+import com.example.aiassistent1.domain.model.ScreenOrientation
+import com.example.aiassistent1.domain.model.ScreenPreferences
 import com.example.aiassistent1.presentation.ui.AIAssistantApp
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.ui.theme.*
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val chatViewModel: ChatViewModel by viewModels {
@@ -63,6 +70,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                AppModule.provideSettingsRepository(applicationContext).screenPreferences.collect { preferences ->
+                    val orientation = preferences.toRequestedOrientation()
+                    if (requestedOrientation != orientation) {
+                        requestedOrientation = orientation
+                    }
+                }
+            }
+        }
         // Keep the launch window until Compose has the saved page and its history.
         var contentReady = false
         val contentView = findViewById<View>(android.R.id.content)
@@ -83,4 +100,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+internal fun ScreenPreferences.toRequestedOrientation(): Int = when {
+    !orientationLocked -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    orientation == ScreenOrientation.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 }

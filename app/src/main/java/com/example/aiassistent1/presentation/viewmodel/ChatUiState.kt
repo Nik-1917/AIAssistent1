@@ -9,6 +9,7 @@ import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
+import com.example.aiassistent1.domain.model.ScreenPreferences
 import com.example.aiassistent1.domain.model.StoredModel
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
 
@@ -45,6 +46,7 @@ data class ChatUiState(
     val showDeleteMessageConfirmation: Boolean = true,
     val showClearChatConfirmation: Boolean = true,
     val compactDatesEnabled: Boolean = true,
+    val screenPreferences: ScreenPreferences? = null,
     val smoothResponseEnabled: Boolean = false,
     val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,

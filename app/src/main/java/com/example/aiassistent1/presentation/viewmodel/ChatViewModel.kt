@@ -24,6 +24,7 @@ import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.VoiceInputSessionChangedException
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.domain.model.ScreenOrientation
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
 import com.example.aiassistent1.domain.context.ModelContextBuilder
@@ -291,6 +292,11 @@ class ChatViewModel(
         viewModelScope.launch {
             settingsRepository.compactDatesEnabled.collect { enabled ->
                 mutableUiState.update { it.copy(compactDatesEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.screenPreferences.collect { preferences ->
+                mutableUiState.update { it.copy(screenPreferences = preferences) }
             }
         }
         viewModelScope.launch {
@@ -1354,6 +1360,14 @@ class ChatViewModel(
 
     fun setCompactDatesEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setCompactDatesEnabled(enabled) }
+    }
+
+    fun setOrientationLocked(locked: Boolean) {
+        viewModelScope.launch { settingsRepository.setOrientationLocked(locked) }
+    }
+
+    fun setScreenOrientation(orientation: ScreenOrientation) {
+        viewModelScope.launch { settingsRepository.setScreenOrientation(orientation) }
     }
 
     fun setSmoothResponseEnabled(enabled: Boolean) {

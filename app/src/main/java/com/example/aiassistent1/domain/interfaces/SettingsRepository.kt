@@ -7,6 +7,8 @@ import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.CalendarViewState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
+import com.example.aiassistent1.domain.model.ScreenOrientation
+import com.example.aiassistent1.domain.model.ScreenPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -40,6 +42,11 @@ interface SettingsRepository {
 
     val compactDatesEnabled: StateFlow<Boolean>
     suspend fun setCompactDatesEnabled(enabled: Boolean)
+
+    /** Emits the saved pair together, without a temporary default snapshot. */
+    val screenPreferences: Flow<ScreenPreferences>
+    suspend fun setOrientationLocked(locked: Boolean)
+    suspend fun setScreenOrientation(orientation: ScreenOrientation)
 
     val smoothResponseEnabled: StateFlow<Boolean>
     suspend fun setSmoothResponseEnabled(enabled: Boolean)

@@ -158,6 +158,8 @@ import androidx.core.content.ContextCompat
 import kotlin.math.roundToInt
 import kotlin.math.abs
 import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.ScreenOrientation
+import com.example.aiassistent1.domain.model.ScreenPreferences
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.AutomaticContextPolicy
@@ -1150,6 +1152,9 @@ fun ChatScreen(
                 paramsLoaded = uiState.areModelParamsLoaded,
                 compactDatesEnabled = uiState.compactDatesEnabled,
                 onCompactDatesChange = viewModel::setCompactDatesEnabled,
+                screenPreferences = uiState.screenPreferences,
+                onOrientationLockedChange = viewModel::setOrientationLocked,
+                onScreenOrientationChange = viewModel::setScreenOrientation,
                 smoothResponseEnabled = uiState.smoothResponseEnabled,
                 dialogueModeEnabled = uiState.dialogueModeEnabled,
                 autoPlaybackEnabled = uiState.autoPlaybackEnabled,
@@ -2111,6 +2116,9 @@ fun ModelSettingsDialog(
     automaticGeneration: com.example.aiassistent1.domain.model.AutomaticGenerationState? = null,
     chatHistoryPolicy: com.example.aiassistent1.domain.model.ChatHistoryPolicy = com.example.aiassistent1.domain.model.ChatHistoryPolicy.ASK,
     onChatHistoryPolicyChange: (com.example.aiassistent1.domain.model.ChatHistoryPolicy) -> Unit = {},
+    screenPreferences: ScreenPreferences? = null,
+    onOrientationLockedChange: (Boolean) -> Unit = {},
+    onScreenOrientationChange: (ScreenOrientation) -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2427,6 +2435,14 @@ fun ModelSettingsDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+
+                SettingsSection(title = "Экран") {
+                    ScreenSettingsControls(
+                        preferences = screenPreferences,
+                        onOrientationLockedChange = onOrientationLockedChange,
+                        onOrientationChange = onScreenOrientationChange,
+                    )
                 }
 
                 SettingsSection(title = "Даты и время") {

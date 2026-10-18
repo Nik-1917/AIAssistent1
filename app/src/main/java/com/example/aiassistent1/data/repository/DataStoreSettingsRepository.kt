@@ -23,6 +23,8 @@ import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.CalendarViewState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.FloatingControlPositions
+import com.example.aiassistent1.domain.model.ScreenOrientation
+import com.example.aiassistent1.domain.model.ScreenPreferences
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.AssistantDisplayName
 import kotlinx.coroutines.CoroutineScope
@@ -76,6 +78,8 @@ class DataStoreSettingsRepository(
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
     private val compactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
+    private val orientationLockedKey = booleanPreferencesKey("screen_orientation_locked")
+    private val screenOrientationKey = stringPreferencesKey("screen_orientation")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
@@ -252,6 +256,29 @@ class DataStoreSettingsRepository(
 
     override suspend fun setCompactDatesEnabled(enabled: Boolean) {
         dataStore.edit { it[compactDatesEnabledKey] = enabled }
+    }
+
+    override val screenPreferences = dataStore.data.map { preferences ->
+        ScreenPreferences(
+            orientationLocked = preferences[orientationLockedKey] ?: false,
+            orientation = ScreenOrientation.entries.firstOrNull {
+                it.name == preferences[screenOrientationKey]
+            } ?: ScreenOrientation.PORTRAIT,
+        )
+    }.distinctUntilChanged()
+
+    override suspend fun setOrientationLocked(locked: Boolean) {
+        // Keep the chosen orientation when the lock is disabled.
+        dataStore.edit { it[orientationLockedKey] = locked }
+    }
+
+    override suspend fun setScreenOrientation(orientation: ScreenOrientation) {
+        dataStore.edit { preferences ->
+            // A delayed UI event must not change the unavailable selector.
+            if (preferences[orientationLockedKey] == true) {
+                preferences[screenOrientationKey] = orientation.name
+            }
+        }
     }
 
     override val smoothResponseEnabled: StateFlow<Boolean> = dataStore.data
