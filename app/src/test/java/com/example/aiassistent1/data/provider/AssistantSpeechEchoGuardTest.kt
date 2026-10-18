@@ -2,10 +2,76 @@ package com.example.aiassistent1.data.provider
 
 import com.example.aiassistent1.domain.interfaces.SpeakerIdentifier
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import org.junit.Assert.*
 import org.junit.Test
 
 class AssistantSpeechEchoGuardTest {
+    @Test fun narratorReferenceCannotBecomePlayableBeforeItsSignatureIsPrepared() = runTest {
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var referenceComputations = 0
+        val slowSpeaker = object : SpeakerIdentifier by speaker {
+            override suspend fun computeEmbedding(samples: FloatArray): FloatArray? {
+                if (samples.firstOrNull() == .1f) {
+                    referenceComputations++
+                    entered.complete(Unit)
+                    release.await()
+                }
+                return speaker.computeEmbedding(samples)
+            }
+        }
+        val guard = AssistantSpeechEchoGuard(slowSpeaker) { now }
+        val preparation = async(start = CoroutineStart.UNDISPATCHED) {
+            guard.prepareForPlayback("Солнечная система", FloatArray(16_000) { .1f }, 1)
+        }
+        entered.await()
+        assertFalse(preparation.isCompleted)
+        assertFalse(guard.snapshot(now, now + second).overlapsNarrator)
+        release.complete(Unit)
+        val id = preparation.await()
+        guard.queued(id, now, 16_000)
+        assertTrue(guard.assess(FloatArray(16_000) { .2f }, guard.snapshot(now, now + second)).narrator)
+        assertEquals("Reference must be reused by the first captured fragment", 1, referenceComputations)
+        assertTrue(guard.assess(FloatArray(16_000) { .3f }, guard.snapshot(now, now + second)).distinctVoice)
+    }
+
+    @Test fun cancelledPreparationNeverPublishesAReferenceAndAllowsTheNextReply() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val slowSpeaker = object : SpeakerIdentifier by speaker {
+            override suspend fun computeEmbedding(samples: FloatArray): FloatArray? {
+                release.await()
+                return speaker.computeEmbedding(samples)
+            }
+        }
+        val guard = AssistantSpeechEchoGuard(slowSpeaker) { now }
+        val preparation = async(start = CoroutineStart.UNDISPATCHED) {
+            guard.prepareForPlayback("Старый ответ", FloatArray(16_000) { .1f }, 1)
+        }
+        preparation.cancelAndJoin()
+        assertFalse(guard.snapshot(now, now + second).overlapsNarrator)
+        release.complete(Unit)
+        val id = guard.prepareForPlayback("Новый ответ", FloatArray(16_000) { .1f }, 2)
+        guard.queued(id, now, 16_000)
+        assertTrue(guard.assess(FloatArray(16_000) { .2f }, guard.snapshot(now, now + second)).narrator)
+    }
+
+    @Test fun unavailableSpeakerRetainsTextProtectionAndAcceptsANewUserCommand() = runTest {
+        val unavailable = object : SpeakerIdentifier by speaker {
+            override suspend fun prepare(): Unit = error("model unavailable")
+            override suspend fun computeEmbedding(samples: FloatArray): FloatArray? = error("model unavailable")
+        }
+        val guard = AssistantSpeechEchoGuard(unavailable) { now }
+        val id = guard.prepareForPlayback("Солнечная система", FloatArray(16_000), 1)
+        guard.queued(id, now, 16_000)
+        val source = guard.assess(FloatArray(4000), guard.snapshot(now, now + second))
+        assertTrue(source.needsTextCheck)
+        assertTrue(guard.rejectsText(source, "солнечная"))
+        assertFalse(guard.rejectsText(source, "стоп расскажи о Земле"))
+    }
     private val second = 1_000_000_000L
     private var now = 10 * second
     private fun guard(withSpeaker: Boolean = false) = AssistantSpeechEchoGuard(if (withSpeaker) speaker else null) { now }

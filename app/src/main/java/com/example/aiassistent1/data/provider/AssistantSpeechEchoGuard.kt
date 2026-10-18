@@ -33,16 +33,46 @@ internal class AssistantSpeechEchoGuard(private val speaker: SpeakerIdentifier? 
     private var nextId = 0L
     private var nextPlaybackId = 0L
     private val modelMutex = Mutex()
+    private var speakerPrepared = false
     private val mutableDiagnostics = MutableStateFlow(Diagnostics())
     val diagnostics = mutableDiagnostics.asStateFlow()
 
     @Synchronized fun beginPlayback(): Long = ++nextPlaybackId
 
+    suspend fun warmUp(): Boolean = modelMutex.withLock {
+        if (speakerPrepared) return@withLock true
+        try {
+            val identifier = speaker ?: return@withLock false
+            identifier.prepare()
+            speakerPrepared = true
+            true
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { false }
+        catch (_: LinkageError) { false }
+    }
+
+    /** Finish the narrator signature before publishing a reference or allowing its first sound.
+     * A short/unavailable signature keeps the existing text fallback, never disables the guard. */
+    suspend fun prepareForPlayback(text: String, samples: FloatArray, playbackId: Long): Long {
+        warmUp()
+        val pcm = samples.copyOf(minOf(samples.size, 48_000))
+        val signature = modelMutex.withLock { embedding(pcm) }
+        return synchronized(this) {
+            store(text, pcm, playbackId).also { id ->
+                references.getValue(id).apply { embedding = signature; embeddingReady = true }
+            }
+        }
+    }
+
     @Synchronized fun prepare(text: String, samples: FloatArray, playbackId: Long = 0): Long {
+        return store(text, samples.copyOf(minOf(samples.size, 48_000)), playbackId)
+    }
+
+    private fun store(text: String, pcm: FloatArray, playbackId: Long): Long {
         prune()
         val id = ++nextId
         // A speaker signature needs only a short reference, not a copy of the whole reply.
-        references[id] = Reference(tokens(text), samples.copyOf(minOf(samples.size, 48_000)), clock(), playbackId)
+        references[id] = Reference(tokens(text), pcm, clock(), playbackId)
         while (references.size > 12) references.remove(references.keys.first())
         return id
     }

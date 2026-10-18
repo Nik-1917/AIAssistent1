@@ -21,6 +21,7 @@ import com.example.aiassistent1.domain.model.ChatHistoryPolicy
 import com.example.aiassistent1.domain.usecase.ChatContextSession
 import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
+import com.example.aiassistent1.domain.interfaces.VoiceInputSessionChangedException
 import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -1181,9 +1183,46 @@ class ChatViewModel(
         if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return false
         val controller = speechPlaybackController ?: return false
         speechPlaybackConversation = conversation
-        val started = controller.speak(text)
+        val started = controller.speak(text) { awaitVoiceForPlayback(conversation) }
         if (!started) speechPlaybackConversation = null
         return started
+    }
+
+    /** StateFlow starts capture early during synthesis; this barrier confirms the exact live
+     * session before sound. Settings changes and conversation cancellation remain authoritative. */
+    private suspend fun awaitVoiceForPlayback(conversation: ConversationVoiceSession.Ticket?) {
+        val provider = voiceInput ?: return
+        val ready = withTimeoutOrNull(30_000) {
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                if (!voiceConversation.accepts(conversation, uiState.value.activeChatId))
+                    throw CancellationException("Режим разговора изменился")
+                if (!uiState.value.isVoiceMode || !settingsRepository.readAudioPreferences().bargeIn ||
+                    calendarDraftVoiceTarget != null) return@withTimeoutOrNull true
+                if (voiceStartJob?.isActive != true && activeVoiceInputSessionId == null)
+                    startVoiceInput(bargeIn = true)
+                val startup = voiceStartJob
+                startup?.join()
+                if (voiceStartJob !== startup) continue
+                // Permission/service failure may have disabled voice mode while starting.
+                if (!uiState.value.isVoiceMode || !settingsRepository.readAudioPreferences().bargeIn) continue
+                val sessionId = checkNotNull(activeVoiceInputSessionId) { "Не удалось подготовить микрофон для перебивания" }
+                try {
+                    provider.awaitReady(sessionId)
+                } catch (_: VoiceInputSessionChangedException) {
+                    // stop()/policy changes invalidate readiness, but must not cancel the speech job.
+                    kotlinx.coroutines.yield()
+                    continue
+                }
+                currentCoroutineContext().ensureActive()
+                if (sessionId == activeVoiceInputSessionId &&
+                    voiceConversation.accepts(activeVoiceConversation, uiState.value.activeChatId))
+                    return@withTimeoutOrNull true
+            }
+            @Suppress("UNREACHABLE_CODE")
+            false
+        }
+        check(ready == true) { "Не удалось подготовить микрофон для перебивания. Повторите озвучивание." }
     }
 
     private fun handleParsedResponse(

@@ -5,6 +5,7 @@
 #include <vector>
 #include "lame.h"
 #include "webrtc/modules/audio_processing/aec/include/echo_cancellation.h"
+#include "webrtc/modules/audio_processing/aec/echo_cancellation_internal.h"
 #include "webrtc/modules/audio_processing/ns/include/noise_suppression.h"
 static void fail(JNIEnv* e, const char* message) {
     e->ThrowNew(e->FindClass("java/lang/IllegalStateException"), message);
@@ -87,5 +88,11 @@ extern "C" JNIEXPORT void JNICALL JNI_METHOD(processFrame)(JNIEnv* e, jobject, j
     }
     for (float& x : output) x = std::clamp(x / 32768.0f, -1.0f, 1.0f);
     e->SetFloatArrayRegion(data, 0, 160, output);
+}
+// This bundled AEC copies capture through during startup. Read its actual state instead
+// of assuming that allocation, elapsed wall time, or a fixed number of reads means ready.
+extern "C" JNIEXPORT jboolean JNICALL JNI_METHOD(isProcessorReady)(JNIEnv*, jobject, jlong h) {
+    auto p = reinterpret_cast<Processing*>(h);
+    return p && (!p->echo || static_cast<Aec*>(p->aec)->startup_phase == 0);
 }
 extern "C" JNIEXPORT void JNICALL JNI_METHOD(closeProcessor)(JNIEnv*, jobject, jlong h) { delete reinterpret_cast<Processing*>(h); }

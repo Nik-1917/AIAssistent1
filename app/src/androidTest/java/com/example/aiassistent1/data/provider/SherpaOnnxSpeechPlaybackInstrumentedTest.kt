@@ -5,6 +5,11 @@ import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import com.example.aiassistent1.domain.interfaces.SpeechSynthesizer
 import com.example.aiassistent1.domain.model.SynthesizedSpeech
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withTimeout
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,6 +18,40 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 
 @RunWith(AndroidJUnit4::class)
 class SherpaOnnxSpeechPlaybackInstrumentedTest {
+    @Test fun readinessBarrierPreventsFirstSoundAndCanBeCancelled() = runBlocking {
+        val synthesizer = FakeSpeechSynthesizer()
+        val playback = SherpaOnnxSpeechPlayback(synthesizer)
+        val reached = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var started = false
+        try {
+            val first = async {
+                playback.speakWhenReady("Первый ответ", {
+                    reached.complete(Unit)
+                    release.await()
+                }) { started = true }
+            }
+            withTimeout(5_000) { reached.await() }
+            assertEquals(1, synthesizer.calls)
+            assertFalse(started)
+            assertFalse(first.isCompleted)
+            first.cancelAndJoin()
+            assertFalse(started)
+            val second = playback.speakWhenReady("Следующий ответ", {}) { started = true }
+            assertTrue(second.exceptionOrNull()?.message ?: "Next playback failed", second.isSuccess)
+            assertTrue(started)
+        } finally { playback.close() }
+    }
+
+    @Test fun readinessFailureCannotStartTheNarrator() = runBlocking {
+        val playback = SherpaOnnxSpeechPlayback(FakeSpeechSynthesizer())
+        var started = false
+        try {
+            val result = playback.speakWhenReady("Первый ответ", { error("capture failed") }) { started = true }
+            assertTrue(result.isFailure)
+            assertFalse(started)
+        } finally { playback.close() }
+    }
     @Test
     fun `plays synthesized pcm through AudioTrack and releases it`() = runBlocking {
         val synthesizer = FakeSpeechSynthesizer()

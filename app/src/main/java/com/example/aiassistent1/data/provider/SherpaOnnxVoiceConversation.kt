@@ -38,6 +38,7 @@ class SherpaOnnxVoiceInputProvider(
     private val activity = MutableStateFlow(AudioSessionState.Idle)
     private val speechStarts = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     private val lock = Any()
+    private val readiness = VoiceCaptureReadiness()
     private var recordingJob: Job? = null
     private var activeSessionId: Long? = null
     private var nextSessionId = 0L
@@ -91,9 +92,10 @@ class SherpaOnnxVoiceInputProvider(
         activationIssue.value = null
     }
     private val warmUpJob = scope.launch {
-        try { vad.prepare(); recognizer.prepare() }
+        try { vad.prepare(); recognizer.prepare(); processing.prepareInput() }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { /* Lazy initialization will report errors through the input session. */ }
+        catch (_: LinkageError) { /* The capture session reports native-library failures. */ }
     }
     override fun observeInput() = input
     override fun observeErrors() = errors
@@ -103,6 +105,7 @@ class SherpaOnnxVoiceInputProvider(
     override fun startContinuous() = startCapture(false)
     override fun startWakeWord() = startCapture(true)
     override fun startBargeIn() = startCapture(false)
+    override suspend fun awaitReady(sessionId: Long) = readiness.await(sessionId)
 
     override suspend fun captureEnrollmentSegment(): FloatArray {
         val segment = CompletableDeferred<FloatArray>()
@@ -143,29 +146,39 @@ class SherpaOnnxVoiceInputProvider(
         captureEnrollment = enrollment != null
         val id = ++nextSessionId
         activeSessionId = id
+        readiness.begin(id)
+        activity.value = AudioSessionState.Idle
+        traceVoiceStartup("capture_requested session=$id")
         recordingJob = scope.launch {
             try {
                 previous?.join()
                 warmUpJob.join()
+                // A best-effort background warm-up may have failed. Readiness requires success.
+                vad.prepare()
+                recognizer.prepare()
                 capture(id, wake, enrollment)
             }
             catch (cancelled: CancellationException) { enrollment?.cancel(cancelled); throw cancelled }
             catch (error: Exception) {
+                readiness.end(id, error)
                 if (enrollment != null) enrollment.completeExceptionally(error)
                 else if (isCurrent(id)) errors.emit(VoiceInputError(id, error))
             }
             catch (error: LinkageError) {
                 val wrapped = IllegalStateException("Не удалось загрузить аудиобиблиотеку", error)
+                readiness.end(id, wrapped)
                 if (enrollment != null) enrollment.completeExceptionally(wrapped)
                 else if (isCurrent(id)) errors.emit(VoiceInputError(id, wrapped))
             }
             finally {
+                readiness.end(id)
                 synchronized(lock) { if (activeSessionId == id) { activeSessionId = null; captureEnrollment = false; activity.value = AudioSessionState.Idle } }
             }
         }
         id
     }
     override fun stop() = synchronized(lock) {
+        activeSessionId?.let { readiness.end(it) }
         activeSessionId = null
         recordingJob?.cancel()
         activity.value = AudioSessionState.Idle
@@ -227,8 +240,6 @@ class SherpaOnnxVoiceInputProvider(
                 try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
                 finally { resetAfterFeedback.set(true); feedbackPlaying.set(false) }
             }
-            activity.value = if (enrollment != null) AudioSessionState.Enrolling
-                else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
             val recognition = launch {
                 var activatedUntil = 0L
                 var activeWord = initial.wakeWord
@@ -331,6 +342,7 @@ class SherpaOnnxVoiceInputProvider(
             var keywordDetected = false
             var wasSpeech = false
             var speechStartedAt = 0L
+            var captureReady = false
             while (currentCoroutineContext().isActive) {
                 val read = withContext(Dispatchers.IO) { recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING) }
                 check(read >= 0) { "Ошибка микрофона: $read" }
@@ -344,6 +356,16 @@ class SherpaOnnxVoiceInputProvider(
                     keywordDetected = false; wasSpeech = false; speechStartedAt = 0L
                 }
                 val samples = processor.process(FloatArray(read) { pcm[it] / 32768f }, firstSampleTime)
+                if (!captureReady && samples.isNotEmpty() && sampleClock.isReady && processor.isReady()) {
+                    synchronized(lock) {
+                        if (activeSessionId == id) {
+                            activity.value = if (enrollment != null) AudioSessionState.Enrolling
+                                else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
+                            traceVoiceStartup("capture_ready session=$id profile=${processor.profile} clock=${sampleClock.timing}")
+                            captureReady = readiness.ready(id)
+                        }
+                    }
+                }
                 if (samples.isEmpty() || feedbackPlaying.get()) continue
                 timeline.append(samples.size, processor.outputStartTimeNs)
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
@@ -402,6 +424,11 @@ class SherpaOnnxVoiceInputProvider(
             "overlap=${source.context.overlapsNarrator} similarity=${source.similarity} " +
             "textCheck=${source.needsTextCheck} rejected=$rejected")
     }
+
+    private fun traceVoiceStartup(message: String) {
+        if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
+            android.util.Log.d("VoiceInput", "VOICE_STARTUP $message")
+    }
 }
 
 class SherpaOnnxSpeechPlayback(
@@ -416,9 +443,14 @@ class SherpaOnnxSpeechPlayback(
     private val trackLock = Any()
     private var track: AudioTrack? = null
 
-    override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> {
+    override suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit> =
+        speakWhenReady(text, {}, onPlaybackStarted)
+
+    override suspend fun speakWhenReady(text: String, awaitReady: suspend () -> Unit,
+        onPlaybackStarted: () -> Unit): Result<Unit> {
         return try {
             mutex.withLock {
+                currentCoroutineContext().ensureActive()
                 check(!closed.get()) { "Воспроизведение закрыто" }
                 stopped.set(false)
                 var started = false
@@ -436,6 +468,9 @@ class SherpaOnnxSpeechPlayback(
                         val samples = PcmResampler.to16k(speech.samples, speech.sampleRate)
                         if (stopped.get()) break
                         val utteranceId = processing.prepareOutput(chunk, samples, playbackId)
+                        awaitReady()
+                        currentCoroutineContext().ensureActive()
+                        if (stopped.get()) break
                         withContext(Dispatchers.IO) {
                             val active = output ?: run {
                                 val minimum = AudioTrack.getMinBufferSize(16_000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
@@ -455,21 +490,29 @@ class SherpaOnnxSpeechPlayback(
                             // A sentence gap can stall the hardware clock. Feed silence until two
                             // advancing timestamps agree, before exposing its first word to capture.
                             clock.reset()
-                            val deadline = SystemClock.elapsedRealtime() + 500
+                            val prepareStartedAt = SystemClock.elapsedRealtime()
+                            val deadline = prepareStartedAt + 2_000
                             var stable = false
-                            while (!stopped.get() && !stable && SystemClock.elapsedRealtime() < deadline) {
+                            var headFallback = false
+                            while (!stopped.get() && !stable && !headFallback && SystemClock.elapsedRealtime() < deadline) {
                                 currentCoroutineContext().ensureActive()
                                 val written = active.write(silence, 0, silence.size, AudioTrack.WRITE_BLOCKING)
                                 check(written > 0 || stopped.get()) { "Ошибка подготовки аудиовывода: $written" }
                                 writtenFrames += written.coerceAtLeast(0)
                                 if (active.getTimestamp(renderTimestamp))
                                     stable = clock.observe(renderTimestamp.framePosition, renderTimestamp.nanoTime)
+                                clock.observeHead(active.playbackHeadPosition.toLong() and 0xffffffffL)
+                                headFallback = SystemClock.elapsedRealtime() - prepareStartedAt >= 500 && clock.hasAdvancingHead
                             }
                             if (stopped.get()) return@withContext
+                            check(stable || headFallback) { "Не удалось подготовить аудиовывод. Повторите озвучивание." }
+                            android.util.Log.d("SpeechPlayback", "VOICE_STARTUP output_ready playback=$playbackId " +
+                                "utterance=$utteranceId clock=${if (stable) "timestamp" else "playback_head"}")
                             if (!started) {
                                 feedback?.triggerVibration()
                                 started = true
                                 onPlaybackStarted()
+                                android.util.Log.d("SpeechPlayback", "VOICE_STARTUP speech_started playback=$playbackId")
                             }
                             var nextClockPoll = System.nanoTime() + if (stable) 10_000_000_000L else 1_000_000_000L
                             var offset = 0

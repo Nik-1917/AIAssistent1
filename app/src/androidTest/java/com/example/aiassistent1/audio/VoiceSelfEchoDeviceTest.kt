@@ -14,7 +14,6 @@ import androidx.test.runner.lifecycle.Stage
 import com.example.aiassistent1.MainActivity
 import com.example.aiassistent1.data.provider.SherpaOnnxVoiceInputProvider
 import com.example.aiassistent1.di.AppModule
-import com.example.aiassistent1.domain.model.AudioSessionState
 import com.example.aiassistent1.domain.model.VoiceActivationMode
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
@@ -82,6 +81,7 @@ class VoiceSelfEchoDeviceTest {
         val interruptions = AtomicInteger()
         val failures = mutableListOf<String>()
         val beganAt = SystemClock.elapsedRealtime()
+        var readyAt = 0L
         val input = launch(start = CoroutineStart.UNDISPATCHED) {
             provider.observeInput().collect { event ->
                 commands.incrementAndGet()
@@ -100,15 +100,21 @@ class VoiceSelfEchoDeviceTest {
         }
         try {
             foreground.awaitReady()
-            provider.startBargeIn()
-            withTimeout(25_000) { provider.observeActivity().first { it == AudioSessionState.Listening } }
+            val captureSession = provider.startBargeIn()
             withContext(Dispatchers.Main) {
-                assertTrue(controller.speak(TEXT))
+                // Start TTS immediately. Its production barrier, not a test-only Listening wait,
+                // must confirm actual capture/AEC readiness before the first sound.
+                assertTrue(controller.speak(TEXT) {
+                    withTimeout(30_000) { provider.awaitReady(captureSession) }
+                    if (readyAt == 0L) readyAt = SystemClock.elapsedRealtime()
+                })
             }
             withTimeout(35_000) {
                 controller.state.first { it is SpeechPlaybackState.Playing || it is SpeechPlaybackState.Error }
             }
             assertTrue("TTS did not begin: ${controller.state.value}", controller.state.value is SpeechPlaybackState.Playing)
+            assertTrue("Speech started before microphone readiness", readyAt > 0)
+            report.appendText("captureReadyAtMs=${readyAt - beganAt} playingObservedAtMs=${SystemClock.elapsedRealtime() - beganAt}\n")
             withTimeout(40_000) {
                 controller.state.first { it is SpeechPlaybackState.Idle || it is SpeechPlaybackState.Error }
             }

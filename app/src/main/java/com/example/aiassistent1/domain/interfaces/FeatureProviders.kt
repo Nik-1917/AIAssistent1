@@ -20,6 +20,8 @@ interface InputProvider {
     fun startContinuous() = start()
     fun startWakeWord() = start()
     fun startBargeIn() = start()
+    /** Completes only for this live capture session, after microphone processing is ready. */
+    suspend fun awaitReady(sessionId: Long) = Unit
     /** One VAD utterance; implementations must share their existing capture ownership. */
     suspend fun captureEnrollmentSegment(): FloatArray = error("Запись ключевой фразы недоступна")
     fun stop()
@@ -36,8 +38,17 @@ interface SpeechSynthesizer : AutoCloseable {
 
 interface SpeechPlayback : AutoCloseable {
     suspend fun speak(text: String, onPlaybackStarted: () -> Unit): Result<Unit>
+    /** Implementations may synthesize first, but must await readiness before audible output. */
+    suspend fun speakWhenReady(text: String, awaitReady: suspend () -> Unit,
+        onPlaybackStarted: () -> Unit): Result<Unit> {
+        awaitReady()
+        return speak(text, onPlaybackStarted)
+    }
     fun stop()
 }
+
+/** A stopped/replaced microphone is not evidence that a new session is ready. */
+class VoiceInputSessionChangedException : IllegalStateException("Сеанс микрофона изменился")
 
 interface VoiceActivityDetector : AutoCloseable {
     fun isSpeechDetected(): Boolean = false

@@ -5,6 +5,20 @@ internal class PlaybackSampleClock {
     private var anchorNs: Long? = null
     private var previousPosition: Long? = null
     private var previousTime: Long? = null
+    private var previousHead: Long? = null
+    private var headAdvances = 0
+    val isStable: Boolean get() = anchorNs != null
+    val hasAdvancingHead: Boolean get() = headAdvances >= 2
+
+    /** A route without timestamps still has to demonstrate real output progress. */
+    fun observeHead(position: Long) {
+        val previous = previousHead
+        if (previous != null) {
+            if (position < previous) headAdvances = 0
+            else if (position > previous) headAdvances++
+        }
+        previousHead = position
+    }
 
     fun observe(position: Long, timeNs: Long): Boolean {
         val previous = previousPosition
@@ -19,9 +33,15 @@ internal class PlaybackSampleClock {
         return true
     }
 
-    fun reset() { anchorNs = null; previousPosition = null; previousTime = null }
+    fun reset() {
+        anchorNs = null; previousPosition = null; previousTime = null
+        previousHead = null; headAdvances = 0
+    }
 
-    fun timeNs(position: Long, playedPosition: Long, nowNs: Long): Long = anchorNs?.let {
+    fun timestampTimeNs(position: Long): Long? = anchorNs?.let {
         it + position * PlaybackEchoReference.NANOS_PER_SAMPLE
-    } ?: (nowNs + (position - playedPosition).coerceAtLeast(0) * PlaybackEchoReference.NANOS_PER_SAMPLE + 30_000_000L)
+    }
+
+    fun timeNs(position: Long, playedPosition: Long, nowNs: Long): Long = timestampTimeNs(position)
+        ?: (nowNs + (position - playedPosition).coerceAtLeast(0) * PlaybackEchoReference.NANOS_PER_SAMPLE + 30_000_000L)
 }

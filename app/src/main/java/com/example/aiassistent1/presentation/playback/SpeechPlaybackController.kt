@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface SpeechPlaybackState {
     data object Idle : SpeechPlaybackState
@@ -84,7 +85,7 @@ class SpeechPlaybackController(
         )
     }
 
-    fun speak(text: String): Boolean {
+    fun speak(text: String, awaitInputReady: suspend () -> Unit = {}): Boolean {
         if (text.isBlank() || isClosed) return false
         val normalizedText = SpeechTextNormalizer.normalize(text)
         if (normalizedText.isBlank()) return false
@@ -100,7 +101,8 @@ class SpeechPlaybackController(
                 check(audioManager.requestAudioFocus(audioFocusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                     "Не удалось получить доступ к аудиовыводу"
                 }
-                val result = speechPlayback.speak(normalizedText) {
+                val result = speechPlayback.speakWhenReady(normalizedText,
+                    awaitReady = { withContext(Dispatchers.Main.immediate) { awaitInputReady() } }) {
                     if (activeSessionId == sessionId) mutableState.value = SpeechPlaybackState.Playing
                 }
                 if (!isActive || activeSessionId != sessionId) return@launch

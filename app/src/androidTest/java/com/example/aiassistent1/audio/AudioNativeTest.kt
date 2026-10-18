@@ -11,6 +11,24 @@ import java.io.File
 import kotlin.math.sin
 
 class AudioNativeTest {
+    @Test fun aecReadinessRequiresProcessedCaptureAndIsResetForEachSession() {
+        repeat(2) {
+            val handle = NativeAudio.createProcessor(true)
+            try {
+                assertFalse("Allocation alone is not AEC readiness", NativeAudio.isProcessorReady(handle))
+                NativeAudio.processFrame(handle, FloatArray(160), true, 0)
+                assertFalse("Render alone cannot finish capture startup", NativeAudio.isProcessorReady(handle))
+                var frames = 0
+                while (!NativeAudio.isProcessorReady(handle) && frames < 100) {
+                    NativeAudio.processFrame(handle, FloatArray(160), true, 0)
+                    NativeAudio.processFrame(handle, FloatArray(160), false, 0)
+                    frames++
+                }
+                assertTrue("AEC never left its pass-through startup phase", NativeAudio.isProcessorReady(handle))
+                assertTrue(frames > 0)
+            } finally { NativeAudio.closeProcessor(handle) }
+        }
+    }
     @Test fun mp3IsDecodableAndEncoderIsIsolatedPerSession() {
         val file = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "encoder-test.mp3")
         try {

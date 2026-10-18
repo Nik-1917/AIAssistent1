@@ -4,6 +4,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PlaybackSampleClockTest {
+    @Test fun fallbackRequiresAdvancingHardwareHeadAndResetsBetweenChunks() {
+        val clock = PlaybackSampleClock()
+        clock.observeHead(0); clock.observeHead(0)
+        assertFalse(clock.hasAdvancingHead)
+        clock.observeHead(160)
+        assertFalse(clock.hasAdvancingHead)
+        clock.observeHead(320)
+        assertTrue(clock.hasAdvancingHead)
+        assertFalse(clock.isStable)
+        assertNull(clock.timestampTimeNs(320))
+        clock.reset()
+        assertFalse(clock.hasAdvancingHead)
+        clock.observeHead(320); clock.observeHead(320)
+        assertFalse(clock.hasAdvancingHead)
+    }
+
+    @Test fun hardwareHeadRewindInvalidatesFallbackProgress() {
+        val clock = PlaybackSampleClock()
+        clock.observeHead(0); clock.observeHead(160); clock.observeHead(320)
+        clock.observeHead(0)
+        assertFalse(clock.hasAdvancingHead)
+    }
     @Test fun initialAndFrozenTimestampsCannotEstablishTheRenderClock() {
         val clock = PlaybackSampleClock()
         assertFalse(clock.observe(0, 1_000_000_000))

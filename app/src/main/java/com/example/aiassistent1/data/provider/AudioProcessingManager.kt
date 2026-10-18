@@ -19,8 +19,11 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
     internal val speechEchoGuard = AssistantSpeechEchoGuard(speakerIdentifier)
 
     internal fun beginOutput() = speechEchoGuard.beginPlayback()
-    internal fun prepareOutput(text: String, samples: FloatArray, playbackId: Long) =
-        speechEchoGuard.prepare(text, samples, playbackId)
+    internal suspend fun prepareInput() = speechEchoGuard.warmUp()
+    internal suspend fun prepareOutput(text: String, samples: FloatArray, playbackId: Long) =
+        speechEchoGuard.prepareForPlayback(text, samples, playbackId).also {
+            Log.d("AudioProcessing", "VOICE_STARTUP narrator_ready playback=$playbackId utterance=$it")
+        }
 
     @Synchronized fun open(recorder: AudioRecord, enabled: Boolean, echo: Boolean,
         backend: EchoBackend = EchoBackend.WEBRTC): Session {
@@ -75,6 +78,7 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
         private var referenceSamples = 0L
         private var rawEnergy = 0.0
         private var processedEnergy = 0.0
+        private var closed = false
         var outputStartTimeNs: Long = 0
             private set
         val softwareEcho: Boolean
@@ -184,6 +188,9 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
         @Synchronized internal fun statistics() = CaptureStatistics(capturedSamples, referenceSamples,
             sqrt(rawEnergy / capturedSamples.coerceAtLeast(1)), sqrt(processedEnergy / capturedSamples.coerceAtLeast(1)), profile)
 
+        @Synchronized internal fun isReady(): Boolean = !closed && capturedSamples > 0 &&
+            (!softwareEcho || NativeAudio.isProcessorReady(native))
+
         @Synchronized fun flush(): FloatArray {
             if (native == 0L) return FloatArray(0)
             val result = FloatArray(pending.size * 160 + nearSize)
@@ -210,6 +217,7 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
         }
 
         @Synchronized override fun close() {
+            closed = true
             if (native != 0L) NativeAudio.closeProcessor(native)
             native = 0
             pending.forEach { it.samples.fill(0f) }; pending.clear()
