@@ -16,4 +16,6 @@ data class CalendarDraftRecord(
     val savedEventId: String? = null,
     // Written before committing. A retry uses the same immutable data and receipt ID.
     val saveRequested: Boolean = false,
+    // Retained until the linked reply has been deleted from chat storage.
+    val discardRequested: Boolean = false,
 )

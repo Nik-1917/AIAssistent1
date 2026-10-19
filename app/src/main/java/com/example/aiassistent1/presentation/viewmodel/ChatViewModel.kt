@@ -97,7 +97,9 @@ class ChatViewModel(
     private val chatContextRepository: ChatContextRepository,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
-    private val calendarDraftController = CalendarDraftController(calendarDraftRepository, viewModelScope)
+    private val calendarDraftController = CalendarDraftController(calendarDraftRepository, viewModelScope) { id ->
+        withContext(Dispatchers.IO) { chatRepository.deleteCalendarDraftReply(id) }
+    }
     private var calendarDraftVoiceTarget: Pair<String, CalendarEventField>? = null
     private val speechPlaybackController = speechPlayback?.let {
         SpeechPlaybackController(context, it)
@@ -177,7 +179,10 @@ class ChatViewModel(
         }
         viewModelScope.launch {
             calendarDraftController.state.collect { drafts ->
-                mutableUiState.update { it.copy(calendarDrafts = drafts) }
+                pendingChatMessages.discardCalendarReplies(drafts.discardedReplyIds)
+                mutableUiState.update { state ->
+                    state.copy(calendarDrafts = drafts, messages = state.messages.filterNot(pendingChatMessages::isDiscarded))
+                }
             }
         }
         observeAppSession()
@@ -2007,6 +2012,7 @@ class ChatViewModel(
     }
 
     private fun updateMessage(message: ChatMessage, isStreaming: Boolean = false) {
+        if (pendingChatMessages.isDiscarded(message)) return
         pendingChatMessages.put(message, isStreaming)
         mutableUiState.update { state ->
             if (state.activeChatId != message.chatId) state

@@ -19,4 +19,7 @@ interface ChatMessageDao {
 
     @Query("DELETE FROM chat_messages WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM chat_messages WHERE id = :id AND chatId = 'calendar' AND role = 'ASSISTANT'")
+    suspend fun deleteCalendarDraftReply(id: String)
 }

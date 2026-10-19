@@ -17,6 +17,7 @@ data class CalendarDraftsState(
     val showList: Boolean = false,
     val isLoaded: Boolean = false,
     val storageError: String? = null,
+    val discardedReplyIds: Set<String> = emptySet(),
 ) {
     val selected: CalendarEventDraftUiState? get() = drafts.firstOrNull { it.requestId == selectedId }
 }
@@ -25,17 +26,22 @@ data class CalendarDraftsState(
 class CalendarDraftController(
     private val repository: CalendarDraftRepository,
     private val scope: CoroutineScope,
+    private val deleteReply: suspend (String) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow(CalendarDraftsState())
     val state = mutableState.asStateFlow()
     private val restored = CompletableDeferred<Boolean>()
     private var lastWrite: Deferred<Boolean>? = null
     private var loading = false
+    private val pendingDiscards = linkedMapOf<String, CalendarDraftRecord>()
+    private val discardsInFlight = mutableSetOf<String>()
+    private val discardErrors = linkedMapOf<String, String>()
 
     init {
         scope.launch {
             restore()
             restored.complete(state.value.isLoaded)
+            if (state.value.isLoaded && pendingDiscards.isNotEmpty()) resumeDiscards(persist())
         }
     }
 
@@ -43,11 +49,19 @@ class CalendarDraftController(
         if (loading) return
         loading = true
         try {
-            val loaded = repository.load().map { it.toUi() }
+            val records = repository.load()
+            records.filter { it.discardRequested }.forEach { record ->
+                check(record.chatId == "calendar" && record.savedEventId == null && !record.saveRequested) {
+                    "Недопустимое состояние удаления черновика"
+                }
+                pendingDiscards.putIfAbsent(record.requestId, record)
+            }
+            val loaded = records.filterNot { it.requestId in pendingDiscards }.map { it.toUi() }
             val local = state.value.drafts.associateBy { it.requestId }
             mutableState.value = state.value.copy(
                 drafts = loaded.map { local[it.requestId] ?: it } + local.values.filter { draft -> loaded.none { it.requestId == draft.requestId } },
                 isLoaded = true, storageError = null,
+                discardedReplyIds = state.value.discardedReplyIds + pendingDiscards.keys,
             )
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -60,14 +74,15 @@ class CalendarDraftController(
         scope.launch {
             restored.await()
             if (!state.value.isLoaded) restore()
-            if (state.value.isLoaded) persist()
+            if (state.value.isLoaded) resumeDiscards(persist())
         }
     }
 
     fun add(draft: CalendarEventDraftUiState) {
         scope.launch {
             restored.await()
-            if (state.value.drafts.any { it.requestId == draft.requestId }) return@launch
+            if (draft.requestId in state.value.discardedReplyIds ||
+                state.value.drafts.any { it.requestId == draft.requestId }) return@launch
             mutableState.value = state.value.copy(drafts = state.value.drafts + draft)
             persist()
         }
@@ -94,12 +109,43 @@ class CalendarDraftController(
 
     fun discard(id: String) {
         val draft = find(id) ?: return
-        if (!draft.isEditable) return
+        if (!draft.isEditable || draft.chatId != "calendar") return
+        pendingDiscards[id] = draft.toRecord().copy(discardRequested = true)
         mutableState.value = state.value.copy(
             drafts = state.value.drafts.filterNot { it.requestId == id },
             selectedId = state.value.selectedId.takeUnless { it == id },
+            discardedReplyIds = state.value.discardedReplyIds + id,
         )
-        persist()
+        resumeDiscards(persist())
+    }
+
+    /** Persist intent before touching Room; interrupted cleanup is safe to repeat after restart. */
+    private fun resumeDiscards(durableIntent: Deferred<Boolean>) {
+        pendingDiscards.keys.toList().forEach { id ->
+            if (!discardsInFlight.add(id)) return@forEach
+            scope.launch {
+                try {
+                    if (!durableIntent.await()) {
+                        val message = state.value.storageError ?: "Не удалось сохранить удаление черновика. Повторите попытку."
+                        discardErrors[id] = message
+                        mutableState.value = state.value.copy(storageError = message)
+                        return@launch
+                    }
+                    deleteReply(id)
+                    pendingDiscards.remove(id)
+                    discardErrors.remove(id)
+                    persist().await()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    val message = "Не удалось удалить ответ черновика: ${error.message}"
+                    discardErrors[id] = message
+                    mutableState.value = state.value.copy(storageError = message)
+                } finally {
+                    discardsInFlight.remove(id)
+                }
+            }
+        }
     }
 
     fun find(id: String): CalendarEventDraftUiState? = state.value.drafts.firstOrNull { it.requestId == id }
@@ -156,13 +202,13 @@ class CalendarDraftController(
 
     private fun persist(): Deferred<Boolean> {
         if (!state.value.isLoaded) return CompletableDeferred(false)
-        val snapshot = state.value.drafts.map { it.toRecord() }
+        val snapshot = state.value.drafts.map { it.toRecord() } + pendingDiscards.values
         val previous = lastWrite
         return scope.async {
             previous?.await()
             try {
                 repository.save(snapshot)
-                mutableState.value = state.value.copy(storageError = null)
+                mutableState.value = state.value.copy(storageError = discardErrors.values.firstOrNull())
                 true
             } catch (cancelled: CancellationException) {
                 throw cancelled

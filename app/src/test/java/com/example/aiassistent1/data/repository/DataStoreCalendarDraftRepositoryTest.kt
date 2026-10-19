@@ -1,6 +1,8 @@
 package com.example.aiassistent1.data.repository
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.aiassistent1.domain.model.CalendarDraftRecord
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +30,7 @@ class DataStoreCalendarDraftRepositoryTest {
             ),
             CalendarDraftRecord("second", "calendar", 124, value = Long.MAX_VALUE, saveRequested = true),
             CalendarDraftRecord("third", "calendar", 125, savedEventId = "saved-event"),
+            CalendarDraftRecord("discarded", "calendar", 126, discardRequested = true),
         )
         val firstScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         try {
@@ -40,5 +43,23 @@ class DataStoreCalendarDraftRepositoryTest {
             val restored = DataStoreCalendarDraftRepository(PreferenceDataStoreFactory.create(scope = secondScope) { file })
             assertEquals(expected, restored.load())
         } finally { secondScope.coroutineContext[Job]!!.cancelAndJoin() }
+    }
+
+    @Test fun `legacy version one drafts without discard flag remain visible`() = runBlocking {
+        val file = File(temporary.root, "legacy.preferences_pb")
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val store = PreferenceDataStoreFactory.create(scope = scope) { file }
+            val repository = DataStoreCalendarDraftRepository(store)
+            val draft = CalendarDraftRecord("legacy", "calendar", 1, title = "Старый черновик")
+            // Write the legacy fixture once; replacing an open file is platform-dependent on Windows.
+            store.edit { preferences ->
+                preferences[stringPreferencesKey("drafts")] = """
+                    {"version":1,"items":[{"requestId":"legacy","chatId":"calendar",
+                    "createdAt":1,"title":"Старый черновик","fieldInputs":{},"saveRequested":false}]}
+                """.trimIndent()
+            }
+            assertEquals(listOf(draft), repository.load())
+        } finally { scope.coroutineContext[Job]!!.cancelAndJoin() }
     }
 }

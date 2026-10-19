@@ -220,7 +220,7 @@ internal fun CalendarDraftEditorSheet(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false }, title = { Text("Удалить черновик?") },
-            text = { Text("Введённые данные этого черновика будут удалены.") },
+            text = { Text("Черновик и связанный ответ ассистента будут удалены из чата. Ваш запрос останется.") },
             confirmButton = { TextButton(onClick = { confirmDelete = false; onDelete() }) { Text("Удалить") } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Оставить") } },
         )

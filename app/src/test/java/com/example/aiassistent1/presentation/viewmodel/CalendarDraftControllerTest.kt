@@ -3,7 +3,10 @@ package com.example.aiassistent1.presentation.viewmodel
 import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.model.CalendarDraftRecord
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -23,6 +26,128 @@ class CalendarDraftControllerTest {
             check(!failWrites && !(failSavedStatus && drafts.any { it.savedEventId != null })) { "Disk unavailable" }
             stored = drafts
         }
+    }
+
+    @Test fun `discard persists intent before deleting only its reply and survives reopen`() = runTest {
+        val repository = Repository()
+        val deleted = mutableListOf<String>()
+        val controller = CalendarDraftController(repository, this) { id ->
+            assertTrue(repository.stored.single { it.requestId == id }.discardRequested)
+            deleted += id
+        }
+        controller.add(draft("a")); controller.add(draft("b")); runCurrent()
+        controller.open("b")
+        controller.edit("b", CalendarEventField.Title, "Сохранить введённый текст")
+        controller.discard("a")
+        controller.discard("a")
+        controller.add(draft("a")) // A delayed callback cannot resurrect the discarded draft.
+        assertNull(controller.find("a"))
+        assertEquals(setOf("a"), controller.state.value.discardedReplyIds)
+        assertEquals("b", controller.state.value.selectedId)
+        runCurrent()
+        assertEquals(listOf("a"), deleted)
+        assertEquals(listOf("b"), repository.stored.map { it.requestId })
+        val reopened = CalendarDraftController(repository, this)
+        runCurrent()
+        assertNull(reopened.find("a"))
+        assertEquals("Сохранить введённый текст", reopened.find("b")!!.fieldText(CalendarEventField.Title))
+    }
+
+    @Test fun `discard never touches saved saving or confirmed drafts or an unknown id`() = runTest {
+        val repository = Repository()
+        val controller = CalendarDraftController(repository, this) { error("Reply must stay") }
+        val protected = listOf(
+            draft("saved").copy(savedEventId = "event"),
+            draft("saving").copy(isSaving = true),
+            draft("confirmed").copy(saveRequested = true),
+            draft("other-chat").copy(chatId = "general"),
+        )
+        protected.forEach(controller::add)
+        runCurrent()
+        (protected.map { it.requestId } + "unknown").forEach(controller::discard)
+        runCurrent()
+        assertEquals(protected, controller.state.value.drafts)
+        assertTrue(controller.state.value.discardedReplyIds.isEmpty())
+        assertTrue(repository.stored.none { it.discardRequested })
+    }
+
+    @Test fun `failed intent write keeps reply on disk until storage retry succeeds`() = runTest {
+        val repository = Repository()
+        val deleted = mutableListOf<String>()
+        val controller = CalendarDraftController(repository, this) { deleted += it }
+        controller.add(draft("a")); runCurrent()
+        repository.failWrites = true
+        controller.discard("a"); runCurrent()
+        assertTrue(deleted.isEmpty())
+        assertFalse(repository.stored.single().discardRequested)
+        assertNull(controller.find("a"))
+        assertNotNull(controller.state.value.storageError)
+        repository.failWrites = false
+        controller.retryStorage(); runCurrent()
+        assertEquals(listOf("a"), deleted)
+        assertTrue(repository.stored.isEmpty())
+        assertNull(controller.state.value.storageError)
+    }
+
+    @Test fun `reply deletion failure remains retryable while other drafts are edited`() = runTest {
+        val repository = Repository()
+        var failDelete = true
+        var calls = 0
+        val controller = CalendarDraftController(repository, this) {
+            calls++
+            check(!failDelete) { "Chat storage unavailable" }
+        }
+        controller.add(draft("a")); runCurrent()
+        controller.discard("a"); runCurrent()
+        assertTrue(repository.stored.single().discardRequested)
+        assertNotNull(controller.state.value.storageError)
+        controller.add(draft("b")); runCurrent()
+        assertNotNull(controller.state.value.storageError)
+        assertEquals(listOf("b"), controller.state.value.drafts.map { it.requestId })
+        failDelete = false
+        controller.retryStorage(); runCurrent()
+        assertEquals(2, calls)
+        assertEquals(listOf("b"), repository.stored.map { it.requestId })
+        assertNull(controller.state.value.storageError)
+    }
+
+    @Test fun `restart completes a persisted discard interrupted before reply deletion`() = runTest {
+        val repository = Repository()
+        val firstJob = Job(coroutineContext[Job])
+        val firstScope = CoroutineScope(coroutineContext + firstJob)
+        val gate = CompletableDeferred<Unit>()
+        val first = CalendarDraftController(repository, firstScope) { gate.await() }
+        first.add(draft("a")); runCurrent()
+        first.discard("a"); runCurrent()
+        assertTrue(repository.stored.single().discardRequested)
+        firstJob.cancelAndJoin()
+        val deleted = mutableListOf<String>()
+        val restarted = CalendarDraftController(repository, this) { deleted += it }
+        runCurrent()
+        assertNull(restarted.find("a"))
+        assertEquals(setOf("a"), restarted.state.value.discardedReplyIds)
+        assertEquals(listOf("a"), deleted)
+        assertTrue(repository.stored.isEmpty())
+    }
+
+    @Test fun `lost final cleanup write repeats reply deletion safely after restart`() = runTest {
+        val repository = Repository()
+        val replies = mutableSetOf("a")
+        val controller = CalendarDraftController(repository, this) {
+            replies.remove(it)
+            repository.failWrites = true
+        }
+        controller.add(draft("a")); runCurrent()
+        controller.discard("a"); runCurrent()
+        assertTrue(replies.isEmpty())
+        assertTrue(repository.stored.single().discardRequested)
+        assertNotNull(controller.state.value.storageError)
+        repository.failWrites = false
+        val restarted = CalendarDraftController(repository, this) { replies.remove(it); Unit }
+        runCurrent()
+        assertTrue(restarted.state.value.drafts.isEmpty())
+        assertTrue(repository.stored.isEmpty())
+        assertTrue(replies.isEmpty())
     }
 
     @Test fun `new event and closing editor retain unfinished input in the first event`() = runTest {

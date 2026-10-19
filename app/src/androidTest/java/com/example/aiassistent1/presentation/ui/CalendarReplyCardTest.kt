@@ -1,15 +1,21 @@
 package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.parser.AssistantResponseParser
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
+import com.example.aiassistent1.presentation.viewmodel.CalendarDraftsState
+import com.example.aiassistent1.presentation.viewmodel.ChatUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -18,7 +24,7 @@ import org.junit.Test
 class CalendarReplyCardTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun createdDraftReplacesReplyAndItsControlsAndStillOpens() {
+    @Test fun createdDraftShowsOnlyItsCardAndStillOpens() {
         val reply = "Новое событие: Встреча."
         val message = calendarReply(reply)
         var draft by mutableStateOf<CalendarEventDraftUiState?>(null)
@@ -54,6 +60,82 @@ class CalendarReplyCardTest {
         compose.onNodeWithText("Перейти").performClick()
         compose.runOnIdle { assertEquals("saved-event", openedEventId) }
         compose.onNodeWithText(reply).assertDoesNotExist()
+    }
+
+    @Test fun rawCalendarStreamChangesToOneCardWithSmoothTextEnabled() = assertStreamThenSingleCard(true)
+
+    @Test fun rawCalendarStreamChangesToOneCardWithSmoothTextDisabled() = assertStreamThenSingleCard(false)
+
+    private fun assertStreamThenSingleCard(smooth: Boolean) {
+        val user = ChatMessage("user", MessageRole.USER, "Создай встречу", chatId = "calendar")
+        val reply = calendarReply("Новое событие: Встреча.")
+        val chunks = listOf(
+            """{"intent":"calendar_add", """,
+            """{"intent":"calendar_add", "reply":"Новое событие: """,
+        )
+        var state by mutableStateOf(ChatUiState(
+            activeChatId = "calendar", messages = listOf(user, reply.copy(content = chunks.first())),
+            isProcessing = true,
+            calendarDrafts = CalendarDraftsState(isLoaded = true),
+        ))
+        compose.setContent {
+            MaterialTheme {
+                LazyColumn {
+                    items(state.messages, key = { it.id }) { message ->
+                        ChatMessageItem(
+                            message = message,
+                            calendarDraft = state.calendarDrafts.drafts.firstOrNull { it.requestId == message.id },
+                            onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
+                            isStreaming = state.isGenerating && message.role == MessageRole.ASSISTANT,
+                            smoothResponseEnabled = smooth, onCopy = {}, onSpeak = {},
+                            onRetry = if (!state.isProcessing && message.role == MessageRole.ASSISTANT) ({}) else null,
+                            onDelete = if (!state.isProcessing && message.role == MessageRole.ASSISTANT) ({}) else null,
+                            modifier = Modifier.testTag(message.id),
+                        )
+                    }
+                }
+            }
+        }
+        chunks.forEach { content ->
+            compose.runOnIdle { state = state.copy(messages = listOf(user, reply.copy(content = content))) }
+            compose.waitUntil(5_000) { compose.onAllNodesWithText(content).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(user.content).assertIsDisplayed()
+            compose.onNodeWithText(content).assertIsDisplayed()
+            compose.onNodeWithText("Ассистент").assertIsDisplayed()
+            compose.onNodeWithText("Черновик").assertDoesNotExist()
+        }
+        val readyDrafts = CalendarDraftsState(
+            drafts = listOf(CalendarEventDraftUiState(requestId = reply.id, title = "Встреча")), isLoaded = true,
+        )
+        compose.mainClock.autoAdvance = false
+        compose.runOnIdle {
+            state = state.copy(messages = listOf(user, reply), calendarDrafts = readyDrafts, isProcessing = false)
+        }
+        repeat(4) {
+            compose.mainClock.advanceTimeBy(80)
+            compose.onAllNodesWithTag(reply.id).assertCountEquals(1)
+            compose.onAllNodesWithText("Черновик").assertCountEquals(1)
+            compose.onNodeWithText(user.content).assertIsDisplayed()
+            compose.onNodeWithContentDescription("Повторить генерацию").assertDoesNotExist()
+            compose.onNodeWithContentDescription("Удалить сообщение").assertDoesNotExist()
+        }
+        compose.onNodeWithText(reply.content).assertDoesNotExist()
+        compose.onNodeWithText("Ассистент").assertDoesNotExist()
+        compose.onNodeWithText("Встреча").assertIsDisplayed()
+        compose.onNodeWithText(user.content).assertIsDisplayed()
+        compose.runOnIdle { assertEquals(reply.content, state.messages.last().content) }
+
+        // Editing the existing draft must update the same card, without another entrance.
+        val cardNodeId = compose.onNodeWithText("Черновик").fetchSemanticsNode().id
+        compose.runOnIdle {
+            state = state.copy(calendarDrafts = readyDrafts.copy(
+                drafts = listOf(readyDrafts.drafts.single().copy(title = "Встреча после правки")),
+            ))
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText("Встреча после правки").assertIsDisplayed()
+        compose.onAllNodesWithText("Черновик").assertCountEquals(1)
+        assertEquals(cardNodeId, compose.onNodeWithText("Черновик").fetchSemanticsNode().id)
     }
 
     @Test fun replyWithOmittedParamsKeepsTextActionsAndPlaybackText() {

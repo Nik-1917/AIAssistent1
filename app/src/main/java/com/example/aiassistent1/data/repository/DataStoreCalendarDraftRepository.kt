@@ -36,6 +36,7 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 fieldInputs = inputs.keys().asSequence().associateWith { inputs.getString(it) },
                 savedEventId = item.nullableString("savedEventId"),
                 saveRequested = item.getBoolean("saveRequested"),
+                discardRequested = item.optBoolean("discardRequested", false),
             ).also { require(it.requestId.isNotBlank()) }
         }.also { drafts -> require(drafts.map { it.requestId }.distinct().size == drafts.size) }
     }
@@ -51,6 +52,7 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 put("notes", draft.notes); put("endsAt", draft.endsAt)
                 put("fieldInputs", JSONObject(draft.fieldInputs))
                 put("savedEventId", draft.savedEventId); put("saveRequested", draft.saveRequested)
+                put("discardRequested", draft.discardRequested)
             })
         }
         val encoded = JSONObject().put("version", 1).put("items", items).toString()

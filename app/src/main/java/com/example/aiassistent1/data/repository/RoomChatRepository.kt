@@ -22,6 +22,10 @@ class RoomChatRepository(
         chatMessageDao.deleteById(id)
     }
 
+    override suspend fun deleteCalendarDraftReply(id: String) {
+        chatMessageDao.deleteCalendarDraftReply(id)
+    }
+
     override suspend fun deleteAllMessages(chatId: String) {
         chatMessageDao.deleteAll(chatId)
     }

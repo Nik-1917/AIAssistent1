@@ -13,6 +13,34 @@ class PendingChatMessagesTest {
     private val answer = ChatMessage("answer", MessageRole.ASSISTANT, "Свежий текст", 200L, false, "general")
 
     @Test
+    fun `discard removes only linked calendar reply from live and delayed stored history`() {
+        val pending = PendingChatMessages()
+        val request = user.copy(chatId = "calendar")
+        val reply = answer.copy(chatId = "calendar")
+        val otherReply = reply.copy(id = "other-answer")
+        pending.put(reply)
+        pending.discardCalendarReplies(setOf(reply.id))
+        assertNull(pending.find(reply.id))
+        val oldHistory = listOf(request, reply, otherReply)
+        assertEquals(listOf(request, otherReply), pending.merge("calendar", oldHistory))
+        assertEquals(listOf(request, otherReply), pending.merge("calendar", listOf(request, otherReply)))
+        pending.put(reply, isStreaming = true)
+        assertNull(pending.find(reply.id))
+        assertEquals(listOf(request, otherReply), pending.merge("calendar", oldHistory))
+    }
+
+    @Test
+    fun `discard marker cannot hide a user message or a reply in another chat`() {
+        val pending = PendingChatMessages()
+        pending.discardCalendarReplies(setOf(answer.id, user.id))
+        val calendarUser = user.copy(chatId = "calendar")
+        pending.put(calendarUser)
+        pending.put(answer)
+        assertEquals(listOf(calendarUser), pending.merge("calendar", listOf(calendarUser)))
+        assertEquals(listOf(user, answer), pending.merge("general", listOf(user, answer)))
+    }
+
+    @Test
     fun `old Room checkpoints cannot roll back live text or show an interruption badge`() {
         val pending = PendingChatMessages()
         pending.put(answer, isStreaming = true)

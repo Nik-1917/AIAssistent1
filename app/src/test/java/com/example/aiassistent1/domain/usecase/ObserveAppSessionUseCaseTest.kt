@@ -163,6 +163,13 @@ class ObserveAppSessionUseCaseTest {
             histories.values.forEach { it.value = it.value.filterNot { message -> message.id == id } }
         }
 
+        override suspend fun deleteCalendarDraftReply(id: String) {
+            writes++
+            history("calendar").value = history("calendar").value.filterNot {
+                it.id == id && it.role == MessageRole.ASSISTANT
+            }
+        }
+
         override suspend fun deleteAllMessages(chatId: String) {
             writes++
             history(chatId).value = emptyList()

@@ -5,7 +5,10 @@ import android.content.pm.PackageManager
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -1603,17 +1606,61 @@ internal fun ChatMessageItem(
         message.chatId == "calendar" && message.role == MessageRole.ASSISTANT &&
             it.chatId == message.chatId && it.requestId == message.id
     }
-    if (linkedDraft != null) {
-        // Keep the reply in history for playback; only its visual card is replaced.
-        CalendarDraftCard(
-            draft = linkedDraft,
-            onOpen = { onOpenCalendarDraft(linkedDraft.requestId) },
-            onOpenSavedEvent = onOpenSavedCalendarEvent,
-            modifier = modifier,
+    if (message.chatId == "calendar" && message.role == MessageRole.ASSISTANT) {
+        // Keep one list item: the visible model response gives way to its card.
+        // Only the presentation changes, so editing/saving the draft does not replay its entrance.
+        AnimatedContent(
+            targetState = linkedDraft != null,
+            modifier = modifier.fillMaxWidth(),
+            transitionSpec = {
+                (fadeIn(tween(240, easing = FastOutSlowInEasing)) togetherWith fadeOut(tween(120)))
+                    .using(SizeTransform { _, _ -> tween(240, easing = FastOutSlowInEasing) })
+            },
+            contentAlignment = Alignment.TopStart,
+            label = "Calendar response to draft",
+        ) { showDraft ->
+            if (showDraft) {
+                linkedDraft?.let { draft ->
+                    CalendarDraftCard(
+                        draft = draft,
+                        onOpen = { onOpenCalendarDraft(draft.requestId) },
+                        onOpenSavedEvent = onOpenSavedCalendarEvent,
+                    )
+                }
+            } else {
+                ChatMessageBubble(
+                    message = message,
+                    isStopping = isStopping,
+                    isStreaming = isStreaming,
+                    smoothResponseEnabled = smoothResponseEnabled,
+                    // Disable destructive actions as soon as the draft exists, including the fade-out.
+                    onRetry = onRetry.takeIf { linkedDraft == null },
+                    onDelete = onDelete.takeIf { linkedDraft == null },
+                    onCopy = onCopy,
+                    onSpeak = onSpeak,
+                )
+            }
+        }
+    } else {
+        ChatMessageBubble(
+            message, isStopping, isStreaming, smoothResponseEnabled,
+            onRetry, onDelete, onCopy, onSpeak, modifier,
         )
-        return
     }
+}
 
+@Composable
+private fun ChatMessageBubble(
+    message: ChatMessage,
+    isStopping: Boolean,
+    isStreaming: Boolean,
+    smoothResponseEnabled: Boolean,
+    onRetry: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
+    onCopy: (String) -> Unit,
+    onSpeak: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val isUser = message.role == MessageRole.USER
     val dateTimeFormatter = LocalUserDateTimeFormatter.current
     val displayContent = remember(message.content, message.role, message.chatId, dateTimeFormatter) {
