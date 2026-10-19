@@ -25,9 +25,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
@@ -57,7 +54,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -66,6 +62,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Settings
@@ -134,8 +131,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -190,7 +185,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.withTimeoutOrNull
 
 private val CALENDAR_BUTTON_SIZE = 66.dp
 private val FLOATING_CARD_GAP = 5.dp
@@ -310,7 +304,7 @@ fun ChatScreen(
         if (granted && viewModel.isVoiceInteractionCurrent(conversation)) {
             when (action) {
                 MicrophoneAction.TAP -> viewModel.onMicrophoneTap(forceStart)
-                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft(forceStart)
+                MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(forceStart)
                 null -> Unit
             }
         }
@@ -330,7 +324,7 @@ fun ChatScreen(
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             when (action) {
                 MicrophoneAction.TAP -> viewModel.onMicrophoneTap(interrupted)
-                MicrophoneAction.LONG_PRESS -> viewModel.startVoiceDraft(interrupted)
+                MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(interrupted)
             }
         } else {
             pendingMicrophoneAction = action
@@ -990,7 +984,7 @@ fun ChatScreen(
                         maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
                         onStop = viewModel::stopGeneration,
                         onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
-                        onVoiceLongPress = { requestMicrophoneAction(MicrophoneAction.LONG_PRESS) },
+                        onVoiceDraft = { requestMicrophoneAction(MicrophoneAction.VOICE_DRAFT) },
                     )
                 }
             }
@@ -1905,7 +1899,7 @@ internal fun InputPanel(
     onSend: (String) -> Unit,
     onStop: () -> Unit,
     onVoiceTap: () -> Unit,
-    onVoiceLongPress: () -> Unit,
+    onVoiceDraft: () -> Unit,
     maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
     isCheckingRequest: Boolean = false,
 ) {
@@ -1946,36 +1940,31 @@ internal fun InputPanel(
             },
             shape = RoundedCornerShape(12.dp),
             maxLines = if (isKeyboardVisible) 8 else 1,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-            keyboardActions = KeyboardActions(
-                onSend = {
-                    if (canSend) {
-                        onSend(text)
-                        text = ""
-                    }
-                }
-            )
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
         )
-        
+
+        Spacer(modifier = Modifier.width(8.dp))
         if (!isKeyboardVisible) {
-            Spacer(modifier = Modifier.width(8.dp))
             VoiceMicrophoneButton(
                 enabled = microphoneEnabled,
                 isVoiceMode = isVoiceMode,
                 onTap = onVoiceTap,
-                onLongPress = onVoiceLongPress,
             )
-            if (isCheckingRequest) {
+        }
+        when {
+            isCheckingRequest -> {
                 IconButton(onClick = onStop) {
                     Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
                 }
-            } else if (isProcessing) {
+            }
+            isProcessing -> {
                 IconButton(
                     onClick = onStop,
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
                 }
-            } else {
+            }
+            isKeyboardVisible -> {
                 IconButton(
                     enabled = canSend,
                     onClick = {
@@ -1984,6 +1973,14 @@ internal fun InputPanel(
                     },
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
+                }
+            }
+            else -> {
+                IconButton(
+                    enabled = microphoneEnabled,
+                    onClick = onVoiceDraft,
+                ) {
+                    Icon(Icons.Default.EditNote, contentDescription = "Начать голосовой черновик")
                 }
             }
         }
@@ -2072,66 +2069,22 @@ private fun VoiceMicrophoneButton(
     enabled: Boolean,
     isVoiceMode: Boolean,
     onTap: () -> Unit,
-    onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var isPressed by remember { mutableStateOf(false) }
-    var longPressTriggered by remember { mutableStateOf(false) }
-    val currentOnTap by rememberUpdatedState(onTap)
-    val currentOnLongPress by rememberUpdatedState(onLongPress)
-    val haptic = LocalHapticFeedback.current
-    val holdProgress by animateFloatAsState(
-        targetValue = if (isPressed && !longPressTriggered) 1f else 0f,
-        animationSpec = tween(durationMillis = VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS.toInt()),
-        label = "voiceDraftHoldProgress",
-    )
     val contentDescription = if (isVoiceMode) {
         "Выключить голосовой режим"
     } else {
-        "Включить голосовой режим или удерживать для голосового черновика"
+        "Включить голосовой режим"
     }
 
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .semantics {
-                role = Role.Button
-                this.contentDescription = contentDescription
-                onClick { currentOnTap(); true }
-            }
-            .pointerInput(enabled) {
-                if (!enabled) return@pointerInput
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
-                    longPressTriggered = false
-                    var gestureFinished = false
-                    val up = withTimeoutOrNull(VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS) {
-                        waitForUpOrCancellation().also { gestureFinished = true }
-                    }
-                    if (!gestureFinished) {
-                        longPressTriggered = true
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        currentOnLongPress()
-                        waitForUpOrCancellation()
-                    } else if (up != null) {
-                        currentOnTap()
-                    }
-                    isPressed = false
-                }
-            },
-        contentAlignment = Alignment.Center,
+    IconButton(
+        onClick = onTap,
+        enabled = enabled,
+        modifier = modifier.size(48.dp),
     ) {
-        if (isPressed && !longPressTriggered) {
-            CircularProgressIndicator(
-                progress = { holdProgress },
-                modifier = Modifier.fillMaxSize(),
-                strokeWidth = 2.dp,
-            )
-        }
         Icon(
             imageVector = if (isVoiceMode) Icons.Default.MicOff else Icons.Default.Mic,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = if (enabled) {
                 MaterialTheme.colorScheme.onSurface
             } else {
@@ -2705,7 +2658,7 @@ private fun SettingSlider(
 
 private enum class MicrophoneAction {
     TAP,
-    LONG_PRESS,
+    VOICE_DRAFT,
 }
 
 private fun ModelState.label(): String = when (this) {
@@ -2715,5 +2668,3 @@ private fun ModelState.label(): String = when (this) {
     is ModelState.Error -> "Ошибка: ${this.message}"
     is ModelState.Importing -> "Импорт..."
 }
-
-private const val VOICE_DRAFT_LONG_PRESS_TIMEOUT_MILLIS = 2_000L

@@ -58,11 +58,12 @@ class AutomaticMemorySettingsTest {
         compose.setContent {
             MaterialTheme {
                 InputPanel(true, false, false, false, onSend = { sent = it }, onStop = {},
-                    onVoiceTap = {}, onVoiceLongPress = {})
+                    onVoiceTap = {}, onVoiceDraft = {})
             }
         }
+        showKeyboardForSending()
         compose.onNode(hasSetTextAction()).performTextReplacement(text)
-        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.onNodeWithContentDescription("Отправить сообщение").assertIsEnabled().performClick()
         compose.runOnIdle { assertEquals(text, sent) }
     }
     @Test fun oversizedDraftRemainsWholeAndCannotBeSent() {
@@ -71,13 +72,21 @@ class AutomaticMemorySettingsTest {
         compose.setContent {
             MaterialTheme {
                 InputPanel(true, false, false, false, onSend = { sent = it }, onStop = {},
-                    onVoiceTap = {}, onVoiceLongPress = {}, maximumMessageLength = 16)
+                    onVoiceTap = {}, onVoiceDraft = {}, maximumMessageLength = 16)
             }
         }
+        showKeyboardForSending()
         compose.onNode(hasSetTextAction()).performTextReplacement(text)
-        compose.onNode(hasSetTextAction()).performImeAction()
+        compose.onNodeWithContentDescription("Отправить сообщение").assertIsNotEnabled()
         compose.onNode(hasSetTextAction()).assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(text)))
         compose.onNodeWithText("Не более 16 символов. Текст сохранён в поле.").assertExists()
         compose.runOnIdle { assertNull(sent) }
+    }
+
+    private fun showKeyboardForSending() {
+        compose.onNode(hasSetTextAction()).performClick()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithContentDescription("Отправить сообщение").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 }
