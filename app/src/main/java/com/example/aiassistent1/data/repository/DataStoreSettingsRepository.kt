@@ -77,7 +77,9 @@ class DataStoreSettingsRepository(
     private val selectedModelKey = stringPreferencesKey("selected_model")
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
-    private val compactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
+    private val legacyCompactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
+    private val hideCurrentMonthKey = booleanPreferencesKey("hide_current_month")
+    private val hideCurrentYearKey = booleanPreferencesKey("hide_current_year")
     private val orientationLockedKey = booleanPreferencesKey("screen_orientation_locked")
     private val screenOrientationKey = stringPreferencesKey("screen_orientation")
     private val proximityScreenOffEnabledKey = booleanPreferencesKey("proximity_screen_off_enabled")
@@ -251,12 +253,21 @@ class DataStoreSettingsRepository(
             initialValue = true
         )
 
-    override val compactDatesEnabled: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[compactDatesEnabledKey] ?: true }
+    // Each new choice overrides the old shared switch; an explicitly saved legacy choice wins over defaults.
+    override val hideCurrentMonth: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[hideCurrentMonthKey] ?: preferences[legacyCompactDatesEnabledKey] ?: true }
         .stateIn(scope, SharingStarted.Eagerly, true)
 
-    override suspend fun setCompactDatesEnabled(enabled: Boolean) {
-        dataStore.edit { it[compactDatesEnabledKey] = enabled }
+    override suspend fun setHideCurrentMonth(hide: Boolean) {
+        dataStore.edit { it[hideCurrentMonthKey] = hide }
+    }
+
+    override val hideCurrentYear: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[hideCurrentYearKey] ?: preferences[legacyCompactDatesEnabledKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override suspend fun setHideCurrentYear(hide: Boolean) {
+        dataStore.edit { it[hideCurrentYearKey] = hide }
     }
 
     override val screenPreferences = dataStore.data.map { preferences ->

@@ -23,12 +23,18 @@ internal val LocalUserDateTimeFormatter = staticCompositionLocalOf { UserDateTim
 
 /** Refresh on midnight, clock/time-zone changes and returning from the background. */
 @Composable
-internal fun UserDateTimeProvider(compact: Boolean, content: @Composable () -> Unit) {
+internal fun UserDateTimeProvider(
+    hideCurrentMonth: Boolean,
+    hideCurrentYear: Boolean,
+    content: @Composable () -> Unit,
+) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var formatter by remember(compact) { mutableStateOf(UserDateTimeFormatter(compact)) }
-    DisposableEffect(context, lifecycle, compact) {
-        fun refresh() { formatter = UserDateTimeFormatter(compact) }
+    var formatter by remember(hideCurrentMonth, hideCurrentYear) {
+        mutableStateOf(UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear))
+    }
+    DisposableEffect(context, lifecycle, hideCurrentMonth, hideCurrentYear) {
+        fun refresh() { formatter = UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear) }
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) = refresh()
         }

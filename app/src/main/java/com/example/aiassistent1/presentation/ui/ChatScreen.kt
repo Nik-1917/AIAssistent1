@@ -66,10 +66,9 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -142,6 +141,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -980,6 +980,7 @@ fun ChatScreen(
                         isProcessing = uiState.isProcessing,
                         isCheckingRequest = uiState.isCheckingRequest,
                         isVoiceMode = uiState.isVoiceMode,
+                        isVoiceDraftActive = uiState.voiceDraft.isVisible,
                         onSend = viewModel::sendMessage,
                         maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
                         onStop = viewModel::stopGeneration,
@@ -1147,8 +1148,10 @@ fun ChatScreen(
                 profiles = uiState.modelProfiles,
                 initialProfile = uiState.modelProfile,
                 paramsLoaded = uiState.areModelParamsLoaded,
-                compactDatesEnabled = uiState.compactDatesEnabled,
-                onCompactDatesChange = viewModel::setCompactDatesEnabled,
+                hideCurrentMonth = uiState.hideCurrentMonth,
+                onHideCurrentMonthChange = viewModel::setHideCurrentMonth,
+                hideCurrentYear = uiState.hideCurrentYear,
+                onHideCurrentYearChange = viewModel::setHideCurrentYear,
                 screenPreferences = uiState.screenPreferences,
                 onOrientationLockedChange = viewModel::setOrientationLocked,
                 onScreenOrientationChange = viewModel::setScreenOrientation,
@@ -1477,9 +1480,11 @@ internal fun ChatTopBar(
             }
         },
         actions = {
-            IconButton(onClick = onOpenConferences) {
-                Icon(Icons.Default.Mic, contentDescription = "Конференции и записи")
-            }
+            ChatActionIconButton(
+                imageVector = Icons.Rounded.Groups,
+                contentDescription = "Конференции и записи",
+                onClick = onOpenConferences,
+            )
             if (modelAvailability == ModelAvailability.Missing && modelState !is ModelState.Importing) {
                 IconButton(onClick = onLoadModel) {
                     Icon(Icons.Default.CloudUpload, contentDescription = "Загрузить модель")
@@ -1902,87 +1907,142 @@ internal fun InputPanel(
     onVoiceDraft: () -> Unit,
     maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
     isCheckingRequest: Boolean = false,
+    isVoiceDraftActive: Boolean = false,
 ) {
     var text by remember { mutableStateOf("") }
     val canSend = textInputEnabled && text.trim().isNotEmpty() && text.trim().length <= maximumMessageLength
+    val isTextTooLong = text.trim().length > maximumMessageLength
     val isKeyboardVisible = WindowInsets.isImeVisible
+    val inputTextStyle = MaterialTheme.typography.bodyLarge
+    val inputLineHeight = rememberTextMeasurer().measure(
+        text = "M",
+        style = inputTextStyle,
+        maxLines = 1,
+    ).size.height
+    val inputPadding = OutlinedTextFieldDefaults.contentPadding()
+    val singleLineFieldHeight = maxOf(
+        OutlinedTextFieldDefaults.MinHeight,
+        with(LocalDensity.current) { inputLineHeight.toDp() } +
+            inputPadding.calculateTopPadding() + inputPadding.calculateBottomPadding(),
+    )
+    val actionsWidth = if (isKeyboardVisible) 48.dp else 96.dp
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.65f))
             .imePadding()
             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier
-                .weight(1f)
-                .offset(y = 0.dp),
-            enabled = textInputEnabled,
-            isError = text.trim().length > maximumMessageLength,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.surface,
-            ),
-            placeholder = { Text("Сообщение") },
-            supportingText = {
+        // Keep a wrapping error above the editor so the bottom controls never move with its height.
+        if (isTextTooLong) {
+            Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = if (text.trim().length > maximumMessageLength) "Не более $maximumMessageLength символов. Текст сохранён в поле."
-                        else "${text.length}/$maximumMessageLength",
-                    modifier = Modifier.fillMaxWidth(),
+                    text = "Не более $maximumMessageLength символов. Текст сохранён в поле.",
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
                     textAlign = TextAlign.End,
+                    style = MaterialTheme.typography.bodySmall,
                     fontSize = 12.sp,
+                    color = if (textInputEnabled) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                 )
-            },
-            shape = RoundedCornerShape(12.dp),
-            maxLines = if (isKeyboardVisible) 8 else 1,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-        if (!isKeyboardVisible) {
-            VoiceMicrophoneButton(
-                enabled = microphoneEnabled,
-                isVoiceMode = isVoiceMode,
-                onTap = onVoiceTap,
-            )
+                Spacer(modifier = Modifier.width(actionsWidth + 8.dp))
+            }
         }
-        when {
-            isCheckingRequest -> {
-                IconButton(onClick = onStop) {
-                    Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
+        // Supporting rows are measured first; the editor gets the remaining height below the header.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.weight(1f),
+                enabled = textInputEnabled,
+                isError = isTextTooLong,
+                textStyle = inputTextStyle,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                ),
+                placeholder = { Text("Сообщение") },
+                shape = RoundedCornerShape(12.dp),
+                maxLines = if (isKeyboardVisible) Int.MAX_VALUE else 1,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+            // Keep the actions at the centre of the bottom one-line portion as the editor grows up.
+            Row(
+                modifier = Modifier
+                    .width(actionsWidth)
+                    .height(singleLineFieldHeight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (!isKeyboardVisible) {
+                    VoiceMicrophoneButton(
+                        enabled = microphoneEnabled,
+                        isVoiceMode = isVoiceMode,
+                        onTap = onVoiceTap,
+                    )
+                }
+                when {
+                    isCheckingRequest -> {
+                        IconButton(onClick = onStop, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Отменить запрос")
+                        }
+                    }
+                    isProcessing -> {
+                        IconButton(onClick = onStop, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
+                        }
+                    }
+                    isKeyboardVisible -> {
+                        IconButton(
+                            enabled = canSend,
+                            onClick = {
+                                onSend(text)
+                                text = ""
+                            },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
+                        }
+                    }
+                    else -> {
+                        ChatActionIconButton(
+                            imageVector = Icons.Default.EditNote,
+                            contentDescription = "Начать голосовой черновик",
+                            enabled = microphoneEnabled,
+                            onClick = onVoiceDraft,
+                            active = isVoiceDraftActive,
+                        )
+                    }
                 }
             }
-            isProcessing -> {
-                IconButton(
-                    onClick = onStop,
-                ) {
-                    Icon(Icons.Default.Stop, contentDescription = "Остановить генерацию")
-                }
-            }
-            isKeyboardVisible -> {
-                IconButton(
-                    enabled = canSend,
-                    onClick = {
-                        onSend(text)
-                        text = ""
-                    },
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")
-                }
-            }
-            else -> {
-                IconButton(
-                    enabled = microphoneEnabled,
-                    onClick = onVoiceDraft,
-                ) {
-                    Icon(Icons.Default.EditNote, contentDescription = "Начать голосовой черновик")
-                }
-            }
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "${text.length}/$maximumMessageLength",
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, top = 4.dp, end = 16.dp),
+                textAlign = TextAlign.End,
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
+                maxLines = 1,
+                color = when {
+                    !textInputEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    isTextTooLong -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Spacer(modifier = Modifier.width(actionsWidth + 8.dp))
         }
     }
 }
@@ -2077,21 +2137,14 @@ private fun VoiceMicrophoneButton(
         "Включить голосовой режим"
     }
 
-    IconButton(
+    ChatActionIconButton(
+        imageVector = VoiceWaveIcon,
+        contentDescription = contentDescription,
         onClick = onTap,
         enabled = enabled,
-        modifier = modifier.size(48.dp),
-    ) {
-        Icon(
-            imageVector = if (isVoiceMode) Icons.Default.MicOff else Icons.Default.Mic,
-            contentDescription = contentDescription,
-            tint = if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            }
-        )
-    }
+        active = isVoiceMode,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -2099,8 +2152,10 @@ fun ModelSettingsDialog(
     profiles: ModelParameterProfiles,
     initialProfile: ModelProfile,
     paramsLoaded: Boolean,
-    compactDatesEnabled: Boolean,
-    onCompactDatesChange: (Boolean) -> Unit,
+    hideCurrentMonth: Boolean,
+    onHideCurrentMonthChange: (Boolean) -> Unit,
+    hideCurrentYear: Boolean,
+    onHideCurrentYearChange: (Boolean) -> Unit,
     smoothResponseEnabled: Boolean,
     dialogueModeEnabled: Boolean,
     autoPlaybackEnabled: Boolean,
@@ -2454,14 +2509,36 @@ fun ModelSettingsDialog(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Краткие даты и время")
+                            Text("Скрывать текущий месяц")
                             Text(
-                                "Скрывать текущий месяц и год. Выключено — полная дата с днём недели. Время — ЧЧ:ММ.",
+                                "Скрывать месяц в датах текущего месяца и года.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Switch(checked = compactDatesEnabled, onCheckedChange = onCompactDatesChange)
+                        Switch(
+                            checked = hideCurrentMonth,
+                            onCheckedChange = onHideCurrentMonthChange,
+                            modifier = Modifier.semantics { contentDescription = "Скрывать текущий месяц" },
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Скрывать текущий год")
+                            Text(
+                                "Скрывать текущий год в датах.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = hideCurrentYear,
+                            onCheckedChange = onHideCurrentYearChange,
+                            modifier = Modifier.semantics { contentDescription = "Скрывать текущий год" },
+                        )
                     }
                 }
 

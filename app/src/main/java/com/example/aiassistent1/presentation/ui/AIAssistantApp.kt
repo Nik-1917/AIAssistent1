@@ -65,7 +65,7 @@ fun AIAssistantApp(
         return
     }
 
-    UserDateTimeProvider(compact = uiState.compactDatesEnabled) {
+    UserDateTimeProvider(hideCurrentMonth = uiState.hideCurrentMonth, hideCurrentYear = uiState.hideCurrentYear) {
         AnimatedContent(
             targetState = navigation.destination,
             modifier = modifier,

@@ -76,7 +76,8 @@ class ScreenSettingsTest {
             MaterialTheme {
                 ModelSettingsDialog(
                     profiles = ModelParameterProfiles(), initialProfile = ModelProfile.CHAT, paramsLoaded = true,
-                    compactDatesEnabled = true, onCompactDatesChange = {}, smoothResponseEnabled = false,
+                    hideCurrentMonth = true, onHideCurrentMonthChange = {},
+                    hideCurrentYear = false, onHideCurrentYearChange = {}, smoothResponseEnabled = false,
                     dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
                     onDismiss = {}, onParamsChange = { _, _ -> }, onSmoothResponseChange = {},
                     onDialogueModeChange = {}, onAutoPlaybackChange = {}, onSpeechRateChange = {},

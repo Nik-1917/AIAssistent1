@@ -295,8 +295,13 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
-            settingsRepository.compactDatesEnabled.collect { enabled ->
-                mutableUiState.update { it.copy(compactDatesEnabled = enabled) }
+            settingsRepository.hideCurrentMonth.collect { hide ->
+                mutableUiState.update { it.copy(hideCurrentMonth = hide) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.hideCurrentYear.collect { hide ->
+                mutableUiState.update { it.copy(hideCurrentYear = hide) }
             }
         }
         viewModelScope.launch {
@@ -1363,8 +1368,12 @@ class ChatViewModel(
         }
     }
 
-    fun setCompactDatesEnabled(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setCompactDatesEnabled(enabled) }
+    fun setHideCurrentMonth(hide: Boolean) {
+        viewModelScope.launch { settingsRepository.setHideCurrentMonth(hide) }
+    }
+
+    fun setHideCurrentYear(hide: Boolean) {
+        viewModelScope.launch { settingsRepository.setHideCurrentYear(hide) }
     }
 
     fun setOrientationLocked(locked: Boolean) {

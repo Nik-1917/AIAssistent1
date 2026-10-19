@@ -40,8 +40,11 @@ interface SettingsRepository {
     val showClearChatConfirmation: StateFlow<Boolean>
     suspend fun setShowClearChatConfirmation(show: Boolean)
 
-    val compactDatesEnabled: StateFlow<Boolean>
-    suspend fun setCompactDatesEnabled(enabled: Boolean)
+    val hideCurrentMonth: StateFlow<Boolean>
+    suspend fun setHideCurrentMonth(hide: Boolean)
+
+    val hideCurrentYear: StateFlow<Boolean>
+    suspend fun setHideCurrentYear(hide: Boolean)
 
     /** Emits saved screen settings together, without a temporary default snapshot. */
     val screenPreferences: Flow<ScreenPreferences>

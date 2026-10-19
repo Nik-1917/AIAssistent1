@@ -166,24 +166,101 @@ class DataStoreSettingsRepositoryTest {
         }
     }
     @Test
-    fun `compact date mode defaults to compact and persists both switch positions`() = runTest {
-        val store = TestPreferencesDataStore()
+    fun `date switches default to month hidden and year visible and save independently`() = runTest {
+        val unrelatedKey = booleanPreferencesKey("wake_word_enabled")
+        val store = TestPreferencesDataStore(preferencesOf(unrelatedKey to true))
         val writer = DataStoreSettingsRepository(store, backgroundScope)
         runCurrent()
-        assertEquals(true, writer.compactDatesEnabled.value)
-        for (enabled in listOf(true, false)) {
-            writer.setCompactDatesEnabled(enabled)
-            runCurrent()
-            assertEquals(enabled, writer.compactDatesEnabled.value)
-            assertEquals(enabled, store.data.first()[booleanPreferencesKey("compact_dates_enabled")])
-            val reader = DataStoreSettingsRepository(store, backgroundScope)
-            runCurrent()
-            assertEquals(enabled, reader.compactDatesEnabled.value)
+        assertEquals(true, writer.hideCurrentMonth.value)
+        assertEquals(false, writer.hideCurrentYear.value)
+        for (hideMonth in listOf(false, true)) {
+            for (hideYear in listOf(false, true)) {
+                val previousYear = writer.hideCurrentYear.value
+                writer.setHideCurrentMonth(hideMonth)
+                runCurrent()
+                assertEquals(previousYear, writer.hideCurrentYear.value)
+                writer.setHideCurrentYear(hideYear)
+                runCurrent()
+                assertEquals(hideMonth, writer.hideCurrentMonth.value)
+                assertEquals(hideYear, writer.hideCurrentYear.value)
+                val saved = store.data.first()
+                assertEquals(hideMonth, saved[booleanPreferencesKey("hide_current_month")])
+                assertEquals(hideYear, saved[booleanPreferencesKey("hide_current_year")])
+                assertEquals(true, saved[unrelatedKey])
+                assertEquals(null, saved[booleanPreferencesKey("compact_dates_enabled")])
+                val reader = DataStoreSettingsRepository(store, backgroundScope)
+                runCurrent()
+                assertEquals(hideMonth, reader.hideCurrentMonth.value)
+                assertEquals(hideYear, reader.hideCurrentYear.value)
+            }
         }
     }
 
     @Test
-    fun `compact date mode restores both values from reopened preferences files`() = runTest {
+    fun `saved compact choice is inherited by both switches until each is changed`() = runTest {
+        val legacyKey = booleanPreferencesKey("compact_dates_enabled")
+        for (enabled in listOf(true, false)) {
+            val original = preferencesOf(legacyKey to enabled)
+            val store = TestPreferencesDataStore(original)
+            val repository = DataStoreSettingsRepository(store, backgroundScope)
+            runCurrent()
+            assertEquals(enabled, repository.hideCurrentMonth.value)
+            assertEquals(enabled, repository.hideCurrentYear.value)
+            assertEquals(original, store.data.first())
+
+            repository.setHideCurrentMonth(!enabled)
+            runCurrent()
+            val reopened = DataStoreSettingsRepository(store, backgroundScope)
+            runCurrent()
+            assertEquals(!enabled, reopened.hideCurrentMonth.value)
+            assertEquals(enabled, reopened.hideCurrentYear.value)
+            repository.setHideCurrentYear(!enabled)
+            runCurrent()
+            assertEquals(!enabled, reopened.hideCurrentMonth.value)
+            assertEquals(!enabled, reopened.hideCurrentYear.value)
+            assertEquals(enabled, store.data.first()[legacyKey])
+        }
+    }
+
+    @Test
+    fun `changing only year preserves the legacy month choice`() = runTest {
+        for (enabled in listOf(true, false)) {
+            val store = TestPreferencesDataStore(preferencesOf(booleanPreferencesKey("compact_dates_enabled") to enabled))
+            val repository = DataStoreSettingsRepository(store, backgroundScope)
+            repository.setHideCurrentYear(!enabled)
+            runCurrent()
+            assertEquals(enabled, repository.hideCurrentMonth.value)
+            assertEquals(!enabled, repository.hideCurrentYear.value)
+        }
+    }
+
+    @Test
+    fun `date switches restore every combination from reopened preferences files`() = runTest {
+        for (hideMonth in listOf(false, true)) {
+            for (hideYear in listOf(false, true)) {
+                val file = File(temporaryFolder.newFolder(), "date-settings.preferences_pb")
+                val writerJob = Job(backgroundScope.coroutineContext[Job])
+                val writerScope = CoroutineScope(backgroundScope.coroutineContext + writerJob)
+                val writerStore = PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file })
+                // New choices take priority over an old saved shared switch.
+                writerStore.edit {
+                    it[booleanPreferencesKey("compact_dates_enabled")] = true
+                    it[booleanPreferencesKey("hide_current_month")] = hideMonth
+                    it[booleanPreferencesKey("hide_current_year")] = hideYear
+                }
+                writerJob.cancelAndJoin()
+                val readerStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+                val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
+                readerStore.data.first()
+                runCurrent()
+                assertEquals(hideMonth, reader.hideCurrentMonth.value)
+                assertEquals(hideYear, reader.hideCurrentYear.value)
+            }
+        }
+    }
+
+    @Test
+    fun `legacy compact choice restores both switches from reopened preferences files`() = runTest {
         for (enabled in listOf(true, false)) {
             val file = File(temporaryFolder.newFolder(), "date-settings.preferences_pb")
             val writerJob = Job(backgroundScope.coroutineContext[Job])
@@ -196,7 +273,8 @@ class DataStoreSettingsRepositoryTest {
             val reader = DataStoreSettingsRepository(readerStore, backgroundScope)
             readerStore.data.first()
             runCurrent()
-            assertEquals(enabled, reader.compactDatesEnabled.value)
+            assertEquals(enabled, reader.hideCurrentMonth.value)
+            assertEquals(enabled, reader.hideCurrentYear.value)
         }
     }
 

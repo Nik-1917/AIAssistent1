@@ -18,7 +18,8 @@ class AutomaticMemorySettingsTest {
             MaterialTheme {
                 ModelSettingsDialog(
                     profiles = ModelParameterProfiles(), initialProfile = ModelProfile.CHAT, paramsLoaded = true,
-                    compactDatesEnabled = true, onCompactDatesChange = {}, smoothResponseEnabled = true,
+                    hideCurrentMonth = true, onHideCurrentMonthChange = {},
+                    hideCurrentYear = false, onHideCurrentYearChange = {}, smoothResponseEnabled = true,
                     dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
                     onDismiss = {}, onParamsChange = { _, _ -> }, onSmoothResponseChange = {},
                     onDialogueModeChange = {}, onAutoPlaybackChange = {}, onSpeechRateChange = {},
@@ -38,7 +39,8 @@ class AutomaticMemorySettingsTest {
             MaterialTheme {
                 ModelSettingsDialog(
                     profiles = ModelParameterProfiles(), initialProfile = ModelProfile.CHAT, paramsLoaded = true,
-                    compactDatesEnabled = true, onCompactDatesChange = {}, smoothResponseEnabled = true,
+                    hideCurrentMonth = true, onHideCurrentMonthChange = {},
+                    hideCurrentYear = false, onHideCurrentYearChange = {}, smoothResponseEnabled = true,
                     dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
                     onDismiss = {}, onParamsChange = { _, _ -> }, onSmoothResponseChange = {},
                     onDialogueModeChange = {}, onAutoPlaybackChange = {}, onSpeechRateChange = {},

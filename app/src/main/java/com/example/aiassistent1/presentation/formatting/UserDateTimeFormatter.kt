@@ -13,7 +13,8 @@ import java.util.Locale
 
 /** Display only. Never pass formatted values back to commands, storage or model context. */
 class UserDateTimeFormatter(
-    val compact: Boolean = true,
+    val hideCurrentMonth: Boolean = true,
+    val hideCurrentYear: Boolean = false,
     val today: LocalDate = LocalDate.now(),
     val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
@@ -24,13 +25,19 @@ class UserDateTimeFormatter(
 
     fun todayLabel(): String = "Сегодня\n${today.format(TODAY_DATE)}"
 
-    fun date(value: LocalDate): String = value.format(when {
-        !compact || value.year != today.year -> FULL_DATE
-        value.month != today.month -> MONTH_DATE
-        else -> SHORT_DATE
-    })
+    fun date(value: LocalDate): String {
+        val hideMonth = hideCurrentMonth && value.year == today.year && value.month == today.month
+        val hideYear = hideCurrentYear && value.year == today.year
+        return value.format(when {
+            hideMonth && hideYear -> SHORT_DATE
+            hideMonth -> YEAR_DATE
+            hideYear -> MONTH_DATE
+            else -> FULL_DATE
+        })
+    }
 
-    fun eventEditorDate(value: LocalDate): String = value.format(if (compact) MONTH_DATE else FULL_DATE)
+    // Preserve the editor headers' existing rule: always include the month, with year controlled separately.
+    fun eventEditorDate(value: LocalDate): String = value.format(if (hideCurrentYear) MONTH_DATE else FULL_DATE)
 
     fun time(value: LocalTime): String = value.format(TIME)
 
@@ -91,6 +98,7 @@ class UserDateTimeFormatter(
         private val RUSSIAN = Locale.forLanguageTag("ru-RU")
         private val TODAY_DATE = DateTimeFormatter.ofPattern("EEEE d MMMM", RUSSIAN)
         private val SHORT_DATE = DateTimeFormatter.ofPattern("d EEEE", RUSSIAN)
+        private val YEAR_DATE = DateTimeFormatter.ofPattern("d uuuu EEEE", RUSSIAN)
         private val MONTH_DATE = DateTimeFormatter.ofPattern("d MMMM EEEE", RUSSIAN)
         private val FULL_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu EEEE", RUSSIAN)
         private val GENERAL_CHAT_DATE = DateTimeFormatter.ofPattern("d MMMM uuuu 'года', EEEE", RUSSIAN)
