@@ -70,6 +70,13 @@ internal fun CalendarDraftCard(
             val date = draft.fieldText(CalendarEventField.Date).ifBlank { "Дата не указана" }
             val time = draft.fieldText(CalendarEventField.Time).ifBlank { "Время не указано" }
             Text("${LocalUserDateTimeFormatter.current.value(date)} · $time")
+            draft.timeZoneId?.let { zone ->
+                val zoneId = java.time.ZoneId.of(zone)
+                val instant = runCatching { CalendarTime.toEpochMillis(CalendarTime.dateTime("${date}T$time"), zoneId) }
+                    .getOrNull()?.let(java.time.Instant::ofEpochMilli) ?: LocalCalendarClock.current
+                Text("Пояс события: ${com.example.aiassistent1.presentation.formatting.CalendarTimeZoneLabels.label(zoneId, instant)}",
+                    style = MaterialTheme.typography.bodySmall)
+            }
             CalendarNotesText(draft.notes)
             if (draft.missingFields.isNotEmpty()) {
                 Text("Не указаны: ${draft.missingFields.joinToString { it.shortLabel() }}", style = MaterialTheme.typography.bodySmall)
@@ -137,10 +144,13 @@ internal fun CalendarDraftEditorSheet(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
     storageError: String? = null,
+    onTimeZoneConfirm: (keepMoment: Boolean) -> Unit = {},
 ) {
     var confirmDelete by remember(draft.requestId) { mutableStateOf(false) }
     val editable = draft.isEditable && !draft.isFormatting
     val dateFormatter = LocalUserDateTimeFormatter.current
+    val currentZone = LocalCalendarTimeZone.current.zoneId
+    val needsZoneConfirmation = draft.needsTimeZoneConfirmation(currentZone)
     val dateInput = draft.fieldText(CalendarEventField.Date).trim()
     val dateLabel = if (dateInput.isEmpty()) "Не заполнено" else runCatching {
         dateFormatter.eventEditorDate(CalendarTime.date(dateInput))
@@ -153,6 +163,22 @@ internal fun CalendarDraftEditorSheet(
             }
             Text("Можно закрыть и продолжить позже", style = MaterialTheme.typography.bodySmall)
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                item {
+                    if (draft.saveRequested && draft.timeZoneId == null) {
+                        Text("Исходный часовой пояс неизвестен. Сначала проверьте результат предыдущего сохранения.",
+                            style = MaterialTheme.typography.bodySmall)
+                    } else {
+                    CalendarScheduleTimeZone(
+                        sourceZone = draft.timeZoneId?.let(java.time.ZoneId::of), currentZone = currentZone,
+                        needsConfirmation = needsZoneConfirmation && !draft.saveRequested,
+                        localStart = runCatching {
+                            CalendarTime.dateTime("${draft.fieldText(CalendarEventField.Date)}T${draft.fieldText(CalendarEventField.Time)}")
+                        }.getOrNull(),
+                        enabled = editable && !draft.isVoiceInputActive,
+                        onKeepMoment = { onTimeZoneConfirm(true) }, onUseCurrent = { onTimeZoneConfirm(false) },
+                    )
+                    }
+                }
                 items(CalendarEventField.entries, key = { it.name }) { field ->
                     Column {
                         OutlinedTextField(
@@ -192,7 +218,9 @@ internal fun CalendarDraftEditorSheet(
                     )
                 }
                 item {
-                    runCatching { draft.resolveInputs().endDisplayText() }.getOrNull()?.let {
+                    val end = if (draft.timeZoneId == null) draft.endsAt
+                        else runCatching { draft.resolveInputs().endDisplayText() }.getOrNull()
+                    end?.let {
                         Text("Окончание: ${LocalUserDateTimeFormatter.current.value(it)}", style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -207,7 +235,8 @@ internal fun CalendarDraftEditorSheet(
             storageError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Button(
                 onClick = onCreate, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                enabled = !draft.isSaving && !draft.isFormatting && !draft.isVoiceInputActive && draft.missingFields.isEmpty(),
+                enabled = !draft.isSaving && !draft.isFormatting && !draft.isVoiceInputActive && draft.missingFields.isEmpty() &&
+                    (!needsZoneConfirmation || draft.saveRequested),
             ) { Text(if (draft.isSaving) "Сохранение…" else if (draft.saveRequested) "Повторить сохранение" else "Создать событие") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = { confirmDelete = true }, enabled = draft.isEditable) {

@@ -31,7 +31,8 @@ class CalendarDraftCardsTest {
 
     @Test fun minimalDraftShowsEmptyOptionalFieldsAndAllowsCreation() {
         var createClicks = 0
-        val draft = CalendarEventDraftUiState(requestId = "minimal", title = "Встреча", date = "2030-09-12", time = "09:00")
+        val draft = CalendarEventDraftUiState(requestId = "minimal", title = "Встреча", date = "2030-09-12", time = "09:00",
+            timeZoneId = java.time.ZoneId.systemDefault().id)
         compose.setContent {
             MaterialTheme {
                 CalendarDraftEditorSheet(draft, onValueChange = { _, _ -> }, onNotesChange = {}, onFormat = {},
@@ -73,6 +74,7 @@ class CalendarDraftCardsTest {
         try {
             controller.add(CalendarEventDraftUiState(
                 requestId = "a", title = "Встреча с Иваном", date = "2026-10-01", durationMinutes = 60,
+                timeZoneId = java.time.ZoneId.systemDefault().id,
             ))
             compose.setContent {
                 val state by controller.state.collectAsState()
@@ -114,7 +116,7 @@ class CalendarDraftCardsTest {
             compose.onNodeWithText("Создать событие").assertIsEnabled()
             compose.onNodeWithContentDescription("Закрыть редактор").performClick()
             compose.onNodeWithText("Проверить и создать").performClick()
-            compose.onNodeWithText("Дата: 1 октября 2026 четверг").assertExists()
+            compose.onNodeWithText("Дата: 1 октября четверг").assertExists()
             val screenshot = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "calendar-draft-editor.png")
             InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().let { bitmap ->
                 screenshot.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

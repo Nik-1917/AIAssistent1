@@ -1,15 +1,15 @@
 package com.example.aiassistent1.domain.provider
 
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class SystemPromptProvider {
-    fun getSystemPrompt(isCalendarMode: Boolean): String {
+    fun getSystemPrompt(isCalendarMode: Boolean, localDateTime: LocalDateTime = LocalDateTime.now()): String {
         val locale = Locale.forLanguageTag("ru-RU")
-        val now = Date()
-        val currentDateTime = SimpleDateFormat("yyyy-MM-dd HH:mm", locale).format(now)
-        val dayOfWeek = SimpleDateFormat("EEEE", locale).format(now)
+        // Only local date/time reaches the model, never a zone ID or UTC offset.
+        val currentDateTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", locale))
+        val dayOfWeek = localDateTime.format(DateTimeFormatter.ofPattern("EEEE", locale))
         
         return if (isCalendarMode) {
             "cегодня $currentDateTime день недели $dayOfWeek ответ JSON\n$CALENDAR_CONTRACT"

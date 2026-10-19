@@ -104,9 +104,11 @@ fun CalendarScreen(
     var eventToEdit by remember { mutableStateOf<CalendarEvent?>(null) }
     var eventToDelete by remember { mutableStateOf<CalendarEvent?>(null) }
     var isCreatingEvent by remember { mutableStateOf(false) }
-    val selectedDayEvents = uiState.events.filter { it.localDate() == uiState.selectedDate }
-    val eventCounts = remember(uiState.events) {
-        uiState.events.groupingBy { it.localDate() }.eachCount()
+    var editorZone by remember { mutableStateOf(uiState.zoneId) }
+    var editorDate by remember { mutableStateOf(uiState.selectedDate) }
+    val selectedDayEvents = uiState.events.filter { it.localDate(uiState.zoneId) == uiState.selectedDate }
+    val eventCounts = remember(uiState.events, uiState.zoneId) {
+        uiState.events.groupingBy { it.localDate(uiState.zoneId) }.eachCount()
     }
 
     LaunchedEffect(uiState.focusedEventId, selectedDayEvents) {
@@ -145,11 +147,17 @@ fun CalendarScreen(
                     val today = LocalUserDateTimeFormatter.current.today
                     val dayOfWeek = today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale("ru"))
                     val dateText = "сегодня $dayOfWeek ${today.dayOfMonth} число"
-                    Text(
-                        text = dateText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = dateText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(com.example.aiassistent1.presentation.formatting.CalendarTimeZoneLabels.label(
+                            LocalCalendarTimeZone.current.zoneId, LocalCalendarClock.current),
+                            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
                 },
                 navigationIcon = {
                     FilledTonalIconButton(
@@ -166,6 +174,7 @@ fun CalendarScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 actions = {
+                    CalendarTimeZoneAction()
                     TextButton(onClick = onOpenChat) {
                         Text("Чат")
                     }
@@ -176,7 +185,7 @@ fun CalendarScreen(
         bottomBar = inputPanel,
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { isCreatingEvent = true },
+                onClick = { editorZone = uiState.zoneId; editorDate = uiState.selectedDate; isCreatingEvent = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Событие") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -225,7 +234,7 @@ fun CalendarScreen(
                     items(selectedDayEvents, key = CalendarEvent::id) { event ->
                         CalendarEventCard(
                             event = event,
-                            onEdit = { eventToEdit = event },
+                            onEdit = { editorZone = uiState.zoneId; editorDate = event.localDate(editorZone); eventToEdit = event },
                             onDelete = { eventToDelete = event },
                         )
                     }
@@ -240,25 +249,29 @@ fun CalendarScreen(
 
     if (isCreatingEvent) {
         CalendarEventEditorDialog(
-            date = uiState.selectedDate,
+            date = editorDate,
             event = null,
             onDismiss = { isCreatingEvent = false },
             onSave = { title, startTime, endTime, value, notes ->
-                viewModel.createEvent(title, uiState.selectedDate, startTime, endTime, value, notes)
+                viewModel.createEvent(title, editorDate, startTime, endTime, value, notes, editorZone)
                 isCreatingEvent = false
             },
+            zoneId = editorZone,
+            onZoneSelected = { editorZone = it },
         )
     }
 
     eventToEdit?.let { event ->
         CalendarEventEditorDialog(
-            date = event.localDate(),
+            date = editorDate,
             event = event,
             onDismiss = { eventToEdit = null },
             onSave = { title, startTime, endTime, value, notes ->
-                viewModel.updateEvent(event.id, title, event.localDate(), startTime, endTime, value, notes)
+                viewModel.updateEvent(event.id, title, editorDate, startTime, endTime, value, notes, editorZone, event)
                 eventToEdit = null
             },
+            zoneId = editorZone,
+            onZoneSelected = { editorZone = it },
         )
     }
 
@@ -468,7 +481,7 @@ private fun CalendarEventCard(
                     label = {
                         Text(if (event.hasEndTime) {
                             LocalUserDateTimeFormatter.current.range(event.startsAtEpochMillis, event.endsAtEpochMillis)
-                        } else event.localStartTimeText())
+                        } else event.localStartTimeText(LocalCalendarTimeZone.current.zoneId))
                     },
                     modifier = Modifier.padding(top = 6.dp),
                 )
@@ -489,18 +502,43 @@ internal fun CalendarEventEditorDialog(
     event: CalendarEvent?,
     onDismiss: () -> Unit,
     onSave: (title: String, startTime: LocalTime, endTime: LocalTime?, value: Long?, notes: String) -> Unit,
+    zoneId: ZoneId = LocalCalendarTimeZone.current.zoneId,
+    onZoneSelected: (ZoneId) -> Unit = {},
 ) {
     var title by remember(event) { mutableStateOf(event?.title.orEmpty()) }
-    var startTimeText by remember(event) { mutableStateOf(event?.localStartTimeText() ?: "09:00") }
+    var startTimeText by remember(event) { mutableStateOf(event?.localStartTimeText(zoneId) ?: "09:00") }
     var durationText by remember(event) {
         mutableStateOf(event?.let { if (it.hasEndTime) it.durationMinutes().toString() else "" } ?: "60")
     }
     var endTimeText by remember(event) {
-        mutableStateOf(event?.let { if (it.hasEndTime) it.localEndTimeText() else "" } ?: "10:00")
+        mutableStateOf(event?.let { if (it.hasEndTime) it.localEndTimeText(zoneId) else "" } ?: "10:00")
     }
     var valueText by remember(event) { mutableStateOf(event?.value?.toString().orEmpty()) }
     var notesText by remember(event) { mutableStateOf(event?.notes.orEmpty()) }
     var validationError by remember { mutableStateOf<String?>(null) }
+    val currentZone = LocalCalendarTimeZone.current.zoneId
+    var confirmedFor by remember(event, date) { mutableStateOf(zoneId.id) }
+    val needsZoneConfirmation = zoneId != currentZone && confirmedFor != currentZone.id
+    var durationZone by remember(event, date) { mutableStateOf(zoneId) }
+
+    fun elapsedMinutes(start: LocalTime, end: LocalTime): Long = CalendarTime.durationMinutes(
+        java.time.LocalDateTime.of(date, start),
+        java.time.LocalDateTime.of(com.example.aiassistent1.presentation.viewmodel.resolveCalendarEndDate(date, start, end), end),
+        null, zoneId,
+    )!!.toLong()
+    fun endAfter(start: LocalTime, duration: Long): String {
+        require(duration in 1..Int.MAX_VALUE.toLong())
+        val epoch = CalendarTime.toEpochMillis(java.time.LocalDateTime.of(date, start), zoneId)
+        return Instant.ofEpochMilli(Math.addExact(epoch, Math.multiplyExact(duration, 60_000L)))
+            .atZone(zoneId).format(TIME_FORMATTER)
+    }
+    LaunchedEffect(zoneId) {
+        // A deliberate change of interpretation keeps the entered endpoints and recomputes elapsed time.
+        if (durationZone != zoneId && endTimeText.isNotBlank()) runCatching {
+            elapsedMinutes(CalendarTime.time(startTimeText.trim()), CalendarTime.time(endTimeText.trim())).toString()
+        }.onSuccess { durationText = it }
+        durationZone = zoneId
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -512,6 +550,10 @@ internal fun CalendarEventEditorDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                CalendarScheduleTimeZone(zoneId, currentZone, needsZoneConfirmation,
+                    runCatching { java.time.LocalDateTime.of(date, CalendarTime.time(startTimeText.trim())) }.getOrNull(),
+                    enabled = true, onKeepMoment = { confirmedFor = currentZone.id },
+                    onUseCurrent = { confirmedFor = currentZone.id; onZoneSelected(currentZone) })
                 if (event != null) Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
                 OutlinedTextField(
                     value = title,
@@ -528,7 +570,7 @@ internal fun CalendarEventEditorDialog(
                             val start = LocalTime.parse(value, TIME_FORMATTER)
                             val duration = durationText.toLong()
                             require(duration > 0)
-                            start.plusMinutes(duration).format(TIME_FORMATTER)
+                            endAfter(start, duration)
                         }.onSuccess { endTimeText = it }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -544,7 +586,7 @@ internal fun CalendarEventEditorDialog(
                             val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
                             val duration = value.toLong()
                             require(duration > 0)
-                            start.plusMinutes(duration).format(TIME_FORMATTER)
+                            endAfter(start, duration)
                         }.onSuccess { endTimeText = it }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -561,8 +603,7 @@ internal fun CalendarEventEditorDialog(
                         runCatching {
                             val start = LocalTime.parse(startTimeText, TIME_FORMATTER)
                             val end = LocalTime.parse(value, TIME_FORMATTER)
-                            val minutes = java.time.Duration.between(start, end).toMinutes()
-                                .let { if (it <= 0) it + 24 * 60 else it }
+                            val minutes = elapsedMinutes(start, end)
                             require(minutes > 0)
                             minutes.toString()
                         }.onSuccess { durationText = it }
@@ -600,9 +641,12 @@ internal fun CalendarEventEditorDialog(
                         require(title.isNotBlank()) { "Введите название события." }
                         val start = CalendarTime.time(startTimeText.trim())
                         val end = endTimeText.trim().takeIf { it.isNotEmpty() }?.let(CalendarTime::time)
+                        require(!needsZoneConfirmation) { "Подтвердите часовой пояс события." }
+                        val unchanged = event != null && date == event.localDate(zoneId) &&
+                            start.format(TIME_FORMATTER) == event.localStartTimeText(zoneId) &&
+                            end?.format(TIME_FORMATTER) == event.localEndTimeText(zoneId).takeIf { event.hasEndTime }
                         val duration = end?.let {
-                            java.time.Duration.between(start, it).toMinutes()
-                                .let { minutes -> if (minutes <= 0) minutes + 24 * 60 else minutes }
+                            if (unchanged) event!!.durationMinutes() else elapsedMinutes(start, it)
                         }
                         if (duration == null) {
                             require(durationText.isBlank()) { "Проверьте длительность и окончание." }
@@ -631,14 +675,14 @@ private data class CalendarEventEditorResult(
     val notes: String,
 )
 
-private fun CalendarEvent.localDate(): LocalDate =
-    Instant.ofEpochMilli(startsAtEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+private fun CalendarEvent.localDate(zoneId: ZoneId): LocalDate =
+    Instant.ofEpochMilli(startsAtEpochMillis).atZone(zoneId).toLocalDate()
 
-private fun CalendarEvent.localStartTimeText(): String =
-    Instant.ofEpochMilli(startsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
+private fun CalendarEvent.localStartTimeText(zoneId: ZoneId): String =
+    Instant.ofEpochMilli(startsAtEpochMillis).atZone(zoneId).format(TIME_FORMATTER)
 
-private fun CalendarEvent.localEndTimeText(): String =
-    Instant.ofEpochMilli(endsAtEpochMillis).atZone(ZoneId.systemDefault()).format(TIME_FORMATTER)
+private fun CalendarEvent.localEndTimeText(zoneId: ZoneId): String =
+    Instant.ofEpochMilli(endsAtEpochMillis).atZone(zoneId).format(TIME_FORMATTER)
 
 private fun CalendarEvent.durationMinutes(): Long = (endsAtEpochMillis - startsAtEpochMillis) / 60_000L
 

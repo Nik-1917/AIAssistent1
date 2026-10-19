@@ -20,6 +20,51 @@ import java.time.ZoneId
 class CalendarViewModelTest {
     private val date = LocalDate.of(2030, 9, 12)
 
+    @Test fun `zone choice reopens the month query without moving selected month or modifying events`() = runTest {
+        val zones = com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository()
+        val samara = ZoneId.of("Europe/Samara")
+        val moscow = ZoneId.of("Europe/Moscow")
+        zones.selectZone(samara.id)
+        withCalendar(zones) { viewModel, repository ->
+            val start = LocalDate.of(2030, 10, 1).atTime(0, 30).atZone(samara).toInstant().toEpochMilli()
+            val original = CalendarEvent("saved", "Встреча", start, start + 600_000L, 1, 2, value = 0, notes = "  Документы  ")
+            repository.existing = original
+            viewModel.focusSavedEvent("saved").getOrThrow()
+            runCurrent()
+            assertEquals(YearMonth.of(2030, 10), viewModel.uiState.value.visibleMonth)
+            zones.selectZone(moscow.id)
+            runCurrent()
+            assertEquals(YearMonth.of(2030, 10), viewModel.uiState.value.visibleMonth)
+            assertEquals(moscow, viewModel.uiState.value.zoneId)
+            assertEquals(LocalDate.of(2030, 10, 1).atStartOfDay(moscow).toInstant().toEpochMilli(), repository.observedRanges.last().first)
+            assertTrue(viewModel.uiState.value.events.isEmpty())
+            viewModel.focusSavedEvent("saved").getOrThrow()
+            assertEquals(LocalDate.of(2030, 9, 30), viewModel.uiState.value.selectedDate)
+            assertEquals(original, repository.existing)
+            assertNull(repository.created)
+            assertNull(repository.changed)
+        }
+    }
+
+    @Test fun `manual creation rejects a DST gap and unchanged editing preserves an overlap instant`() = runTest {
+        val zones = com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository()
+        val berlin = ZoneId.of("Europe/Berlin")
+        zones.selectZone(berlin.id)
+        withCalendar(zones) { viewModel, repository ->
+            viewModel.createEvent("Встреча", LocalDate.of(2026, 3, 29), LocalTime.of(2, 30), null, null, null)
+            runCurrent()
+            assertNull(repository.created)
+            assertNotNull(viewModel.uiState.value.error)
+            val start = java.time.Instant.parse("2026-10-25T01:30:00Z").toEpochMilli()
+            val original = CalendarEvent("saved", "Прежнее название", start, start + 600_000L, 1, 2)
+            viewModel.updateEvent(original.id, "Новое название", LocalDate.of(2026, 10, 25), LocalTime.of(2, 30),
+                LocalTime.of(2, 40), 0, "  Документы  ", berlin, original)
+            runCurrent()
+            assertEquals(original.startsAtEpochMillis, repository.changed!!.startsAtEpochMillis)
+            assertEquals(original.endsAtEpochMillis, repository.changed!!.endsAtEpochMillis)
+        }
+    }
+
     @Test fun `manual creation saves missing optional fields without defaults`() = runTest {
         withCalendar { viewModel, repository ->
             viewModel.createEvent("Встреча", date, LocalTime.of(9, 0), null, null, " \n ")
@@ -109,7 +154,10 @@ class CalendarViewModelTest {
         }
     }
 
-    private suspend fun TestScope.withCalendar(block: suspend (CalendarViewModel, RecordingRepository) -> Unit) {
+    private suspend fun TestScope.withCalendar(
+        zones: com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository = com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository(),
+        block: suspend (CalendarViewModel, RecordingRepository) -> Unit,
+    ) {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = RecordingRepository()
         val viewModel = CalendarViewModel(
@@ -117,6 +165,7 @@ class CalendarViewModelTest {
             UpdateCalendarEventUseCase(repository), DeleteCalendarEventUseCase(repository),
             GetCalendarEventUseCase(repository),
             DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope),
+            calendarTimeZones = zones,
         )
         try {
             runCurrent()
@@ -131,6 +180,7 @@ class CalendarViewModelTest {
         var created: CalendarEventDraft? = null
         var changed: CalendarEventUpdate? = null
         var existing: CalendarEvent? = null
+        val observedRanges = mutableListOf<Pair<Long, Long>>()
         override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> {
             created = draft
             return Result.success(CalendarEvent("new", draft.title, draft.startsAtEpochMillis, draft.endsAtEpochMillis, 0, 0,
@@ -140,7 +190,12 @@ class CalendarViewModelTest {
             changed = update
             return Result.success(CalendarEvent(update.id, update.title, update.startsAtEpochMillis, update.endsAtEpochMillis, 0, 0))
         }
-        override fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long) = flowOf(emptyList<CalendarEvent>())
+        override fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): kotlinx.coroutines.flow.Flow<List<CalendarEvent>> {
+            observedRanges.add(rangeStartEpochMillis to rangeEndEpochMillis)
+            return flowOf(listOfNotNull(existing).filter {
+                it.startsAtEpochMillis < rangeEndEpochMillis && it.endsAtEpochMillis > rangeStartEpochMillis
+            })
+        }
         override suspend fun getById(id: String): Result<CalendarEvent?> = Result.success(existing?.takeIf { it.id == id })
         override suspend fun delete(id: String): Result<Unit> = error("Not used")
         override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long): Result<List<CalendarEvent>> = error("Not used")

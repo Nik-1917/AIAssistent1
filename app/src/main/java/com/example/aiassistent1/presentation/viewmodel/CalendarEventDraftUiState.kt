@@ -37,7 +37,24 @@ data class CalendarEventDraftUiState(
     val saveRequested: Boolean = false,
     val isSaving: Boolean = false,
     val formattingField: CalendarEventField? = null,
+    val timeZoneId: String? = null,
+    val timeZoneConfirmedFor: String? = null,
 ) {
+    val zoneId: ZoneId get() = timeZoneId?.let(ZoneId::of) ?: ZoneId.systemDefault()
+
+    fun needsTimeZoneConfirmation(current: ZoneId): Boolean =
+        timeZoneId == null || (!saveRequested && timeZoneId != current.id && timeZoneConfirmedFor != current.id)
+
+    fun confirmTimeZone(current: ZoneId, keepMoment: Boolean): CalendarEventDraftUiState {
+        check(isEditable) { "Сохранение этого черновика уже началось." }
+        require(!keepMoment || timeZoneId != null) { "Исходный часовой пояс черновика неизвестен." }
+        return copy(
+            timeZoneId = if (keepMoment) timeZoneId else current.id,
+            timeZoneConfirmedFor = current.id,
+            durationMinutes = if (!keepMoment && endsAt != null) null else durationMinutes,
+            error = null,
+        )
+    }
     val isEditable: Boolean get() = savedEventId == null && !saveRequested && !isSaving
 
     fun fieldText(field: CalendarEventField): String = fieldInputs[field] ?: when (field) {
@@ -53,7 +70,7 @@ data class CalendarEventDraftUiState(
         val startTime = fieldInputs[CalendarEventField.Time] ?: time
         val start = if (startDate.isNullOrBlank() || startTime.isNullOrBlank()) null
             else CalendarTime.dateTime("${startDate.trim()}T${startTime.trim()}")
-        CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, ZoneId.systemDefault())
+        CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, zoneId)
     }.getOrNull()
 
     val missingFields: List<CalendarEventField>
@@ -91,7 +108,7 @@ data class CalendarEventDraftUiState(
 
     // Display-only: keep the model's explicit endpoint separate from a derived end.
     // Use elapsed minutes, matching CalendarCommandExecutor when saving the event.
-    internal fun endDisplayText(zoneId: ZoneId = ZoneId.systemDefault()): String? = runCatching {
+    internal fun endDisplayText(zoneId: ZoneId = this.zoneId): String? = runCatching {
         val end = endsAt?.let(CalendarTime::dateTime) ?: run {
             val start = startsAt?.let(CalendarTime::dateTime) ?: return@runCatching null
             val duration = durationMinutes?.takeIf { it > 0 } ?: return@runCatching null
@@ -130,12 +147,12 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
     date?.let(CalendarTime::date)
     time?.let(CalendarTime::time)
     durationMinutes?.let { require(it > 0) { "Длительность должна быть больше нуля." } }
-    startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), ZoneId.systemDefault()) }
+    startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), zoneId) }
 
     val resolvedDuration = if (endsAt == null) durationMinutes else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
         startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
         endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
-        durationMinutes, java.time.ZoneId.systemDefault(),
+        durationMinutes, zoneId,
     )
     val next = when {
         title.isNullOrBlank() -> CalendarEventField.Title

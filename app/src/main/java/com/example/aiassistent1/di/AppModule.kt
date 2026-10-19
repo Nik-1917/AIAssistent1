@@ -34,6 +34,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 object AppModule {
+    @Volatile private var calendarTimeZones: CalendarTimeZoneRepository? = null
+
+    fun provideCalendarTimeZones(context: Context): CalendarTimeZoneRepository = calendarTimeZones ?: synchronized(this) {
+        calendarTimeZones ?: DataStoreCalendarTimeZoneRepository(
+            context.applicationContext.calendarTimeZoneStore(),
+            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        ).also { calendarTimeZones = it }
+    }
     @Volatile
     private var modelMemoryGuard: com.example.aiassistent1.data.model.ModelMemoryGuard? = null
 

@@ -1106,6 +1106,7 @@ fun ChatScreen(
                 onDelete = { viewModel.discardCalendarDraft(draft.requestId) },
                 onDismiss = viewModel::closeCalendarDraftEditor,
                 storageError = uiState.calendarDrafts.storageError,
+                onTimeZoneConfirm = { keepMoment -> viewModel.confirmCalendarDraftTimeZone(draft.requestId, keepMoment) },
             )
         }
     }
@@ -1389,6 +1390,7 @@ internal fun ChatTopBar(
             }
         },
         actions = {
+            CalendarTimeZoneAction()
             ChatActionIconButton(
                 imageVector = Icons.Rounded.Groups,
                 contentDescription = "Конференции и записи",

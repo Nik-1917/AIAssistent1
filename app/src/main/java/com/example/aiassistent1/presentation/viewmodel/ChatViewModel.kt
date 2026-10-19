@@ -97,6 +97,8 @@ class ChatViewModel(
     private val calendarCommandMapper: CalendarCommandMapper,
     calendarDraftRepository: CalendarDraftRepository,
     private val chatContextRepository: ChatContextRepository,
+    val calendarTimeZones: com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository =
+        com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository(),
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(ChatUiState())
     private val calendarDraftController = CalendarDraftController(calendarDraftRepository, viewModelScope) { id ->
@@ -715,6 +717,7 @@ class ChatViewModel(
             }
             try {
                 val currentState = requestState
+                val timeContext = calendarTimeZones.snapshot()
                 // Rejected sends never enter this flow; retries have no new message and stay silent.
                 if (newUserMessage != null) messageSendFeedback.play()
                 modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
@@ -727,6 +730,7 @@ class ChatViewModel(
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
                 fun chatResponse(instruction: String? = null) = chatContextSession.respond(
                     currentState.activeChatId, currentState.messages, onReady, responseInstruction = instruction,
+                    localDateTime = timeContext.localDateTime,
                 ) { pressure ->
                     if (!voiceConversation.accepts(requestConversation, uiState.value.activeChatId) ||
                         uiState.value.selectedModel != currentState.selectedModel) {
@@ -760,6 +764,7 @@ class ChatViewModel(
                     ),
                     useSystemPrompt = true,
                     isCalendarMode = currentState.isCalendarMode,
+                    localDateTime = timeContext.localDateTime,
                     onReady = onReady,
                 ) else Result.success(chatResponse())
                 val response = responseFlowResult.getOrElse { error ->
@@ -805,7 +810,7 @@ class ChatViewModel(
                             val parseOutcome = assistantResponseParser.parseResult(
                                 finalMessage.content,
                                 com.example.aiassistent1.domain.parser.CalendarDateContext(
-                                    today = LocalDate.now(ZoneId.systemDefault()),
+                                    today = timeContext.localDateTime.toLocalDate(),
                                     userMessagesNewestFirst = currentState.messages.asReversed()
                                         .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.USER }
                                         .map { it.content },
@@ -813,10 +818,11 @@ class ChatViewModel(
                                         .filter { it.chatId == currentState.activeChatId && it.role == MessageRole.ASSISTANT }
                                         .map { it.content },
                                 ),
+                                timeZone = timeContext.zoneId,
                             )
                             val parsed = parseOutcome.getOrNull()
                                 ?.resolveImplicitCalendarAddDate(
-                                    LocalDateTime.now(ZoneId.systemDefault()),
+                                    timeContext.localDateTime,
                                 )
                             val messageToSave = if (parsed != null) {
                                 finalMessage.copy(content = parsed.reply)
@@ -834,7 +840,7 @@ class ChatViewModel(
                             writer.complete(messageToSave)
 
                             if (parsed != null) {
-                                handleParsedResponse(parsed, messageToSave.id, lastUserMessageContent)
+                                handleParsedResponse(parsed, messageToSave.id, lastUserMessageContent, timeContext)
                             }
                         } else {
                             writer.complete(finalMessage)
@@ -1300,18 +1306,19 @@ class ChatViewModel(
         response: com.example.aiassistent1.domain.model.AssistantResponse,
         messageId: String,
         originalQuery: String,
+        timeContext: com.example.aiassistent1.domain.model.CalendarTimeContext,
     ) {
         when (val params = response.params) {
             is com.example.aiassistent1.domain.model.CalendarAddParams -> {
-                startCalendarEventDraft(params, messageId)
+                startCalendarEventDraft(params, messageId, timeContext.zoneId)
             }
             is com.example.aiassistent1.domain.model.CalendarSearchParams -> {
                 viewModelScope.launch {
-                    val command = calendarCommandMapper.map(params).getOrElse { error ->
+                    val command = calendarCommandMapper.map(params, timeContext.zoneId).getOrElse { error ->
                         mutableUiState.update { it.copy(error = error.userMessage()) }
                         return@launch
                     }
-                    calendarCommandExecutor.execute(command, requestId = messageId)
+                    calendarCommandExecutor.execute(command, requestId = messageId, timeZone = timeContext.zoneId)
                         .onSuccess { outcome ->
                             when (outcome) {
                                 is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Found -> {
@@ -1320,7 +1327,7 @@ class ChatViewModel(
                                             val duration = if (it.hasEndTime) {
                                                 ", ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин"
                                             } else ""
-                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis)}$duration)".withCalendarNotes(it.notes)
+                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis, timeContext.zoneId)}$duration)".withCalendarNotes(it.notes)
                                         }
                                     } else "\n\nНичего не найдено."
                                     replaceAssistantReply(messageId, response.reply + resultsText)
@@ -1339,7 +1346,7 @@ class ChatViewModel(
                         }
                 }
             }
-            is com.example.aiassistent1.domain.model.CalendarSumParams -> handleCalendarSum(params, messageId)
+            is com.example.aiassistent1.domain.model.CalendarSumParams -> handleCalendarSum(params, messageId, timeContext.zoneId)
             // intent="chat": the model itself decided this is not a calendar command.
             else -> promptCalendarChatFallback(originalQuery)
         }
@@ -1372,14 +1379,14 @@ class ChatViewModel(
         mutableUiState.update { it.copy(calendarChatPrompt = null) }
     }
 
-    private fun handleCalendarSum(params: com.example.aiassistent1.domain.model.CalendarSumParams, messageId: String) {
+    private fun handleCalendarSum(params: com.example.aiassistent1.domain.model.CalendarSumParams, messageId: String, zoneId: ZoneId) {
         viewModelScope.launch {
-            val command = calendarCommandMapper.map(params).getOrElse { error ->
+            val command = calendarCommandMapper.map(params, zoneId).getOrElse { error ->
                 replaceAssistantReply(messageId, "Не удалось подготовить сумму событий.")
                 mutableUiState.update { it.copy(error = error.userMessage()) }
                 return@launch
             }
-            calendarCommandExecutor.execute(command, requestId = messageId)
+            calendarCommandExecutor.execute(command, requestId = messageId, timeZone = zoneId)
                 .onSuccess { outcome ->
                     val text = when (outcome) {
                         is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.NeedsFields -> "Не указан период для подсчёта ценности событий."
@@ -1481,7 +1488,7 @@ class ChatViewModel(
         )
     }
 
-    private fun startCalendarEventDraft(params: CalendarAddParams, requestId: String = "") {
+    private fun startCalendarEventDraft(params: CalendarAddParams, requestId: String, zoneId: ZoneId) {
         runCatching {
             val parsedStartsAt = params.startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime)
             CalendarEventDraftUiState(
@@ -1492,6 +1499,8 @@ class ChatViewModel(
                 endsAt = params.endsAt,
                 requestId = requestId.ifBlank { java.util.UUID.randomUUID().toString() },
                 chatId = "calendar",
+                timeZoneId = zoneId.id,
+                timeZoneConfirmedFor = zoneId.id,
                 createdAtEpochMillis = uiState.value.messages.firstOrNull { it.id == requestId }
                     ?.createdAtEpochMillis ?: System.currentTimeMillis(),
             ).withNextField()
@@ -1528,24 +1537,63 @@ class ChatViewModel(
 
     fun retryCalendarDraftStorage() = calendarDraftController.retryStorage()
 
+    fun confirmCalendarDraftTimeZone(id: String, keepMoment: Boolean) {
+        viewModelScope.launch {
+            try {
+                val current = calendarTimeZones.snapshot().zoneId
+                calendarDraftController.update(id) { it.confirmTimeZone(current, keepMoment) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                calendarDraftController.update(id, persist = false) { it.copy(error = error.userMessage()) }
+            }
+        }
+    }
+
     fun createCalendarDraftEvent(id: String) {
         if (calendarDraftVoiceTarget?.first == id) stopCalendarDraftVoiceInput()
-        calendarDraftController.save(id) { draft ->
-            val start = com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(requireNotNull(draft.startsAt))
-            val command = CalendarCommand.Add(
-                title = draft.title, date = start.toLocalDate(), time = start.toLocalTime(),
-                durationMinutes = draft.durationMinutes, value = draft.value, notes = draft.notes,
-                endsAt = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
-            )
-            val outcome = calendarCommandExecutor.execute(command, draft.requestId, confirmed = true).getOrThrow()
-            check(outcome is CalendarCommandResult.Completed) { "Не удалось сохранить событие." }
-            mutableUiState.update {
-                it.copy(
-                    snackbarMessage = "Событие сохранено в локальном календаре",
-                    snackbarEventId = outcome.receipt.eventId,
-                )
+        viewModelScope.launch {
+            try {
+                val current = calendarTimeZones.snapshot().zoneId
+                val existing = calendarDraftController.find(id) ?: return@launch
+                if (existing.isSaving || existing.savedEventId != null) return@launch
+                // A legacy interrupted save may already have committed. Never reinterpret or duplicate it.
+                if (existing.saveRequested && existing.timeZoneId == null) {
+                    val receipt = calendarCommandExecutor.findReceipt(existing.requestId).getOrThrow()
+                    if (receipt != null) {
+                        calendarDraftController.update(id) { it.copy(savedEventId = receipt.eventId, saveRequested = false, error = null) }
+                        calendarDraftController.close()
+                    } else {
+                        calendarDraftController.update(id) { it.copy(saveRequested = false,
+                            error = "Событие ещё не сохранено. Подтвердите часовой пояс черновика.") }
+                    }
+                    return@launch
+                }
+                if (existing.needsTimeZoneConfirmation(current)) {
+                    calendarDraftController.update(id, persist = false) { it.copy(error = "Подтвердите часовой пояс черновика перед сохранением.") }
+                    return@launch
+                }
+                calendarDraftController.save(id) { draft ->
+                    val start = com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(requireNotNull(draft.startsAt))
+                    val command = CalendarCommand.Add(
+                        title = draft.title, date = start.toLocalDate(), time = start.toLocalTime(),
+                        durationMinutes = draft.durationMinutes, value = draft.value, notes = draft.notes,
+                        endsAt = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+                    )
+                    val outcome = calendarCommandExecutor.execute(command, draft.requestId, confirmed = true,
+                        timeZone = ZoneId.of(requireNotNull(draft.timeZoneId))).getOrThrow()
+                    check(outcome is CalendarCommandResult.Completed) { "Не удалось сохранить событие." }
+                    mutableUiState.update {
+                        it.copy(
+                            snackbarMessage = "Событие сохранено в локальном календаре",
+                            snackbarEventId = outcome.receipt.eventId,
+                        )
+                    }
+                    outcome.receipt.eventId
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                calendarDraftController.update(id, persist = false) { it.copy(error = error.userMessage()) }
             }
-            outcome.receipt.eventId
         }
     }
 
@@ -1636,14 +1684,6 @@ class ChatViewModel(
         }
     }
 
-    private fun parseCalendarDateTime(value: String?, label: String): Long {
-        require(!value.isNullOrBlank()) { "$label не указано." }
-        return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            .atZone(ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
-    }
-
     private fun isCalendarDateTime(value: String): Boolean =
         runCatching { LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }.isSuccess
 
@@ -1653,9 +1693,9 @@ class ChatViewModel(
     private fun isCalendarTime(value: String): Boolean =
         runCatching { LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm")) }.isSuccess
 
-    private fun formatCalendarEventStart(epochMillis: Long): String =
+    private fun formatCalendarEventStart(epochMillis: Long, zoneId: ZoneId): String =
         Instant.ofEpochMilli(epochMillis)
-            .atZone(ZoneId.systemDefault())
+            .atZone(zoneId)
             .toLocalDateTime()
             .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 

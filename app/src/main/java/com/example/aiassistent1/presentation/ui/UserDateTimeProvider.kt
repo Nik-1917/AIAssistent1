@@ -29,19 +29,24 @@ internal fun UserDateTimeProvider(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val zoneId = LocalCalendarTimeZone.current.zoneId
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var formatter by remember(hideCurrentMonth, hideCurrentYear) {
-        mutableStateOf(UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear))
+    var formatter by remember(hideCurrentMonth, hideCurrentYear, zoneId) {
+        mutableStateOf(UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear, java.time.LocalDate.now(zoneId), zoneId))
     }
-    DisposableEffect(context, lifecycle, hideCurrentMonth, hideCurrentYear) {
-        fun refresh() { formatter = UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear) }
+    DisposableEffect(context, lifecycle, hideCurrentMonth, hideCurrentYear, zoneId) {
+        fun refresh() { formatter = UserDateTimeFormatter(hideCurrentMonth, hideCurrentYear, java.time.LocalDate.now(zoneId), zoneId) }
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) = refresh()
+            override fun onReceive(context: Context?, intent: Intent?) {
+                // The selected calendar zone may reach midnight before/after the phone zone.
+                if (intent?.action != Intent.ACTION_TIME_TICK || formatter.today != java.time.LocalDate.now(zoneId)) refresh()
+            }
         }
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_DATE_CHANGED)
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            addAction(Intent.ACTION_TIME_TICK)
         }
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         val observer = LifecycleEventObserver { _, event ->

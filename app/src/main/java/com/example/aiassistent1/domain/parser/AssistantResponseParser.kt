@@ -4,7 +4,7 @@ import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 
 /** V12.67 wire contract. Missing optional fields differ from invalid supplied fields. */
-class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()) {
+class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
     fun parse(text: String): AssistantResponse? = parseResult(text).getOrNull()
 
     /** Chat presentation reads text only; it never validates or executes a calendar command. */
@@ -12,9 +12,11 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
 
     fun parseResult(
         text: String,
-        dateContext: CalendarDateContext = CalendarDateContext(today = java.time.LocalDate.now(zoneId)),
+        dateContext: CalendarDateContext? = null,
+        timeZone: java.time.ZoneId = zoneId ?: java.time.ZoneId.systemDefault(),
     ): Result<AssistantResponse> = runCatching {
-        val normalized = CalendarFebruaryNormalizer.normalize(StrictCommandJson.read(text), dateContext)
+        val context = dateContext ?: CalendarDateContext(today = java.time.LocalDate.now(timeZone))
+        val normalized = CalendarFebruaryNormalizer.normalize(StrictCommandJson.read(text), context)
         val json = Fields(normalized, "$", setOf("intent", "reply", "params"))
         val intent = json.string("intent", required = true)!!
         val reply = json.string("reply", required = true)!!
@@ -60,7 +62,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId = java.time.Z
                     val resolved = if (localStart != null && candidate.isBefore(localStart)) candidate.plusDays(1) else candidate
                     resolved.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
                 }
-                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), zoneId)
+                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), timeZone)
                 CalendarAddParams(p.string("title", allowEmpty = true)?.takeIf { it.isNotBlank() }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
                     p.eventValue("priority"), p.notes(), end)

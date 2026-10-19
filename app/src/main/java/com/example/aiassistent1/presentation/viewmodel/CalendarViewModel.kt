@@ -13,6 +13,9 @@ import com.example.aiassistent1.calendar.core.domain.GetCalendarEventUseCase
 import com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsUseCase
 import com.example.aiassistent1.calendar.core.domain.UpdateCalendarEventUseCase
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
+import com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository
+import com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository
+import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.domain.model.CalendarViewState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -23,6 +26,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -43,6 +48,7 @@ data class CalendarUiState(
     val error: String? = null,
     val snackbarMessage: String? = null,
     val focusedEventId: String? = null,
+    val zoneId: ZoneId = ZoneId.systemDefault(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,6 +59,7 @@ class CalendarViewModel(
     private val deleteCalendarEvent: DeleteCalendarEventUseCase,
     private val getCalendarEvent: GetCalendarEventUseCase,
     private val settingsRepository: SettingsRepository,
+    private val calendarTimeZones: CalendarTimeZoneRepository = SystemCalendarTimeZoneRepository(),
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(CalendarUiState())
     private val visibleMonth = MutableStateFlow(mutableUiState.value.visibleMonth)
@@ -67,17 +74,19 @@ class CalendarViewModel(
     init {
         restorePositionJob = restorePersistedCalendarPosition()
         viewModelScope.launch {
-            combine(visibleMonth, refreshRequests) { month, request -> MonthRefreshRequest(month, request) }
+            combine(visibleMonth, refreshRequests,
+                calendarTimeZones.state.filter { it.isLoaded }.map { it.zoneId }.distinctUntilChanged(),
+            ) { month, request, zone -> MonthRefreshRequest(month, request, zone) }
                 .flatMapLatest { request ->
                     observeCalendarEvents(
-                        request.month.atDay(1).atStartOfDay().toEpochMillis(),
-                        request.month.plusMonths(1).atDay(1).atStartOfDay().toEpochMillis(),
-                    ).map { events -> request.requestId to events }
+                        request.month.atDay(1).atStartOfDay(request.zoneId).toInstant().toEpochMilli(),
+                        request.month.plusMonths(1).atDay(1).atStartOfDay(request.zoneId).toInstant().toEpochMilli(),
+                    ).map { events -> Triple(request.requestId, request.zoneId, events) }
             }.catch { error ->
                 showError(error)
                 finishRefreshImmediately()
-            }.collect { (requestId, events) ->
-                mutableUiState.update { it.copy(events = events) }
+            }.collect { (requestId, zone, events) ->
+                mutableUiState.update { it.copy(events = events, zoneId = zone) }
                 if (requestId == pendingRefreshRequest) {
                     finishRefreshAfterMinimumDuration(requestId)
                 }
@@ -106,7 +115,11 @@ class CalendarViewModel(
             return Result.failure(error)
         } ?: return Result.failure(NoSuchElementException("Событие не найдено в локальном календаре"))
 
-        val date = Instant.ofEpochMilli(event.startsAtEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val zone = try {
+            calendarTimeZones.snapshot().zoneId
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (error: Exception) { return Result.failure(error) }
+        val date = Instant.ofEpochMilli(event.startsAtEpochMillis).atZone(zone).toLocalDate()
         val month = YearMonth.from(date)
         try {
             settingsRepository.setCalendarViewState(CalendarViewState(month, date))
@@ -138,7 +151,7 @@ class CalendarViewModel(
         val requestId = refreshRequests.value + 1
         pendingRefreshRequest = requestId
         refreshStartedAtElapsedMillis = SystemClock.elapsedRealtime()
-        val today = LocalDate.now()
+        val today = LocalDate.now(calendarTimeZones.state.value.zoneId)
         val currentMonth = YearMonth.from(today)
         visibleMonth.value = currentMonth
         mutableUiState.update {
@@ -160,9 +173,10 @@ class CalendarViewModel(
         endTime: LocalTime?,
         value: Long?,
         notes: String?,
+        zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime, value, notes).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime, value, notes, zoneId).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -180,9 +194,23 @@ class CalendarViewModel(
         endTime: LocalTime?,
         value: Long?,
         notes: String?,
+        zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
+        originalEvent: CalendarEvent? = null,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime, value, notes).getOrElse { error ->
+            // Editing text/value alone must also preserve an existing DST-overlap instant.
+            val unchangedSchedule = originalEvent?.let { original ->
+                val oldStart = Instant.ofEpochMilli(original.startsAtEpochMillis).atZone(zoneId)
+                val oldEnd = Instant.ofEpochMilli(original.endsAtEpochMillis).atZone(zoneId)
+                date == oldStart.toLocalDate() && startTime == oldStart.toLocalTime() &&
+                    endTime == oldEnd.toLocalTime().takeIf { original.hasEndTime }
+            } == true
+            val built = if (unchangedSchedule) runCatching {
+                require(title.isNotBlank()) { "Введите название события." }
+                CalendarEventDraft(title, originalEvent!!.startsAtEpochMillis, originalEvent.endsAtEpochMillis,
+                    value, notes?.takeIf { it.isNotBlank() })
+            } else buildDraft(title, date, startTime, endTime, value, notes, zoneId)
+            val draft = built.getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -244,11 +272,12 @@ class CalendarViewModel(
         endTime: LocalTime?,
         value: Long?,
         notes: String?,
+        zoneId: ZoneId,
     ): Result<CalendarEventDraft> = runCatching {
         require(title.isNotBlank()) { "Введите название события." }
-        val start = LocalDateTime.of(date, startTime).toEpochMillis()
+        val start = CalendarTime.toEpochMillis(LocalDateTime.of(date, startTime), zoneId)
         val end = endTime?.let {
-            LocalDateTime.of(resolveCalendarEndDate(date, startTime, it), it).toEpochMillis()
+            CalendarTime.toEpochMillis(LocalDateTime.of(resolveCalendarEndDate(date, startTime, it), it), zoneId)
                 .also { end -> require(end > start) { "Окончание события должно быть позже начала." } }
         } ?: start
         CalendarEventDraft(
@@ -259,9 +288,6 @@ class CalendarViewModel(
             notes = notes?.takeIf { it.isNotBlank() },
         )
     }
-
-    private fun LocalDateTime.toEpochMillis(): Long =
-        atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     private fun showError(error: Throwable) {
         mutableUiState.update { it.copy(error = error.message ?: "Не удалось выполнить операцию с событием") }
@@ -297,6 +323,7 @@ class CalendarViewModel(
     private data class MonthRefreshRequest(
         val month: YearMonth,
         val requestId: Int,
+        val zoneId: ZoneId,
     )
 }
 

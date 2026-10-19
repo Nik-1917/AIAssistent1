@@ -27,6 +27,7 @@ class DataStoreCalendarDraftRepositoryTest {
                 title = "Встреча", date = "2026-10-01", time = "15:00", durationMinutes = 60,
                 value = 0, notes = "  Не менять\nтекст  ", endsAt = "2026-10-01T16:00",
                 fieldInputs = mapOf("Time" to "завтра в пол", "Value" to ""),
+                timeZoneId = "Europe/Samara", timeZoneConfirmedFor = "Europe/Moscow",
             ),
             CalendarDraftRecord("second", "calendar", 124, value = Long.MAX_VALUE, saveRequested = true),
             CalendarDraftRecord("third", "calendar", 125, savedEventId = "saved-event"),

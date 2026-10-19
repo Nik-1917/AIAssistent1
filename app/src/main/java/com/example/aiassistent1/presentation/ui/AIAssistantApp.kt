@@ -69,6 +69,7 @@ fun AIAssistantApp(
     }
 
     ConversationLifecycleEffects(chatViewModel, uiState)
+    CalendarTimeZoneProvider(chatViewModel.calendarTimeZones) {
     UserDateTimeProvider(hideCurrentMonth = uiState.hideCurrentMonth, hideCurrentYear = uiState.hideCurrentYear) {
         AnimatedContent(
             targetState = navigation,
@@ -117,6 +118,7 @@ fun AIAssistantApp(
                 )
             }
         }
+    }
     }
     SideEffect(onContentReady)
 }

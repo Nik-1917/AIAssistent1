@@ -6,6 +6,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SystemPromptProviderTest {
+    @Test fun `supplied local time is exact and never includes timezone metadata`() {
+        val local = java.time.LocalDateTime.of(2026, 10, 20, 15, 0)
+        for (calendar in listOf(true, false)) {
+            val prompt = SystemPromptProvider().getSystemPrompt(calendar, local)
+            assertTrue(prompt.startsWith("cегодня 2026-10-20 15:00 день недели вторник"))
+            assertFalse(prompt.contains("Europe/"))
+            assertFalse(prompt.contains("UTC"))
+            assertFalse(prompt.contains("+04:00"))
+            assertFalse(prompt.contains("time_zone"))
+        }
+    }
+
     @Test
     fun `calendar prompt appends contract after current temporal context`() {
         val prompt = SystemPromptProvider().getSystemPrompt(isCalendarMode = true)

@@ -47,12 +47,17 @@ sealed interface CalendarCommandResult {
 /** One execution path for V12.67 calendar commands. reply belongs to the presentation layer. */
 class CalendarCommandExecutor(
     private val repository: CalendarEventRepository,
-    private val zoneId: ZoneId = ZoneId.systemDefault(),
+    private val zoneId: ZoneId? = null,
 ) {
+    suspend fun findReceipt(requestId: String): Result<CalendarReceipt?> = calendarResult {
+        repository.getReceipt(requestId).getOrThrow()
+    }
+
     suspend fun execute(
         command: CalendarCommand,
         requestId: String,
         confirmed: Boolean = false,
+        timeZone: ZoneId = zoneId ?: ZoneId.systemDefault(),
     ): Result<CalendarCommandResult> = calendarResult {
         require(requestId.isNotBlank()) { "Отсутствует идентификатор запроса" }
         // Consult receipt even if a regenerated response changes the intent or fields.
@@ -62,7 +67,7 @@ class CalendarCommandExecutor(
                 require(command.title == null || command.title.isNotBlank()) { "Пустое название события" }
                 require(command.durationMinutes == null || command.durationMinutes > 0) { "Некорректная длительность" }
                 val duration = CalendarTime.durationMinutes(command.time?.let { LocalDateTime.of(command.date, it) },
-                    command.endsAt, command.durationMinutes, zoneId)
+                    command.endsAt, command.durationMinutes, timeZone)
                 val resolved = command.copy(durationMinutes = duration)
                 val missing = buildList {
                     if (command.title == null) add(MissingCalendarField.TITLE)
@@ -71,9 +76,9 @@ class CalendarCommandExecutor(
                 if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(resolved, missing)
                 else if (!confirmed) CalendarCommandResult.AddDraft(resolved)
                 else {
-                    val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), zoneId)
+                    val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), timeZone)
                     val draft = CalendarEventDraft(command.title!!, start,
-                        command.endsAt?.let { CalendarTime.toEpochMillis(it, zoneId) }
+                        command.endsAt?.let { CalendarTime.toEpochMillis(it, timeZone) }
                             ?: duration?.let { Math.addExact(start, Math.multiplyExact(it.toLong(), 60_000L)) }
                             ?: start, command.value, command.notes)
                     CalendarCommandResult.Completed(repository.commit(requestId, CalendarMutation.Create(draft)).getOrThrow())

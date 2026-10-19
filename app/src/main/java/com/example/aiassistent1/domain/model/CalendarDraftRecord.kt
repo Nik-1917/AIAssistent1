@@ -18,4 +18,6 @@ data class CalendarDraftRecord(
     val saveRequested: Boolean = false,
     // Retained until the linked reply has been deleted from chat storage.
     val discardRequested: Boolean = false,
+    val timeZoneId: String? = null,
+    val timeZoneConfirmedFor: String? = null,
 )

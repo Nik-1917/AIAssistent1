@@ -225,6 +225,7 @@ private fun CalendarEventDraftUiState.toRecord() = CalendarDraftRecord(
     title = title, date = date, time = time, durationMinutes = durationMinutes, value = value,
     notes = notes, endsAt = endsAt, fieldInputs = fieldInputs.mapKeys { it.key.name },
     savedEventId = savedEventId, saveRequested = saveRequested,
+    timeZoneId = timeZoneId, timeZoneConfirmedFor = timeZoneConfirmedFor,
 )
 
 private fun CalendarDraftRecord.toUi() = CalendarEventDraftUiState(
@@ -232,4 +233,5 @@ private fun CalendarDraftRecord.toUi() = CalendarEventDraftUiState(
     title = title, date = date, time = time, durationMinutes = durationMinutes, value = value,
     notes = notes, endsAt = endsAt, fieldInputs = fieldInputs.mapKeys { CalendarEventField.valueOf(it.key) },
     savedEventId = savedEventId, saveRequested = saveRequested,
+    timeZoneId = timeZoneId, timeZoneConfirmedFor = timeZoneConfirmedFor,
 )

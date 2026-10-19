@@ -23,6 +23,7 @@ class ChatContextSession(
         history: List<ChatMessage>,
         onReady: suspend () -> Unit = {},
         responseInstruction: String? = null,
+        localDateTime: java.time.LocalDateTime = java.time.LocalDateTime.now(),
         onPressure: suspend (ChatContextPressure) -> ChatContextChoice,
     ) = flow {
         require(chatId != "calendar")
@@ -33,7 +34,7 @@ class ChatContextSession(
         var policy = settings.policy
         var excluded = settings.excludedTurnIds - requestId
         // Freeze the date/system instruction across counting, selection and retries.
-        val system = ChatMessage(role = MessageRole.SYSTEM, content = systemPrompt.getSystemPrompt(false) +
+        val system = ChatMessage(role = MessageRole.SYSTEM, content = systemPrompt.getSystemPrompt(false, localDateTime) +
             responseInstruction?.takeIf(String::isNotBlank)?.let { "\n$it" }.orEmpty(), chatId = chatId)
         fun prompt(ids: Set<String>) = listOf(system) + builder.build(messages,
             appendChatStyleInstruction = true, excludedTurnIds = ids)

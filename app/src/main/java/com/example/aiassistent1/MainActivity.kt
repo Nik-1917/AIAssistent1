@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                     formatCalendarField = AppModule.provideFormatCalendarFieldUseCase(llmEngine),
                     calendarCommandExecutor = AppModule.provideCalendarCommandExecutor(applicationContext),
                     calendarCommandMapper = AppModule.provideCalendarCommandMapper(),
+                    calendarTimeZones = AppModule.provideCalendarTimeZones(applicationContext),
                 ) as T
             }
         }
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     updateCalendarEvent = AppModule.provideUpdateCalendarEventUseCase(applicationContext),
                     deleteCalendarEvent = AppModule.provideDeleteCalendarEventUseCase(applicationContext),
                     getCalendarEvent = AppModule.provideGetCalendarEventUseCase(applicationContext),
+                    calendarTimeZones = AppModule.provideCalendarTimeZones(applicationContext),
                     settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                 ) as T
             }
