@@ -49,6 +49,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -93,6 +94,9 @@ fun CalendarScreen(
     onOpenChat: () -> Unit,
     modifier: Modifier = Modifier,
     voiceModeNotice: VoiceModeNotice? = null,
+    conversationError: String? = null,
+    onConversationErrorDismiss: () -> Unit = {},
+    inputPanel: @Composable () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -118,6 +122,12 @@ fun CalendarScreen(
         uiState.error?.let { message ->
             snackbarHostState.showSnackbar(message)
             viewModel.clearError()
+        }
+    }
+    LaunchedEffect(conversationError) {
+        conversationError?.let { message ->
+            snackbarHostState.showSnackbar(message, actionLabel = "Закрыть", duration = SnackbarDuration.Indefinite)
+            onConversationErrorDismiss()
         }
     }
     LaunchedEffect(uiState.snackbarMessage) {
@@ -163,6 +173,7 @@ fun CalendarScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = inputPanel,
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { isCreatingEvent = true },

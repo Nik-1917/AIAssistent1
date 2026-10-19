@@ -18,16 +18,13 @@ sealed interface PersonalWakeResult {
 class PersonalKeywordWakeSession(
     private val preferences: suspend () -> AudioPreferences,
     private val evaluate: suspend (FloatArray) -> MetricKwsDecision,
-    private val verifySpeaker: suspend (FloatArray) -> Boolean,
     private val recognize: suspend (FloatArray) -> String,
     private val onActivation: suspend () -> Unit,
     private val onVerifiedSpeech: suspend () -> Unit = {},
-    private val clock: () -> Long,
-    private val speakerReady: suspend () -> Boolean = { true },
+    clock: () -> Long,
+    private val commandWindow: ActivationCommandWindow = ActivationCommandWindow(clock),
 ) {
     private var identity: VoiceInputPolicy? = null
-    private var commandAfter: Long? = null
-    private var commandUntil = 0L
 
     suspend fun handle(samples: FloatArray, speechStartedAt: Long): PersonalWakeResult {
         val before = preferences()
@@ -35,16 +32,11 @@ class PersonalKeywordWakeSession(
         if (identity != key) { reset(); identity = key }
         if (before.wakeWordEngine != WakeWordEngine.METRIC_KWS || !before.wakeWordEnabled)
             return PersonalWakeResult.Legacy()
-        if (before.voiceIdEnabled && (before.needsEnrollment || !speakerReady())) {
-            reset()
-            return PersonalWakeResult.Unavailable("voice_id_required")
-        }
-        val after = commandAfter
+        val after = commandWindow.openedAt
         if (after != null) {
             // Reject queued utterances captured before the feedback ended, even if processed later.
             if (speechStartedAt < after) return PersonalWakeResult.Rejected
-            if (clock() < commandUntil) {
-                if (before.voiceIdEnabled && !verifySpeaker(samples)) return PersonalWakeResult.Rejected
+            if (commandWindow.accepts(speechStartedAt)) {
                 if (preferences().inputPolicy() != key) return PersonalWakeResult.Rejected
                 val text = recognize(samples)
                 if (preferences().inputPolicy() != key) { reset(); return PersonalWakeResult.Rejected }
@@ -57,13 +49,11 @@ class PersonalKeywordWakeSession(
         }
         return when (val decision = evaluate(samples)) {
             MetricKwsDecision.Accept -> {
-                if (before.voiceIdEnabled && !verifySpeaker(samples)) return PersonalWakeResult.Rejected
                 if (preferences().inputPolicy() != key) return PersonalWakeResult.Rejected
                 onVerifiedSpeech()
                 onActivation()
                 if (preferences().inputPolicy() != key) return PersonalWakeResult.Rejected
-                commandAfter = clock()
-                commandUntil = commandAfter!! + COMMAND_WINDOW_MS
+                commandWindow.open()
                 PersonalWakeResult.Activated
             }
             is MetricKwsDecision.Unavailable -> { reset(); PersonalWakeResult.Unavailable(decision.reason) }
@@ -72,7 +62,7 @@ class PersonalKeywordWakeSession(
         }
     }
 
-    private fun reset() { commandAfter = null; commandUntil = 0L }
+    private fun reset() = commandWindow.reset()
 
-    companion object { const val COMMAND_WINDOW_MS = 10_000L }
+    companion object { const val COMMAND_WINDOW_MS = ActivationCommandWindow.COMMAND_WINDOW_MS }
 }

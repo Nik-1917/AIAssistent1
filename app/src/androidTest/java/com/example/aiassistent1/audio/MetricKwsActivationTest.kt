@@ -19,7 +19,7 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Real bundled encoder/storage on Android, controlled owner/ASR doubles; no microphone quality claim. */
+/** Real bundled encoder/storage on Android, controlled ASR; no microphone quality claim. */
 class MetricKwsActivationTest {
     private val instrument get() = InstrumentationRegistry.getInstrumentation()
     private fun pcm(name: String): FloatArray {
@@ -54,8 +54,6 @@ class MetricKwsActivationTest {
         val store = MetricKwsProfileManager(context)
         var prefs = AudioPreferences(voiceIdEnabled = false, wakeWordEnabled = true, revision = 11,
             wakeWordEngine = WakeWordEngine.METRIC_KWS)
-        var owner = true
-        var ownerCalls = 0
         fun service() = PersonalKeywordActivation(BundledMetricKwsEngine.fromAssets(base), store,
             onProfileChanged = { prefs = prefs.copy(policyRevision = prefs.policyRevision + 1) })
         var activation = service()
@@ -71,34 +69,26 @@ class MetricKwsActivationTest {
             assertTrue(runCatching { activation.enrollFrom { FloatArray(16_000) } }.isFailure)
             assertArrayEquals(before, File(directory, "metric_kws_profile.bin").readBytes())
             assertEquals(MetricKwsDecision.Accept, activation.evaluate(query, WakeWordEngine.METRIC_KWS))
-            val calls = ownerCalls
             assertEquals(MetricKwsDecision.Reject, activation.evaluate(pcm("ru_02_1"), WakeWordEngine.METRIC_KWS))
-            assertEquals(calls, ownerCalls)
             activation.close(); activation = service()
             assertTrue(activation.status().canActivate)
             var now = 1_000L
             var asrCalls = 0
             var signals = 0
             val session = PersonalKeywordWakeSession({ prefs }, { activation.evaluate(it, WakeWordEngine.METRIC_KWS) },
-                { ownerCalls++; owner }, { asrCalls++; "команда" }, { signals++ }, clock = { now })
+                { asrCalls++; "команда" }, { signals++ }, clock = { now })
             assertEquals(PersonalWakeResult.Activated, session.handle(query, now))
             assertEquals(0, asrCalls); assertEquals(1, signals)
             now += 1000
             assertEquals(PersonalWakeResult.Command("команда"), session.handle(pcm("ru_02_1"), now))
             assertEquals(1, asrCalls)
-            assertEquals(0, ownerCalls)
-            prefs = prefs.copy(voiceIdEnabled = true)
-            owner = false
-            assertEquals(PersonalWakeResult.Rejected, session.handle(query, now))
-            assertEquals(1, signals)
-            owner = true
+            // A legacy owner opt-in and missing owner profile cannot block the selected v3 mode.
+            prefs = prefs.copy(voiceIdEnabled = true, needsEnrollment = true)
             assertEquals(PersonalWakeResult.Activated, session.handle(query, now))
+            assertEquals(2, signals)
             now += 100
-            owner = false
-            assertEquals(PersonalWakeResult.Rejected, session.handle(pcm("ru_02_1"), now))
-            assertEquals(1, asrCalls)
-            owner = true
             assertEquals(PersonalWakeResult.Command("команда"), session.handle(pcm("ru_02_1"), now))
+            assertEquals(2, asrCalls)
             prefs = prefs.copy(revision = 12)
             assertTrue(activation.status().canActivate)
             assertEquals(MetricKwsDecision.Accept, activation.evaluate(query, WakeWordEngine.METRIC_KWS))

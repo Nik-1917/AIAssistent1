@@ -13,8 +13,8 @@ import java.util.Locale
 
 /** Display only. Never pass formatted values back to commands, storage or model context. */
 class UserDateTimeFormatter(
-    val hideCurrentMonth: Boolean = true,
-    val hideCurrentYear: Boolean = false,
+    val hideCurrentMonth: Boolean = false,
+    val hideCurrentYear: Boolean = true,
     val today: LocalDate = LocalDate.now(),
     val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {

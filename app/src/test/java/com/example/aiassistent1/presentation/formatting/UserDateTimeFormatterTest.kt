@@ -15,11 +15,11 @@ class UserDateTimeFormatterTest {
     private val yearHidden = UserDateTimeFormatter(false, true, today, ZoneOffset.UTC)
     private val allModes = listOf(short, full, monthHidden, yearHidden)
 
-    @Test fun `default hides current month and shows current year`() {
+    @Test fun `default shows current month and hides current year`() {
         val defaults = UserDateTimeFormatter(today = today, zoneId = ZoneOffset.UTC)
-        assertEquals("21 2026 понедельник", defaults.date(today))
-        assertEquals("19 октября 2026 понедельник", defaults.date(LocalDate.of(2026, 10, 19)))
-        assertEquals("21 сентября 2026 понедельник", defaults.eventEditorDate(today))
+        assertEquals("21 сентября понедельник", defaults.date(today))
+        assertEquals("19 октября понедельник", defaults.date(LocalDate.of(2026, 10, 19)))
+        assertEquals("21 сентября понедельник", defaults.eventEditorDate(today))
     }
 
     @Test fun `month and year switches control current dates independently`() {

@@ -21,7 +21,7 @@ class AudioPreferencesTest {
                 assertEquals(mode, restored.activationMode)
                 assertFalse(restored.allowVoiceInterruption)
                 assertFalse(restored.voiceInterruptionEnabled)
-                assertTrue(restored.voiceIdEnabled)
+                assertFalse(restored.voiceIdEnabled)
                 assertEquals(legacy, store.data.first()[booleanPreferencesKey("barge_in_enabled")])
             }
         }
@@ -99,7 +99,7 @@ class AudioPreferencesTest {
         assertTrue(r.readAudioPreferences().needsEnrollment)
     }
 
-    @Test fun activationModesAndVoiceIdAreIndependentAndSurviveRoundTrip() = runTest {
+    @Test fun activationModesSurviveRoundTripAndLegacyApiCannotEnableVoiceId() = runTest {
         val store = TestPreferencesDataStore()
         val r = DataStoreSettingsRepository(store, backgroundScope)
         for (mode in com.example.aiassistent1.domain.model.VoiceActivationMode.entries) for (voice in listOf(false, true)) {
@@ -107,17 +107,22 @@ class AudioPreferencesTest {
             r.setVoiceIdEnabled(voice)
             val restored = DataStoreSettingsRepository(store, backgroundScope).readAudioPreferences()
             assertEquals(mode, restored.activationMode)
-            assertEquals(voice, restored.voiceIdEnabled)
+            assertFalse(restored.voiceIdEnabled)
+            assertFalse(r.voiceIdEnabled.value)
+            assertFalse(store.data.first()[booleanPreferencesKey("voice_id_enabled")] ?: false)
             assertEquals(0L, restored.revision)
         }
     }
-    @Test fun securitySnapshotReadsPersistedValuesBeforeStateFlowsStart() = runTest {
+    @Test fun persistedOwnerOptInIsIgnoredBeforeStateFlowsStart() = runTest {
         val r = DataStoreSettingsRepository(TestPreferencesDataStore(preferencesOf(
             booleanPreferencesKey("voice_id_enabled") to true,
             booleanPreferencesKey("voice_id_needs_enrollment") to true,
             longPreferencesKey("voice_id_revision") to 9L)), backgroundScope)
         val prefs = r.readAudioPreferences()
-        assertTrue(prefs.voiceIdEnabled)
+        assertFalse(prefs.voiceIdEnabled)
+        assertFalse(r.voiceIdEnabled.value)
+        assertFalse(prefs.inputPolicy().voiceId)
+        assertFalse(prefs.inputPolicy().enrollment)
         assertTrue(prefs.needsEnrollment)
         assertEquals(9L, prefs.revision)
     }

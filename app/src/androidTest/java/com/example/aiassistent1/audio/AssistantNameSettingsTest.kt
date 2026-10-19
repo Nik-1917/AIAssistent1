@@ -110,6 +110,7 @@ class AssistantNameSettingsTest {
                 compose.onAllNodes(hasSetTextAction() and hasText("Имя ассистента")).fetchSemanticsNodes().size == 1
             }
             assertDisplayed("AI Assistant")
+            click("Персональное слово v3")
             click("Записать слово")
             awaitWordSaved()
             val recognizedName = AssistantDisplayName.fromTranscript(transcript)

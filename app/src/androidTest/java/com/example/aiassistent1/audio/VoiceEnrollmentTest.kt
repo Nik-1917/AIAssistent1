@@ -63,7 +63,7 @@ class VoiceEnrollmentTest {
             assertFalse(manager.enroll(sample))
             assertArrayEquals(saved, profile.readBytes())
             assertFalse(settings.readAudioPreferences().needsEnrollment)
-            assertFalse(manager.verify(sample))
+            assertTrue(manager.verify(sample)) // Retired Voice ID cannot reject commands.
             embedding = FloatArray(32) { if (it % 2 == 0) 1f else -1f }
             commitFailure = true
             assertTrue(runCatching { manager.enroll(sample) }.isFailure)
@@ -71,9 +71,9 @@ class VoiceEnrollmentTest {
             commitFailure = false
             assertTrue(manager.enroll(sample))
             profile.writeBytes(byteArrayOf(1, 2, 3))
-            assertFalse(manager.verify(sample))
+            assertTrue(manager.verify(sample))
             manager.delete()
-            assertFalse(profile.exists()); assertTrue(manager.needsEnrollment())
+            assertFalse(profile.exists()); assertFalse(manager.needsEnrollment())
             assertArrayEquals(byteArrayOf(6, 5, 4), wordFile.readBytes())
         } finally {
             scope.coroutineContext[Job]!!.cancelAndJoin()

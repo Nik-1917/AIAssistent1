@@ -14,6 +14,8 @@ data class AudioPreferences(
     val wakeWordEngine: WakeWordEngine = WakeWordEngine.LEGACY_ASR,
     val policyRevision: Long = 0,
     val allowVoiceInterruption: Boolean = false,
+    val messageSentSoundEnabled: Boolean = true,
+    val activationTimeoutSoundEnabled: Boolean = true,
 ) {
     val activationMode: VoiceActivationMode get() = when {
         !wakeWordEnabled -> VoiceActivationMode.DIRECT
@@ -22,8 +24,8 @@ data class AudioPreferences(
     }
     /** A saved opt-in applies only to activation modes, never to unrestricted direct input. */
     val voiceInterruptionEnabled: Boolean get() = allowVoiceInterruption && activationMode != VoiceActivationMode.DIRECT
-    fun inputPolicy() = VoiceInputPolicy(activationMode, wakeWordEngine, voiceIdEnabled,
-        if (voiceIdEnabled) revision else 0, voiceIdEnabled && needsEnrollment,
+    fun inputPolicy() = VoiceInputPolicy(activationMode, wakeWordEngine, false,
+        0, false,
         if (activationMode == VoiceActivationMode.NAME) wakeWord else "", policyRevision, voiceInterruptionEnabled)
 }
 

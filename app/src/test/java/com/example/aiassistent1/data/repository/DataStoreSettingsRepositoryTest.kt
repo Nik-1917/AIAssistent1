@@ -166,13 +166,15 @@ class DataStoreSettingsRepositoryTest {
         }
     }
     @Test
-    fun `date switches default to month hidden and year visible and save independently`() = runTest {
+    fun `date switches default to month visible and year hidden and save independently`() = runTest {
         val unrelatedKey = booleanPreferencesKey("wake_word_enabled")
         val store = TestPreferencesDataStore(preferencesOf(unrelatedKey to true))
         val writer = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals(false, writer.hideCurrentMonth.value)
+        assertEquals(true, writer.hideCurrentYear.value)
         runCurrent()
-        assertEquals(true, writer.hideCurrentMonth.value)
-        assertEquals(false, writer.hideCurrentYear.value)
+        assertEquals(false, writer.hideCurrentMonth.value)
+        assertEquals(true, writer.hideCurrentYear.value)
         for (hideMonth in listOf(false, true)) {
             for (hideYear in listOf(false, true)) {
                 val previousYear = writer.hideCurrentYear.value

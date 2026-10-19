@@ -126,7 +126,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -201,15 +200,10 @@ fun ChatScreen(
     val assistantName by viewModel.assistantDisplayName.collectAsStateWithLifecycle(
         initialValue = com.example.aiassistent1.domain.model.AssistantDisplayName.DEFAULT)
     val context = LocalContext.current
-    val view = LocalView.current
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val lastMessage = uiState.messages.lastOrNull()
-    var pendingMicrophoneAction by remember { mutableStateOf<MicrophoneAction?>(null) }
-    var pendingMicrophoneInterruptedPlayback by remember { mutableStateOf(false) }
-    var pendingMicrophoneConversation by remember {
-        mutableStateOf<com.example.aiassistent1.presentation.viewmodel.ConversationVoiceSession.Ticket?>(null)
-    }
+    val requestMicrophoneAction = rememberConversationMicrophoneAction(viewModel)
     var pendingCalendarMicrophone by remember { mutableStateOf<Pair<String, CalendarEventField>?>(null) }
     var pendingCalendarMicrophoneConversation by remember {
         mutableStateOf<com.example.aiassistent1.presentation.viewmodel.ConversationVoiceSession.Ticket?>(null)
@@ -292,23 +286,6 @@ fun ChatScreen(
     ) { uri ->
         uri?.let { viewModel.importModel(it) }
     }
-    val microphonePermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        val action = pendingMicrophoneAction
-        val forceStart = pendingMicrophoneInterruptedPlayback
-        val conversation = pendingMicrophoneConversation
-        pendingMicrophoneAction = null
-        pendingMicrophoneInterruptedPlayback = false
-        pendingMicrophoneConversation = null
-        if (granted && viewModel.isVoiceInteractionCurrent(conversation)) {
-            when (action) {
-                MicrophoneAction.TAP -> viewModel.onMicrophoneTap(forceStart)
-                MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(forceStart)
-                null -> Unit
-            }
-        }
-    }
     val calendarMicrophonePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val target = pendingCalendarMicrophone
         val conversation = pendingCalendarMicrophoneConversation
@@ -316,21 +293,6 @@ fun ChatScreen(
         pendingCalendarMicrophoneConversation = null
         if (granted && target != null && viewModel.isVoiceInteractionCurrent(conversation)) {
             viewModel.startCalendarDraftVoiceInput(target.first, target.second)
-        }
-    }
-
-    val requestMicrophoneAction: (MicrophoneAction) -> Unit = { action ->
-        val interrupted = viewModel.interruptPlaybackForMicrophone()
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            when (action) {
-                MicrophoneAction.TAP -> viewModel.onMicrophoneTap(interrupted)
-                MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(interrupted)
-            }
-        } else {
-            pendingMicrophoneAction = action
-            pendingMicrophoneInterruptedPlayback = interrupted
-            pendingMicrophoneConversation = viewModel.voiceInteractionTicket()
-            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
@@ -345,9 +307,6 @@ fun ChatScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshModelStatus()
-            }
             if (event == Lifecycle.Event.ON_STOP) {
                 latestMessages.value.getOrNull(listState.firstVisibleItemIndex)?.let { message ->
                     viewModel.saveChatScrollPosition(
@@ -357,45 +316,12 @@ fun ChatScreen(
                         ),
                     )
                 }
-                val isChangingConfigurations = (context as? android.app.Activity)?.isChangingConfigurations ?: false
-                viewModel.onAppBackgrounded(isChangingConfigurations)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
-    }
-
-    var isExtendingScreenOn by remember { mutableStateOf(false) }
-    var previousSpeechPlaybackState by remember { mutableStateOf(uiState.speechPlaybackState) }
-    val isSpeechPlaybackActive = uiState.speechPlaybackState is SpeechPlaybackState.Generating ||
-        uiState.speechPlaybackState is SpeechPlaybackState.Playing
-
-    LaunchedEffect(uiState.isProcessing, uiState.speechPlaybackState) {
-        val currentSpeechPlaybackState = uiState.speechPlaybackState
-        if (uiState.isProcessing || isSpeechPlaybackActive) {
-            isExtendingScreenOn = false
-        } else if (previousSpeechPlaybackState is SpeechPlaybackState.Playing &&
-            currentSpeechPlaybackState is SpeechPlaybackState.Idle
-        ) {
-            isExtendingScreenOn = true
-            delay(SCREEN_ON_GRACE_PERIOD_MILLIS)
-            isExtendingScreenOn = false
-        }
-        previousSpeechPlaybackState = currentSpeechPlaybackState
-    }
-
-    DisposableEffect(
-        view,
-        uiState.voiceDraft.isRecording,
-        uiState.isProcessing,
-        isSpeechPlaybackActive,
-        isExtendingScreenOn,
-    ) {
-        view.keepScreenOn = uiState.voiceDraft.isRecording || uiState.isProcessing ||
-            isSpeechPlaybackActive || isExtendingScreenOn
-        onDispose { view.keepScreenOn = false }
     }
 
     LaunchedEffect(uiState.error) {
@@ -966,30 +892,10 @@ fun ChatScreen(
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
-                    InputPanel(
-                        text = uiState.inputDraft.text,
-                        onTextChange = viewModel::updateInputText,
-                        draftStorageError = uiState.inputDraft.storageError,
-                        onRetryDraftStorage = viewModel::retryInputDraftStorage,
-                        textInputEnabled = uiState.inputDraft.isLoaded && !uiState.isProcessing && !uiState.isClearingChat &&
-                            !uiState.isStopping &&
-                            uiState.modelState !is ModelState.Loading &&
-                            uiState.modelAvailability == ModelAvailability.Available &&
-                            !uiState.voiceDraft.isVisible,
-                        microphoneEnabled = if (uiState.isClearingChat) uiState.isVoiceMode else uiState.speechPlaybackState is SpeechPlaybackState.Playing ||
-                            uiState.speechPlaybackState is SpeechPlaybackState.Generating || (!uiState.isProcessing &&
-                            !uiState.isStopping &&
-                            uiState.modelState !is ModelState.Loading &&
-                            uiState.modelAvailability == ModelAvailability.Available),
-                        isProcessing = uiState.isProcessing,
-                        isCheckingRequest = uiState.isCheckingRequest,
-                        isVoiceMode = uiState.isVoiceMode,
-                        isVoiceDraftActive = uiState.voiceDraft.isVisible,
-                        onSend = viewModel::sendInputDraft,
-                        maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
-                        onStop = viewModel::stopGeneration,
-                        onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
-                        onVoiceDraft = { requestMicrophoneAction(MicrophoneAction.VOICE_DRAFT) },
+                    ConversationInputPanel(
+                        viewModel = viewModel,
+                        state = uiState,
+                        onMicrophoneAction = requestMicrophoneAction,
                     )
                 }
             }
@@ -1175,7 +1081,6 @@ fun ChatScreen(
                 chatHistoryPolicy = uiState.chatHistoryPolicy,
                 onChatHistoryPolicyChange = viewModel::setChatHistoryPolicy,
                 keywordControls = viewModel.personalKeywordControls,
-                voiceControls = viewModel.voiceProfileControls,
             )
         }
     }
@@ -1895,7 +1800,6 @@ private const val STREAM_POLL_INTERVAL_MILLIS = 32L
 private const val STREAM_SCROLL_DURATION_MILLIS = 180
 private const val THINKING_INDICATOR_DURATION_MILLIS = 160
 private const val CHAT_SCROLL_POSITION_SAVE_DEBOUNCE_MILLIS = 500L
-private const val SCREEN_ON_GRACE_PERIOD_MILLIS = 25_000L
 private val STREAMING_TEXT_VIEWPORT_HEIGHT = 144.dp
 
 @Composable
@@ -1916,6 +1820,7 @@ internal fun InputPanel(
     isVoiceDraftActive: Boolean = false,
     draftStorageError: String? = null,
     onRetryDraftStorage: () -> Unit = {},
+    maxInputLinesWhenKeyboardVisible: Int = Int.MAX_VALUE,
 ) {
     val canSend = textInputEnabled && text.trim().isNotEmpty() && text.trim().length <= maximumMessageLength
     val isTextTooLong = text.trim().length > maximumMessageLength
@@ -1983,7 +1888,7 @@ internal fun InputPanel(
                 ),
                 placeholder = { Text("Сообщение") },
                 shape = RoundedCornerShape(12.dp),
-                maxLines = if (isKeyboardVisible) Int.MAX_VALUE else 1,
+                maxLines = if (isKeyboardVisible) maxInputLinesWhenKeyboardVisible else 1,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
             )
 
@@ -2056,7 +1961,7 @@ internal fun InputPanel(
 }
 
 @Composable
-private fun VoiceDraftCard(
+internal fun VoiceDraftCard(
     state: VoiceDraftState,
     onDelete: () -> Unit,
     onSend: () -> Unit,
@@ -2175,7 +2080,6 @@ fun ModelSettingsDialog(
     onAutoPlaybackChange: (Boolean) -> Unit,
     onSpeechRateChange: (Float) -> Unit,
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
-    voiceControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls? = null,
     onRefreshMemory: () -> Unit = {},
     automaticGeneration: com.example.aiassistent1.domain.model.AutomaticGenerationState? = null,
     chatHistoryPolicy: com.example.aiassistent1.domain.model.ChatHistoryPolicy = com.example.aiassistent1.domain.model.ChatHistoryPolicy.ASK,
@@ -2575,7 +2479,7 @@ fun ModelSettingsDialog(
 
                 SettingsSection(title = "Голос") {
                     BackgroundPowerSettings()
-                    AudioSettingsSection(keywordControls, voiceControls)
+                    AudioSettingsSection(keywordControls)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -2628,6 +2532,10 @@ fun ModelSettingsDialog(
                         valueRange = SpeechRate.MINIMUM..SpeechRate.MAXIMUM,
                         steps = 9,
                     )
+                }
+
+                SettingsSection(title = "Конференции") {
+                    ConferenceAudioSettings()
                 }
 
             }
@@ -2739,11 +2647,6 @@ private fun SettingSlider(
             )
         }
     }
-}
-
-private enum class MicrophoneAction {
-    TAP,
-    VOICE_DRAFT,
 }
 
 private fun ModelState.label(): String = when (this) {

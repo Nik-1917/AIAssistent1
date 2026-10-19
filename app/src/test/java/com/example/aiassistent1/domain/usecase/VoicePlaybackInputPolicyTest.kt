@@ -53,7 +53,7 @@ class VoicePlaybackInputPolicyTest {
         val name = preferences(VoiceActivationMode.NAME)
         assertFalse(VoicePlaybackInputPolicy.acceptsInterruption(name, null))
         assertFalse(VoicePlaybackInputPolicy.acceptsInterruption(name.copy(policyRevision = 1), name.inputPolicy()))
-        assertFalse(VoicePlaybackInputPolicy.acceptsInterruption(name.copy(voiceIdEnabled = true), name.inputPolicy()))
+        assertTrue(VoicePlaybackInputPolicy.acceptsInterruption(name.copy(voiceIdEnabled = true), name.inputPolicy()))
         assertFalse(VoicePlaybackInputPolicy.acceptsInterruption(name.copy(allowVoiceInterruption = false), name.inputPolicy()))
         assertFalse(VoicePlaybackInputPolicy.acceptsInterruption(name,
             name.copy(allowVoiceInterruption = false).inputPolicy()))

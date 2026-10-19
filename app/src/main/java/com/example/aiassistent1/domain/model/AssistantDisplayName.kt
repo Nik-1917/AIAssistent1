@@ -1,6 +1,6 @@
 package com.example.aiassistent1.domain.model
 
-/** Presentation only: never used as an activation word or a speaker/keyword profile key. */
+/** Display-name validation. NAME mode additionally validates and atomically updates the call name. */
 object AssistantDisplayName {
     const val DEFAULT = "AI Assistant"
     const val MAX_LENGTH = 40

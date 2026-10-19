@@ -79,6 +79,7 @@ interface SettingsRepository {
     val isFirstRun: Flow<Boolean>
     suspend fun setFirstRunCompleted()
 
+    /** Retired owner verification. Legacy callers always observe false and cannot enable it. */
     val voiceIdEnabled: StateFlow<Boolean>
     suspend fun setVoiceIdEnabled(enabled: Boolean)
 
@@ -88,7 +89,7 @@ interface SettingsRepository {
     val customWakeWord: StateFlow<String>
     suspend fun setCustomWakeWord(word: String)
 
-    /** Header/settings label only; changing it must not invalidate an audio session. */
+    /** One visible name: also the call name in NAME mode; display-only in DIRECT and PERSONAL_WORD. */
     val assistantDisplayName: Flow<String>
     suspend fun setAssistantDisplayName(name: String)
 
@@ -101,6 +102,9 @@ interface SettingsRepository {
 
     val activationSoundUri: StateFlow<String?>
     suspend fun setActivationSoundUri(uri: String?)
+
+    suspend fun setMessageSentSoundEnabled(enabled: Boolean)
+    suspend fun setActivationTimeoutSoundEnabled(enabled: Boolean)
 
     val hapticFeedbackEnabled: StateFlow<Boolean>
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)

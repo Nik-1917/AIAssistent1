@@ -111,7 +111,8 @@ class DataStoreSettingsRepository(
     }
     override val audioPreferences = dataStore.data.map { p ->
         com.example.aiassistent1.domain.model.AudioPreferences(
-            voiceIdEnabled = p[voiceIdEnabledKey] ?: false,
+            // Owner verification was retired. Ignore even a previously persisted opt-in.
+            voiceIdEnabled = false,
             needsEnrollment = p[voiceIdNeedsEnrollmentKey] ?: false,
             revision = p[voiceRevisionKey] ?: 0L,
             policyRevision = p[audioPolicyRevisionKey] ?: 0L,
@@ -121,6 +122,8 @@ class DataStoreSettingsRepository(
             autoSummary = p[autoSummaryEnabledKey] ?: false,
             conferenceEffects = p[conferenceModeEffectsEnabledKey] ?: false,
             soundUri = p[activationSoundUriKey], haptics = p[hapticFeedbackEnabledKey] ?: true,
+            messageSentSoundEnabled = p[messageSentSoundEnabledKey] ?: true,
+            activationTimeoutSoundEnabled = p[activationTimeoutSoundEnabledKey] ?: true,
             recordingDirectory = p[recordingDirectoryKey],
             wakeWordEngine = com.example.aiassistent1.domain.model.WakeWordEngine.fromStored(p[wakeWordEngineKey]),
         )
@@ -145,13 +148,21 @@ class DataStoreSettingsRepository(
     }
     override suspend fun setVoiceActivationMode(mode: com.example.aiassistent1.domain.model.VoiceActivationMode) {
         dataStore.edit {
+            val name = if (mode == com.example.aiassistent1.domain.model.VoiceActivationMode.NAME) {
+                normalizeActivationName(displayName(it).takeUnless { name -> name == AssistantDisplayName.DEFAULT }
+                    ?: it[customWakeWordKey] ?: "Ассистент")
+            } else null
+            it[assistantDisplayNameKey] = name ?: displayName(it)
+            val nameChanged = name != null && name != (it[customWakeWordKey] ?: "Ассистент")
+            if (name != null) it[customWakeWordKey] = name
+            it[voiceIdEnabledKey] = false
             val enabled = mode != com.example.aiassistent1.domain.model.VoiceActivationMode.DIRECT
             val engine = when (mode) {
                 com.example.aiassistent1.domain.model.VoiceActivationMode.PERSONAL_WORD -> "METRIC_KWS"
                 com.example.aiassistent1.domain.model.VoiceActivationMode.NAME -> "LEGACY_ASR"
                 else -> it[wakeWordEngineKey] ?: "LEGACY_ASR"
             }
-            if ((it[wakeWordEnabledKey] ?: false) != enabled || it[wakeWordEngineKey] != engine) {
+            if ((it[wakeWordEnabledKey] ?: false) != enabled || it[wakeWordEngineKey] != engine || nameChanged) {
                 it[wakeWordEnabledKey] = enabled
                 it[wakeWordEngineKey] = engine
                 invalidateAudioPolicy(it)
@@ -193,6 +204,8 @@ class DataStoreSettingsRepository(
     private val autoSummaryEnabledKey = booleanPreferencesKey("auto_summary_enabled")
     private val conferenceModeEffectsEnabledKey = booleanPreferencesKey("conference_mode_effects_enabled")
     private val activationSoundUriKey = stringPreferencesKey("activation_sound_uri")
+    private val messageSentSoundEnabledKey = booleanPreferencesKey("message_sent_sound_enabled")
+    private val activationTimeoutSoundEnabledKey = booleanPreferencesKey("activation_timeout_sound_enabled")
     private val hapticFeedbackEnabledKey = booleanPreferencesKey("haptic_feedback_enabled")
     
     // Кэш для StateFlow параметров, чтобы не пересоздавать их
@@ -255,16 +268,16 @@ class DataStoreSettingsRepository(
 
     // Each new choice overrides the old shared switch; an explicitly saved legacy choice wins over defaults.
     override val hideCurrentMonth: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[hideCurrentMonthKey] ?: preferences[legacyCompactDatesEnabledKey] ?: true }
-        .stateIn(scope, SharingStarted.Eagerly, true)
+        .map { preferences -> preferences[hideCurrentMonthKey] ?: preferences[legacyCompactDatesEnabledKey] ?: false }
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     override suspend fun setHideCurrentMonth(hide: Boolean) {
         dataStore.edit { it[hideCurrentMonthKey] = hide }
     }
 
     override val hideCurrentYear: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[hideCurrentYearKey] ?: preferences[legacyCompactDatesEnabledKey] ?: false }
-        .stateIn(scope, SharingStarted.Eagerly, false)
+        .map { preferences -> preferences[hideCurrentYearKey] ?: preferences[legacyCompactDatesEnabledKey] ?: true }
+        .stateIn(scope, SharingStarted.Eagerly, true)
 
     override suspend fun setHideCurrentYear(hide: Boolean) {
         dataStore.edit { it[hideCurrentYearKey] = hide }
@@ -537,15 +550,13 @@ class DataStoreSettingsRepository(
         }
     }
 
-    override val voiceIdEnabled: StateFlow<Boolean> = dataStore.data
-        .map { preferences -> preferences[voiceIdEnabledKey] ?: false }
-        .stateIn(scope, SharingStarted.Eagerly, false)
+    override val voiceIdEnabled: StateFlow<Boolean> = MutableStateFlow(false)
 
     override suspend fun setVoiceIdEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             val oldEnabled = preferences[voiceIdEnabledKey] ?: false
-            preferences[voiceIdEnabledKey] = enabled
-            if (enabled != oldEnabled) invalidateAudioPolicy(preferences)
+            preferences[voiceIdEnabledKey] = false
+            if (oldEnabled) invalidateAudioPolicy(preferences)
         }
     }
 
@@ -562,27 +573,53 @@ class DataStoreSettingsRepository(
         .stateIn(scope, SharingStarted.Eagerly, "Ассистент")
 
     override suspend fun setCustomWakeWord(word: String) {
-        val normalized = word.trim().replace(Regex("\\s+"), " ")
-        require(normalized.length in 2..40 && normalized.all { it.isLetter() || it == ' ' || it == '-' }) {
-            "Имя должно содержать от 2 до 40 букв, пробелов или дефисов"
-        }
+        val normalized = normalizeActivationName(word)
         dataStore.edit { preferences ->
             val oldWord = preferences[customWakeWordKey] ?: "Ассистент"
             if (oldWord != normalized) {
                 preferences[customWakeWordKey] = normalized
                 invalidateAudioPolicy(preferences)
             }
+            if (isNameActivation(preferences)) preferences[assistantDisplayNameKey] = normalized
         }
     }
 
+    private fun isNameActivation(preferences: Preferences): Boolean =
+        preferences[wakeWordEnabledKey] == true &&
+            com.example.aiassistent1.domain.model.WakeWordEngine.fromStored(preferences[wakeWordEngineKey]) !=
+            com.example.aiassistent1.domain.model.WakeWordEngine.METRIC_KWS
+
+    private fun displayName(preferences: Preferences): String = if (isNameActivation(preferences)) {
+        // Preserve the actual call name on upgrade when the old header and call fields differed.
+        preferences[customWakeWordKey] ?: "Ассистент"
+    } else preferences[assistantDisplayNameKey] ?: AssistantDisplayName.DEFAULT
+
+    private fun normalizeActivationName(value: String): String {
+        val name = value.trim().replace(Regex("\\s+"), " ")
+        require(name.length in 2..40 && name.any { it.isLetter() } &&
+            name.all { it.isLetter() || it == ' ' || it == '-' }) {
+            "Для вызова укажите имя: от 2 до 40 букв, пробелов или дефисов"
+        }
+        return name
+    }
+
     override val assistantDisplayName = dataStore.data
-        .map { it[assistantDisplayNameKey] ?: AssistantDisplayName.DEFAULT }
+        .map(::displayName)
         .distinctUntilChanged()
 
     override suspend fun setAssistantDisplayName(name: String) {
         val normalized = AssistantDisplayName.normalize(name)
-        // Deliberately separate from customWakeWord, profile revisions and audio policy.
-        dataStore.edit { it[assistantDisplayNameKey] = normalized }
+        dataStore.edit { preferences ->
+            if (isNameActivation(preferences)) {
+                val activationName = normalizeActivationName(name)
+                if (activationName != (preferences[customWakeWordKey] ?: "Ассистент")) {
+                    preferences[customWakeWordKey] = activationName
+                    invalidateAudioPolicy(preferences)
+                }
+            }
+            // Direct input and v3 only rename the header; their audio policy/profile stays intact.
+            preferences[assistantDisplayNameKey] = normalized
+        }
     }
 
     override val autoSummaryEnabled: StateFlow<Boolean> = dataStore.data
@@ -615,6 +652,14 @@ class DataStoreSettingsRepository(
     override val hapticFeedbackEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[hapticFeedbackEnabledKey] ?: true }
         .stateIn(scope, SharingStarted.Eagerly, true)
+
+    override suspend fun setMessageSentSoundEnabled(enabled: Boolean) {
+        dataStore.edit { it[messageSentSoundEnabledKey] = enabled }
+    }
+
+    override suspend fun setActivationTimeoutSoundEnabled(enabled: Boolean) {
+        dataStore.edit { it[activationTimeoutSoundEnabledKey] = enabled }
+    }
 
     override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
         dataStore.edit { it[hapticFeedbackEnabledKey] = enabled }

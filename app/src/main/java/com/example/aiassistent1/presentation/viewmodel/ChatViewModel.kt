@@ -46,6 +46,7 @@ import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.domain.usecase.ObserveAppSessionUseCase
 import com.example.aiassistent1.domain.usecase.VoicePlaybackInputPolicy
 import com.example.aiassistent1.domain.usecase.VoicePlaybackPreparation
+import com.example.aiassistent1.domain.usecase.MessageSendFeedback
 import com.example.aiassistent1.service.GenerationForegroundService
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackController
 import com.example.aiassistent1.presentation.playback.SpeechPlaybackState
@@ -106,6 +107,12 @@ class ChatViewModel(
         SpeechPlaybackController(context, it)
     }
     private var generationJob: Job? = null
+    private val messageSendFeedback = MessageSendFeedback(
+        preferences = settingsRepository::readAudioPreferences,
+        awaitInputStopped = { voiceInput?.stopAndAwait() },
+        playSound = { com.example.aiassistent1.di.AppModule.provideAudioFeedbackManager(context).playMessageSentSound() },
+        onFailure = { Log.w(TAG, "Не удалось воспроизвести сигнал отправки", it) },
+    )
     private val contextDecisions = ChatContextDecisionGate()
     private var pendingContextRequest: PendingContextRequest? = null
     private var contextCancelResumeJob: Job? = null
@@ -152,8 +159,6 @@ class ChatViewModel(
     val audioActivity = mutableAudioActivity.asStateFlow()
     val personalKeywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls?
         get() = voiceInput as? com.example.aiassistent1.domain.interfaces.PersonalKeywordControls
-    val voiceProfileControls: com.example.aiassistent1.domain.interfaces.VoiceProfileControls?
-        get() = voiceInput as? com.example.aiassistent1.domain.interfaces.VoiceProfileControls
     private val mutableSummaryState = MutableStateFlow<String?>(null)
     val summaryState = mutableSummaryState.asStateFlow()
     private var summarizing = false
@@ -549,7 +554,7 @@ class ChatViewModel(
 
     fun returnToConversation() = setChatMode(isCalendar = true)
 
-    private fun navigateTo(navigation: AppNavigationState) {
+    private fun navigateTo(navigation: AppNavigationState, scrollPosition: ChatScrollPosition? = null) {
         val target = navigation.normalized()
         val requestId = ++navigationRequestId
         requestedNavigation = target
@@ -558,6 +563,8 @@ class ChatViewModel(
         viewModelScope.launch {
             try {
                 navigationWrites.withLock {
+                    if (requestId != navigationRequestId) return@withLock
+                    if (scrollPosition != null) settingsRepository.setChatScrollPosition(scrollPosition)
                     if (requestId != navigationRequestId) return@withLock
                     settingsRepository.setNavigationState(target)
                 }
@@ -675,6 +682,13 @@ class ChatViewModel(
         }
 
         startGenerationFlow(state.copy(messages = state.messages + userMessage), userMessage)
+        if (state.isCalendarMode && state.navigationState?.destination == AppDestination.CALENDAR) {
+            // Focus the accepted command before opening its existing conversation.
+            navigateTo(
+                AppNavigationState(AppDestination.CHAT, isCalendarMode = true),
+                scrollPosition = ChatScrollPosition(anchorMessageId = userMessage.id),
+            )
+        }
         return true
     }
 
@@ -701,6 +715,8 @@ class ChatViewModel(
             }
             try {
                 val currentState = requestState
+                // Rejected sends never enter this flow; retries have no new message and stay silent.
+                if (newUserMessage != null) messageSendFeedback.play()
                 modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
                 if (newUserMessage != null) withContext(Dispatchers.IO) { chatRepository.saveMessage(newUserMessage) }
                 llmEngine.checkModelAvailability(if (currentState.isCalendarMode)

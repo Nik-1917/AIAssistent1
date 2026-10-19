@@ -9,6 +9,7 @@ import com.example.aiassistent1.domain.formatter.SpeechTextChunker
 import com.example.aiassistent1.domain.interfaces.*
 import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
+import com.example.aiassistent1.domain.usecase.ActivationCommandWindow
 import com.example.aiassistent1.domain.usecase.PersonalKeywordWakeSession
 import com.example.aiassistent1.domain.usecase.PersonalWakeResult
 import com.example.aiassistent1.domain.usecase.VoiceCommandAcceptance
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 class SherpaOnnxVoiceInputProvider(
     private val context: Context,
@@ -32,6 +34,11 @@ class SherpaOnnxVoiceInputProvider(
 ) : InputProvider, PersonalKeywordControls, VoiceProfileControls, AutoCloseable {
     private data class CapturedUtterance(val samples: FloatArray, val detected: Boolean, val speechStartedAt: Long,
         val playback: AssistantSpeechEchoGuard.Context)
+    private sealed interface RecognitionEvent {
+        data class SpeechStarted(val at: Long) : RecognitionEvent
+        data class SpeechFinished(val at: Long) : RecognitionEvent
+        data class Utterance(val captured: CapturedUtterance) : RecognitionEvent
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
@@ -85,10 +92,8 @@ class SherpaOnnxVoiceInputProvider(
         activationIssue.value = null
     }
     override suspend fun selectActivationMode(mode: VoiceActivationMode) {
-        if (mode == VoiceActivationMode.PERSONAL_WORD) {
-            val status = checkNotNull(personalKeyword).status(prepareModel = true)
-            check(status.canActivate) { status.message }
-        }
+        // Selecting v3 opens its setup even before enrollment. Runtime evaluation still
+        // rejects an unavailable model/profile without falling back to another mode.
         settingsRepository.setVoiceActivationMode(mode)
         activationIssue.value = null
     }
@@ -233,7 +238,11 @@ class SherpaOnnxVoiceInputProvider(
             val initial = settingsRepository.readAudioPreferences()
             val useKws = wake && keywordSpotter.isAvailable()
             if (useKws) keywordSpotter.prepare()
-            val segments = Channel<CapturedUtterance>(4)
+            // Start/utterance/end travel in capture order. The queue remains bounded.
+            val segments = Channel<RecognitionEvent>(12)
+            fun enqueue(event: RecognitionEvent) {
+                check(segments.trySend(event).isSuccess) { "Распознавание не успевает за речью. Повторите запрос." }
+            }
             // A bounded observer of the SAME processed VAD utterance. It never controls activation.
             // Experimental active routing below is separate from this diagnostic observer.
             val shadowSegments = if (wake && personalKeyword?.available == true)
@@ -249,29 +258,74 @@ class SherpaOnnxVoiceInputProvider(
             }
             val feedbackPlaying = AtomicBoolean(false)
             val resetAfterFeedback = AtomicBoolean(false)
+            val feedbackRevision = AtomicLong(0)
+            var acceptCaptureAfter = 0L
+            suspend fun captureFeedback(timeoutMs: Long, play: suspend () -> Unit) {
+                feedbackPlaying.set(true)
+                feedbackRevision.incrementAndGet()
+                try { withTimeoutOrNull(timeoutMs) { play() } }
+                finally {
+                    acceptCaptureAfter = SystemClock.elapsedRealtime()
+                    resetAfterFeedback.set(true)
+                    feedbackRevision.incrementAndGet()
+                    feedbackPlaying.set(false)
+                }
+            }
             suspend fun activationFeedback() {
                 activityStatus.update(id, AudioSessionState.Listening)
-                feedbackPlaying.set(true)
-                try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
-                finally { resetAfterFeedback.set(true); feedbackPlaying.set(false) }
+                captureFeedback(2_000) { feedbackManager.playActivationSound() }
             }
             val recognition = launch {
-                var activatedUntil = 0L
+                val commandWindow = ActivationCommandWindow(SystemClock::elapsedRealtime)
                 var activeWord = initial.wakeWord
                 var activeEngine = initial.wakeWordEngine
+                var activePolicy = initial.inputPolicy()
+                suspend fun expireCommandWindow() {
+                    if (!commandWindow.expireIfSilent() || !isCurrent(id)) return
+                    activityStatus.update(id, AudioSessionState.Waiting)
+                    try {
+                        withTimeoutOrNull(1_000) {
+                            val prefs = settingsRepository.readAudioPreferences()
+                            if (isCurrent(id) && prefs.inputPolicy() == activePolicy && prefs.activationTimeoutSoundEnabled) {
+                                captureFeedback(1_000) { feedbackManager.playActivationTimeoutSound() }
+                            }
+                        }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (failure: Exception) {
+                        android.util.Log.w("VoiceInput", "Не удалось воспроизвести сигнал отмены ожидания", failure)
+                    }
+                }
                 val metricSession = PersonalKeywordWakeSession(
                     preferences = settingsRepository::readAudioPreferences,
                     evaluate = { personalKeyword?.evaluate(it, WakeWordEngine.METRIC_KWS)
                         ?: MetricKwsDecision.Unavailable("model_unavailable") },
-                    verifySpeaker = voiceProfileManager::verify,
                     recognize = { recognizer.recognize(it).getOrThrow() },
                     onActivation = { activationFeedback() },
                     onVerifiedSpeech = { if (isCurrent(id) && settingsRepository.readAudioPreferences().voiceInterruptionEnabled) speechStarts.emit(id) },
                     clock = SystemClock::elapsedRealtime,
-                    speakerReady = { !voiceProfileManager.needsEnrollment() },
+                    commandWindow = commandWindow,
                 )
-                var activePolicy = initial.inputPolicy()
-                for ((segment, detected, speechStartedAt, playbackContext) in segments) {
+                while (currentCoroutineContext().isActive) {
+                    val received = commandWindow.receive(segments)
+                    if (received == null) { expireCommandWindow(); continue }
+                    val event = received.getOrNull() ?: break
+                    when (event) {
+                        is RecognitionEvent.SpeechStarted -> {
+                            if (event.at >= acceptCaptureAfter) commandWindow.speechStarted(event.at)
+                            continue
+                        }
+                        is RecognitionEvent.SpeechFinished -> {
+                            commandWindow.speechFinished(event.at)
+                            // Drain a queued next speech start before declaring silence.
+                            continue
+                        }
+                        is RecognitionEvent.Utterance -> Unit
+                    }
+                    val (segment, detected, speechStartedAt, playbackContext) = event.captured
+                    if (speechStartedAt < acceptCaptureAfter) continue
+                    commandWindow.speechStarted(speechStartedAt)
+                    expireCommandWindow()
+                    if (speechStartedAt < acceptCaptureAfter) continue
                     val prefs = settingsRepository.readAudioPreferences()
                     val policy = prefs.inputPolicy()
                     // A decoded word alone does not establish that the user spoke. Check the
@@ -285,19 +339,18 @@ class SherpaOnnxVoiceInputProvider(
                     val rejected = sourceTranscript != null && processing.speechEchoGuard.rejectsText(source, sourceTranscript)
                     traceVoiceSource(id, segment.size, source, rejected)
                     if (rejected) continue
-                    if (activePolicy != policy) { activatedUntil = 0; activePolicy = policy }
+                    if (activePolicy != policy) { commandWindow.reset(); activePolicy = policy }
                     if (prefs.wakeWordEngine == WakeWordEngine.METRIC_KWS_SHADOW && segment.size <= 128_000) {
                         shadowSegments?.trySend(segment.copyOf())
                     }
                     if (prefs.wakeWord != activeWord || prefs.wakeWordEngine != activeEngine) {
-                        activatedUntil = 0; activeWord = prefs.wakeWord; activeEngine = prefs.wakeWordEngine
+                        commandWindow.reset(); activeWord = prefs.wakeWord; activeEngine = prefs.wakeWordEngine
                     }
                     if (wake && prefs.wakeWordEnabled) {
                         when (val result = metricSession.handle(segment, speechStartedAt)) {
                             is PersonalWakeResult.Legacy -> Unit
                             is PersonalWakeResult.Unavailable -> {
-                                activationIssue.value = if (result.reason == "voice_id_required") "Voice ID включён: сначала запишите голос в настройках."
-                                    else "Персональная активация недоступна: проверьте модель и запись слова или выберите другой способ активации."
+                                activationIssue.value = "Персональная активация недоступна: проверьте модель и запись слова или выберите другой способ активации."
                                 activityStatus.update(id, AudioSessionState.Rejected)
                                 continue
                             }
@@ -311,28 +364,19 @@ class SherpaOnnxVoiceInputProvider(
                             }
                         }
                     }
-                    if (prefs.voiceIdEnabled && voiceProfileManager.needsEnrollment()) {
-                        activationIssue.value = "Voice ID включён: сначала запишите голос в настройках."
-                        activityStatus.update(id, AudioSessionState.Rejected)
-                        continue
-                    }
-                    val requireName = wake && prefs.wakeWordEnabled && SystemClock.elapsedRealtime() > activatedUntil
+                    val requireName = wake && prefs.wakeWordEnabled && !commandWindow.accepts(speechStartedAt)
                     if (requireName && useKws && !detected) continue
                     var text: String? = null
                     if (requireName && !useKws) {
                         val transcript = sourceTranscript ?: recognizer.recognize(segment).getOrThrow()
                         text = WakeWordTokens.removePrefix(transcript, prefs.wakeWord) ?: continue
                     }
-                    if (prefs.voiceIdEnabled && !voiceProfileManager.verify(segment)) {
-                        activityStatus.update(id, AudioSessionState.Rejected)
-                        continue
-                    }
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
                     if (requireName) {
                         // An accepted name/KWS activation is intentional input, unlike provisional VAD.
                         if (settingsRepository.readAudioPreferences().voiceInterruptionEnabled && isCurrent(id)) speechStarts.emit(id)
                         activationFeedback()
-                        activatedUntil = SystemClock.elapsedRealtime() + 10_000
+                        commandWindow.open()
                     }
                     val transcript = text ?: (sourceTranscript ?: recognizer.recognize(segment).getOrThrow()).let {
                         if (detected) WakeWordTokens.removePrefix(it, prefs.wakeWord) ?: it else it
@@ -340,10 +384,10 @@ class SherpaOnnxVoiceInputProvider(
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
                     if (VoiceCommandAcceptance.hasSpeechText(transcript) && isCurrent(id)) {
                         activationIssue.value = null
-                        // Empty ASR, rejected activation and failed Voice ID never stop playback.
+                        // Empty ASR and rejected activation never stop playback.
                         if (settingsRepository.readAudioPreferences().voiceInterruptionEnabled) speechStarts.emit(id)
                         input.emit(VoiceInputEvent(id, transcript))
-                        activatedUntil = 0
+                        commandWindow.reset()
                         activityStatus.update(id, if (wake) AudioSessionState.Waiting else AudioSessionState.Listening)
                     }
                 }
@@ -359,6 +403,7 @@ class SherpaOnnxVoiceInputProvider(
             var speechStartedAt = 0L
             var captureReady = false
             while (currentCoroutineContext().isActive) {
+                val inputFeedbackRevision = feedbackRevision.get()
                 val read = withContext(Dispatchers.IO) { recorder.read(pcm, 0, pcm.size, AudioRecord.READ_BLOCKING) }
                 check(read >= 0) { "Ошибка микрофона: $read" }
                 if (read == 0) continue
@@ -381,17 +426,22 @@ class SherpaOnnxVoiceInputProvider(
                         }
                     }
                 }
-                if (samples.isEmpty() || feedbackPlaying.get()) continue
+                if (samples.isEmpty() || feedbackPlaying.get() || inputFeedbackRevision != feedbackRevision.get()) continue
                 timeline.append(samples.size, processor.outputStartTimeNs)
                 if (useKws && keywordSpotter.accept(samples) != null) keywordDetected = true
                 preRoll.append(samples)
                 val completed = vad.acceptTimed(samples)
+                // Drop a block that crossed either sound, even if playback finished during native VAD.
+                if (feedbackPlaying.get() || inputFeedbackRevision != feedbackRevision.get()) continue
                 val speech = vad.isSpeechDetected()
+                val speechEnded = wasSpeech && !speech
                 if (speech && !wasSpeech) {
                     speechStartedAt = SystemClock.elapsedRealtime()
                     preRoll.speechStarted()
+                    if (wake) enqueue(RecognitionEvent.SpeechStarted(speechStartedAt))
                 }
                 wasSpeech = speech
+                var completedSpeechStartedAt: Long? = null
                 for (timed in completed) {
                     val segment = preRoll.complete(timed.startSample, timed.samples)
                     if (enrollment != null) {
@@ -405,13 +455,16 @@ class SherpaOnnxVoiceInputProvider(
                         "Не удалось определить время голосового фрагмента. Повторите запрос."
                     }
                     val playbackContext = processing.speechEchoGuard.snapshot(captured.startNs, captured.endNs)
-                    check(segments.trySend(CapturedUtterance(segment, keywordDetected,
-                        speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime(), playbackContext)).isSuccess) {
-                        "Распознавание не успевает за речью. Повторите запрос."
-                    }
+                    val startedAt = speechStartedAt.takeIf { it > 0 } ?: SystemClock.elapsedRealtime()
+                    completedSpeechStartedAt = startedAt
+                    enqueue(RecognitionEvent.Utterance(CapturedUtterance(segment, keywordDetected, startedAt, playbackContext)))
                     keywordDetected = false
                 }
-                if (!speech && completed.isNotEmpty()) speechStartedAt = 0L
+                if (!speech && (speechEnded || completed.isNotEmpty())) {
+                    val startedAt = speechStartedAt.takeIf { it > 0 } ?: completedSpeechStartedAt
+                    if (wake && startedAt != null) enqueue(RecognitionEvent.SpeechFinished(startedAt))
+                    speechStartedAt = 0L
+                }
             }
             segments.close()
             recognition.join()

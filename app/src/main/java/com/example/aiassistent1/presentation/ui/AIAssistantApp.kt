@@ -7,11 +7,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.domain.model.AppDestination
+import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
@@ -65,12 +68,17 @@ fun AIAssistantApp(
         return
     }
 
+    ConversationLifecycleEffects(chatViewModel, uiState)
     UserDateTimeProvider(hideCurrentMonth = uiState.hideCurrentMonth, hideCurrentYear = uiState.hideCurrentYear) {
         AnimatedContent(
-            targetState = navigation.destination,
-            modifier = modifier,
+            targetState = navigation,
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            // Both chat modes share one screen and its effects; keep mode-only switches in place.
+            contentKey = { it.destination },
             transitionSpec = {
-                if (targetState == AppDestination.CALENDAR) {
+                if (targetState.animationPageIndex > initialState.animationPageIndex) {
                     (slideInHorizontally(animationSpec = tween(360)) { fullWidth -> fullWidth } + fadeIn())
                         .togetherWith(
                             slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> -fullWidth / 5 } + fadeOut(),
@@ -83,8 +91,8 @@ fun AIAssistantApp(
                 }
             },
             label = "ChatCalendarNavigation",
-        ) { currentDestination ->
-            when (currentDestination) {
+        ) { currentNavigation ->
+            when (currentNavigation.destination) {
                 AppDestination.CHAT -> ChatScreen(
                     viewModel = chatViewModel,
                     onOpenCalendar = chatViewModel::openCalendar,
@@ -103,9 +111,20 @@ fun AIAssistantApp(
                     onNavigateBack = chatViewModel::returnToConversation,
                     onOpenChat = { chatViewModel.setChatMode(false) },
                     voiceModeNotice = voiceNotice.takeIf { navigation.destination == AppDestination.CALENDAR },
+                    conversationError = uiState.error.takeIf { navigation.destination == AppDestination.CALENDAR },
+                    onConversationErrorDismiss = chatViewModel::clearError,
+                    inputPanel = { CalendarConversationInput(chatViewModel, uiState) },
                 )
             }
         }
     }
     SideEffect(onContentReady)
 }
+
+/** Left to right: calendar conversation, calendar, general conversation. */
+private val AppNavigationState.animationPageIndex: Int
+    get() = when {
+        destination == AppDestination.CALENDAR -> 1
+        isCalendarMode -> 0
+        else -> 2
+    }
