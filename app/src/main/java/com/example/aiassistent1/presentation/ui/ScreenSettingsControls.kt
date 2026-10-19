@@ -56,7 +56,7 @@ internal fun ScreenSettingsControls(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Фиксация ориентации")
+                Text("Фиксация ориентации экрана")
                 Text(
                     "При выключении поворот определяется настройками устройства.",
                     style = MaterialTheme.typography.bodySmall,
@@ -67,7 +67,7 @@ internal fun ScreenSettingsControls(
                 checked = locked,
                 onCheckedChange = onOrientationLockedChange,
                 enabled = preferences != null,
-                modifier = Modifier.semantics { contentDescription = "Фиксация ориентации" },
+                modifier = Modifier.semantics { contentDescription = "Фиксация ориентации экрана" },
             )
         }
         Row(

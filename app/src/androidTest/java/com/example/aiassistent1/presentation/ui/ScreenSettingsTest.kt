@@ -37,7 +37,7 @@ class ScreenSettingsTest {
                 )
             }
         }
-        val lock = compose.onNodeWithContentDescription("Фиксация ориентации")
+        val lock = compose.onNodeWithContentDescription("Фиксация ориентации экрана")
         val orientation = compose.onNodeWithContentDescription("Ориентация экрана")
         val proximity = compose.onNodeWithContentDescription("Гасить экран у уха")
         proximity.assertIsEnabled().assertIsOn()
@@ -64,7 +64,7 @@ class ScreenSettingsTest {
                 ScreenSettingsControls(null, {}, {}, {})
             }
         }
-        compose.onNodeWithContentDescription("Фиксация ориентации").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Фиксация ориентации экрана").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Ориентация экрана").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Гасить экран у уха").assertIsNotEnabled()
     }
