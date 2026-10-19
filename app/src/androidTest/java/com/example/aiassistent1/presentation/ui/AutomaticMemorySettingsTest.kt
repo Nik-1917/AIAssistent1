@@ -1,6 +1,10 @@
 package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.aiassistent1.domain.model.*
@@ -59,7 +63,9 @@ class AutomaticMemorySettingsTest {
         var sent: String? = null
         compose.setContent {
             MaterialTheme {
-                InputPanel(true, false, false, false, onSend = { sent = it }, onStop = {},
+                var input by remember { mutableStateOf("") }
+                InputPanel(true, false, false, false, text = input, onTextChange = { input = it },
+                    onSend = { sent = input }, onStop = {},
                     onVoiceTap = {}, onVoiceDraft = {})
             }
         }
@@ -73,7 +79,9 @@ class AutomaticMemorySettingsTest {
         var sent: String? = null
         compose.setContent {
             MaterialTheme {
-                InputPanel(true, false, false, false, onSend = { sent = it }, onStop = {},
+                var input by remember { mutableStateOf("") }
+                InputPanel(true, false, false, false, text = input, onTextChange = { input = it },
+                    onSend = { sent = input }, onStop = {},
                     onVoiceTap = {}, onVoiceDraft = {}, maximumMessageLength = 16)
             }
         }

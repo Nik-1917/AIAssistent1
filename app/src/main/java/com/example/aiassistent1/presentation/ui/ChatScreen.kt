@@ -967,7 +967,11 @@ fun ChatScreen(
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
                     InputPanel(
-                        textInputEnabled = !uiState.isProcessing && !uiState.isClearingChat &&
+                        text = uiState.inputDraft.text,
+                        onTextChange = viewModel::updateInputText,
+                        draftStorageError = uiState.inputDraft.storageError,
+                        onRetryDraftStorage = viewModel::retryInputDraftStorage,
+                        textInputEnabled = uiState.inputDraft.isLoaded && !uiState.isProcessing && !uiState.isClearingChat &&
                             !uiState.isStopping &&
                             uiState.modelState !is ModelState.Loading &&
                             uiState.modelAvailability == ModelAvailability.Available &&
@@ -981,7 +985,7 @@ fun ChatScreen(
                         isCheckingRequest = uiState.isCheckingRequest,
                         isVoiceMode = uiState.isVoiceMode,
                         isVoiceDraftActive = uiState.voiceDraft.isVisible,
-                        onSend = viewModel::sendMessage,
+                        onSend = viewModel::sendInputDraft,
                         maximumMessageLength = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(uiState.isCalendarMode),
                         onStop = viewModel::stopGeneration,
                         onVoiceTap = { requestMicrophoneAction(MicrophoneAction.TAP) },
@@ -1901,15 +1905,18 @@ internal fun InputPanel(
     microphoneEnabled: Boolean,
     isProcessing: Boolean,
     isVoiceMode: Boolean,
-    onSend: (String) -> Unit,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onSend: () -> Unit,
     onStop: () -> Unit,
     onVoiceTap: () -> Unit,
     onVoiceDraft: () -> Unit,
     maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
     isCheckingRequest: Boolean = false,
     isVoiceDraftActive: Boolean = false,
+    draftStorageError: String? = null,
+    onRetryDraftStorage: () -> Unit = {},
 ) {
-    var text by remember { mutableStateOf("") }
     val canSend = textInputEnabled && text.trim().isNotEmpty() && text.trim().length <= maximumMessageLength
     val isTextTooLong = text.trim().length > maximumMessageLength
     val isKeyboardVisible = WindowInsets.isImeVisible
@@ -1934,6 +1941,10 @@ internal fun InputPanel(
             .imePadding()
             .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 20.dp),
     ) {
+        if (draftStorageError != null) {
+            Text(draftStorageError, color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = onRetryDraftStorage) { Text("Повторить") }
+        }
         // Keep a wrapping error above the editor so the bottom controls never move with its height.
         if (isTextTooLong) {
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -1960,7 +1971,7 @@ internal fun InputPanel(
         ) {
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it },
+                onValueChange = onTextChange,
                 modifier = Modifier.weight(1f),
                 enabled = textInputEnabled,
                 isError = isTextTooLong,
@@ -2005,10 +2016,7 @@ internal fun InputPanel(
                     isKeyboardVisible -> {
                         IconButton(
                             enabled = canSend,
-                            onClick = {
-                                onSend(text)
-                                text = ""
-                            },
+                            onClick = onSend,
                             modifier = Modifier.size(48.dp),
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Отправить сообщение")

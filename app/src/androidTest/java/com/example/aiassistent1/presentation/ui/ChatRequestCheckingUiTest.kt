@@ -35,7 +35,7 @@ class ChatRequestCheckingUiTest {
                     )
                     InputPanel(
                         textInputEnabled = false, microphoneEnabled = false, isProcessing = true,
-                        isVoiceMode = false, onSend = {}, onStop = { cancellations++ },
+                        isVoiceMode = false, text = "", onTextChange = {}, onSend = {}, onStop = { cancellations++ },
                         onVoiceTap = {}, onVoiceDraft = {}, isCheckingRequest = checking.value,
                     )
                 }

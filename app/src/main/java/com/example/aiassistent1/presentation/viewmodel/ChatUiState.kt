@@ -24,6 +24,7 @@ data class ChatUiState(
     val sessionError: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val isHistoryLoaded: Boolean = false,
+    val inputDraft: ChatInputDraftState = ChatInputDraftState(),
     val chatScrollPosition: ChatScrollPosition = ChatScrollPosition(),
     val isChatScrollPositionLoaded: Boolean = false,
     val floatingControlPositions: FloatingControlPositions = FloatingControlPositions(),

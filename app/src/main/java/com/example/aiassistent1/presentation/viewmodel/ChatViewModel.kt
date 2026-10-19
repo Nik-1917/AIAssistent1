@@ -85,6 +85,7 @@ class ChatViewModel(
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
+    private val inputDraftController: ChatInputDraftController,
     private val speechPlayback: SpeechPlayback? = null,
     private val settingsRepository: SettingsRepository,
     private val searchCalendarEvents: SearchCalendarEventsUseCase,
@@ -162,6 +163,11 @@ class ChatViewModel(
     val assistantDisplayName = settingsRepository.assistantDisplayName
 
     init {
+        viewModelScope.launch {
+            inputDraftController.state.collect { draft ->
+                mutableUiState.update { it.copy(inputDraft = draft) }
+            }
+        }
         viewModelScope.launch {
             contextDecisions.pressure.collect { pressure ->
                 mutableUiState.update { it.copy(chatContextPressure = pressure) }
@@ -521,9 +527,11 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(text: String) {
-        sendMessageInternal(text)
-    }
+    fun updateInputText(text: String) = inputDraftController.updateText(text)
+
+    fun retryInputDraftStorage() = inputDraftController.retryStorage()
+
+    fun sendInputDraft() = inputDraftController.send { sendMessageInternal(it) }
 
     fun sendVoiceDraft() {
         val state = mutableUiState.value
@@ -1094,7 +1102,10 @@ class ChatViewModel(
     }
 
     fun onAppBackgrounded(isChangingConfigurations: Boolean) {
-        if (!isChangingConfigurations) persistVoiceDraft(mutableUiState.value.voiceDraft.text)
+        if (!isChangingConfigurations) {
+            inputDraftController.retryStorage()
+            persistVoiceDraft(mutableUiState.value.voiceDraft.text)
+        }
     }
 
     fun setVoiceMode(enabled: Boolean) {

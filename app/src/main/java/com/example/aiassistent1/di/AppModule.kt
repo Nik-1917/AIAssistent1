@@ -28,6 +28,7 @@ import com.example.aiassistent1.domain.usecase.FormatCalendarFieldUseCase
 import com.example.aiassistent1.domain.usecase.SendMessageUseCase
 import com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase
 import com.example.aiassistent1.domain.usecase.PersonalKeywordActivation
+import com.example.aiassistent1.presentation.viewmodel.ChatInputDraftController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +64,16 @@ object AppModule {
 	private var calendarDraftRepository: CalendarDraftRepository? = null
 
     @Volatile private var chatContextRepository: ChatContextRepository? = null
+
+    @Volatile private var chatInputDraftController: ChatInputDraftController? = null
+
+    fun provideChatInputDraftController(context: Context): ChatInputDraftController =
+        chatInputDraftController ?: synchronized(this) {
+            chatInputDraftController ?: ChatInputDraftController(
+                DataStoreChatInputDraftRepository(context.applicationContext.chatInputDraftStore()),
+                CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+            ).also { chatInputDraftController = it }
+        }
 
     fun provideChatContextRepository(context: Context): ChatContextRepository = chatContextRepository ?: synchronized(this) {
         chatContextRepository ?: DataStoreChatContextRepository(context.applicationContext.chatContextStore())
