@@ -35,7 +35,8 @@ class SherpaOnnxVoiceInputProvider(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val input = MutableSharedFlow<VoiceInputEvent>(extraBufferCapacity = 2)
     private val errors = MutableSharedFlow<VoiceInputError>(extraBufferCapacity = 2)
-    private val activity = MutableStateFlow(AudioSessionState.Idle)
+    private val activityStatus = VoiceActivityStatus(scope)
+    private val activity = activityStatus.state
     private val speechStarts = MutableSharedFlow<Long>(extraBufferCapacity = 1)
     private val lock = Any()
     private val readiness = VoiceCaptureReadiness()
@@ -146,7 +147,7 @@ class SherpaOnnxVoiceInputProvider(
         val id = ++nextSessionId
         activeSessionId = id
         readiness.begin(id)
-        activity.value = AudioSessionState.Idle
+        activityStatus.begin(id)
         traceVoiceStartup("capture_requested session=$id")
         recordingJob = scope.launch {
             try {
@@ -171,16 +172,23 @@ class SherpaOnnxVoiceInputProvider(
             }
             finally {
                 readiness.end(id)
-                synchronized(lock) { if (activeSessionId == id) { activeSessionId = null; captureEnrollment = false; activity.value = AudioSessionState.Idle } }
+                synchronized(lock) {
+                    if (activeSessionId == id) {
+                        activeSessionId = null
+                        captureEnrollment = false
+                        activityStatus.end(id)
+                    }
+                }
             }
         }
         id
     }
-    override fun stop() = synchronized(lock) {
-        activeSessionId?.let { readiness.end(it) }
-        activeSessionId = null
-        recordingJob?.cancel()
-        activity.value = AudioSessionState.Idle
+    override fun stop() {
+        synchronized(lock) {
+            activeSessionId?.let { readiness.end(it); activityStatus.end(it) }
+            activeSessionId = null
+            recordingJob?.cancel()
+        }
     }
     override suspend fun stopAndAwait() {
         val stopping = synchronized(lock) {
@@ -242,7 +250,7 @@ class SherpaOnnxVoiceInputProvider(
             val feedbackPlaying = AtomicBoolean(false)
             val resetAfterFeedback = AtomicBoolean(false)
             suspend fun activationFeedback() {
-                activity.value = AudioSessionState.Listening
+                activityStatus.update(id, AudioSessionState.Listening)
                 feedbackPlaying.set(true)
                 try { withTimeoutOrNull(2_000) { feedbackManager.playActivationSound() } }
                 finally { resetAfterFeedback.set(true); feedbackPlaying.set(false) }
@@ -290,22 +298,22 @@ class SherpaOnnxVoiceInputProvider(
                             is PersonalWakeResult.Unavailable -> {
                                 activationIssue.value = if (result.reason == "voice_id_required") "Voice ID включён: сначала запишите голос в настройках."
                                     else "Персональная активация недоступна: проверьте модель и запись слова или выберите другой способ активации."
-                                activity.value = AudioSessionState.Rejected
+                                activityStatus.update(id, AudioSessionState.Rejected)
                                 continue
                             }
-                            PersonalWakeResult.Rejected -> { activity.value = AudioSessionState.Rejected; continue }
+                            PersonalWakeResult.Rejected -> { activityStatus.update(id, AudioSessionState.Rejected); continue }
                             PersonalWakeResult.Activated -> { activationIssue.value = null; continue }
                             PersonalWakeResult.Waiting -> continue
                             is PersonalWakeResult.Command -> {
                                 if (isCurrent(id)) input.emit(VoiceInputEvent(id, result.text))
-                                activity.value = AudioSessionState.Waiting
+                                activityStatus.update(id, AudioSessionState.Waiting)
                                 continue
                             }
                         }
                     }
                     if (prefs.voiceIdEnabled && voiceProfileManager.needsEnrollment()) {
                         activationIssue.value = "Voice ID включён: сначала запишите голос в настройках."
-                        activity.value = AudioSessionState.Rejected
+                        activityStatus.update(id, AudioSessionState.Rejected)
                         continue
                     }
                     val requireName = wake && prefs.wakeWordEnabled && SystemClock.elapsedRealtime() > activatedUntil
@@ -316,7 +324,7 @@ class SherpaOnnxVoiceInputProvider(
                         text = WakeWordTokens.removePrefix(transcript, prefs.wakeWord) ?: continue
                     }
                     if (prefs.voiceIdEnabled && !voiceProfileManager.verify(segment)) {
-                        activity.value = AudioSessionState.Rejected
+                        activityStatus.update(id, AudioSessionState.Rejected)
                         continue
                     }
                     if (settingsRepository.readAudioPreferences().inputPolicy() != policy) continue
@@ -336,7 +344,7 @@ class SherpaOnnxVoiceInputProvider(
                         if (settingsRepository.readAudioPreferences().voiceInterruptionEnabled) speechStarts.emit(id)
                         input.emit(VoiceInputEvent(id, transcript))
                         activatedUntil = 0
-                        activity.value = if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
+                        activityStatus.update(id, if (wake) AudioSessionState.Waiting else AudioSessionState.Listening)
                     }
                 }
             }
@@ -366,8 +374,8 @@ class SherpaOnnxVoiceInputProvider(
                 if (!captureReady && samples.isNotEmpty() && sampleClock.isReady && processor.isReady()) {
                     synchronized(lock) {
                         if (activeSessionId == id) {
-                            activity.value = if (enrollment != null) AudioSessionState.Enrolling
-                                else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening
+                            activityStatus.update(id, if (enrollment != null) AudioSessionState.Enrolling
+                                else if (wake) AudioSessionState.Waiting else AudioSessionState.Listening)
                             traceVoiceStartup("capture_ready session=$id profile=${processor.profile} clock=${sampleClock.timing}")
                             captureReady = readiness.ready(id)
                         }
