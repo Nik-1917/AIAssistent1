@@ -126,20 +126,22 @@ class AssistantNameSettingsTest {
             val wordFile = File(directory, "metric_kws_profile.bin")
             val originalWord = wordFile.readBytes()
             nameField().performScrollTo().performTextReplacement("мой помощник")
+            nameField().assertTextContains("Мой помощник")
             click("Сохранить имя")
-            compose.waitUntil(5_000) { runBlocking { settings.assistantDisplayName.first() == "мой помощник" } }
-            assertDisplayed("мой помощник", "Мой помощник")
+            compose.waitUntil(5_000) { runBlocking { settings.assistantDisplayName.first() == "Мой помощник" } }
+            assertDisplayed("Мой помощник")
             assertEquals(before, settings.readAudioPreferences())
             assertArrayEquals(originalWord, wordFile.readBytes())
             assertArrayEquals(byteArrayOf(7, 8, 9), voiceFile.readBytes())
             assertEquals(MetricKwsDecision.Accept, activation.evaluate(pcm("ru_00_1"), WakeWordEngine.METRIC_KWS))
             assertEquals(MetricKwsDecision.Reject, activation.evaluate(pcm("ru_02_1"), WakeWordEngine.METRIC_KWS))
-            assertEquals("мой помощник", DataStoreSettingsRepository(data, storageScope).assistantDisplayName.first())
-            for ((stored, header) in listOf("алиса" to "Алиса", "ёлка" to "Ёлка", "aLice" to "ALice")) {
-                nameField().performScrollTo().performTextReplacement(stored)
+            assertEquals("Мой помощник", DataStoreSettingsRepository(data, storageScope).assistantDisplayName.first())
+            for ((entered, capitalized) in listOf("алиса" to "Алиса", "ёлка" to "Ёлка", "aLice" to "ALice")) {
+                nameField().performScrollTo().performTextReplacement(entered)
+                nameField().assertTextContains(capitalized)
                 click("Сохранить имя")
-                compose.waitUntil(5_000) { runBlocking { settings.assistantDisplayName.first() == stored } }
-                assertDisplayed(stored, header)
+                compose.waitUntil(5_000) { runBlocking { settings.assistantDisplayName.first() == capitalized } }
+                assertDisplayed(capitalized)
                 assertEquals(before, settings.readAudioPreferences())
                 assertArrayEquals(originalWord, wordFile.readBytes())
                 assertArrayEquals(byteArrayOf(7, 8, 9), voiceFile.readBytes())
