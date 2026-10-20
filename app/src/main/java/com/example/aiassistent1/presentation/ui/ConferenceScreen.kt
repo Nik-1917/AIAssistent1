@@ -140,7 +140,7 @@ fun ConferenceScreen(chatViewModel: ChatViewModel, onClose: () -> Unit) {
                     val id = selectedId
                     if (id == null) {
                         OutlinedTextField(value = title, onValueChange = { title = it.take(160) },
-                            label = { Text("Название новой записи") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                            label = { Text("Название новой записи") }, singleLine = true, modifier = Modifier.fillMaxWidth().standardTextEditing())
                         Button(enabled = !recording.recording && !recording.finishing && !busy && !chatState.isProcessing,
                             onClick = {
                                 val permissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
@@ -152,7 +152,7 @@ fun ConferenceScreen(chatViewModel: ChatViewModel, onClose: () -> Unit) {
                         Text("До 3 часов • MP3 • запись продолжается при выключенном экране",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(search, { search = it.take(200) }, label = { Text("Поиск по названию") },
-                            leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                            leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth().standardTextEditing())
                         val flow = remember(debouncedSearch) { Pager(PagingConfig(20, enablePlaceholders = false)) { repository.conferencesPaging(debouncedSearch) }.flow }
                         val records = flow.collectAsLazyPagingItems()
                         PagingStatus(records.loadState.refresh, records.itemCount == 0, "Записей пока нет", records::retry)
@@ -225,7 +225,7 @@ fun ConferenceScreen(chatViewModel: ChatViewModel, onClose: () -> Unit) {
                                             }
                                         }
                                         OutlinedTextField(search, { search = it.take(200) }, label = { Text("Поиск по словам транскрипта") },
-                                            leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                            leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth().standardTextEditing())
                                     }
                                 }
                                 item(key = "transcript-status") {

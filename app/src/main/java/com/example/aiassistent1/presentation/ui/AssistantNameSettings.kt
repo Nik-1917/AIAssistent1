@@ -20,7 +20,7 @@ internal fun AssistantNameSettings(currentName: String, enabled: Boolean, onSave
         label = { Text("Имя ассистента") },
         enabled = enabled,
         singleLine = true,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().standardTextEditing()
     )
     TextButton(enabled = enabled && name != currentName, onClick = { onSave(name) }) {
         Text("Сохранить имя")

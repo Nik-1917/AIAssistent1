@@ -836,13 +836,17 @@ fun ChatScreen(
                                 items = uiState.messages,
                                 key = { _, message -> message.id },
                             ) { index, message ->
+                                val calendarDraft = uiState.calendarDrafts.drafts.firstOrNull { it.requestId == message.id }
                                 val isLast = index == uiState.messages.lastIndex
                                 val showRetry = isLast && !uiState.isProcessing && !uiState.isStopping
                                 val showDelete = showRetry
                                     
                                 ChatMessageItem(
                                     message = message,
-                                    calendarDraft = uiState.calendarDrafts.drafts.firstOrNull { it.requestId == message.id },
+                                    calendarDraft = calendarDraft,
+                                    savedCalendarEvent = calendarDraft?.savedEventId?.let { uiState.savedCalendarCards[it] }
+                                        ?: com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Loading,
+                                    onRetrySavedCalendarEvent = viewModel::retrySavedCalendarCards,
                                     onOpenCalendarDraft = viewModel::openCalendarDraft,
                                     onOpenSavedCalendarEvent = onOpenSavedCalendarEvent,
                                     isStopping = uiState.isStopping,
@@ -1518,6 +1522,9 @@ internal fun ChatMessageItem(
     onCopy: (String) -> Unit,
     onSpeak: (String) -> Unit,
     modifier: Modifier = Modifier,
+    savedCalendarEvent: com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState =
+        com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Loading,
+    onRetrySavedCalendarEvent: () -> Unit = {},
 ) {
     val linkedDraft = calendarDraft?.takeIf {
         message.chatId == "calendar" && message.role == MessageRole.ASSISTANT &&
@@ -1542,6 +1549,8 @@ internal fun ChatMessageItem(
                         draft = draft,
                         onOpen = { onOpenCalendarDraft(draft.requestId) },
                         onOpenSavedEvent = onOpenSavedCalendarEvent,
+                        savedEventState = savedCalendarEvent,
+                        onRetrySavedEvent = onRetrySavedCalendarEvent,
                     )
                 }
             } else {
@@ -1887,7 +1896,7 @@ internal fun InputPanel(
             OutlinedTextField(
                 value = text,
                 onValueChange = onTextChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).standardTextEditing(),
                 enabled = textInputEnabled,
                 isError = isTextTooLong,
                 textStyle = inputTextStyle,
