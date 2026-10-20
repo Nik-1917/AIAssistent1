@@ -1113,6 +1113,7 @@ fun ChatScreen(
                 storageError = uiState.calendarDrafts.storageError,
                 onTimeZoneConfirm = { keepMoment -> viewModel.confirmCalendarDraftTimeZone(draft.requestId, keepMoment) },
                 onScheduleChange = { viewModel.updateCalendarDraftSchedule(draft.requestId, it) },
+                onInputZoneChange = { viewModel.updateCalendarDraftInputZone(draft.requestId, it) },
             )
         }
     }
@@ -1993,7 +1994,7 @@ internal fun VoiceDraftCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
