@@ -157,18 +157,12 @@ class CalendarViewModel(
         val requestId = refreshRequests.value + 1
         pendingRefreshRequest = requestId
         refreshStartedAtElapsedMillis = SystemClock.elapsedRealtime()
-        val today = LocalDate.now(calendarTimeZones.state.value.zoneId)
-        val currentMonth = YearMonth.from(today)
-        visibleMonth.value = currentMonth
         mutableUiState.update {
             it.copy(
                 isRefreshing = true,
-                visibleMonth = currentMonth,
-                selectedDate = today,
                 focusedEventId = null,
             )
         }
-        persistCalendarPosition(currentMonth, today)
         refreshRequests.value = requestId
     }
 
@@ -181,9 +175,10 @@ class CalendarViewModel(
         notes: String?,
         zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
         scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
+        inputZoneId: ZoneId? = null,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime, value, notes, zoneId, scheduleInput).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime, value, notes, inputZoneId ?: zoneId, scheduleInput).getOrElse { error ->
                 showError(error)
                 return@launch
             }
