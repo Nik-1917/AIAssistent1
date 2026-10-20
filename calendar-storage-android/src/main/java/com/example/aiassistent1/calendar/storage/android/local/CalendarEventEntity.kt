@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["startsAtEpochMillis"]),
         Index(value = ["title"]),
+        Index(value = ["parentSeriesId"]),
     ],
 )
 data class CalendarEventEntity(
@@ -22,4 +23,6 @@ data class CalendarEventEntity(
     @ColumnInfo(defaultValue = "NULL") val value: Long? = null,
     @ColumnInfo(defaultValue = "0") val revision: Long = 0,
     @ColumnInfo(defaultValue = "NULL") val notes: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val scheduleData: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val parentSeriesId: String? = null,
 )

@@ -16,6 +16,8 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository
 import com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
+import com.example.aiassistent1.domain.model.CalendarScheduleInput
 import com.example.aiassistent1.domain.model.CalendarViewState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -81,6 +83,7 @@ class CalendarViewModel(
                     observeCalendarEvents(
                         request.month.atDay(1).atStartOfDay(request.zoneId).toInstant().toEpochMilli(),
                         request.month.plusMonths(1).atDay(1).atStartOfDay(request.zoneId).toInstant().toEpochMilli(),
+                        request.zoneId,
                     ).map { events -> Triple(request.requestId, request.zoneId, events) }
             }.catch { error ->
                 showError(error)
@@ -119,7 +122,10 @@ class CalendarViewModel(
             calendarTimeZones.snapshot().zoneId
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (error: Exception) { return Result.failure(error) }
-        val date = Instant.ofEpochMilli(event.startsAtEpochMillis).atZone(zone).toLocalDate()
+        val eventSchedule = event.schedule
+        val navigationEvent = if (eventSchedule?.isRepeating == true && event.occurrenceDate == null && event.parentSeriesId == null)
+            eventSchedule.firstOccurrence(event, zone) ?: return Result.failure(NoSuchElementException("В серии нет доступных повторений")) else event
+        val date = navigationEvent.localStart(zone).toLocalDate()
         val month = YearMonth.from(date)
         try {
             settingsRepository.setCalendarViewState(CalendarViewState(month, date))
@@ -129,7 +135,7 @@ class CalendarViewModel(
             return Result.failure(error)
         }
         visibleMonth.value = month
-        mutableUiState.update { it.copy(visibleMonth = month, selectedDate = date, focusedEventId = event.id) }
+        mutableUiState.update { it.copy(visibleMonth = month, selectedDate = date, focusedEventId = navigationEvent.id) }
         return Result.success(Unit)
     }
 
@@ -174,9 +180,10 @@ class CalendarViewModel(
         value: Long?,
         notes: String?,
         zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
+        scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime, value, notes, zoneId).getOrElse { error ->
+            val draft = buildDraft(title, date, startTime, endTime, value, notes, zoneId, scheduleInput).getOrElse { error ->
                 showError(error)
                 return@launch
             }
@@ -196,20 +203,27 @@ class CalendarViewModel(
         notes: String?,
         zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
         originalEvent: CalendarEvent? = null,
+        scheduleInput: CalendarScheduleInput = CalendarScheduleInput.forEvent(originalEvent),
     ) {
         viewModelScope.launch {
             // Editing text/value alone must also preserve an existing DST-overlap instant.
             val unchangedSchedule = originalEvent?.let { original ->
-                val oldStart = Instant.ofEpochMilli(original.startsAtEpochMillis).atZone(zoneId)
-                val oldEnd = Instant.ofEpochMilli(original.endsAtEpochMillis).atZone(zoneId)
+                val oldStart = original.localStart(zoneId)
+                val oldEnd = original.localEnd(zoneId)
                 date == oldStart.toLocalDate() && startTime == oldStart.toLocalTime() &&
-                    endTime == oldEnd.toLocalTime().takeIf { original.hasEndTime }
+                    endTime == oldEnd.toLocalTime().takeIf { original.hasEndTime } &&
+                    scheduleInput == CalendarScheduleInput.forEvent(original)
             } == true
             val built = if (unchangedSchedule) runCatching {
                 require(title.isNotBlank()) { "Введите название события." }
-                CalendarEventDraft(title, originalEvent!!.startsAtEpochMillis, originalEvent.endsAtEpochMillis,
-                    value, notes?.takeIf { it.isNotBlank() })
-            } else buildDraft(title, date, startTime, endTime, value, notes, zoneId)
+                val original = originalEvent!!
+                val schedule = if (original.seriesId != null) original.schedule?.takeIf { it.mode == CalendarTimeMode.FLOATING }?.let {
+                    com.example.aiassistent1.calendar.core.domain.CalendarSchedule(CalendarTimeMode.FLOATING,
+                        original.localStart(zoneId), original.localEnd(zoneId).takeIf { original.hasEndTime })
+                } else original.schedule
+                CalendarEventDraft(title, original.startsAtEpochMillis, original.endsAtEpochMillis,
+                    value, notes?.takeIf { it.isNotBlank() }, schedule)
+            } else buildDraft(title, date, startTime, endTime, value, notes, zoneId, scheduleInput)
             val draft = built.getOrElse { error ->
                 showError(error)
                 return@launch
@@ -223,6 +237,12 @@ class CalendarViewModel(
                     valueChange = value?.let(CalendarValueChange::Set) ?: CalendarValueChange.Clear,
                     notes = draft.notes,
                     clearNotes = draft.notes == null,
+                    expectedRevision = originalEvent?.revision,
+                    schedule = draft.schedule?.let { schedule ->
+                        if (originalEvent?.seriesId == null && schedule.isRepeating)
+                            schedule.copy(excludedDates = originalEvent?.schedule?.excludedDates.orEmpty()) else schedule
+                    },
+                    replaceSchedule = true,
                 ),
             ).onSuccess {
                 mutableUiState.update { it.copy(snackbarMessage = "Событие изменено") }
@@ -235,6 +255,15 @@ class CalendarViewModel(
             deleteCalendarEvent(id)
                 .onSuccess { mutableUiState.update { it.copy(snackbarMessage = "Событие удалено") } }
                 .onFailure(::showError)
+        }
+    }
+
+    fun loadSeriesForEdit(event: CalendarEvent, onLoaded: (CalendarEvent) -> Unit) {
+        val seriesId = event.seriesId ?: return
+        viewModelScope.launch {
+            getCalendarEvent(seriesId).onSuccess { series ->
+                if (series == null) showError(NoSuchElementException("Серия не найдена")) else onLoaded(series)
+            }.onFailure(::showError)
         }
     }
 
@@ -273,11 +302,16 @@ class CalendarViewModel(
         value: Long?,
         notes: String?,
         zoneId: ZoneId,
+        scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
     ): Result<CalendarEventDraft> = runCatching {
         require(title.isNotBlank()) { "Введите название события." }
-        val start = CalendarTime.toEpochMillis(LocalDateTime.of(date, startTime), zoneId)
+        val localStart = LocalDateTime.of(date, startTime)
+        val localEnd = endTime?.let { LocalDateTime.of(resolveCalendarEndDate(date, startTime, it), it) }
+        val start = if (scheduleInput.mode == CalendarTimeMode.FLOATING) localStart.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+            else CalendarTime.toEpochMillis(localStart, zoneId)
         val end = endTime?.let {
-            CalendarTime.toEpochMillis(LocalDateTime.of(resolveCalendarEndDate(date, startTime, it), it), zoneId)
+            (if (scheduleInput.mode == CalendarTimeMode.FLOATING) localEnd!!.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+            else CalendarTime.toEpochMillis(localEnd!!, zoneId))
                 .also { end -> require(end > start) { "Окончание события должно быть позже начала." } }
         } ?: start
         CalendarEventDraft(
@@ -286,6 +320,7 @@ class CalendarViewModel(
             endsAtEpochMillis = end,
             value = value,
             notes = notes?.takeIf { it.isNotBlank() },
+            schedule = scheduleInput.build(localStart, localEnd, zoneId),
         )
     }
 

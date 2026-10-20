@@ -32,7 +32,7 @@ class CalendarNotesStorageTest {
     // Keep native SQLite paths short on Windows; Robolectric already isolates each test.
     private fun newName() = "notes-${names.size}.db".also { names.add(it) }
     private fun open(name: String) = Room.databaseBuilder(context, CalendarDatabase::class.java, name)
-        .addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3)
+        .addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3, CalendarDatabase.MIGRATION_3_4)
         .build().also { databases.add(it) }
     private fun repository(database: CalendarDatabase) = RoomCalendarEventRepository(database.calendarEventDao())
 

@@ -1,6 +1,8 @@
 package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
+import com.example.aiassistent1.domain.model.CalendarScheduleInput
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -39,11 +41,13 @@ data class CalendarEventDraftUiState(
     val formattingField: CalendarEventField? = null,
     val timeZoneId: String? = null,
     val timeZoneConfirmedFor: String? = null,
+    val scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
 ) {
     val zoneId: ZoneId get() = timeZoneId?.let(ZoneId::of) ?: ZoneId.systemDefault()
 
     fun needsTimeZoneConfirmation(current: ZoneId): Boolean =
-        timeZoneId == null || (!saveRequested && timeZoneId != current.id && timeZoneConfirmedFor != current.id)
+        scheduleInput.mode != CalendarTimeMode.FLOATING &&
+            (timeZoneId == null || (!saveRequested && timeZoneId != current.id && timeZoneConfirmedFor != current.id))
 
     fun confirmTimeZone(current: ZoneId, keepMoment: Boolean): CalendarEventDraftUiState {
         check(isEditable) { "Сохранение этого черновика уже началось." }
@@ -70,7 +74,8 @@ data class CalendarEventDraftUiState(
         val startTime = fieldInputs[CalendarEventField.Time] ?: time
         val start = if (startDate.isNullOrBlank() || startTime.isNullOrBlank()) null
             else CalendarTime.dateTime("${startDate.trim()}T${startTime.trim()}")
-        CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, zoneId)
+        if (scheduleInput.mode == CalendarTimeMode.FLOATING) nominalDuration(start, endsAt?.let(CalendarTime::dateTime), null)
+        else CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, zoneId)
     }.getOrNull()
 
     val missingFields: List<CalendarEventField>
@@ -112,6 +117,7 @@ data class CalendarEventDraftUiState(
         val end = endsAt?.let(CalendarTime::dateTime) ?: run {
             val start = startsAt?.let(CalendarTime::dateTime) ?: return@runCatching null
             val duration = durationMinutes?.takeIf { it > 0 } ?: return@runCatching null
+            if (scheduleInput.mode == CalendarTimeMode.FLOATING) return@run start.plusMinutes(duration.toLong())
             val endMillis = Math.addExact(
                 CalendarTime.toEpochMillis(start, zoneId),
                 Math.multiplyExact(duration.toLong(), 60_000L),
@@ -147,13 +153,23 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
     date?.let(CalendarTime::date)
     time?.let(CalendarTime::time)
     durationMinutes?.let { require(it > 0) { "Длительность должна быть больше нуля." } }
-    startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), zoneId) }
+    if (scheduleInput.mode != CalendarTimeMode.FLOATING) startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), zoneId) }
 
-    val resolvedDuration = if (endsAt == null) durationMinutes else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
+    val resolvedDuration = if (endsAt == null) durationMinutes else if (scheduleInput.mode == CalendarTimeMode.FLOATING)
+        nominalDuration(startsAt?.let(CalendarTime::dateTime), CalendarTime.dateTime(endsAt), durationMinutes)
+    else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
         startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
         endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
         durationMinutes, zoneId,
     )
+    startsAt?.let { start ->
+        val localStart = CalendarTime.dateTime(start)
+        val localEnd = endsAt?.let(CalendarTime::dateTime) ?: resolvedDuration?.let { minutes ->
+            if (scheduleInput.mode == CalendarTimeMode.FLOATING) localStart.plusMinutes(minutes.toLong())
+            else Instant.ofEpochMilli(CalendarTime.toEpochMillis(localStart, zoneId)).atZone(zoneId).plusMinutes(minutes.toLong()).toLocalDateTime()
+        }
+        scheduleInput.build(localStart, localEnd, zoneId)
+    }
     val next = when {
         title.isNullOrBlank() -> CalendarEventField.Title
         date.isNullOrBlank() -> CalendarEventField.Date
@@ -161,6 +177,14 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
         else -> null
     }
     return copy(durationMinutes = resolvedDuration, activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)
+}
+
+private fun nominalDuration(start: LocalDateTime?, end: LocalDateTime?, supplied: Int?): Int? {
+    if (start == null || end == null) return supplied
+    val minutes = java.time.Duration.between(start, end).toMinutes()
+    require(minutes in 1..Int.MAX_VALUE.toLong()) { "Окончание должно быть позже начала." }
+    require(supplied == null || supplied.toLong() == minutes) { "Проверьте длительность и окончание." }
+    return minutes.toInt()
 }
 
 /**

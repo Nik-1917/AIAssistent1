@@ -28,6 +28,11 @@ class DataStoreCalendarDraftRepositoryTest {
                 value = 0, notes = "  Не менять\nтекст  ", endsAt = "2026-10-01T16:00",
                 fieldInputs = mapOf("Time" to "завтра в пол", "Value" to ""),
                 timeZoneId = "Europe/Samara", timeZoneConfirmedFor = "Europe/Moscow",
+                scheduleInput = com.example.aiassistent1.domain.model.CalendarScheduleInput(
+                    mode = com.example.aiassistent1.calendar.core.domain.CalendarTimeMode.FLOATING,
+                    repeat = com.example.aiassistent1.calendar.core.domain.CalendarRepeat.WEEKLY,
+                    intervalText = "незавершённый ввод", weekdays = setOf(java.time.DayOfWeek.MONDAY, java.time.DayOfWeek.FRIDAY),
+                    datesText = "2026-10-21, 2026-", hasUntil = true, untilText = "2027-"),
             ),
             CalendarDraftRecord("second", "calendar", 124, value = Long.MAX_VALUE, saveRequested = true),
             CalendarDraftRecord("third", "calendar", 125, savedEventId = "saved-event"),

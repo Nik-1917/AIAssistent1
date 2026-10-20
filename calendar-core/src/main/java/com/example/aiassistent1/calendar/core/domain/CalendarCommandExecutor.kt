@@ -17,7 +17,8 @@ suspend fun <T> calendarResult(block: suspend () -> T): Result<T> = try {
 }
 
 sealed interface CalendarCommand {
-    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null, val notes: String? = null, val endsAt: LocalDateTime? = null) : CalendarCommand
+    data class Add(val title: String?, val date: LocalDate, val time: LocalTime?, val durationMinutes: Int?, val value: Long? = null, val notes: String? = null, val endsAt: LocalDateTime? = null,
+        val schedule: CalendarSchedule? = null) : CalendarCommand
     data class Search(val query: String?, val range: CalendarRange?) : CalendarCommand
     data class Sum(val query: String?, val range: CalendarRange?) : CalendarCommand
 }
@@ -66,7 +67,16 @@ class CalendarCommandExecutor(
             is CalendarCommand.Add -> {
                 require(command.title == null || command.title.isNotBlank()) { "Пустое название события" }
                 require(command.durationMinutes == null || command.durationMinutes > 0) { "Некорректная длительность" }
-                val duration = CalendarTime.durationMinutes(command.time?.let { LocalDateTime.of(command.date, it) },
+                val schedule = command.schedule
+                if (schedule != null) {
+                    require(command.date == schedule.start.toLocalDate() && command.time == schedule.start.toLocalTime()) { "Время расписания не совпадает с событием." }
+                    require(command.endsAt == schedule.end) { "Окончание расписания не совпадает с событием." }
+                }
+                val duration = if (schedule?.mode == CalendarTimeMode.FLOATING) {
+                    schedule.end?.let { java.time.Duration.between(schedule.start, it).toMinutes().also { minutes ->
+                        require(minutes <= Int.MAX_VALUE && (command.durationMinutes == null || minutes == command.durationMinutes.toLong())) { "Проверьте длительность и окончание." }
+                    }.toInt() } ?: command.durationMinutes
+                } else CalendarTime.durationMinutes(command.time?.let { LocalDateTime.of(command.date, it) },
                     command.endsAt, command.durationMinutes, timeZone)
                 val resolved = command.copy(durationMinutes = duration)
                 val missing = buildList {
@@ -76,11 +86,14 @@ class CalendarCommandExecutor(
                 if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(resolved, missing)
                 else if (!confirmed) CalendarCommandResult.AddDraft(resolved)
                 else {
-                    val start = CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), timeZone)
+                    val projectionZone = if (schedule?.mode == CalendarTimeMode.FLOATING) java.time.ZoneOffset.UTC else schedule?.zoneId?.let(ZoneId::of) ?: timeZone
+                    val start = if (schedule != null) schedule.start.atZone(projectionZone).toInstant().toEpochMilli()
+                        else CalendarTime.toEpochMillis(LocalDateTime.of(command.date, command.time!!), timeZone)
                     val draft = CalendarEventDraft(command.title!!, start,
-                        command.endsAt?.let { CalendarTime.toEpochMillis(it, timeZone) }
+                        schedule?.end?.let { it.atZone(projectionZone).toInstant().toEpochMilli() }
+                            ?: command.endsAt?.let { CalendarTime.toEpochMillis(it, timeZone) }
                             ?: duration?.let { Math.addExact(start, Math.multiplyExact(it.toLong(), 60_000L)) }
-                            ?: start, command.value, command.notes)
+                            ?: start, command.value, command.notes, schedule)
                     CalendarCommandResult.Completed(repository.commit(requestId, CalendarMutation.Create(draft)).getOrThrow())
                 }
             }
@@ -91,13 +104,13 @@ class CalendarCommandExecutor(
                 if (missing.isNotEmpty()) CalendarCommandResult.NeedsFields(command, missing)
                 else {
                     val range = command.range ?: CalendarRange(Long.MIN_VALUE + 1, Long.MAX_VALUE)
-                    CalendarCommandResult.Found(repository.search(command.query.orEmpty(), range.start, range.end).getOrThrow())
+                    CalendarCommandResult.Found(repository.search(command.query.orEmpty(), range.start, range.end, timeZone).getOrThrow())
                 }
             }
             is CalendarCommand.Sum -> {
                 if (command.range == null) CalendarCommandResult.NeedsFields(command, listOf(MissingCalendarField.RANGE))
                 else {
-                    val events = repository.search(command.query.orEmpty(), command.range.start, command.range.end).getOrThrow()
+                    val events = repository.search(command.query.orEmpty(), command.range.start, command.range.end, timeZone).getOrThrow()
                     val values = events.mapNotNull { it.value }
                     CalendarCommandResult.Sum(values.fold(BigInteger.ZERO) { sum, value -> sum + BigInteger.valueOf(value) }, events.size, values.size)
                 }

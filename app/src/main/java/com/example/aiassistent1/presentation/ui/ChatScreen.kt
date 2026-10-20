@@ -1107,6 +1107,7 @@ fun ChatScreen(
                 onDismiss = viewModel::closeCalendarDraftEditor,
                 storageError = uiState.calendarDrafts.storageError,
                 onTimeZoneConfirm = { keepMoment -> viewModel.confirmCalendarDraftTimeZone(draft.requestId, keepMoment) },
+                onScheduleChange = { viewModel.updateCalendarDraftSchedule(draft.requestId, it) },
             )
         }
     }

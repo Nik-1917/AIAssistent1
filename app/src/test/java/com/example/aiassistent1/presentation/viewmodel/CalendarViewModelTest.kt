@@ -20,6 +20,50 @@ import java.time.ZoneId
 class CalendarViewModelTest {
     private val date = LocalDate.of(2030, 9, 12)
 
+    @Test fun `floating creation stores authoritative local time and the selected recurrence`() = runTest {
+        withCalendar { viewModel, repository ->
+            val options = com.example.aiassistent1.domain.model.CalendarScheduleInput(CalendarTimeMode.FLOATING, CalendarRepeat.WEEKLY,
+                weekdays = setOf(java.time.DayOfWeek.MONDAY, java.time.DayOfWeek.FRIDAY))
+            viewModel.createEvent("Привычка", date, LocalTime.of(9, 0), LocalTime.of(9, 30), 0, "  Текст  ", scheduleInput = options)
+            runCurrent()
+            val created = repository.created!!
+            assertEquals(date.atTime(9, 0), created.schedule!!.start)
+            assertNull(created.schedule!!.zoneId)
+            assertEquals(options.weekdays, created.schedule!!.recurrence.weekdays)
+            assertEquals("  Текст  ", created.notes)
+            assertEquals(0L, created.value)
+        }
+    }
+
+    @Test fun `text edit of one fixed repeat preserves its DST overlap instant`() = runTest {
+        withCalendar { viewModel, repository ->
+            val berlin = ZoneId.of("Europe/Berlin")
+            val start = java.time.LocalDateTime.of(2026, 10, 24, 2, 30)
+            val schedule = CalendarSchedule(CalendarTimeMode.FIXED, start, start.plusMinutes(10), berlin.id, CalendarRecurrence(CalendarRepeat.DAILY))
+            val source = CalendarEvent("series", "Привычка", 0, 0, 0, 0, schedule = schedule)
+            val date = LocalDate.of(2026, 10, 25)
+            val occurrence = schedule.project(source, date, berlin)!!
+            viewModel.updateEvent(occurrence.id, "Новое название", date, LocalTime.of(2, 30), LocalTime.of(2, 40), null, null, berlin, occurrence)
+            runCurrent()
+            val changed = repository.changed!!
+            assertEquals(occurrence.startsAtEpochMillis, changed.startsAtEpochMillis)
+            assertEquals(occurrence.endsAtEpochMillis, changed.endsAtEpochMillis)
+            assertTrue(changed.replaceSchedule)
+            assertNull(changed.schedule)
+        }
+    }
+
+    @Test fun `saved series link focuses the first chosen date rather than an empty anchor day`() = runTest {
+        withCalendar { viewModel, repository ->
+            val chosen = date.plusDays(2)
+            val schedule = CalendarSchedule(CalendarTimeMode.FLOATING, date.atTime(9, 0), recurrence = CalendarRecurrence(CalendarRepeat.DATES, dates = setOf(chosen)))
+            repository.existing = CalendarEvent("saved", "Привычка", 0, 0, 0, 0, schedule = schedule)
+            viewModel.focusSavedEvent("saved").getOrThrow()
+            assertEquals(chosen, viewModel.uiState.value.selectedDate)
+            assertEquals("saved@$chosen", viewModel.uiState.value.focusedEventId)
+        }
+    }
+
     @Test fun `zone choice reopens the month query without moving selected month or modifying events`() = runTest {
         val zones = com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository()
         val samara = ZoneId.of("Europe/Samara")

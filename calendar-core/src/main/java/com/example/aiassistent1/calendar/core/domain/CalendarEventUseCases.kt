@@ -20,9 +20,11 @@ class ObserveCalendarEventsUseCase(
     operator fun invoke(
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
     ): Flow<List<CalendarEvent>> = repository.observeInRange(
         rangeStartEpochMillis,
         rangeEndEpochMillis,
+        zoneId,
     )
 }
 

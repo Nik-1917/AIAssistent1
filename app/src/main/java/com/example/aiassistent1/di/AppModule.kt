@@ -334,7 +334,7 @@ object AppModule {
 			context.applicationContext,
 			CalendarDatabase::class.java,
 			"calendar_core.db",
-		).addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3).build().also { calendarDatabase = it }
+		).addMigrations(CalendarDatabase.MIGRATION_1_2, CalendarDatabase.MIGRATION_2_3, CalendarDatabase.MIGRATION_3_4).build().also { calendarDatabase = it }
 	}
 
 	private fun provideConferenceDatabase(context: Context): ConferenceDatabase = conferenceDatabase ?: synchronized(this) {

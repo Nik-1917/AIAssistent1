@@ -8,6 +8,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.model.CalendarDraftRecord
+import com.example.aiassistent1.domain.model.CalendarScheduleInput
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
+import com.example.aiassistent1.calendar.core.domain.CalendarRepeat
+import java.time.DayOfWeek
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -39,6 +43,12 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 discardRequested = item.optBoolean("discardRequested", false),
                 timeZoneId = item.nullableString("timeZoneId"),
                 timeZoneConfirmedFor = item.nullableString("timeZoneConfirmedFor"),
+                scheduleInput = item.optJSONObject("scheduleInput")?.let { schedule ->
+                    CalendarScheduleInput(CalendarTimeMode.valueOf(schedule.getString("mode")), CalendarRepeat.valueOf(schedule.getString("repeat")),
+                        schedule.getString("interval"), schedule.getJSONArray("weekdays").let { days ->
+                            (0 until days.length()).map { DayOfWeek.of(days.getInt(it)) }.toSet()
+                        }, schedule.getString("dates"), schedule.getBoolean("hasUntil"), schedule.getString("until"))
+                } ?: CalendarScheduleInput(),
             ).also { require(it.requestId.isNotBlank()) }
         }.also { drafts -> require(drafts.map { it.requestId }.distinct().size == drafts.size) }
     }
@@ -57,6 +67,12 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 put("discardRequested", draft.discardRequested)
                 put("timeZoneId", draft.timeZoneId)
                 put("timeZoneConfirmedFor", draft.timeZoneConfirmedFor)
+                put("scheduleInput", JSONObject().apply {
+                    put("mode", draft.scheduleInput.mode.name); put("repeat", draft.scheduleInput.repeat.name)
+                    put("interval", draft.scheduleInput.intervalText)
+                    put("weekdays", JSONArray(draft.scheduleInput.weekdays.sortedBy { it.value }.map { it.value }))
+                    put("dates", draft.scheduleInput.datesText); put("hasUntil", draft.scheduleInput.hasUntil); put("until", draft.scheduleInput.untilText)
+                })
             })
         }
         val encoded = JSONObject().put("version", 1).put("items", items).toString()

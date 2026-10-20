@@ -9,14 +9,18 @@ import com.example.aiassistent1.calendar.storage.android.local.CalendarEventEnti
 import com.example.aiassistent1.calendar.core.domain.CalendarMutation
 import com.example.aiassistent1.calendar.core.domain.CalendarReceipt
 import com.example.aiassistent1.calendar.core.domain.calendarResult
+import com.example.aiassistent1.calendar.core.domain.CalendarSchedule
+import com.example.aiassistent1.calendar.core.domain.CalendarRecurrence
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
+import java.time.ZoneId
 
 class RoomCalendarEventRepository(
     private val dao: CalendarEventDao,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    private val deviceZone: () -> ZoneId = ZoneId::systemDefault,
 ) : CalendarEventRepository {
 
     override suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent> = calendarResult {
@@ -31,29 +35,35 @@ class RoomCalendarEventRepository(
             updatedAtEpochMillis = now,
             value = draft.value,
             notes = draft.notes?.takeIf { it.isNotBlank() },
+            scheduleData = draft.schedule?.encode(),
         )
         dao.insert(event)
-        event.toDomain()
+        event.toDomain().atAnchor(deviceZone())
     }
 
     override suspend fun getById(id: String): Result<CalendarEvent?> = calendarResult {
         require(id.isNotBlank()) { "Event id must not be blank." }
-        dao.getById(id)?.toDomain()
+        dao.getById(id)?.toDomain()?.atAnchor(deviceZone()) ?: CalendarSchedule.parseOccurrenceId(id)?.let { (parentId, date) ->
+            val parent = dao.getById(parentId)?.toDomain() ?: return@let null
+            parent.schedule?.project(parent, date, deviceZone())
+        }
     }
 
     override fun observeInRange(
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
-    ): Flow<List<CalendarEvent>> {
+    ): Flow<List<CalendarEvent>> = observeInRange(rangeStartEpochMillis, rangeEndEpochMillis, deviceZone())
+
+    override fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long, zoneId: ZoneId): Flow<List<CalendarEvent>> {
         validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
         return dao.observeInRange(rangeStartEpochMillis, rangeEndEpochMillis)
-            .map { events -> events.map(CalendarEventEntity::toDomain) }
+            .map { events -> materialize(events, rangeStartEpochMillis, rangeEndEpochMillis, zoneId) }
     }
 
     override suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent> = calendarResult {
         require(update.id.isNotBlank()) { "Event id must not be blank." }
         validate(update.title, update.startsAtEpochMillis, update.endsAtEpochMillis)
-        dao.updateChecked(update, nowEpochMillis()).toDomain()
+        dao.updateChecked(update, nowEpochMillis()).toDomain().atAnchor(deviceZone())
     }
 
     override suspend fun getReceipt(requestId: String): Result<CalendarReceipt?> = calendarResult {
@@ -68,26 +78,38 @@ class RoomCalendarEventRepository(
 
     override suspend fun delete(id: String): Result<Unit> = calendarResult {
         require(id.isNotBlank()) { "Event id must not be blank." }
-        if (dao.deleteById(id) != 1) {
-            throw NoSuchElementException("Calendar event '$id' does not exist.")
-        }
+        dao.deleteEventOrOccurrence(id, nowEpochMillis())
     }
 
     override suspend fun search(
         query: String,
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
-    ): Result<List<CalendarEvent>> = calendarResult {
+    ): Result<List<CalendarEvent>> = search(query, rangeStartEpochMillis, rangeEndEpochMillis, deviceZone())
+
+    override suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long, zoneId: ZoneId): Result<List<CalendarEvent>> = calendarResult {
         validateRange(rangeStartEpochMillis, rangeEndEpochMillis)
         val normalizedQuery = query.trim()
-        dao.findInRange(
+        materialize(dao.findInRange(
             rangeStartEpochMillis = rangeStartEpochMillis,
             rangeEndEpochMillis = rangeEndEpochMillis,
-        ).map(CalendarEventEntity::toDomain)
+        ), rangeStartEpochMillis, rangeEndEpochMillis, zoneId)
             .filter { event ->
                 normalizedQuery.isEmpty() || event.title.contains(normalizedQuery, ignoreCase = true)
             }
     }
+
+    private fun materialize(rows: List<CalendarEventEntity>, start: Long, end: Long, zone: ZoneId): List<CalendarEvent> =
+        rows.flatMap { row ->
+            val event = row.toDomain()
+            val schedule = event.schedule
+            when {
+                schedule == null -> listOf(event)
+                // A query without a period returns one definition per series, never an infinite expansion.
+                start < -62_135_596_800_000L || end > 253_402_214_400_000L -> listOf(event.atAnchor(zone))
+                else -> schedule.expand(event, start, end, zone)
+            }
+        }.sortedWith(compareBy<CalendarEvent> { it.startsAtEpochMillis }.thenBy { it.id })
 
     private fun validate(title: String, startsAtEpochMillis: Long, endsAtEpochMillis: Long) {
         require(title.isNotBlank()) { "Event title must not be blank." }
@@ -113,4 +135,10 @@ private fun CalendarEventEntity.toDomain() = CalendarEvent(
     value = value,
     revision = revision,
     notes = notes,
+    schedule = scheduleData?.let(CalendarSchedule::decode),
+    parentSeriesId = parentSeriesId,
 )
+
+private fun CalendarEvent.atAnchor(zone: ZoneId): CalendarEvent = schedule?.let {
+    it.copy(recurrence = CalendarRecurrence(), excludedDates = emptySet()).project(this, it.start.toLocalDate(), zone)
+} ?: this

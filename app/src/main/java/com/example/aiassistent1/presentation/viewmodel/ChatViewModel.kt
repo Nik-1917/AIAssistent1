@@ -1324,10 +1324,8 @@ class ChatViewModel(
                                 is com.example.aiassistent1.calendar.core.domain.CalendarCommandResult.Found -> {
                                     val resultsText = if (outcome.events.isNotEmpty()) {
                                         "\n\nНайдено:\n" + outcome.events.joinToString("\n") {
-                                            val duration = if (it.hasEndTime) {
-                                                ", ${eventDurationMinutes(it.startsAtEpochMillis, it.endsAtEpochMillis)} мин"
-                                            } else ""
-                                            "- ${it.title} (${formatCalendarEventStart(it.startsAtEpochMillis, timeContext.zoneId)}$duration)".withCalendarNotes(it.notes)
+                                            com.example.aiassistent1.presentation.formatting.formatCalendarSearchEvent(it, timeContext.zoneId)
+                                                .withCalendarNotes(it.notes)
                                         }
                                     } else "\n\nНичего не найдено."
                                     replaceAssistantReply(messageId, response.reply + resultsText)
@@ -1535,6 +1533,13 @@ class ChatViewModel(
 
     fun updateCalendarDraftNotes(id: String, value: String) = calendarDraftController.editNotes(id, value)
 
+    fun updateCalendarDraftSchedule(id: String, value: com.example.aiassistent1.domain.model.CalendarScheduleInput) {
+        val draft = calendarDraftController.find(id) ?: return
+        if (!draft.isEditable || draft.isFormatting || draft.isVoiceInputActive) return
+        calendarDraftController.update(id) { it.copy(scheduleInput = value,
+            durationMinutes = if (it.scheduleInput.mode != value.mode && it.endsAt != null) null else it.durationMinutes, error = null) }
+    }
+
     fun retryCalendarDraftStorage() = calendarDraftController.retryStorage()
 
     fun confirmCalendarDraftTimeZone(id: String, keepMoment: Boolean) {
@@ -1557,7 +1562,7 @@ class ChatViewModel(
                 val existing = calendarDraftController.find(id) ?: return@launch
                 if (existing.isSaving || existing.savedEventId != null) return@launch
                 // A legacy interrupted save may already have committed. Never reinterpret or duplicate it.
-                if (existing.saveRequested && existing.timeZoneId == null) {
+                if (existing.saveRequested && existing.timeZoneId == null && existing.scheduleInput.mode != com.example.aiassistent1.calendar.core.domain.CalendarTimeMode.FLOATING) {
                     val receipt = calendarCommandExecutor.findReceipt(existing.requestId).getOrThrow()
                     if (receipt != null) {
                         calendarDraftController.update(id) { it.copy(savedEventId = receipt.eventId, saveRequested = false, error = null) }
@@ -1574,13 +1579,21 @@ class ChatViewModel(
                 }
                 calendarDraftController.save(id) { draft ->
                     val start = com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(requireNotNull(draft.startsAt))
+                    val zone = draft.timeZoneId?.let(ZoneId::of) ?: current
+                    val localEnd = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime)
+                        ?: draft.durationMinutes?.let { minutes ->
+                            if (draft.scheduleInput.mode == com.example.aiassistent1.calendar.core.domain.CalendarTimeMode.FLOATING) start.plusMinutes(minutes.toLong())
+                            else start.atZone(zone).plusMinutes(minutes.toLong()).toLocalDateTime()
+                        }
+                    val schedule = draft.scheduleInput.build(start, localEnd, zone)
                     val command = CalendarCommand.Add(
                         title = draft.title, date = start.toLocalDate(), time = start.toLocalTime(),
                         durationMinutes = draft.durationMinutes, value = draft.value, notes = draft.notes,
-                        endsAt = draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+                        endsAt = if (schedule != null) localEnd else draft.endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
+                        schedule = schedule,
                     )
                     val outcome = calendarCommandExecutor.execute(command, draft.requestId, confirmed = true,
-                        timeZone = ZoneId.of(requireNotNull(draft.timeZoneId))).getOrThrow()
+                        timeZone = zone).getOrThrow()
                     check(outcome is CalendarCommandResult.Completed) { "Не удалось сохранить событие." }
                     mutableUiState.update {
                         it.copy(

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
+import com.example.aiassistent1.presentation.formatting.description
 
 @Composable
 internal fun CalendarDraftCard(
@@ -70,7 +71,9 @@ internal fun CalendarDraftCard(
             val date = draft.fieldText(CalendarEventField.Date).ifBlank { "Дата не указана" }
             val time = draft.fieldText(CalendarEventField.Time).ifBlank { "Время не указано" }
             Text("${LocalUserDateTimeFormatter.current.value(date)} · $time")
-            draft.timeZoneId?.let { zone ->
+            if (draft.scheduleInput != com.example.aiassistent1.domain.model.CalendarScheduleInput())
+                Text(draft.scheduleInput.description(), style = MaterialTheme.typography.bodySmall)
+            draft.timeZoneId?.takeIf { draft.scheduleInput.mode != com.example.aiassistent1.calendar.core.domain.CalendarTimeMode.FLOATING }?.let { zone ->
                 val zoneId = java.time.ZoneId.of(zone)
                 val instant = runCatching { CalendarTime.toEpochMillis(CalendarTime.dateTime("${date}T$time"), zoneId) }
                     .getOrNull()?.let(java.time.Instant::ofEpochMilli) ?: LocalCalendarClock.current
@@ -145,6 +148,7 @@ internal fun CalendarDraftEditorSheet(
     onDismiss: () -> Unit,
     storageError: String? = null,
     onTimeZoneConfirm: (keepMoment: Boolean) -> Unit = {},
+    onScheduleChange: (com.example.aiassistent1.domain.model.CalendarScheduleInput) -> Unit = {},
 ) {
     var confirmDelete by remember(draft.requestId) { mutableStateOf(false) }
     val editable = draft.isEditable && !draft.isFormatting
@@ -164,19 +168,24 @@ internal fun CalendarDraftEditorSheet(
             Text("Можно закрыть и продолжить позже", style = MaterialTheme.typography.bodySmall)
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
-                    if (draft.saveRequested && draft.timeZoneId == null) {
-                        Text("Исходный часовой пояс неизвестен. Сначала проверьте результат предыдущего сохранения.",
-                            style = MaterialTheme.typography.bodySmall)
-                    } else {
-                    CalendarScheduleTimeZone(
-                        sourceZone = draft.timeZoneId?.let(java.time.ZoneId::of), currentZone = currentZone,
-                        needsConfirmation = needsZoneConfirmation && !draft.saveRequested,
-                        localStart = runCatching {
-                            CalendarTime.dateTime("${draft.fieldText(CalendarEventField.Date)}T${draft.fieldText(CalendarEventField.Time)}")
-                        }.getOrNull(),
-                        enabled = editable && !draft.isVoiceInputActive,
-                        onKeepMoment = { onTimeZoneConfirm(true) }, onUseCurrent = { onTimeZoneConfirm(false) },
-                    )
+                    CalendarScheduleControls(draft.scheduleInput, onScheduleChange, editable && !draft.isVoiceInputActive)
+                }
+                item {
+                    if (draft.scheduleInput.mode != com.example.aiassistent1.calendar.core.domain.CalendarTimeMode.FLOATING) {
+                        if (draft.saveRequested && draft.timeZoneId == null) {
+                            Text("Исходный часовой пояс неизвестен. Сначала проверьте результат предыдущего сохранения.",
+                                style = MaterialTheme.typography.bodySmall)
+                        } else {
+                            CalendarScheduleTimeZone(
+                                sourceZone = draft.timeZoneId?.let(java.time.ZoneId::of), currentZone = currentZone,
+                                needsConfirmation = needsZoneConfirmation && !draft.saveRequested,
+                                localStart = runCatching {
+                                    CalendarTime.dateTime("${draft.fieldText(CalendarEventField.Date)}T${draft.fieldText(CalendarEventField.Time)}")
+                                }.getOrNull(),
+                                enabled = editable && !draft.isVoiceInputActive,
+                                onKeepMoment = { onTimeZoneConfirm(true) }, onUseCurrent = { onTimeZoneConfirm(false) },
+                            )
+                        }
                     }
                 }
                 items(CalendarEventField.entries, key = { it.name }) { field ->

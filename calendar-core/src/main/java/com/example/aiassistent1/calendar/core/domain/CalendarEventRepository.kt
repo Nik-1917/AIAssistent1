@@ -18,6 +18,9 @@ interface CalendarEventRepository {
         rangeEndEpochMillis: Long,
     ): Flow<List<CalendarEvent>>
 
+    fun observeInRange(rangeStartEpochMillis: Long, rangeEndEpochMillis: Long, zoneId: java.time.ZoneId): Flow<List<CalendarEvent>> =
+        observeInRange(rangeStartEpochMillis, rangeEndEpochMillis)
+
     suspend fun update(update: CalendarEventUpdate): Result<CalendarEvent>
 
     suspend fun delete(id: String): Result<Unit>
@@ -27,4 +30,7 @@ interface CalendarEventRepository {
         rangeStartEpochMillis: Long,
         rangeEndEpochMillis: Long,
     ): Result<List<CalendarEvent>>
+
+    suspend fun search(query: String, rangeStartEpochMillis: Long, rangeEndEpochMillis: Long, zoneId: java.time.ZoneId): Result<List<CalendarEvent>> =
+        search(query, rangeStartEpochMillis, rangeEndEpochMillis)
 }

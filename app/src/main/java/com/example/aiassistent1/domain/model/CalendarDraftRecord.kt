@@ -20,4 +20,5 @@ data class CalendarDraftRecord(
     val discardRequested: Boolean = false,
     val timeZoneId: String? = null,
     val timeZoneConfirmedFor: String? = null,
+    val scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
 )
