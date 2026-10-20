@@ -120,6 +120,16 @@ fun AIAssistantApp(
         }
     }
     }
+    if (uiState.savedTextDrafts.showList) {
+        SavedTextDraftSheet(
+            state = uiState.savedTextDrafts,
+            isWorkingDraftBusy = uiState.isVoiceDraftStorageBusy,
+            onDismiss = chatViewModel::closeSavedTextDrafts,
+            onRetry = chatViewModel::reloadSavedTextDrafts,
+            onOpen = chatViewModel::openSavedTextDraft,
+            onDelete = chatViewModel::deleteSavedTextDraft,
+        )
+    }
     SideEffect(onContentReady)
 }
 

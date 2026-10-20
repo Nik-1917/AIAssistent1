@@ -56,17 +56,22 @@ internal fun rememberConversationMicrophoneAction(viewModel: ChatViewModel): (Mi
     }
 
     return { action ->
-        val interrupted = viewModel.interruptPlaybackForMicrophone()
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            when (action) {
-                MicrophoneAction.TAP -> viewModel.onMicrophoneTap(interrupted)
-                MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(interrupted)
-            }
+        if (action == MicrophoneAction.VOICE_DRAFT && viewModel.uiState.value.voiceDraft.let { it.isVisible || it.isLimitReached }) {
+            // Collapse and viewing a full draft do not open the microphone.
+            viewModel.startVoiceDraft()
         } else {
-            pendingAction = action
-            interruptedPlayback = interrupted
-            pendingConversation = viewModel.voiceInteractionTicket()
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            val interrupted = viewModel.interruptPlaybackForMicrophone()
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                when (action) {
+                    MicrophoneAction.TAP -> viewModel.onMicrophoneTap(interrupted)
+                    MicrophoneAction.VOICE_DRAFT -> viewModel.startVoiceDraft(interrupted)
+                }
+            } else {
+                pendingAction = action
+                interruptedPlayback = interrupted
+                pendingConversation = viewModel.voiceInteractionTicket()
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
         }
     }
 }
@@ -95,6 +100,7 @@ internal fun ConversationInputPanel(
         isCheckingRequest = state.isCheckingRequest,
         isVoiceMode = state.isVoiceMode,
         isVoiceDraftActive = state.voiceDraft.isVisible,
+        isVoiceDraftFull = state.voiceDraft.isLimitReached,
         onSend = viewModel::sendInputDraft,
         maximumMessageLength = MessageInputLimits.forMode(state.isCalendarMode),
         maxInputLinesWhenKeyboardVisible = maxInputLinesWhenKeyboardVisible,
@@ -115,6 +121,11 @@ internal fun CalendarConversationInput(viewModel: ChatViewModel, state: ChatUiSt
                 state = state.voiceDraft,
                 onDelete = viewModel::deleteVoiceDraft,
                 onSend = viewModel::sendVoiceDraft,
+                onNoiseSuppressionChange = viewModel::setVoiceDraftNoiseSuppression,
+                onOpenDrafts = viewModel::showSavedTextDrafts,
+                onSave = viewModel::saveVoiceDraftAsText,
+                isStorageBusy = state.isVoiceDraftStorageBusy || state.savedTextDrafts.isBusy,
+                storageError = state.voiceDraftStorageError,
                 modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp),
             )
         }

@@ -52,6 +52,8 @@ class SherpaOnnxVoiceInputProvider(
     private var nextSessionId = 0L
     private var captureWake = false
     private var captureEnrollment = false
+    private var captureNoiseSuppression = true
+    private var captureProcessor: AudioProcessingManager.Session? = null
     private val activationIssue = MutableStateFlow<String?>(null)
     override fun observeActivationIssue() = activationIssue.asStateFlow()
     override fun observeKeywordRecording() = activity.map { it == AudioSessionState.Enrolling }.distinctUntilChanged()
@@ -108,8 +110,14 @@ class SherpaOnnxVoiceInputProvider(
     override fun observeActivity() = activity
     override fun observeSpeechStart() = speechStarts
     override fun start() = startCapture(false)
-    override fun startContinuous() = startCapture(false)
+    override fun startContinuous(noiseSuppressionEnabled: Boolean) =
+        startCapture(false, noiseSuppressionEnabled = noiseSuppressionEnabled)
     override fun startWakeWord() = startCapture(true)
+    override fun setNoiseSuppressionEnabled(sessionId: Long, enabled: Boolean) = synchronized(lock) {
+        if (activeSessionId != sessionId || captureNoiseSuppression == enabled) return@synchronized
+        captureProcessor?.setNoiseSuppressionEnabled(enabled)
+        captureNoiseSuppression = enabled
+    }
     override suspend fun awaitReady(sessionId: Long) = readiness.await(sessionId)
 
     override suspend fun captureEnrollmentSegment(): FloatArray {
@@ -138,10 +146,14 @@ class SherpaOnnxVoiceInputProvider(
         }
     }
 
-    private fun startCapture(wake: Boolean, enrollment: CompletableDeferred<FloatArray>? = null): Long = synchronized(lock) {
+    private fun startCapture(wake: Boolean, enrollment: CompletableDeferred<FloatArray>? = null,
+        noiseSuppressionEnabled: Boolean = true): Long = synchronized(lock) {
         check(!captureEnrollment || recordingJob?.isActive != true) { "Дождитесь завершения записи ключевой фразы" }
         activeSessionId?.let {
-            if (recordingJob?.isActive == true && (captureWake == wake || vad.isSpeechDetected())) return@synchronized it
+            if (recordingJob?.isActive == true && (captureWake == wake || vad.isSpeechDetected())) {
+                setNoiseSuppressionEnabled(it, noiseSuppressionEnabled)
+                return@synchronized it
+            }
         }
         check(ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED) { "Нет разрешения на запись аудио" }
@@ -149,6 +161,7 @@ class SherpaOnnxVoiceInputProvider(
         previous?.cancel()
         captureWake = wake
         captureEnrollment = enrollment != null
+        captureNoiseSuppression = noiseSuppressionEnabled
         val id = ++nextSessionId
         activeSessionId = id
         readiness.begin(id)
@@ -234,7 +247,16 @@ class SherpaOnnxVoiceInputProvider(
             recorder = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, 16_000,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuffer, 8192))
             check(recorder.state == AudioRecord.STATE_INITIALIZED) { "Не удалось открыть микрофон" }
-            processor = processing.open(recorder, true, true)
+            val initialNoiseSuppression = synchronized(lock) { captureNoiseSuppression }
+            processor = processing.open(recorder, true, true, noiseSuppressionEnabled = initialNoiseSuppression)
+            synchronized(lock) {
+                if (activeSessionId == id) {
+                    if (!captureNoiseSuppression || captureNoiseSuppression != initialNoiseSuppression) {
+                        processor.setNoiseSuppressionEnabled(captureNoiseSuppression)
+                    }
+                    captureProcessor = processor
+                }
+            }
             val initial = settingsRepository.readAudioPreferences()
             val useKws = wake && keywordSpotter.isAvailable()
             if (useKws) keywordSpotter.prepare()
@@ -471,6 +493,7 @@ class SherpaOnnxVoiceInputProvider(
             shadowSegments?.close()
             shadowJob?.cancelAndJoin()
         } finally {
+            synchronized(lock) { if (captureProcessor === processor) captureProcessor = null }
             try {
                 recorder?.let { runCatching { it.stop() }; it.release() }
             } finally {

@@ -80,6 +80,41 @@ class AudioNativeTest {
             }
         } finally { NativeAudio.closeProcessor(handle) }
     }
+    @Test fun disabledNoiseSuppressionPassesCaptureThroughAndCanBeEnabledAgain() {
+        val handle = NativeAudio.createProcessor(false)
+        try {
+            repeat(3) {
+                NativeAudio.setNoiseSuppressionEnabled(handle, false)
+                val original = FloatArray(160) { index -> (sin(index * .15) * .1).toFloat() }
+                val frame = original.copyOf()
+                NativeAudio.processFrame(handle, frame, false, 0)
+                assertArrayEquals(original, frame, .000001f)
+
+                NativeAudio.setNoiseSuppressionEnabled(handle, true)
+                NativeAudio.processFrame(handle, frame, false, 0)
+                assertTrue(frame.all { it.isFinite() && it in -1f..1f })
+                assertTrue(frame.indices.any { index -> kotlin.math.abs(frame[index] - original[index]) > .000001f })
+            }
+        } finally { NativeAudio.closeProcessor(handle) }
+    }
+    @Test fun togglingNoiseSuppressionDoesNotResetTheEchoCanceller() {
+        val handle = NativeAudio.createProcessor(true)
+        try {
+            repeat(100) {
+                NativeAudio.processFrame(handle, FloatArray(160), true, 0)
+                NativeAudio.processFrame(handle, FloatArray(160), false, 0)
+            }
+            assertTrue(NativeAudio.isProcessorReady(handle))
+            for (enabled in listOf(false, true, false, true)) {
+                NativeAudio.setNoiseSuppressionEnabled(handle, enabled)
+                assertTrue("Changing NS must preserve AEC readiness", NativeAudio.isProcessorReady(handle))
+                NativeAudio.processFrame(handle, FloatArray(160), true, 0)
+                val near = FloatArray(160) { .01f }
+                NativeAudio.processFrame(handle, near, false, 0)
+                assertTrue(near.all { it.isFinite() && it in -1f..1f })
+            }
+        } finally { NativeAudio.closeProcessor(handle) }
+    }
     @Test fun streamThreeHoursWithConstantPcmBuffer() {
         val file = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "three-hour-test.mp3")
         val buffer = ShortArray(16_000)

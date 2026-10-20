@@ -46,6 +46,7 @@ struct Processing {
     void* aec = WebRtcAec_Create();
     NsHandle* ns = WebRtcNs_Create();
     bool echo;
+    bool noise = true;
     explicit Processing(bool enabled): echo(enabled) {}
     ~Processing() { if(aec) WebRtcAec_Free(aec); if(ns) WebRtcNs_Free(ns); }
 };
@@ -56,6 +57,16 @@ extern "C" JNIEXPORT jlong JNICALL JNI_METHOD(createProcessor)(JNIEnv* e, jobjec
     }
     WebRtcNs_set_policy(p->ns, 1);
     return reinterpret_cast<jlong>(p);
+}
+extern "C" JNIEXPORT void JNICALL JNI_METHOD(setNoiseSuppressionEnabled)(JNIEnv* e, jobject, jlong h, jboolean enabled) {
+    auto p = reinterpret_cast<Processing*>(h);
+    if (!p) { fail(e, "Invalid WebRTC processor"); return; }
+    if (enabled && !p->noise) {
+        if (WebRtcNs_Init(p->ns, 16000) != 0 || WebRtcNs_set_policy(p->ns, 1) != 0) {
+            fail(e, "Noise suppression initialization failed"); return;
+        }
+    }
+    p->noise = enabled;
 }
 extern "C" JNIEXPORT void JNICALL JNI_METHOD(processFrame)(JNIEnv* e, jobject, jlong h, jfloatArray data, jboolean reverse, jint delay) {
     auto p = reinterpret_cast<Processing*>(h);
@@ -80,9 +91,11 @@ extern "C" JNIEXPORT void JNICALL JNI_METHOD(processFrame)(JNIEnv* e, jobject, j
     for (float x : clean) {
         if (!std::isfinite(x)) { fail(e, "WebRTC AEC produced non-finite samples"); return; }
     }
-    const float* nsIn[] = {clean}; float* nsOut[] = {output};
-    WebRtcNs_Analyze(p->ns, clean);
-    WebRtcNs_Process(p->ns, nsIn, 1, nsOut);
+    if (p->noise) {
+        const float* nsIn[] = {clean}; float* nsOut[] = {output};
+        WebRtcNs_Analyze(p->ns, clean);
+        WebRtcNs_Process(p->ns, nsIn, 1, nsOut);
+    } else std::copy(clean, clean + 160, output);
     for (float x : output) {
         if (!std::isfinite(x)) { fail(e, "WebRTC NS produced non-finite samples"); return; }
     }

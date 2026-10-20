@@ -66,7 +66,7 @@ object AppModule {
 	private var calendarEventRepository: CalendarEventRepository? = null
 
 	@Volatile
-	private var voiceDraftRepository: VoiceDraftRepository? = null
+	private var voiceDraftRepository: DataStoreVoiceDraftRepository? = null
 
 	@Volatile
 	private var calendarDraftRepository: CalendarDraftRepository? = null
@@ -290,7 +290,11 @@ object AppModule {
 		).also { noteRepository = it }
 	}
 
-	fun provideVoiceDraftRepository(context: Context): VoiceDraftRepository = voiceDraftRepository ?: synchronized(this) {
+	fun provideVoiceDraftRepository(context: Context): VoiceDraftRepository = provideVoiceDraftStorage(context)
+
+	fun provideSavedTextDraftRepository(context: Context): SavedTextDraftRepository = provideVoiceDraftStorage(context)
+
+	private fun provideVoiceDraftStorage(context: Context): DataStoreVoiceDraftRepository = voiceDraftRepository ?: synchronized(this) {
 		voiceDraftRepository ?: DataStoreVoiceDraftRepository(
 			context.applicationContext.voiceDraftStore(),
 		).also { voiceDraftRepository = it }

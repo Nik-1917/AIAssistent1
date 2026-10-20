@@ -26,9 +26,9 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
         }
 
     @Synchronized fun open(recorder: AudioRecord, enabled: Boolean, echo: Boolean,
-        backend: EchoBackend = EchoBackend.WEBRTC): Session {
+        backend: EchoBackend = EchoBackend.WEBRTC, noiseSuppressionEnabled: Boolean = true): Session {
         check(active == null) { "Аудиообработка уже используется" }
-        return Session(recorder, enabled, echo, backend, reference).also {
+        return Session(recorder, enabled, echo, backend, reference, noiseSuppressionEnabled).also {
             active = it
             mutableReferenceNeeded.value = it.softwareEcho
         }
@@ -64,7 +64,8 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
     }
 
     class Session internal constructor(recorder: AudioRecord, enabled: Boolean, echo: Boolean,
-        backend: EchoBackend, private val reference: PlaybackEchoReference) : AutoCloseable {
+        backend: EchoBackend, private val reference: PlaybackEchoReference,
+        private var noiseSuppressionEnabled: Boolean) : AutoCloseable {
         private var native = 0L
         private var aec: AcousticEchoCanceler? = null
         private var ns: NoiseSuppressor? = null
@@ -82,7 +83,8 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
         var outputStartTimeNs: Long = 0
             private set
         val softwareEcho: Boolean
-        val profile: String
+        var profile: String
+            private set
 
         init {
             var nativeEcho = false
@@ -105,17 +107,25 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
                     }
                     native = NativeAudio.createProcessor(echo)
                     check(native != 0L)
+                    NativeAudio.setNoiseSuppressionEnabled(native, noiseSuppressionEnabled)
                     nativeEcho = echo
-                    "WebRTC NS" + if (echo) " + AEC" else ""
+                    webRtcProfile(noiseSuppressionEnabled, echo)
                 } catch (error: LinkageError) {
                     Log.w("AudioProcessing", "Native unavailable", error)
+                    discardNativeProcessor()
                     fallback(recorder, echo)
                 } catch (error: IllegalStateException) {
                     Log.w("AudioProcessing", "Native initialization failed", error)
+                    discardNativeProcessor()
                     fallback(recorder, echo)
                 }
             }
             softwareEcho = nativeEcho
+        }
+
+        private fun discardNativeProcessor() {
+            if (native != 0L) runCatching { NativeAudio.closeProcessor(native) }
+            native = 0L
         }
 
         private fun enableSystemEcho(recorder: AudioRecord): Boolean = runCatching {
@@ -129,7 +139,7 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
             ns?.release()
             ns = null
             runCatching {
-                if (NoiseSuppressor.isAvailable()) ns = NoiseSuppressor.create(recorder.audioSessionId)?.apply { setEnabled(true) }
+                if (NoiseSuppressor.isAvailable()) ns = NoiseSuppressor.create(recorder.audioSessionId)?.apply { setEnabled(noiseSuppressionEnabled) }
             }.onFailure { Log.w("AudioProcessing", "Android noise suppression unavailable", it) }
         }
 
@@ -138,6 +148,31 @@ class AudioProcessingManager(speakerIdentifier: SpeakerIdentifier? = null) {
             enableSystemNoise(recorder)
             return if (hasEcho) "Эхоподавление Android" else if (ns?.enabled == true) "Шумоподавление Android"
                 else "Исходный звук: эффекты недоступны"
+        }
+
+        private fun webRtcProfile(noise: Boolean, echo: Boolean): String = when {
+            noise && echo -> "WebRTC NS + AEC"
+            noise -> "WebRTC NS"
+            echo -> "WebRTC AEC"
+            else -> "Исходный звук"
+        }
+
+        @Synchronized fun setNoiseSuppressionEnabled(enabled: Boolean) {
+            check(!closed) { "Аудиообработка уже закрыта" }
+            if (native != 0L) {
+                NativeAudio.setNoiseSuppressionEnabled(native, enabled)
+                profile = webRtcProfile(enabled, softwareEcho)
+            } else {
+                val effect = ns
+                if (effect != null) {
+                    check(effect.hasControl() && effect.setEnabled(enabled) == 0 && effect.enabled == enabled) {
+                        "Не удалось переключить системное шумоподавление"
+                    }
+                } else check(!enabled) { "Шумоподавление недоступно на этом устройстве" }
+                profile = if (aec?.enabled == true) "Эхоподавление Android"
+                    else if (effect?.enabled == true) "Шумоподавление Android" else "Исходный звук"
+            }
+            noiseSuppressionEnabled = enabled
         }
 
         @Synchronized fun process(samples: FloatArray,

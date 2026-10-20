@@ -17,8 +17,10 @@ interface InputProvider {
     fun observeInput(): Flow<VoiceInputEvent>
     fun observeErrors(): Flow<VoiceInputError> = emptyFlow()
     fun start(): Long
-    fun startContinuous() = start()
+    fun startContinuous(noiseSuppressionEnabled: Boolean = true) = start()
     fun startWakeWord() = start()
+    /** Updates only the named live capture; an old draft cannot change a later microphone session. */
+    fun setNoiseSuppressionEnabled(sessionId: Long, enabled: Boolean) = Unit
     /** Completes only for this live capture session, after microphone processing is ready. */
     suspend fun awaitReady(sessionId: Long) = Unit
     /** One VAD utterance; implementations must share their existing capture ownership. */

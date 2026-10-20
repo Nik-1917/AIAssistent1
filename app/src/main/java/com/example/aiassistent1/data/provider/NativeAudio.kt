@@ -6,6 +6,7 @@ internal object NativeAudio {
     external fun encode(handle: Long, pcm: ShortArray?, count: Int, flush: Boolean): ByteArray
     external fun closeEncoder(handle: Long)
     external fun createProcessor(echo: Boolean): Long
+    external fun setNoiseSuppressionEnabled(handle: Long, enabled: Boolean)
     external fun isProcessorReady(handle: Long): Boolean
     external fun processFrame(handle: Long, data: FloatArray, reverse: Boolean, delay: Int)
     external fun closeProcessor(handle: Long)

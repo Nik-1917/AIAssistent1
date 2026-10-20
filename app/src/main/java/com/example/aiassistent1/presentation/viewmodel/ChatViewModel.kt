@@ -27,6 +27,7 @@ import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.ScreenOrientation
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
 import com.example.aiassistent1.domain.interfaces.VoiceDraftRepository
+import com.example.aiassistent1.domain.interfaces.SavedTextDraftRepository
 import com.example.aiassistent1.domain.context.ModelContextBuilder
 import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarSearchParams
@@ -86,6 +87,7 @@ class ChatViewModel(
     private val llmEngine: LLMEngine,
     private val voiceInput: InputProvider? = null,
     private val voiceDraftRepository: VoiceDraftRepository,
+    savedTextDraftRepository: SavedTextDraftRepository,
     private val inputDraftController: ChatInputDraftController,
     private val speechPlayback: SpeechPlayback? = null,
     private val settingsRepository: SettingsRepository,
@@ -133,7 +135,12 @@ class ChatViewModel(
     private val pendingChatMessages = PendingChatMessages()
     private var activeChatJob: Job? = null
     private var voiceDraftRestored = false
+    private var voiceDraftRestoreInProgress = false
     private var openVoiceDraftAfterRestore = false
+    private val voiceDraftPersistence = VoiceDraftPersistence(voiceDraftRepository, viewModelScope) { message ->
+        mutableUiState.update { it.copy(error = message, voiceDraftStorageError = message) }
+    }
+    private val savedTextDraftController = SavedTextDraftController(savedTextDraftRepository, viewModelScope)
     private var activeVoiceInputSessionId: Long? = null
     private var activeVoiceInputPolicy: com.example.aiassistent1.domain.model.VoiceInputPolicy? = null
     private var activeVoiceConversation: ConversationVoiceSession.Ticket? = null
@@ -170,6 +177,11 @@ class ChatViewModel(
     val assistantDisplayName = settingsRepository.assistantDisplayName
 
     init {
+        viewModelScope.launch {
+            savedTextDraftController.state.collect { drafts ->
+                mutableUiState.update { it.copy(savedTextDrafts = drafts) }
+            }
+        }
         viewModelScope.launch {
             inputDraftController.state.collect { draft ->
                 mutableUiState.update { it.copy(inputDraft = draft) }
@@ -542,10 +554,78 @@ class ChatViewModel(
 
     fun sendVoiceDraft() {
         val state = mutableUiState.value
+        if (state.isVoiceDraftStorageBusy || savedTextDraftController.state.value.isBusy) return
         if (!state.voiceDraft.isVisible || !sendMessageInternal(state.voiceDraft.text, voiceReply = true)) return
 
+        savedTextDraftController.resetPendingSave()
         mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
         clearPersistedVoiceDraft()
+    }
+
+    fun showSavedTextDrafts() {
+        val state = mutableUiState.value
+        if (!state.voiceDraft.isVisible || state.isVoiceDraftStorageBusy) return
+        stopVoiceInput()
+        mutableUiState.update { it.copy(voiceDraft = it.voiceDraft.copy(isRecording = false)) }
+        savedTextDraftController.show()
+    }
+
+    fun closeSavedTextDrafts() = savedTextDraftController.close()
+
+    fun reloadSavedTextDrafts() = savedTextDraftController.reload()
+
+    fun deleteSavedTextDraft(id: String) {
+        if (!mutableUiState.value.isVoiceDraftStorageBusy) savedTextDraftController.delete(id)
+    }
+
+    fun saveVoiceDraftAsText() {
+        val state = mutableUiState.value
+        if (!voiceDraftRestored || !state.voiceDraft.isVisible || state.voiceDraft.text.isBlank() ||
+            state.isVoiceDraftStorageBusy || savedTextDraftController.state.value.isBusy) return
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(isVoiceDraftStorageBusy = true, voiceDraftStorageError = null,
+                voiceDraft = it.voiceDraft.copy(isRecording = false))
+        }
+        viewModelScope.launch {
+            try {
+                if (voiceDraftPersistence.ordered { savedTextDraftController.save(state.voiceDraft.text) }) {
+                    mutableUiState.update {
+                        it.copy(voiceDraft = VoiceDraftState(noiseSuppressionEnabled = it.voiceDraft.noiseSuppressionEnabled))
+                    }
+                } else {
+                    mutableUiState.update { it.copy(voiceDraftStorageError = savedTextDraftController.state.value.error) }
+                }
+            } finally {
+                mutableUiState.update { it.copy(isVoiceDraftStorageBusy = false) }
+            }
+        }
+    }
+
+    fun openSavedTextDraft(id: String) {
+        val state = mutableUiState.value
+        if (!voiceDraftRestored || state.isVoiceDraftStorageBusy || savedTextDraftController.state.value.isBusy) return
+        if (state.voiceDraft.text.isNotBlank()) {
+            savedTextDraftController.reportError("Сначала сохраните или удалите текущий аудиочерновик.")
+            return
+        }
+        val draft = savedTextDraftController.state.value.drafts.find { it.id == id } ?: return
+        stopVoiceInput()
+        mutableUiState.update { it.copy(isVoiceDraftStorageBusy = true, voiceDraftStorageError = null,
+            voiceDraft = it.voiceDraft.copy(isRecording = false)) }
+        viewModelScope.launch {
+            try {
+                if (voiceDraftPersistence.saveAndAwait(draft.text)) {
+                    savedTextDraftController.resetPendingSave()
+                    mutableUiState.update { it.copy(voiceDraft = it.voiceDraft.restored(draft.text)) }
+                    savedTextDraftController.close()
+                } else {
+                    savedTextDraftController.reportError("Не удалось открыть текстовый черновик. Повторите попытку.")
+                }
+            } finally {
+                mutableUiState.update { it.copy(isVoiceDraftStorageBusy = false) }
+            }
+        }
     }
 
     fun setChatMode(isCalendar: Boolean) {
@@ -593,7 +673,6 @@ class ChatViewModel(
         openVoiceDraftAfterRestore = false
         isManualMessagePlayback = false
         speechPlaybackConversation = null
-        persistVoiceDraft(state.voiceDraft.text)
         stopVoiceInput()
         speechPlaybackController?.stop(SpeechStopReason.ConversationChanged)
         voiceBackgroundSession?.close()
@@ -1061,7 +1140,6 @@ class ChatViewModel(
         }
         if (forceStart || isSpeechPlaybackActive()) {
             cancelPendingVoiceModeShutdown()
-            persistVoiceDraft(state.voiceDraft.text)
             stopVoiceInput()
             listenOnVoiceReply = false
             manualVoiceInput = true
@@ -1083,9 +1161,14 @@ class ChatViewModel(
 
     fun startVoiceDraft(forceStart: Boolean = false) {
         val state = mutableUiState.value
+        if (state.voiceDraft.isVisible) {
+            collapseVoiceDraft()
+            return
+        }
+        if (state.isVoiceDraftStorageBusy) return
         if (state.isClearingChat) return
         if (voiceConversation.ticket(state.activeChatId) == null) return
-        val wasSpeaking = forceStart || isSpeechPlaybackActive()
+        val wasSpeaking = !state.voiceDraft.isLimitReached && (forceStart || isSpeechPlaybackActive())
         if (wasSpeaking) {
             cancelPendingVoiceModeShutdown()
             listenOnVoiceReply = false
@@ -1093,40 +1176,71 @@ class ChatViewModel(
         }
         if (state.isProcessing && !wasSpeaking) return
         if (!voiceDraftRestored) {
-            openVoiceDraftAfterRestore = true
+            openVoiceDraftAfterRestore = !openVoiceDraftAfterRestore
+            restoreVoiceDraft()
             return
         }
-        if (state.voiceDraft.isVisible && state.voiceDraft.isRecording) return
 
         cancelPendingVoiceModeShutdown()
         if (state.isVoiceMode || state.voiceDraft.isRecording) stopVoiceInput()
         mutableUiState.update { current ->
             current.copy(
                 isVoiceMode = false,
-                voiceDraft = current.voiceDraft.copy(isVisible = true, isRecording = true),
+                voiceDraft = current.voiceDraft.opened(),
                 error = null,
             )
         }
-        speechPlaybackController?.stop(SpeechStopReason.VoiceInput)
-        startVoiceInput(continuous = true)
+        if (mutableUiState.value.voiceDraft.isRecording) {
+            speechPlaybackController?.stop(SpeechStopReason.VoiceInput)
+            startVoiceInput(continuous = true)
+        }
+    }
+
+    fun setVoiceDraftNoiseSuppression(enabled: Boolean) {
+        if (mutableUiState.value.isVoiceDraftStorageBusy) return
+        val draft = mutableUiState.value.voiceDraft
+        if (!draft.isVisible || draft.noiseSuppressionEnabled == enabled) return
+        try {
+            if (draft.isRecording) activeVoiceInputSessionId?.let { voiceInput?.setNoiseSuppressionEnabled(it, enabled) }
+            mutableUiState.update { it.copy(voiceDraft = it.voiceDraft.copy(noiseSuppressionEnabled = enabled)) }
+        } catch (error: Exception) {
+            mutableUiState.update { it.copy(error = error.message ?: "Не удалось переключить шумоподавление") }
+        }
+    }
+
+    private fun collapseVoiceDraft() {
+        chatClear.cancelVoiceResume()
+        cancelPendingVoiceModeShutdown()
+        openVoiceDraftAfterRestore = false
+        stopVoiceInput()
+        mutableUiState.update {
+            it.copy(isVoiceMode = false, voiceDraft = it.voiceDraft.copy(isVisible = false, isRecording = false))
+        }
     }
 
     fun deleteVoiceDraft() {
+        if (mutableUiState.value.isVoiceDraftStorageBusy || savedTextDraftController.state.value.isBusy) return
         chatClear.cancelVoiceResume()
+        openVoiceDraftAfterRestore = false
         stopVoiceInput()
-        mutableUiState.update {
-            it.copy(
-                isVoiceMode = false,
-                voiceDraft = VoiceDraftState(),
-            )
+        mutableUiState.update { it.copy(isVoiceDraftStorageBusy = true,
+            voiceDraftStorageError = null, isVoiceMode = false,
+            voiceDraft = it.voiceDraft.copy(isRecording = false)) }
+        viewModelScope.launch {
+            try {
+                if (voiceDraftPersistence.clearAndAwait()) {
+                    savedTextDraftController.resetPendingSave()
+                    mutableUiState.update { it.copy(voiceDraft = VoiceDraftState()) }
+                }
+            } finally {
+                mutableUiState.update { it.copy(isVoiceDraftStorageBusy = false) }
+            }
         }
-        clearPersistedVoiceDraft()
     }
 
     fun onAppBackgrounded(isChangingConfigurations: Boolean) {
         if (!isChangingConfigurations) {
             inputDraftController.retryStorage()
-            persistVoiceDraft(mutableUiState.value.voiceDraft.text)
         }
     }
 
@@ -1186,13 +1300,11 @@ class ChatViewModel(
         isManualMessagePlayback = false
         speechPlaybackConversation = null
         val activeGeneration = generationJob
-        val voiceDraft = state.voiceDraft
         mutableUiState.update { it.copy(isClearingChat = true) }
         llmEngine.cancelGeneration()
         stopVoiceInput()
         speechPlaybackController?.stop(SpeechStopReason.User)
         activeGeneration?.cancel()
-        persistVoiceDraft(voiceDraft.text)
 
         viewModelScope.launch {
             chatClear.execute(request, activeGeneration,
@@ -1891,7 +2003,10 @@ class ChatViewModel(
                 if (!voiceConversation.accepts(conversation, uiState.value.activeChatId)) return@launch
                 activeVoiceInputSessionId = when {
                     capture == VoicePlaybackInputPolicy.Capture.ACTIVATION -> voiceInput.startWakeWord()
-                    continuous || manualVoiceInput -> voiceInput.startContinuous()
+                    continuous || manualVoiceInput -> voiceInput.startContinuous(
+                        noiseSuppressionEnabled = if (continuous && uiState.value.voiceDraft.isRecording)
+                            uiState.value.voiceDraft.noiseSuppressionEnabled else true,
+                    )
                     else -> voiceInput.start()
                 }
                 activeVoiceInputPolicy = prefs.inputPolicy()
@@ -1954,7 +2069,6 @@ class ChatViewModel(
                 error = null,
             )
         }
-        persistVoiceDraft(state.voiceDraft.text)
         startVoiceInput()
     }
 
@@ -1978,77 +2092,54 @@ class ChatViewModel(
     }
 
     private fun restoreVoiceDraft() {
+        if (voiceDraftRestoreInProgress || voiceDraftRestored) return
+        voiceDraftRestoreInProgress = true
         viewModelScope.launch {
-            val draft = runCatching { voiceDraftRepository.loadDraft() }
-                .onFailure {
+            try {
+                val draft = voiceDraftPersistence.restore()
+                voiceDraftRestored = !voiceDraftPersistence.restoreFailed
+                if (draft != null) {
                     mutableUiState.update { state ->
-                        state.copy(error = "Не удалось восстановить голосовой черновик")
+                        state.copy(voiceDraft = state.voiceDraft.restored(draft).let {
+                            if (openVoiceDraftAfterRestore) it.copy(isVisible = false) else it
+                        }, voiceDraftStorageError = null)
                     }
                 }
-                .getOrDefault("")
-
-            voiceDraftRestored = true
-            mutableUiState.update { state ->
-                state.copy(voiceDraft = state.voiceDraft.copy(text = draft.take(MAX_MESSAGE_LENGTH)))
-            }
-            if (openVoiceDraftAfterRestore) {
-                openVoiceDraftAfterRestore = false
-                startVoiceDraft()
+                if (voiceDraftRestored && openVoiceDraftAfterRestore) {
+                    openVoiceDraftAfterRestore = false
+                    startVoiceDraft()
+                }
+            } finally {
+                voiceDraftRestoreInProgress = false
             }
         }
     }
 
     private suspend fun appendVoiceDraftTranscript(transcript: String) {
-        val recognizedText = transcript.trim()
-        if (recognizedText.isEmpty()) return
-
-        val state = mutableUiState.value
-        if (!state.voiceDraft.isRecording) return
-
-        val currentText = state.voiceDraft.text.trim()
-        val separator = if (currentText.isEmpty()) "" else " "
-        val availableLength = MAX_MESSAGE_LENGTH - currentText.length - separator.length
-        if (availableLength <= 0) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
-            return
-        }
-
-        val appendedText = recognizedText.take(availableLength)
-        val updatedText = currentText + separator + appendedText
-        mutableUiState.update {
-            it.copy(voiceDraft = it.voiceDraft.copy(text = updatedText))
-        }
-        runCatching { voiceDraftRepository.saveDraft(updatedText) }
-            .onFailure {
-                mutableUiState.update { state ->
-                    state.copy(error = "Не удалось сохранить голосовой черновик")
+        val current = mutableUiState.value.voiceDraft
+        val updated = current.appendTranscript(transcript)
+        if (updated == current) return
+        mutableUiState.update { it.copy(isVoiceDraftStorageBusy = true, voiceDraftStorageError = null) }
+        if (updated.isLimitReached) stopVoiceInput()
+        try {
+            if (voiceDraftPersistence.saveAndAwait(updated.text)) {
+                // A collapse, navigation or microphone stop during the write stays in effect.
+                mutableUiState.update {
+                    it.copy(voiceDraft = it.voiceDraft.copy(text = updated.text,
+                        isVisible = it.voiceDraft.isVisible && !updated.isLimitReached,
+                        isRecording = it.voiceDraft.isRecording && !updated.isLimitReached))
                 }
+            } else {
+                stopVoiceInput()
+                mutableUiState.update { it.copy(voiceDraft = it.voiceDraft.copy(isRecording = false)) }
             }
-        if (appendedText.length < recognizedText.length) {
-            mutableUiState.update { it.copy(error = "Голосовой черновик ограничен 3000 символами") }
-        }
-    }
-
-    private fun persistVoiceDraft(text: String) {
-        viewModelScope.launch {
-            runCatching { voiceDraftRepository.saveDraft(text) }
-                .onFailure {
-                    mutableUiState.update { state ->
-                        state.copy(error = "Не удалось сохранить голосовой черновик")
-                    }
-                }
+        } finally {
+            mutableUiState.update { it.copy(isVoiceDraftStorageBusy = false) }
         }
     }
 
     private fun clearPersistedVoiceDraft() {
-        viewModelScope.launch {
-            runCatching { voiceDraftRepository.clearDraft() }
-                .onFailure {
-                    mutableUiState.update { state ->
-                        state.copy(error = "Не удалось удалить голосовой черновик")
-                    }
-                }
-        }
+        voiceDraftPersistence.clear()
     }
 
     fun observeAppSession() {
@@ -2130,7 +2221,6 @@ class ChatViewModel(
 
     private companion object {
         const val TAG = "ChatViewModel"
-        const val MAX_MESSAGE_LENGTH = 3000
         const val MAX_LOGCAT_PAYLOAD_LENGTH = 3500
         const val MAX_MODEL_FILE_NAME_LENGTH = 128
         const val MAX_MODEL_FILE_BYTES = 8L * 1024 * 1024 * 1024

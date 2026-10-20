@@ -882,6 +882,11 @@ fun ChatScreen(
                         state = uiState.voiceDraft,
                         onDelete = viewModel::deleteVoiceDraft,
                         onSend = viewModel::sendVoiceDraft,
+                        onNoiseSuppressionChange = viewModel::setVoiceDraftNoiseSuppression,
+                        onOpenDrafts = viewModel::showSavedTextDrafts,
+                        onSave = viewModel::saveVoiceDraftAsText,
+                        isStorageBusy = uiState.isVoiceDraftStorageBusy || uiState.savedTextDrafts.isBusy,
+                        storageError = uiState.voiceDraftStorageError,
                     )
                 }
 
@@ -1821,6 +1826,7 @@ internal fun InputPanel(
     maximumMessageLength: Int = com.example.aiassistent1.domain.model.MessageInputLimits.CHAT_CHARACTERS,
     isCheckingRequest: Boolean = false,
     isVoiceDraftActive: Boolean = false,
+    isVoiceDraftFull: Boolean = false,
     draftStorageError: String? = null,
     onRetryDraftStorage: () -> Unit = {},
     maxInputLinesWhenKeyboardVisible: Int = Int.MAX_VALUE,
@@ -1933,8 +1939,12 @@ internal fun InputPanel(
                     else -> {
                         ChatActionIconButton(
                             imageVector = Icons.Default.EditNote,
-                            contentDescription = "Начать голосовой черновик",
-                            enabled = microphoneEnabled,
+                            contentDescription = when {
+                                isVoiceDraftActive -> "Свернуть голосовой черновик"
+                                isVoiceDraftFull -> "Открыть голосовой черновик"
+                                else -> "Начать голосовой черновик"
+                            },
+                            enabled = isVoiceDraftActive || isVoiceDraftFull || microphoneEnabled,
                             onClick = onVoiceDraft,
                             active = isVoiceDraftActive,
                         )
@@ -1968,7 +1978,12 @@ internal fun VoiceDraftCard(
     state: VoiceDraftState,
     onDelete: () -> Unit,
     onSend: () -> Unit,
+    onNoiseSuppressionChange: (Boolean) -> Unit,
+    onOpenDrafts: () -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
+    isStorageBusy: Boolean = false,
+    storageError: String? = null,
 ) {
     val scrollState = rememberScrollState()
 
@@ -1989,6 +2004,24 @@ internal fun VoiceDraftCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Text(
+                    text = "Шумоподавление: " + if (state.noiseSuppressionEnabled) "вкл" else "выкл",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = state.noiseSuppressionEnabled,
+                    onCheckedChange = onNoiseSuppressionChange,
+                    enabled = !isStorageBusy,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Шумоподавление голосового черновика"
+                    },
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (state.isRecording) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
@@ -2001,7 +2034,7 @@ internal fun VoiceDraftCard(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onDelete) {
+                IconButton(onClick = onDelete, enabled = !isStorageBusy) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Удалить голосовой черновик",
@@ -2022,12 +2055,35 @@ internal fun VoiceDraftCard(
                     .verticalScroll(scrollState)
                     .padding(top = 8.dp),
             )
+            Text(
+                text = "${state.characterCount} / ${VoiceDraftState.MAX_CHARACTERS}",
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                textAlign = TextAlign.End,
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
+                maxLines = 1,
+                color = if (state.isLimitReached) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (storageError != null) {
+                Text(storageError, color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall)
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                TextButton(onClick = onOpenDrafts, enabled = !isStorageBusy,
+                    contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Text("Дневники", style = MaterialTheme.typography.labelMedium)
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onSave, enabled = !isStorageBusy && state.text.isNotBlank(),
+                    contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Text("Сохранить", style = MaterialTheme.typography.labelMedium)
+                }
                 IconButton(
-                    enabled = state.text.isNotBlank(),
+                    enabled = !isStorageBusy && state.text.isNotBlank(),
                     onClick = onSend,
                 ) {
                     Icon(
