@@ -17,6 +17,9 @@ abstract class CalendarEventDao {
     @Query("SELECT * FROM calendar_events WHERE id = :id")
     abstract suspend fun getById(id: String): CalendarEventEntity?
 
+    @Query("SELECT * FROM calendar_events WHERE id IN (:ids)")
+    abstract fun observeByIds(ids: List<String>): Flow<List<CalendarEventEntity>>
+
     @Query(
         """
         SELECT * FROM calendar_events

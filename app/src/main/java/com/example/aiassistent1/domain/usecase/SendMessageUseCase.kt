@@ -17,11 +17,12 @@ class SendMessageUseCase(
         useSystemPrompt: Boolean = false,
         isCalendarMode: Boolean = true,
         localDateTime: java.time.LocalDateTime = java.time.LocalDateTime.now(),
+        creationLocalDateTime: java.time.LocalDateTime? = null,
         onReady: suspend () -> Unit = {},
     ): Result<Flow<String>> {
         val systemMessage = ChatMessage(
             role = MessageRole.SYSTEM,
-            content = systemPromptProvider.getSystemPrompt(isCalendarMode, localDateTime)
+            content = systemPromptProvider.getSystemPrompt(isCalendarMode, localDateTime, creationLocalDateTime)
         )
         val modelMessages = if (useSystemPrompt) listOf(systemMessage) + messages else messages
         return Result.success(flow {

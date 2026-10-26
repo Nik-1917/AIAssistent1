@@ -264,6 +264,9 @@ object AppModule {
 	fun provideObserveCalendarEventsUseCase(context: Context): ObserveCalendarEventsUseCase =
 		ObserveCalendarEventsUseCase(provideCalendarEventRepository(context))
 
+	fun provideObserveCalendarEventsByIdUseCase(context: Context): com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsByIdUseCase =
+		com.example.aiassistent1.calendar.core.domain.ObserveCalendarEventsByIdUseCase(provideCalendarEventRepository(context))
+
 	fun provideUpdateCalendarEventUseCase(context: Context): UpdateCalendarEventUseCase =
 		UpdateCalendarEventUseCase(provideCalendarEventRepository(context))
 

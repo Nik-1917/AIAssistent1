@@ -28,6 +28,31 @@ class CalendarDraftControllerTest {
         }
     }
 
+    @Test fun `restart and retry keep the exact input zone of an interrupted save`() = runTest {
+        val repository = Repository()
+        val first = CalendarDraftController(repository, this)
+        val original = draft("home").copy(timeZoneId = "Europe/Moscow", inputTimeZoneId = "Europe/Samara")
+        first.add(original)
+        runCurrent()
+        first.save("home") { error("Interrupted after durable request") }
+        runCurrent()
+        val reopened = CalendarDraftController(repository, this)
+        runCurrent()
+        val restored = reopened.find("home")!!
+        assertTrue(restored.saveRequested)
+        assertFalse(restored.isEditable)
+        assertEquals("Europe/Samara", restored.inputTimeZoneId)
+        assertEquals("Europe/Moscow", restored.timeZoneId)
+        reopened.save("home") { prepared ->
+            assertEquals(java.time.Instant.parse("2026-10-01T11:00:00Z").toEpochMilli(),
+                com.example.aiassistent1.calendar.core.domain.CalendarTime.toEpochMillis(
+                    com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(prepared.startsAt!!), prepared.zoneId))
+            "saved-home"
+        }
+        runCurrent()
+        assertEquals("saved-home", reopened.find("home")!!.savedEventId)
+    }
+
     @Test fun `discard persists intent before deleting only its reply and survives reopen`() = runTest {
         val repository = Repository()
         val deleted = mutableListOf<String>()

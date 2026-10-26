@@ -41,6 +41,11 @@ class DataStoreCalendarTimeZoneRepository(
         update { it.deviceChangedTo(deviceZone()).copy(selectedZoneId = zoneId, changePending = false) }
     }
 
+    override suspend fun selectHomeZone(zoneId: String?) {
+        zoneId?.let(ZoneId::of)
+        update { it.deviceChangedTo(deviceZone()).copy(homeZoneId = zoneId) }
+    }
+
     private suspend fun update(change: (CalendarTimeZoneState) -> CalendarTimeZoneState) {
         writes.withLock {
             try {
@@ -66,6 +71,7 @@ class DataStoreCalendarTimeZoneRepository(
             deviceZoneId = zone(DEVICE) ?: deviceZone().id,
             selectedZoneId = zone(SELECTED), previousDeviceZoneId = zone(PREVIOUS),
             hasDetectedChange = p[DETECTED] ?: false, changePending = p[PENDING] ?: false,
+            homeZoneId = zone(HOME),
         )
     }
 
@@ -76,6 +82,7 @@ class DataStoreCalendarTimeZoneRepository(
             value.previousDeviceZoneId?.let { p[PREVIOUS] = it } ?: p.remove(PREVIOUS)
             p[DETECTED] = value.hasDetectedChange
             p[PENDING] = value.changePending
+            value.homeZoneId?.let { p[HOME] = it } ?: p.remove(HOME)
         }
     }
 
@@ -85,5 +92,6 @@ class DataStoreCalendarTimeZoneRepository(
         val PREVIOUS = stringPreferencesKey("previous_device_zone_id")
         val DETECTED = booleanPreferencesKey("change_detected")
         val PENDING = booleanPreferencesKey("change_pending")
+        val HOME = stringPreferencesKey("home_input_zone_id")
     }
 }

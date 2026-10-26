@@ -655,6 +655,14 @@ internal fun CalendarEventEditorDialog(
                     label = { Text("Начало (ЧЧ:ММ)") },
                     singleLine = true,
                 )
+                if (event == null) CalendarInputTimePreview(
+                    start = runCatching { java.time.LocalDateTime.of(date, CalendarTime.time(startTimeText.trim())) }.getOrNull(),
+                    end = runCatching {
+                        val start = CalendarTime.time(startTimeText.trim())
+                        val end = CalendarTime.time(endTimeText.trim())
+                        java.time.LocalDateTime.of(com.example.aiassistent1.presentation.viewmodel.resolveCalendarEndDate(date, start, end), end)
+                    }.getOrNull(), source = inputZone, target = zoneId, mode = scheduleInput.mode,
+                )
                 OutlinedTextField(
                     value = durationText,
                     onValueChange = { value ->
@@ -698,14 +706,6 @@ internal fun CalendarEventEditorDialog(
                     label = { Text("Ценность события") },
                     supportingText = if (valueText.isBlank()) { { Text("Не заполнено") } } else null,
                     singleLine = true,
-                )
-                if (event == null) CalendarInputTimePreview(
-                    start = runCatching { java.time.LocalDateTime.of(date, CalendarTime.time(startTimeText.trim())) }.getOrNull(),
-                    end = runCatching {
-                        val start = CalendarTime.time(startTimeText.trim())
-                        val end = CalendarTime.time(endTimeText.trim())
-                        java.time.LocalDateTime.of(com.example.aiassistent1.presentation.viewmodel.resolveCalendarEndDate(date, start, end), end)
-                    }.getOrNull(), source = inputZone, target = zoneId, mode = scheduleInput.mode,
                 )
                 OutlinedTextField(
                     value = notesText,

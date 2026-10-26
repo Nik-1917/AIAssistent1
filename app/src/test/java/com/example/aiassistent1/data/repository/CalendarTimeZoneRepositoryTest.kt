@@ -6,6 +6,58 @@ import org.junit.Test
 import java.time.ZoneId
 
 class CalendarTimeZoneRepositoryTest {
+    @Test fun `input defaults to phone independently of a fixed calendar zone`() = runTest {
+        var device = ZoneId.of("Europe/Samara")
+        val repository = DataStoreCalendarTimeZoneRepository(TestPreferencesDataStore(), backgroundScope) { device }
+        repository.selectZone("Europe/Moscow")
+        val captured = repository.snapshot()
+        assertEquals(device, captured.inputZoneId)
+        assertEquals(ZoneId.of("Europe/Moscow"), captured.zoneId)
+        device = ZoneId.of("Asia/Tokyo")
+        assertEquals(device, repository.snapshot().inputZoneId)
+        assertEquals(ZoneId.of("Europe/Samara"), captured.inputZoneId)
+        assertEquals(ZoneId.of("Europe/Moscow"), repository.state.value.zoneId)
+    }
+
+    @Test fun `home selection survives restart and travel and can return to phone time`() = runTest {
+        val store = TestPreferencesDataStore()
+        var device = ZoneId.of("Europe/Samara")
+        val first = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { device }
+        first.selectZone("Europe/Moscow")
+        first.selectHomeZone("Europe/Berlin")
+        device = ZoneId.of("Asia/Tokyo")
+        val reopened = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { device }
+        assertEquals(ZoneId.of("Europe/Berlin"), reopened.snapshot().inputZoneId)
+        assertEquals(ZoneId.of("Europe/Moscow"), reopened.state.value.zoneId)
+        assertTrue(reopened.state.value.changePending)
+        reopened.selectHomeZone(null)
+        val again = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { device }
+        assertEquals(device, again.snapshot().inputZoneId)
+        assertNull(again.state.value.homeZoneId)
+        assertEquals(ZoneId.of("Europe/Moscow"), again.state.value.zoneId)
+    }
+
+    @Test fun `a failed home write leaves both persisted zones unchanged`() = runTest {
+        val delegate = TestPreferencesDataStore()
+        var fail = false
+        val store = object : androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences> by delegate {
+            override suspend fun updateData(transform: suspend (androidx.datastore.preferences.core.Preferences) -> androidx.datastore.preferences.core.Preferences): androidx.datastore.preferences.core.Preferences {
+                if (fail) throw java.io.IOException("test write failure")
+                return delegate.updateData(transform)
+            }
+        }
+        val repository = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { ZoneId.of("Europe/Samara") }
+        repository.selectZone("Europe/Moscow")
+        fail = true
+        repository.selectHomeZone("Europe/Berlin")
+        assertNotNull(repository.state.value.error)
+        assertNull(repository.state.value.homeZoneId)
+        assertEquals(ZoneId.of("Europe/Samara"), repository.state.value.inputZoneId)
+        val reopened = DataStoreCalendarTimeZoneRepository(delegate, backgroundScope) { ZoneId.of("Europe/Samara") }
+        assertEquals(ZoneId.of("Europe/Samara"), reopened.snapshot().inputZoneId)
+        assertEquals(ZoneId.of("Europe/Moscow"), reopened.state.value.zoneId)
+    }
+
     @Test fun `a failed settings write never publishes an unpersisted selection and retry recovers`() = runTest {
         val delegate = TestPreferencesDataStore()
         var fail = false

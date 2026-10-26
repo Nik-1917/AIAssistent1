@@ -42,8 +42,9 @@ data class CalendarEventDraftUiState(
     val timeZoneId: String? = null,
     val timeZoneConfirmedFor: String? = null,
     val scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
+    val inputTimeZoneId: String? = null,
 ) {
-    val zoneId: ZoneId get() = timeZoneId?.let(ZoneId::of) ?: ZoneId.systemDefault()
+    val zoneId: ZoneId get() = (inputTimeZoneId ?: timeZoneId)?.let(ZoneId::of) ?: ZoneId.systemDefault()
 
     fun needsTimeZoneConfirmation(current: ZoneId): Boolean =
         scheduleInput.mode != CalendarTimeMode.FLOATING &&
@@ -55,7 +56,7 @@ data class CalendarEventDraftUiState(
         return copy(
             timeZoneId = if (keepMoment) timeZoneId else current.id,
             timeZoneConfirmedFor = current.id,
-            durationMinutes = if (!keepMoment && endsAt != null) null else durationMinutes,
+            durationMinutes = if (inputTimeZoneId == null && !keepMoment && endsAt != null) null else durationMinutes,
             error = null,
         )
     }

@@ -13,8 +13,11 @@ data class CalendarTimeZoneState(
     val changePending: Boolean = false,
     val isLoaded: Boolean = true,
     val error: String? = null,
+    /** Null follows the phone; independent of the calendar display/search zone. */
+    val homeZoneId: String? = null,
 ) {
     val zoneId: ZoneId get() = ZoneId.of(selectedZoneId ?: deviceZoneId)
+    val inputZoneId: ZoneId get() = ZoneId.of(homeZoneId ?: deviceZoneId)
     val showControl: Boolean get() = hasDetectedChange || selectedZoneId != null || error != null
 
     fun deviceChangedTo(zone: ZoneId): CalendarTimeZoneState =
@@ -25,6 +28,7 @@ data class CalendarTimeZoneState(
 }
 
 /** One immutable temporal context for prompt date, parsing, mapping and execution. */
-data class CalendarTimeContext(val zoneId: ZoneId, val instant: Instant = Instant.now()) {
+data class CalendarTimeContext(val zoneId: ZoneId, val instant: Instant = Instant.now(), val inputZoneId: ZoneId = zoneId) {
     val localDateTime: LocalDateTime get() = LocalDateTime.ofInstant(instant, zoneId)
+    val inputLocalDateTime: LocalDateTime get() = LocalDateTime.ofInstant(instant, inputZoneId)
 }

@@ -14,9 +14,13 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
         text: String,
         dateContext: CalendarDateContext? = null,
         timeZone: java.time.ZoneId = zoneId ?: java.time.ZoneId.systemDefault(),
+        creationDateContext: CalendarDateContext? = null,
+        creationTimeZone: java.time.ZoneId = timeZone,
     ): Result<AssistantResponse> = runCatching {
-        val context = dateContext ?: CalendarDateContext(today = java.time.LocalDate.now(timeZone))
-        val normalized = CalendarFebruaryNormalizer.normalize(StrictCommandJson.read(text), context)
+        val rawObject = StrictCommandJson.read(text)
+        val creating = rawObject["intent"] == "calendar_add"
+        val context = (if (creating) creationDateContext else null) ?: dateContext ?: CalendarDateContext(today = java.time.LocalDate.now(if (creating) creationTimeZone else timeZone))
+        val normalized = CalendarFebruaryNormalizer.normalize(rawObject, context)
         val json = Fields(normalized, "$", setOf("intent", "reply", "params"))
         val intent = json.string("intent", required = true)!!
         val reply = json.string("reply", required = true)!!
@@ -62,7 +66,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
                     val resolved = if (localStart != null && candidate.isBefore(localStart)) candidate.plusDays(1) else candidate
                     resolved.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
                 }
-                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), timeZone)
+                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), creationTimeZone)
                 CalendarAddParams(p.string("title", allowEmpty = true)?.takeIf { it.isNotBlank() }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
                     p.eventValue("priority"), p.notes(), end)

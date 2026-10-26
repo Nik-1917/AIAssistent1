@@ -21,6 +21,28 @@ class CalendarTimeZonePipelineTest {
     private val samara = ZoneId.of("Europe/Samara")
     private val moscow = ZoneId.of("Europe/Moscow")
 
+    @Test fun `creation clock and execution use captured input while calendar keeps its target clock`() = runTest {
+        val context = CalendarTimeContext(moscow, Instant.parse("2026-10-20T11:00:00Z"), samara)
+        val engine = RecordingEngine()
+        val text = StringBuilder()
+        var ready = false
+        SendMessageUseCase(engine, SystemPromptProvider())(
+            listOf(ChatMessage(role = MessageRole.USER, content = "Встреча сегодня в 15:00")),
+            useSystemPrompt = true, localDateTime = context.localDateTime,
+            creationLocalDateTime = context.inputLocalDateTime,
+        ) { ready = true }.getOrThrow().collect { text.append(it) }
+        assertTrue(ready)
+        val prompt = engine.messages.first().content
+        assertTrue(prompt.startsWith("cегодня 2026-10-20 14:00"))
+        assertTrue(prompt.contains("Для calendar_add сейчас 2026-10-20 15:00"))
+        val parsed = AssistantResponseParser().parseResult(text.toString(), timeZone = context.zoneId,
+            creationTimeZone = context.inputZoneId).getOrThrow()
+        val repository = RecordingRepository()
+        val command = CalendarCommandMapper().map(parsed.params!!, context.inputZoneId).getOrThrow()
+        CalendarCommandExecutor(repository).execute(command, "input-request", confirmed = true, timeZone = context.inputZoneId).getOrThrow()
+        assertEquals(context.instant.toEpochMilli(), repository.created.single().startsAtEpochMillis)
+    }
+
     @Test fun `one request keeps local prompt and UTC interpretation after phone timezone changes`() = runTest {
         val context = CalendarTimeContext(samara, Instant.parse("2026-10-20T11:00:00Z"))
         val engine = RecordingEngine()

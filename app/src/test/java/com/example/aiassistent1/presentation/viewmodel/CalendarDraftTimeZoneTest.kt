@@ -11,6 +11,27 @@ class CalendarDraftTimeZoneTest {
     private fun draft() = CalendarEventDraftUiState(title = "Встреча", date = "2026-10-20", time = "15:00",
         timeZoneId = samara.id, timeZoneConfirmedFor = samara.id, value = 0, notes = "  Документы\n12500  ")
 
+    @Test fun `new draft retains captured input time when the calendar display zone changes`() {
+        val original = draft().copy(inputTimeZoneId = samara.id)
+        val changed = original.confirmTimeZone(moscow, keepMoment = false).resolveInputs()
+        assertEquals(moscow.id, changed.timeZoneId)
+        assertEquals(samara, changed.zoneId)
+        assertEquals("15:00", changed.time)
+        assertEquals(epoch(original), epoch(changed))
+        assertEquals(original.notes, changed.notes)
+        assertFalse(changed.needsTimeZoneConfirmation(moscow))
+    }
+
+    @Test fun `new draft duration is evaluated in captured home zone across DST`() {
+        val original = draft().copy(date = "2026-03-29", time = "01:30", endsAt = "2026-03-29T03:30",
+            durationMinutes = 60, inputTimeZoneId = "Europe/Berlin")
+        val confirmed = original.confirmTimeZone(moscow, keepMoment = false).resolveInputs()
+        assertEquals(60, confirmed.durationMinutes)
+        assertEquals("Europe/Berlin", confirmed.inputTimeZoneId)
+        assertEquals(epoch(original), epoch(confirmed))
+        assertEquals("03:30", confirmed.endDisplayText())
+    }
+
     @Test fun `timezone change requires a choice and preserving moment keeps the original UTC`() {
         val original = draft()
         assertFalse(original.needsTimeZoneConfirmation(samara))

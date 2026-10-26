@@ -13,6 +13,9 @@ import com.example.aiassistent1.calendar.core.domain.CalendarSchedule
 import com.example.aiassistent1.calendar.core.domain.CalendarRecurrence
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import java.util.UUID
 import java.time.ZoneId
 
@@ -47,6 +50,26 @@ class RoomCalendarEventRepository(
             val parent = dao.getById(parentId)?.toDomain() ?: return@let null
             parent.schedule?.project(parent, date, deviceZone())
         }
+    }
+
+    override fun observeByIds(ids: Set<String>, zoneId: ZoneId): Flow<Map<String, CalendarEvent?>> {
+        require(ids.all { it.isNotBlank() }) { "Event id must not be blank." }
+        if (ids.isEmpty()) return flowOf(emptyMap())
+        // Each occurrence and its parent share one query snapshot; stay below SQLite bind limits.
+        val batches = ids.toList().chunked(400).map { batch ->
+            val rowIds = (batch + batch.mapNotNull { CalendarSchedule.parseOccurrenceId(it)?.first }).distinct()
+            dao.observeByIds(rowIds).map { rows ->
+                val events = rows.associate { it.id to it.toDomain() }
+                batch.associateWith { id ->
+                    events[id]?.atAnchor(zoneId) ?: CalendarSchedule.parseOccurrenceId(id)?.let { (parentId, date) ->
+                        val parent = events[parentId] ?: return@let null
+                        parent.schedule?.project(parent, date, zoneId)
+                    }
+                }
+            }
+        }
+        return combine(batches) { snapshots -> snapshots.fold(emptyMap<String, CalendarEvent?>()) { all, batch -> all + batch } }
+            .distinctUntilChanged()
     }
 
     override fun observeInRange(

@@ -43,6 +43,7 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 discardRequested = item.optBoolean("discardRequested", false),
                 timeZoneId = item.nullableString("timeZoneId"),
                 timeZoneConfirmedFor = item.nullableString("timeZoneConfirmedFor"),
+                inputTimeZoneId = item.nullableString("inputTimeZoneId"),
                 scheduleInput = item.optJSONObject("scheduleInput")?.let { schedule ->
                     CalendarScheduleInput(CalendarTimeMode.valueOf(schedule.getString("mode")), CalendarRepeat.valueOf(schedule.getString("repeat")),
                         schedule.getString("interval"), schedule.getJSONArray("weekdays").let { days ->
@@ -67,6 +68,7 @@ class DataStoreCalendarDraftRepository(private val dataStore: DataStore<Preferen
                 put("discardRequested", draft.discardRequested)
                 put("timeZoneId", draft.timeZoneId)
                 put("timeZoneConfirmedFor", draft.timeZoneConfirmedFor)
+                put("inputTimeZoneId", draft.inputTimeZoneId)
                 put("scheduleInput", JSONObject().apply {
                     put("mode", draft.scheduleInput.mode.name); put("repeat", draft.scheduleInput.repeat.name)
                     put("interval", draft.scheduleInput.intervalText)

@@ -29,6 +29,20 @@ import java.util.UUID
 class CalendarDraftCardsTest {
     @get:Rule val compose = createComposeRule()
 
+    private fun savedState(draft: CalendarEventDraftUiState): com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState {
+        val id = draft.savedEventId ?: return com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Loading
+        val resolved = draft.resolveInputs()
+        val start = com.example.aiassistent1.calendar.core.domain.CalendarTime.toEpochMillis(
+            com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(resolved.startsAt!!), resolved.zoneId)
+        val end = resolved.endsAt?.let {
+            com.example.aiassistent1.calendar.core.domain.CalendarTime.toEpochMillis(
+                com.example.aiassistent1.calendar.core.domain.CalendarTime.dateTime(it), resolved.zoneId)
+        } ?: (start + (resolved.durationMinutes ?: 0) * 60_000L)
+        return com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Available(
+            com.example.aiassistent1.calendar.core.domain.CalendarEvent(id, resolved.title.orEmpty(), start, end, 0, 0,
+                value = resolved.value, notes = resolved.notes))
+    }
+
     @Test fun minimalDraftShowsEmptyOptionalFieldsAndAllowsCreation() {
         var createClicks = 0
         val draft = CalendarEventDraftUiState(requestId = "minimal", title = "Встреча", date = "2030-09-12", time = "09:00",
@@ -52,7 +66,7 @@ class CalendarDraftCardsTest {
             notes = "взять документы",
         ))
         compose.setContent {
-            MaterialTheme { CalendarDraftCard(current, onOpen = {}, onOpenSavedEvent = { openedEventId = it }) }
+            MaterialTheme { CalendarDraftCard(current, onOpen = {}, onOpenSavedEvent = { openedEventId = it }, savedEventState = savedState(current)) }
         }
         compose.onNodeWithText("Примечание: взять документы").assertIsDisplayed()
         compose.onNodeWithText("Перейти").assertDoesNotExist()
@@ -82,7 +96,7 @@ class CalendarDraftCardsTest {
                     Column {
                         TextButton(onClick = controller::showList) { Text("Черновики · ${state.drafts.count { it.savedEventId == null }}") }
                         state.drafts.forEach { draft ->
-                            CalendarDraftCard(draft, onOpen = { controller.open(draft.requestId) }, onOpenSavedEvent = {})
+                            CalendarDraftCard(draft, onOpen = { controller.open(draft.requestId) }, onOpenSavedEvent = {}, savedEventState = savedState(draft))
                         }
                     }
                     state.selected?.let { draft ->

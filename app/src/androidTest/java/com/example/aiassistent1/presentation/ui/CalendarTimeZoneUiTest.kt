@@ -37,6 +37,52 @@ class CalendarTimeZoneUiTest {
 
     @After fun closeStores() { scopes.forEach { it.cancel() } }
 
+    @Test fun homePickerIsSharedByEditorsAndNeverChangesTheCalendarZone() {
+        val repository = repository { samara }
+        runBlocking { repository.selectZone(moscow.id) }
+        var manual by mutableStateOf(true)
+        var draft by mutableStateOf(CalendarEventDraftUiState())
+        var result: CalendarEventEditorResult? = null
+        compose.setContent { MaterialTheme {
+            CalendarTimeZoneProvider(repository) {
+                if (manual) CalendarEventEditorDialog(java.time.LocalDate.of(2026, 1, 20), null,
+                    onDismiss = {}, onSave = { _, _, _, _, _ -> }, onSaveWithSchedule = {
+                        result = it
+                        draft = CalendarEventDraftUiState(requestId = "home", title = it.title, date = "2026-01-20", time = "09:00",
+                            timeZoneId = moscow.id, inputTimeZoneId = repository.state.value.inputZoneId.id)
+                        manual = false
+                    })
+                else CalendarDraftEditorSheet(draft, onValueChange = { _, _ -> }, onNotesChange = {}, onFormat = {},
+                    onVoiceInput = {}, onCreate = {}, onDelete = {}, onDismiss = {},
+                    onInputZoneChange = { draft = draft.copy(inputTimeZoneId = it.id) })
+            }
+        } }
+        compose.onNodeWithText("Привычное время").assertDoesNotExist()
+        compose.onNode(hasSetTextAction() and hasText("Название")).performScrollTo().performTextReplacement("Встреча")
+        compose.onNodeWithTag("calendar_time_mode_toggle").performScrollTo().performClick()
+        compose.onNodeWithText("По времени телефона").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Домашний пояс: выбрать").performScrollTo().performClick()
+        compose.onNodeWithTag("calendar_home_zone_search").performTextInput("Europe/Berlin")
+        compose.onNodeWithTag("calendar_home_zone_option_Europe/Berlin").performClick()
+        compose.waitUntil(5_000) { repository.state.value.homeZoneId == "Europe/Berlin" }
+        compose.onNodeWithText("Сохранить").performClick()
+        compose.runOnIdle {
+            assertEquals("Europe/Berlin", result!!.inputTimeZoneId)
+            assertEquals(moscow, repository.state.value.zoneId)
+        }
+        compose.onNodeWithText("Привычное время").assertDoesNotExist()
+        compose.onNodeWithTag("calendar_time_mode_toggle").performClick()
+        compose.onNodeWithText("Домашний пояс: Берлин").performScrollTo().assertIsSelected()
+        // Another editor's preference change cannot reinterpret the already open draft.
+        runBlocking { repository.selectHomeZone("Asia/Tokyo") }
+        compose.runOnIdle { assertEquals("Europe/Berlin", draft.inputTimeZoneId) }
+        compose.onNodeWithText("Применить текущую настройку").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Asia/Tokyo", draft.inputTimeZoneId) }
+        compose.onNodeWithText("По времени телефона").performScrollTo().performClick()
+        compose.waitUntil(5_000) { repository.state.value.homeZoneId == null && draft.inputTimeZoneId == samara.id }
+        compose.runOnIdle { assertEquals(moscow, repository.state.value.zoneId) }
+    }
+
     @Test fun selectorAppearsAfterChangeAndSearchSelectsZoneAndAutomaticMode() {
         var device = samara
         val repository = repository { device }
@@ -72,6 +118,7 @@ class CalendarTimeZoneUiTest {
             }
         }
         compose.onNodeWithText("Создать событие").assertIsNotEnabled()
+        compose.onNodeWithTag("calendar_time_mode_toggle").performClick()
         compose.onNodeWithText("Считать введённое время по поясу: Москва").performScrollTo().performClick()
         compose.onNodeWithText("Создать событие").assertIsEnabled().performClick()
         compose.runOnIdle {
@@ -93,6 +140,7 @@ class CalendarTimeZoneUiTest {
             }
         }
         compose.onNodeWithText("Создать событие").assertIsNotEnabled()
+        compose.onNodeWithTag("calendar_time_mode_toggle").performClick()
         compose.onNodeWithText("Сохранить прежний момент").performScrollTo().performClick()
         compose.onNodeWithText("Создать событие").assertIsEnabled()
         compose.runOnIdle {

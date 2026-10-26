@@ -20,6 +20,40 @@ import java.time.ZoneId
 class CalendarViewModelTest {
     private val date = LocalDate.of(2030, 9, 12)
 
+    @Test fun `new manual input uses its captured zone exactly once across a date boundary`() = runTest {
+        withCalendar { viewModel, repository ->
+            viewModel.createEvent("Встреча", date, LocalTime.of(0, 30), LocalTime.of(1, 30), 0, "  Текст  ",
+                zoneId = ZoneId.of("Europe/Moscow"), inputZoneId = ZoneId.of("Asia/Tokyo"))
+            runCurrent()
+            val saved = repository.created!!
+            assertEquals(date.atTime(0, 30).atZone(ZoneId.of("Asia/Tokyo")).toInstant().toEpochMilli(), saved.startsAtEpochMillis)
+            assertEquals(date.minusDays(1).atTime(18, 30),
+                java.time.Instant.ofEpochMilli(saved.startsAtEpochMillis).atZone(ZoneId.of("Europe/Moscow")).toLocalDateTime())
+            assertEquals(3_600_000L, saved.endsAtEpochMillis - saved.startsAtEpochMillis)
+            assertNull(saved.schedule)
+            assertEquals("  Текст  ", saved.notes)
+            assertEquals(0L, saved.value)
+        }
+    }
+
+    @Test fun `fixed repeat weekdays stay anchored to the input zone`() = runTest {
+        withCalendar { viewModel, repository ->
+            val options = com.example.aiassistent1.domain.model.CalendarScheduleInput(repeat = CalendarRepeat.WEEKLY,
+                weekdays = setOf(date.dayOfWeek))
+            viewModel.createEvent("Звонок", date, LocalTime.of(0, 30), null, null, null,
+                zoneId = ZoneId.of("Europe/Moscow"), scheduleInput = options, inputZoneId = ZoneId.of("Asia/Tokyo"))
+            runCurrent()
+            val schedule = repository.created!!.schedule!!
+            assertEquals("Asia/Tokyo", schedule.zoneId)
+            assertEquals(date.atTime(0, 30), schedule.start)
+            assertEquals(options.weekdays, schedule.recurrence.weekdays)
+            val series = CalendarEvent("series", "Звонок", 0, 0, 0, 0, schedule = schedule)
+            val occurrence = schedule.project(series, date.plusWeeks(1), ZoneId.of("Europe/Moscow"))!!
+            assertEquals(date.plusWeeks(1).minusDays(1).atTime(18, 30),
+                occurrence.localStart(ZoneId.of("Europe/Moscow")))
+        }
+    }
+
     @Test fun `floating creation stores authoritative local time and the selected recurrence`() = runTest {
         withCalendar { viewModel, repository ->
             val options = com.example.aiassistent1.domain.model.CalendarScheduleInput(CalendarTimeMode.FLOATING, CalendarRepeat.WEEKLY,

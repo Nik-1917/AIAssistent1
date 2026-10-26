@@ -14,6 +14,11 @@ class GetCalendarEventUseCase(
     suspend operator fun invoke(id: String): Result<CalendarEvent?> = repository.getById(id)
 }
 
+class ObserveCalendarEventsByIdUseCase(private val repository: CalendarEventRepository) {
+    operator fun invoke(ids: Set<String>, zoneId: java.time.ZoneId): Flow<Map<String, CalendarEvent?>> =
+        repository.observeByIds(ids, zoneId)
+}
+
 class ObserveCalendarEventsUseCase(
     private val repository: CalendarEventRepository,
 ) {

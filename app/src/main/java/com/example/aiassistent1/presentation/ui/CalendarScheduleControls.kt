@@ -50,10 +50,16 @@ internal fun CalendarScheduleControls(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilterChip(selected = value.mode == CalendarTimeMode.FIXED, enabled = enabled,
                     onClick = { onChange(value.copy(mode = CalendarTimeMode.FIXED)) }, label = { Text("Фиксированный момент") })
-                Text("Для встреч и звонков. Событие привязано к конкретному моменту; в другом часовом поясе отображается соответствующее местное время.", style = MaterialTheme.typography.bodySmall)
+                if (value.mode == CalendarTimeMode.FIXED) {
+                    Text("Для встреч и звонков. При создании вводите привычное время по текущему поясу телефона или выбранному домашнему поясу — оно пересчитывается в пояс календаря. По умолчанию используется пояс телефона. Изменение пояса календаря меняет отображение всех существующих и будущих событий. Сохранённый момент события остаётся прежним.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 FilterChip(selected = value.mode == CalendarTimeMode.FLOATING, enabled = enabled,
                     onClick = { onChange(value.copy(mode = CalendarTimeMode.FLOATING)) }, label = { Text("Всегда по местному времени") })
-                Text("Для привычек и распорядка. Указанные 09:00 остаются 09:00 при смене пояса. Время на часах сохраняется.", style = MaterialTheme.typography.bodySmall)
+                if (value.mode == CalendarTimeMode.FLOATING) {
+                    Text("Для привычек и распорядка. Указанные 09:00 остаются 09:00 при смене пояса календаря. Сохраняется время на часах, а соответствующий момент меняется.",
+                        style = MaterialTheme.typography.bodySmall)
+                }
             }
             if (allowRepetition) {
                 Box {
@@ -80,7 +86,15 @@ internal fun CalendarScheduleControls(
                         }
                     }
                 }
-                Text("«Один раз» создаёт событие только на указанную дату. Для повторений выберите даты, дни недели или интервал. Расписание работает с обоими режимами времени.", style = MaterialTheme.typography.bodySmall)
+                Text(when (value.repeat) {
+                    CalendarRepeat.NONE -> "Событие произойдёт один раз в указанную дату."
+                    CalendarRepeat.DATES -> "Событие повторяется только в выбранные даты."
+                    CalendarRepeat.DAILY -> "Событие повторяется каждый день, начиная с указанной даты."
+                    CalendarRepeat.WEEKLY -> "Событие повторяется каждую неделю в выбранные дни, начиная с даты события."
+                    CalendarRepeat.DAYS -> "Событие повторяется через указанное число дней, начиная с даты события."
+                    CalendarRepeat.WEEKS -> "Событие повторяется через указанное число недель в тот же день недели."
+                    CalendarRepeat.MONTHS -> "Событие повторяется через указанное число месяцев в то же число. Месяцы без этого числа пропускаются."
+                }, style = MaterialTheme.typography.bodySmall)
                 if (value.repeat == CalendarRepeat.WEEKLY) FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     DayOfWeek.entries.forEach { day ->
                         FilterChip(selected = day in value.weekdays, enabled = enabled,
@@ -97,7 +111,6 @@ internal fun CalendarScheduleControls(
                     OutlinedTextField(value = value.intervalText, onValueChange = { onChange(value.copy(intervalText = it)) }, enabled = enabled,
                         label = { Text("Интервал (1–999)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true,
                         modifier = Modifier.standardTextEditing())
-                    if (value.repeat == CalendarRepeat.MONTHS) Text("Месяцы, в которых нет выбранного числа, пропускаются.", style = MaterialTheme.typography.bodySmall)
                 }
                 if (value.repeat != CalendarRepeat.NONE) {
                     Row {

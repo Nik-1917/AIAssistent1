@@ -34,6 +34,10 @@ class CalendarReplyCardTest {
             MaterialTheme {
                 ChatMessageItem(
                     message = message, calendarDraft = draft,
+                    savedCalendarEvent = draft?.savedEventId?.let { eventId ->
+                        com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Available(
+                            com.example.aiassistent1.calendar.core.domain.CalendarEvent(eventId, draft!!.title.orEmpty(), 0, 0, 0, 0))
+                    } ?: com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Loading,
                     onOpenCalendarDraft = { openedId = it },
                     onOpenSavedCalendarEvent = { openedEventId = it }, smoothResponseEnabled = false,
                     onRetry = {}, onDelete = {}, onCopy = {}, onSpeak = {},

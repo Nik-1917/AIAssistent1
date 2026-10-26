@@ -6,6 +6,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SystemPromptProviderTest {
+    @Test fun `separate creation clock preserves calendar header and the existing contract`() {
+        val provider = SystemPromptProvider()
+        val target = java.time.LocalDateTime.parse("2028-01-01T01:30")
+        val input = java.time.LocalDateTime.parse("2027-12-31T14:30")
+        val prompt = provider.getSystemPrompt(true, target, input)
+        assertTrue(prompt.startsWith(provider.getSystemPrompt(true, target).lineSequence().first() + "\n"))
+        assertTrue(prompt.contains("Для calendar_add сейчас 2027-12-31 14:30"))
+        assertTrue(prompt.contains("Для calendar_search и calendar_sum используй дату и время первой строки."))
+        assertTrue(prompt.endsWith(SystemPromptProvider.CALENDAR_CONTRACT))
+        assertFalse(prompt.contains("America/"))
+        assertFalse(prompt.contains("Europe/"))
+        assertFalse(prompt.contains("time_zone"))
+        assertFalse(prompt.contains("UTC"))
+        assertEquals(provider.getSystemPrompt(false, target), provider.getSystemPrompt(false, target, input))
+        assertEquals(provider.getSystemPrompt(true, target), provider.getSystemPrompt(true, target, target))
+    }
+
     @Test fun `supplied local time is exact and never includes timezone metadata`() {
         val local = java.time.LocalDateTime.of(2026, 10, 20, 15, 0)
         for (calendar in listOf(true, false)) {

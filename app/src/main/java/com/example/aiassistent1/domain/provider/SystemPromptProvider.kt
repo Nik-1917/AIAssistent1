@@ -5,14 +5,19 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class SystemPromptProvider {
-    fun getSystemPrompt(isCalendarMode: Boolean, localDateTime: LocalDateTime = LocalDateTime.now()): String {
+    fun getSystemPrompt(isCalendarMode: Boolean, localDateTime: LocalDateTime = LocalDateTime.now(),
+        creationLocalDateTime: LocalDateTime? = null): String {
         val locale = Locale.forLanguageTag("ru-RU")
         // Only local date/time reaches the model, never a zone ID or UTC offset.
         val currentDateTime = localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", locale))
         val dayOfWeek = localDateTime.format(DateTimeFormatter.ofPattern("EEEE", locale))
         
         return if (isCalendarMode) {
-            "cегодня $currentDateTime день недели $dayOfWeek ответ JSON\n$CALENDAR_CONTRACT"
+            val creationContext = creationLocalDateTime?.takeIf { it != localDateTime }?.let {
+                "Для calendar_add сейчас ${it.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", locale))} день недели ${it.format(DateTimeFormatter.ofPattern("EEEE", locale))}. " +
+                    "Для calendar_search и calendar_sum используй дату и время первой строки.\n"
+            }.orEmpty()
+            "cегодня $currentDateTime день недели $dayOfWeek ответ JSON\n$creationContext$CALENDAR_CONTRACT"
         } else {
             "cегодня $currentDateTime день недели $dayOfWeek"
         }

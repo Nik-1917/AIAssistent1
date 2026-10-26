@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -64,20 +63,19 @@ internal fun CalendarDraftCard(
         SavedCalendarEventCard(draft, savedEventState, onOpenSavedEvent, onRetrySavedEvent, modifier)
         return
     }
-    val saved = savedEventId != null
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(if (saved) Icons.Default.CheckCircle else Icons.Default.CalendarMonth, contentDescription = null)
+                Icon(Icons.Default.CalendarMonth, contentDescription = null)
                 Text(
                     draft.fieldText(CalendarEventField.Title).ifBlank { "Новое событие" },
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
-                Text(if (saved) "Создано" else "Черновик", style = MaterialTheme.typography.labelMedium)
+                Text("Черновик", style = MaterialTheme.typography.labelMedium)
             }
             val date = draft.fieldText(CalendarEventField.Date).ifBlank { "Дата не указана" }
             val time = draft.fieldText(CalendarEventField.Time).ifBlank { "Время не указано" }
@@ -108,19 +106,15 @@ internal fun CalendarDraftCard(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (savedEventId != null) {
-                TextButton(onClick = { onOpenSavedEvent(savedEventId) }) { Text("Перейти") }
-            } else {
-                if (draft.isSaving) Text("Сохранение события…", style = MaterialTheme.typography.bodySmall)
-                else if (draft.saveRequested) Text("Сохранение требует проверки", style = MaterialTheme.typography.bodySmall)
-                draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                TextButton(onClick = onOpen) {
-                    Text(when {
-                        draft.saveRequested -> "Проверить сохранение"
-                        draft.missingFields.isNotEmpty() -> "Дополнить"
-                        else -> "Проверить и создать"
-                    })
-                }
+            if (draft.isSaving) Text("Сохранение события…", style = MaterialTheme.typography.bodySmall)
+            else if (draft.saveRequested) Text("Сохранение требует проверки", style = MaterialTheme.typography.bodySmall)
+            draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = onOpen) {
+                Text(when {
+                    draft.saveRequested -> "Проверить сохранение"
+                    draft.missingFields.isNotEmpty() -> "Дополнить"
+                    else -> "Проверить и создать"
+                })
             }
         }
     }
@@ -214,7 +208,7 @@ internal fun CalendarDraftEditorSheet(
                     })
                 }
                 items(CalendarEventField.entries, key = { it.name }) { field ->
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedTextField(
                             value = draft.fieldText(field), onValueChange = { onValueChange(field, it) },
                             label = { Text(field.label) }, modifier = Modifier.fillMaxWidth().standardTextEditing(),
@@ -242,12 +236,8 @@ internal fun CalendarDraftEditorSheet(
                                 Text("Распознавание значения…", style = MaterialTheme.typography.bodySmall)
                             }
                         }
-                    }
-                }
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // A hidden preview must not leave an empty lazy-list row or hide the end.
-                        if (draft.inputTimeZoneId != null && targetZone != null) {
+                        // Keep the conversion beside its input; a hidden preview adds no list row.
+                        if (field == CalendarEventField.Time && draft.inputTimeZoneId != null && targetZone != null) {
                             val resolved = runCatching { draft.resolveInputs() }.getOrNull()
                             val end = runCatching {
                                 resolved?.endsAt?.let(CalendarTime::dateTime) ?: resolved?.durationMinutes?.let { minutes ->
@@ -260,6 +250,10 @@ internal fun CalendarDraftEditorSheet(
                             }.getOrNull()
                             CalendarInputTimePreview(inputStart, end, draft.zoneId, targetZone, draft.scheduleInput.mode)
                         }
+                    }
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
                             value = draft.notes.orEmpty(), onValueChange = onNotesChange, enabled = editable,
                             label = { Text("Примечание (необязательно)") }, modifier = Modifier.fillMaxWidth().standardTextEditing(), minLines = 2,

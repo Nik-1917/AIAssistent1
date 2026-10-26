@@ -184,7 +184,7 @@ internal fun CalendarInputZoneControls(inputZone: ZoneId, enabled: Boolean, onSe
     var saving by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("Привычное время", style = MaterialTheme.typography.labelLarge)
-        Text("По умолчанию — текущий пояс телефона. Домашний пояс остаётся выбранным при поездках.", style = MaterialTheme.typography.bodySmall)
+        Text("Если домашний пояс не выбран, используется текущий пояс телефона. Выбранный домашний пояс сохраняется при поездках.", style = MaterialTheme.typography.bodySmall)
         FilterChip(selected = state.homeZoneId == null, enabled = enabled && state.isLoaded && repository != null && !saving,
             onClick = {
                 scope.launch {

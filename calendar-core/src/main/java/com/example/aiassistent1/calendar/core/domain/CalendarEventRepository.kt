@@ -1,6 +1,7 @@
 package com.example.aiassistent1.calendar.core.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 interface CalendarEventRepository {
     /** Receipt and mutation must commit in the same storage transaction. */
@@ -12,6 +13,11 @@ interface CalendarEventRepository {
     suspend fun create(draft: CalendarEventDraft): Result<CalendarEvent>
 
     suspend fun getById(id: String): Result<CalendarEvent?>
+
+    /** Read-only snapshots for existing links; implementations may provide live storage updates. */
+    fun observeByIds(ids: Set<String>, zoneId: java.time.ZoneId): Flow<Map<String, CalendarEvent?>> = flow {
+        emit(ids.associateWith { getById(it).getOrThrow() })
+    }
 
     fun observeInRange(
         rangeStartEpochMillis: Long,

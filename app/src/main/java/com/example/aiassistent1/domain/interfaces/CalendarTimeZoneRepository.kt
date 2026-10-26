@@ -12,12 +12,13 @@ interface CalendarTimeZoneRepository {
     val state: StateFlow<CalendarTimeZoneState>
     suspend fun refreshDeviceZone()
     suspend fun selectZone(zoneId: String?)
+    suspend fun selectHomeZone(zoneId: String?) { error("Выбор домашнего пояса недоступен") }
 
     suspend fun snapshot(): CalendarTimeContext {
         refreshDeviceZone()
         val ready = state.first { it.isLoaded }
         check(ready.error == null) { ready.error.orEmpty() }
-        return CalendarTimeContext(ready.zoneId)
+        return CalendarTimeContext(ready.zoneId, inputZoneId = ready.inputZoneId)
     }
 }
 
@@ -31,5 +32,9 @@ class SystemCalendarTimeZoneRepository : CalendarTimeZoneRepository {
     override suspend fun selectZone(zoneId: String?) {
         zoneId?.let(ZoneId::of)
         mutableState.value = state.value.copy(selectedZoneId = zoneId, changePending = false)
+    }
+    override suspend fun selectHomeZone(zoneId: String?) {
+        zoneId?.let(ZoneId::of)
+        mutableState.value = state.value.copy(homeZoneId = zoneId)
     }
 }

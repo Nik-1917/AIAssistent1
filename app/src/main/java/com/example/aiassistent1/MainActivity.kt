@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
                     speechPlayback = AppModule.provideSpeechPlayback(applicationContext),
                     settingsRepository = AppModule.provideSettingsRepository(applicationContext),
                     searchCalendarEvents = AppModule.provideSearchCalendarEventsUseCase(applicationContext),
+                    observeSavedCalendarEvents = AppModule.provideObserveCalendarEventsByIdUseCase(applicationContext),
                     assistantResponseParser = AppModule.provideAssistantResponseParser(),
                     modelContextBuilder = AppModule.provideModelContextBuilder(),
                     formatCalendarField = AppModule.provideFormatCalendarFieldUseCase(llmEngine),

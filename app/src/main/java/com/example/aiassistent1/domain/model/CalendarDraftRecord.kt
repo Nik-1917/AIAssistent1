@@ -21,4 +21,6 @@ data class CalendarDraftRecord(
     val timeZoneId: String? = null,
     val timeZoneConfirmedFor: String? = null,
     val scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
+    /** Null is a legacy draft: its entered fields retain their original timeZoneId interpretation. */
+    val inputTimeZoneId: String? = null,
 )

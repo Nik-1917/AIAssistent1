@@ -227,6 +227,7 @@ private fun CalendarEventDraftUiState.toRecord() = CalendarDraftRecord(
     savedEventId = savedEventId, saveRequested = saveRequested,
     timeZoneId = timeZoneId, timeZoneConfirmedFor = timeZoneConfirmedFor,
     scheduleInput = scheduleInput,
+    inputTimeZoneId = inputTimeZoneId,
 )
 
 private fun CalendarDraftRecord.toUi() = CalendarEventDraftUiState(
@@ -236,4 +237,5 @@ private fun CalendarDraftRecord.toUi() = CalendarEventDraftUiState(
     savedEventId = savedEventId, saveRequested = saveRequested,
     timeZoneId = timeZoneId, timeZoneConfirmedFor = timeZoneConfirmedFor,
     scheduleInput = scheduleInput,
+    inputTimeZoneId = inputTimeZoneId,
 )

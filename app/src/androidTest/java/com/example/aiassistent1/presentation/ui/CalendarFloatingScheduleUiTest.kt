@@ -18,6 +18,7 @@ class CalendarFloatingScheduleUiTest {
             CalendarEventEditorDialog(date, event, onDismiss = {}, onSave = { _, _, _, _, _ -> },
                 onSaveWithSchedule = { results.add(it) })
         } }
+        compose.onNodeWithTag("calendar_time_mode_toggle").performScrollTo().performClick()
     }
     private fun field(label: String) = compose.onNode(hasSetTextAction() and hasText(label)).performScrollTo()
     private fun repeat(label: String) {
