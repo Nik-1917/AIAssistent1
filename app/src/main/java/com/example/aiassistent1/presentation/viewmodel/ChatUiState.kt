@@ -53,6 +53,7 @@ data class ChatUiState(
     val hideCurrentYear: Boolean = true,
     val screenPreferences: ScreenPreferences? = null,
     val smoothResponseEnabled: Boolean = false,
+    val calendarModelReplyEnabled: Boolean = true,
     val systemPromptEnabled: Boolean = true,
     val dialogueModeEnabled: Boolean = false,
     val autoPlaybackEnabled: Boolean = true,

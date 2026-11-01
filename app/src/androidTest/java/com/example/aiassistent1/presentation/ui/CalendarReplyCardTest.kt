@@ -18,13 +18,14 @@ import com.example.aiassistent1.presentation.viewmodel.CalendarDraftsState
 import com.example.aiassistent1.presentation.viewmodel.ChatUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 class CalendarReplyCardTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun createdDraftShowsOnlyItsCardAndStillOpens() {
+    @Test fun createdDraftKeepsReplyAboveItsCardAndStillOpens() {
         val reply = "Новое событие: Встреча."
         val message = calendarReply(reply)
         var draft by mutableStateOf<CalendarEventDraftUiState?>(null)
@@ -50,8 +51,10 @@ class CalendarReplyCardTest {
         }
         compose.onNodeWithText("Встреча").assertIsDisplayed()
         compose.onNodeWithText("Черновик").assertIsDisplayed()
-        compose.onNodeWithText(reply).assertDoesNotExist()
-        compose.onNodeWithText("Ассистент").assertDoesNotExist()
+        compose.onNodeWithText(reply).assertIsDisplayed()
+        compose.onNodeWithText("Ассистент").assertIsDisplayed()
+        assertTrue(compose.onNodeWithText(reply).fetchSemanticsNode().boundsInRoot.bottom <
+            compose.onNodeWithText("Черновик").fetchSemanticsNode().boundsInRoot.top)
         compose.onNodeWithContentDescription("Повторить генерацию").assertDoesNotExist()
         compose.onNodeWithContentDescription("Удалить сообщение").assertDoesNotExist()
         compose.onNodeWithText("Дополнить").performClick()
@@ -63,14 +66,18 @@ class CalendarReplyCardTest {
         compose.onNodeWithText("Создано").assertIsDisplayed()
         compose.onNodeWithText("Перейти").performClick()
         compose.runOnIdle { assertEquals("saved-event", openedEventId) }
-        compose.onNodeWithText(reply).assertDoesNotExist()
+        compose.onNodeWithText(reply).assertIsDisplayed()
     }
 
-    @Test fun rawCalendarStreamChangesToOneCardWithSmoothTextEnabled() = assertStreamThenSingleCard(true)
+    @Test fun rawCalendarStreamKeepsReplyWithSmoothTextEnabled() = assertStreamThenDraft(true, true)
 
-    @Test fun rawCalendarStreamChangesToOneCardWithSmoothTextDisabled() = assertStreamThenSingleCard(false)
+    @Test fun rawCalendarStreamKeepsReplyWithSmoothTextDisabled() = assertStreamThenDraft(false, true)
 
-    private fun assertStreamThenSingleCard(smooth: Boolean) {
+    @Test fun hiddenReplyChangesToOneCardWithSmoothTextEnabled() = assertStreamThenDraft(true, false)
+
+    @Test fun hiddenReplyChangesToOneCardWithSmoothTextDisabled() = assertStreamThenDraft(false, false)
+
+    private fun assertStreamThenDraft(smooth: Boolean, showReply: Boolean) {
         val user = ChatMessage("user", MessageRole.USER, "Создай встречу", chatId = "calendar")
         val reply = calendarReply("Новое событие: Встреча.")
         val chunks = listOf(
@@ -81,6 +88,7 @@ class CalendarReplyCardTest {
             activeChatId = "calendar", messages = listOf(user, reply.copy(content = chunks.first())),
             isProcessing = true,
             calendarDrafts = CalendarDraftsState(isLoaded = true),
+            calendarModelReplyEnabled = showReply,
         ))
         compose.setContent {
             MaterialTheme {
@@ -92,6 +100,7 @@ class CalendarReplyCardTest {
                             onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
                             isStreaming = state.isGenerating && message.role == MessageRole.ASSISTANT,
                             smoothResponseEnabled = smooth, onCopy = {}, onSpeak = {},
+                            calendarModelReplyEnabled = state.calendarModelReplyEnabled,
                             onRetry = if (!state.isProcessing && message.role == MessageRole.ASSISTANT) ({}) else null,
                             onDelete = if (!state.isProcessing && message.role == MessageRole.ASSISTANT) ({}) else null,
                             modifier = Modifier.testTag(message.id),
@@ -123,8 +132,17 @@ class CalendarReplyCardTest {
             compose.onNodeWithContentDescription("Повторить генерацию").assertDoesNotExist()
             compose.onNodeWithContentDescription("Удалить сообщение").assertDoesNotExist()
         }
-        compose.onNodeWithText(reply.content).assertDoesNotExist()
-        compose.onNodeWithText("Ассистент").assertDoesNotExist()
+        if (showReply) {
+            compose.onNodeWithText(reply.content).assertIsDisplayed()
+            compose.onNodeWithText("Ассистент").assertIsDisplayed()
+            assertTrue(compose.onNodeWithText(user.content).fetchSemanticsNode().boundsInRoot.bottom <
+                compose.onNodeWithText(reply.content).fetchSemanticsNode().boundsInRoot.top)
+            assertTrue(compose.onNodeWithText(reply.content).fetchSemanticsNode().boundsInRoot.bottom <
+                compose.onNodeWithText("Черновик").fetchSemanticsNode().boundsInRoot.top)
+        } else {
+            compose.onNodeWithText(reply.content).assertDoesNotExist()
+            compose.onNodeWithText("Ассистент").assertDoesNotExist()
+        }
         compose.onNodeWithText("Встреча").assertIsDisplayed()
         compose.onNodeWithText(user.content).assertIsDisplayed()
         compose.runOnIdle { assertEquals(reply.content, state.messages.last().content) }
@@ -142,6 +160,42 @@ class CalendarReplyCardTest {
         assertEquals(cardNodeId, compose.onNodeWithText("Черновик").fetchSemanticsNode().id)
     }
 
+    @Test fun switchingReplyVisibilityKeepsExistingDraftAndPlaybackText() {
+        val message = calendarReply("Новое событие: Встреча.")
+        val draft = CalendarEventDraftUiState(requestId = message.id, title = "Встреча")
+        var showReply by mutableStateOf(true)
+        var spokenText: String? = null
+        var openedId: String? = null
+        compose.setContent {
+            MaterialTheme {
+                ChatMessageItem(
+                    message = message, calendarDraft = draft, calendarModelReplyEnabled = showReply,
+                    onOpenCalendarDraft = { openedId = it }, onOpenSavedCalendarEvent = {},
+                    smoothResponseEnabled = false, onCopy = {}, onSpeak = { spokenText = it },
+                    onRetry = { error("Draft reply must not regenerate") },
+                    onDelete = { error("Draft reply must be deleted with its draft") },
+                )
+            }
+        }
+        val cardNodeId = compose.onNodeWithText("Черновик").fetchSemanticsNode().id
+        compose.onNodeWithText(message.content).performTouchInput { doubleClick() }
+        compose.runOnIdle {
+            assertEquals(message.content, spokenText)
+            showReply = false
+        }
+        compose.onNodeWithText(message.content).assertDoesNotExist()
+        compose.onNodeWithText("Дополнить").performClick()
+        compose.runOnIdle {
+            assertEquals(message.id, openedId)
+            showReply = true
+        }
+        compose.onNodeWithText(message.content).assertIsDisplayed()
+        compose.onNodeWithContentDescription("Повторить генерацию").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Удалить сообщение").assertDoesNotExist()
+        compose.onAllNodesWithText("Черновик").assertCountEquals(1)
+        assertEquals(cardNodeId, compose.onNodeWithText("Черновик").fetchSemanticsNode().id)
+    }
+
     @Test fun replyWithOmittedParamsKeepsTextActionsAndPlaybackText() {
         val parsed = AssistantResponseParser().parseResult(
             """{"intent":"chat","reply":"Уточните, какое событие нужно создать."}""",
@@ -155,6 +209,7 @@ class CalendarReplyCardTest {
                 ChatMessageItem(
                     message = calendarReply(parsed.reply), onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
                     smoothResponseEnabled = false, onRetry = { retries++ }, onDelete = { deletions++ },
+                    calendarModelReplyEnabled = false,
                     onCopy = {}, onSpeak = { spokenText = it },
                 )
             }
@@ -177,6 +232,7 @@ class CalendarReplyCardTest {
             MaterialTheme {
                 ChatMessageItem(
                     message = message, onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {}, smoothResponseEnabled = false,
+                    calendarModelReplyEnabled = false,
                     onCopy = {}, onSpeak = {},
                 )
             }
@@ -199,6 +255,7 @@ class CalendarReplyCardTest {
             MaterialTheme {
                 ChatMessageItem(
                     message = message, calendarDraft = draft, onOpenCalendarDraft = {}, onOpenSavedCalendarEvent = {},
+                    calendarModelReplyEnabled = false,
                     smoothResponseEnabled = false, onCopy = {}, onSpeak = {},
                 )
             }

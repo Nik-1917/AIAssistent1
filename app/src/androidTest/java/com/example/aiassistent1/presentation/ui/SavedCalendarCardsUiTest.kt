@@ -70,7 +70,7 @@ class SavedCalendarCardsUiTest {
             compose.onNodeWithText("Примечание: Новое примечание").assertIsDisplayed()
             compose.onNodeWithText("Длительность: 120 мин · Ценность: 0").assertIsDisplayed()
             compose.onAllNodesWithText("Создано").assertCountEquals(1)
-            compose.onNodeWithText(message.content).assertDoesNotExist()
+            compose.onNodeWithText(message.content).assertIsDisplayed()
             compose.onNodeWithText("Перейти").performClick()
             compose.runOnIdle {
                 assertEquals(event.id, opened)

@@ -84,6 +84,7 @@ class DataStoreSettingsRepository(
     private val screenOrientationKey = stringPreferencesKey("screen_orientation")
     private val proximityScreenOffEnabledKey = booleanPreferencesKey("proximity_screen_off_enabled")
     private val smoothResponseEnabledKey = booleanPreferencesKey("smooth_response_enabled")
+    private val calendarModelReplyEnabledKey = booleanPreferencesKey("calendar_model_reply_enabled")
     private val systemPromptEnabledKey = booleanPreferencesKey("system_prompt_enabled")
     private val dialogueModeEnabledKey = booleanPreferencesKey("dialogue_mode_enabled")
     private val autoPlaybackEnabledKey = booleanPreferencesKey("auto_playback_enabled")
@@ -319,6 +320,14 @@ class DataStoreSettingsRepository(
             initialValue = false,
         )
 
+    override val calendarModelReplyEnabled: StateFlow<Boolean> = dataStore.data
+        .map { preferences -> preferences[calendarModelReplyEnabledKey] ?: true }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true,
+        )
+
     override val systemPromptEnabled: StateFlow<Boolean> = dataStore.data
         .map { preferences -> preferences[systemPromptEnabledKey] ?: true }
         .stateIn(
@@ -490,6 +499,12 @@ class DataStoreSettingsRepository(
     override suspend fun setSmoothResponseEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[smoothResponseEnabledKey] = enabled
+        }
+    }
+
+    override suspend fun setCalendarModelReplyEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[calendarModelReplyEnabledKey] = enabled
         }
     }
 

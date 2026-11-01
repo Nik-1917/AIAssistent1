@@ -365,6 +365,11 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
+            settingsRepository.calendarModelReplyEnabled.collect { enabled ->
+                mutableUiState.update { it.copy(calendarModelReplyEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.dialogueModeEnabled.collect { enabled ->
                 mutableUiState.update { it.copy(dialogueModeEnabled = enabled) }
             }
@@ -1563,6 +1568,12 @@ class ChatViewModel(
     fun setSmoothResponseEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setSmoothResponseEnabled(enabled)
+        }
+    }
+
+    fun setCalendarModelReplyEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setCalendarModelReplyEnabled(enabled)
         }
     }
 

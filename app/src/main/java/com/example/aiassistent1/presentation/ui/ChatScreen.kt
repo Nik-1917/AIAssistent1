@@ -5,10 +5,7 @@ import android.content.pm.PackageManager
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -853,6 +850,7 @@ fun ChatScreen(
                                     isStreaming = !uiState.isStopping && uiState.isGenerating &&
                                         isLast && message.role == MessageRole.ASSISTANT,
                                     smoothResponseEnabled = uiState.smoothResponseEnabled,
+                                    calendarModelReplyEnabled = uiState.calendarModelReplyEnabled,
                                     onRetry = if (showRetry) viewModel::retry else null,
                                     onDelete = if (showDelete) {
                                         {
@@ -1076,6 +1074,8 @@ fun ChatScreen(
                 onScreenOrientationChange = viewModel::setScreenOrientation,
                 onProximityScreenOffChange = viewModel::setProximityScreenOffEnabled,
                 smoothResponseEnabled = uiState.smoothResponseEnabled,
+                calendarModelReplyEnabled = uiState.calendarModelReplyEnabled,
+                onCalendarModelReplyChange = viewModel::setCalendarModelReplyEnabled,
                 dialogueModeEnabled = uiState.dialogueModeEnabled,
                 autoPlaybackEnabled = uiState.autoPlaybackEnabled,
                 speechRate = uiState.speechRate,
@@ -1525,35 +1525,24 @@ internal fun ChatMessageItem(
     savedCalendarEvent: com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState =
         com.example.aiassistent1.presentation.viewmodel.SavedCalendarEventCardState.Loading,
     onRetrySavedCalendarEvent: () -> Unit = {},
+    calendarModelReplyEnabled: Boolean = true,
 ) {
     val linkedDraft = calendarDraft?.takeIf {
         message.chatId == "calendar" && message.role == MessageRole.ASSISTANT &&
             it.chatId == message.chatId && it.requestId == message.id
     }
     if (message.chatId == "calendar" && message.role == MessageRole.ASSISTANT) {
-        // Keep one list item: the visible model response gives way to its card.
-        // Only the presentation changes, so editing/saving the draft does not replay its entrance.
-        AnimatedContent(
-            targetState = linkedDraft != null,
+        // Keep one history item and a stable draft card when only reply visibility changes.
+        Column(
             modifier = modifier.fillMaxWidth(),
-            transitionSpec = {
-                (fadeIn(tween(240, easing = FastOutSlowInEasing)) togetherWith fadeOut(tween(120)))
-                    .using(SizeTransform { _, _ -> tween(240, easing = FastOutSlowInEasing) })
-            },
-            contentAlignment = Alignment.TopStart,
-            label = "Calendar response to draft",
-        ) { showDraft ->
-            if (showDraft) {
-                linkedDraft?.let { draft ->
-                    CalendarDraftCard(
-                        draft = draft,
-                        onOpen = { onOpenCalendarDraft(draft.requestId) },
-                        onOpenSavedEvent = onOpenSavedCalendarEvent,
-                        savedEventState = savedCalendarEvent,
-                        onRetrySavedEvent = onRetrySavedCalendarEvent,
-                    )
-                }
-            } else {
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            AnimatedVisibility(
+                visible = linkedDraft == null || calendarModelReplyEnabled,
+                enter = fadeIn(tween(240)) + expandVertically(tween(240, easing = FastOutSlowInEasing)),
+                exit = fadeOut(tween(120)) + shrinkVertically(tween(240, easing = FastOutSlowInEasing)),
+                label = "Calendar model reply",
+            ) {
                 ChatMessageBubble(
                     message = message,
                     isStopping = isStopping,
@@ -1565,6 +1554,22 @@ internal fun ChatMessageItem(
                     onCopy = onCopy,
                     onSpeak = onSpeak,
                 )
+            }
+            AnimatedVisibility(
+                visible = linkedDraft != null,
+                enter = fadeIn(tween(240)) + expandVertically(tween(240, easing = FastOutSlowInEasing)),
+                exit = fadeOut(tween(120)) + shrinkVertically(tween(240, easing = FastOutSlowInEasing)),
+                label = "Calendar draft card",
+            ) {
+                linkedDraft?.let { draft ->
+                    CalendarDraftCard(
+                        draft = draft,
+                        onOpen = { onOpenCalendarDraft(draft.requestId) },
+                        onOpenSavedEvent = onOpenSavedCalendarEvent,
+                        savedEventState = savedCalendarEvent,
+                        onRetrySavedEvent = onRetrySavedCalendarEvent,
+                    )
+                }
             }
         }
     } else {
@@ -2157,6 +2162,8 @@ fun ModelSettingsDialog(
     onOrientationLockedChange: (Boolean) -> Unit = {},
     onScreenOrientationChange: (ScreenOrientation) -> Unit = {},
     onProximityScreenOffChange: (Boolean) -> Unit = {},
+    calendarModelReplyEnabled: Boolean = true,
+    onCalendarModelReplyChange: (Boolean) -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2541,6 +2548,29 @@ fun ModelSettingsDialog(
                             onCheckedChange = {
                                 smoothResponse = it
                                 onSmoothResponseChange(it)
+                            },
+                        )
+                    }
+                }
+
+                SettingsSection(title = "Чат календаря") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Включить реплику модели при ответе")
+                            Text(
+                                "Показывать реплику отдельной карточкой перед черновиком события",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = calendarModelReplyEnabled,
+                            onCheckedChange = onCalendarModelReplyChange,
+                            modifier = Modifier.semantics {
+                                contentDescription = "Включить реплику модели при ответе"
                             },
                         )
                     }

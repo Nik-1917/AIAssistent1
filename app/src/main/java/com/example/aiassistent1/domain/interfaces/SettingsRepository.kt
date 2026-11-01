@@ -55,6 +55,9 @@ interface SettingsRepository {
     val smoothResponseEnabled: StateFlow<Boolean>
     suspend fun setSmoothResponseEnabled(enabled: Boolean)
 
+    val calendarModelReplyEnabled: StateFlow<Boolean>
+    suspend fun setCalendarModelReplyEnabled(enabled: Boolean)
+
     val systemPromptEnabled: StateFlow<Boolean>
     suspend fun setSystemPromptEnabled(enabled: Boolean)
 
