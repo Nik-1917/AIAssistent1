@@ -2,6 +2,7 @@ package com.example.aiassistent1.domain.parser
 
 import com.example.aiassistent1.domain.model.*
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
 
 /** V12.67 wire contract. Missing optional fields differ from invalid supplied fields. */
 class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
@@ -16,6 +17,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
         timeZone: java.time.ZoneId = zoneId ?: java.time.ZoneId.systemDefault(),
         creationDateContext: CalendarDateContext? = null,
         creationTimeZone: java.time.ZoneId = timeZone,
+        creationTimeMode: CalendarTimeMode = CalendarTimeMode.FIXED,
     ): Result<AssistantResponse> = runCatching {
         val rawObject = StrictCommandJson.read(text)
         val creating = rawObject["intent"] == "calendar_add"
@@ -66,7 +68,7 @@ class AssistantResponseParser(private val zoneId: java.time.ZoneId? = null) {
                     val resolved = if (localStart != null && candidate.isBefore(localStart)) candidate.plusDays(1) else candidate
                     resolved.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
                 }
-                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), creationTimeZone)
+                val duration = CalendarTime.durationMinutes(localStart, end?.let(CalendarTime::dateTime), p.duration(), creationTimeZone, creationTimeMode)
                 CalendarAddParams(p.string("title", allowEmpty = true)?.takeIf { it.isNotBlank() }, start, duration,
                     date.takeIf { fullStart == null }, time.takeIf { fullStart == null },
                     p.eventValue("priority"), p.notes(), end)

@@ -2,6 +2,11 @@ package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.model.CalendarDraftRecord
+import com.example.aiassistent1.domain.model.CalendarAddParams
+import com.example.aiassistent1.domain.model.CalendarCreationMode
+import com.example.aiassistent1.domain.model.CalendarTimeZoneState
+import com.example.aiassistent1.domain.parser.AssistantResponseParser
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,6 +31,37 @@ class CalendarDraftControllerTest {
             check(!failWrites && !(failSavedStatus && drafts.any { it.savedEventId != null })) { "Disk unavailable" }
             stored = drafts
         }
+    }
+
+    @Test fun chatCapturesModeBeforeParsingAndRestoresTheSameDraftAfterSwitching() = runTest {
+        val store = Repository()
+        val controller = CalendarDraftController(store, this)
+        val initial = CalendarTimeZoneState(deviceZoneId = "Europe/Moscow", selectedZoneId = "Europe/Berlin",
+            homeZoneId = "Europe/Samara", creationMode = CalendarCreationMode.LOCAL_TIME)
+        val json = """{"intent":"calendar_add","reply":"Прогулка","params":{"title":"Прогулка","starts_at":"2026-03-29T01:30","ends_at":"2026-03-29T03:30"}}"""
+        fun add(settings: CalendarTimeZoneState, id: String) {
+            val context = settings.timeContext()
+            val params = AssistantResponseParser().parseResult(json, timeZone = context.zoneId,
+                creationTimeZone = context.inputZoneId, creationTimeMode = context.timeMode).getOrThrow().params as CalendarAddParams
+            controller.add(params.toNewCalendarDraft(id, 123, context))
+        }
+        add(initial, "walk")
+        add(initial.copy(creationMode = CalendarCreationMode.FIXED_MOMENT), "meeting")
+        add(initial.copy(creationMode = CalendarCreationMode.PHONE_TIME), "appointment")
+        add(initial.copy(creationMode = CalendarCreationMode.HOME_TIME), "team")
+        runCurrent()
+        val reopened = CalendarDraftController(store, this)
+        runCurrent()
+        assertEquals(4, store.stored.size)
+        val walk = reopened.find("walk")!!
+        assertEquals(CalendarTimeMode.FLOATING, walk.scheduleInput.mode)
+        assertEquals(120, walk.durationMinutes)
+        assertEquals("01:30", walk.time)
+        assertEquals(60, reopened.find("meeting")!!.durationMinutes)
+        assertEquals("Europe/Berlin", reopened.find("meeting")!!.inputTimeZoneId)
+        assertEquals("Europe/Moscow", reopened.find("appointment")!!.inputTimeZoneId)
+        assertEquals("Europe/Samara", reopened.find("team")!!.inputTimeZoneId)
+        assertTrue(store.stored.all { it.savedEventId == null })
     }
 
     @Test fun `restart and retry keep the exact input zone of an interrupted save`() = runTest {

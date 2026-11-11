@@ -103,6 +103,7 @@ fun CalendarScreen(
     inputPanel: @Composable () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val calendarZoneState = LocalCalendarTimeZone.current
     val snackbarHostState = remember { SnackbarHostState() }
     val calendarListState = rememberLazyListState()
     var eventToEdit by remember { mutableStateOf<CalendarEvent?>(null) }
@@ -190,7 +191,7 @@ fun CalendarScreen(
         bottomBar = inputPanel,
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { editorZone = uiState.zoneId; editorDate = uiState.selectedDate; isCreatingEvent = true },
+                onClick = { editorZone = calendarZoneState.zoneId; editorDate = uiState.selectedDate; isCreatingEvent = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Событие") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -554,8 +555,21 @@ internal fun CalendarEventEditorDialog(
     onZoneSelected: (ZoneId) -> Unit = {},
     onSaveWithSchedule: ((CalendarEventEditorResult) -> Unit)? = null,
 ) {
-    var scheduleInput by remember(event) { mutableStateOf(CalendarScheduleInput.forEvent(event)) }
-    val timeModeExpanded = remember(event, date) { mutableStateOf(false) }
+    val zoneState = LocalCalendarTimeZone.current
+    val currentZone = zoneState.zoneId
+    // Snapshot both creation settings together, including when DataStore finishes its first read.
+    var creationContext by remember(event, date) {
+        mutableStateOf(zoneState.takeIf { event == null && it.isLoaded && it.error == null }?.timeContext())
+    }
+    LaunchedEffect(event, date, zoneState.isLoaded, zoneState.error) {
+        if (event == null && creationContext == null && zoneState.isLoaded && zoneState.error == null) {
+            creationContext = zoneState.timeContext()
+            if (zoneId != zoneState.zoneId) onZoneSelected(zoneState.zoneId)
+        }
+    }
+    var scheduleInput by remember(event, date, creationContext) {
+        mutableStateOf(creationContext?.let { CalendarScheduleInput(mode = it.timeMode) } ?: CalendarScheduleInput.forEvent(event))
+    }
     var title by remember(event) { mutableStateOf(event?.title.orEmpty()) }
     var startTimeText by remember(event) { mutableStateOf(event?.localStartTimeText(zoneId) ?: "09:00") }
     var durationText by remember(event) {
@@ -571,16 +585,7 @@ internal fun CalendarEventEditorDialog(
     var valueText by remember(event) { mutableStateOf(event?.value?.toString().orEmpty()) }
     var notesText by remember(event) { mutableStateOf(event?.notes.orEmpty()) }
     var validationError by remember { mutableStateOf<String?>(null) }
-    val zoneState = LocalCalendarTimeZone.current
-    val currentZone = zoneState.zoneId
-    // Capture once. A phone/preference change must not reinterpret an open editor.
-    var creationInputZone by remember(event, date) {
-        mutableStateOf(zoneState.inputZoneId.takeIf { event == null && zoneState.isLoaded && zoneState.error == null })
-    }
-    LaunchedEffect(zoneState.isLoaded, zoneState.error, zoneState.inputZoneId) {
-        if (event == null && creationInputZone == null && zoneState.isLoaded && zoneState.error == null) creationInputZone = zoneState.inputZoneId
-    }
-    val inputZone = if (event == null) creationInputZone ?: zoneId else zoneId
+    val inputZone = creationContext?.inputZoneId ?: zoneId
     var confirmedFor by remember(event, date) { mutableStateOf(zoneId.id) }
     val needsZoneConfirmation = scheduleInput.mode != CalendarTimeMode.FLOATING && zoneId != currentZone && confirmedFor != currentZone.id
     var durationZone by remember(event, date) { mutableStateOf(inputZone) }
@@ -620,18 +625,8 @@ internal fun CalendarEventEditorDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                CalendarScheduleControls(scheduleInput, { scheduleInput = it }, allowRepetition = event?.seriesId == null,
-                    needsAttention = needsZoneConfirmation, expandedState = timeModeExpanded, fixedTimeContent = {
-                        if (event == null) CalendarInputZoneControls(inputZone, enabled = zoneState.isLoaded,
-                            onSelected = { creationInputZone = it })
-                        CalendarScheduleTimeZone(zoneId, currentZone, needsZoneConfirmation,
-                            runCatching {
-                                CalendarInputTime.convert(java.time.LocalDateTime.of(date, CalendarTime.time(startTimeText.trim())), inputZone, zoneId)
-                            }.getOrNull(),
-                            enabled = true, onKeepMoment = { confirmedFor = currentZone.id },
-                            onUseCurrent = { confirmedFor = currentZone.id; onZoneSelected(currentZone) },
-                            preserveInputZone = event == null, inputZone = inputZone)
-                    })
+                CalendarScheduleControls(scheduleInput, { scheduleInput = it }, enabled = event != null || creationContext != null,
+                    allowRepetition = event?.seriesId == null)
                 if (event != null) Text("Дата: ${LocalUserDateTimeFormatter.current.date(date)}")
                 OutlinedTextField(
                     value = title,
@@ -663,6 +658,13 @@ internal fun CalendarEventEditorDialog(
                         java.time.LocalDateTime.of(com.example.aiassistent1.presentation.viewmodel.resolveCalendarEndDate(date, start, end), end)
                     }.getOrNull(), source = inputZone, target = zoneId, mode = scheduleInput.mode,
                 )
+                if (needsZoneConfirmation) {
+                    CalendarTimeZoneConfirmation(zoneId, currentZone, runCatching {
+                        CalendarInputTime.convert(java.time.LocalDateTime.of(date, CalendarTime.time(startTimeText.trim())), inputZone, zoneId)
+                    }.getOrNull(), enabled = true, onKeepMoment = { confirmedFor = currentZone.id },
+                        onUseCurrent = { confirmedFor = currentZone.id; onZoneSelected(currentZone) },
+                        preserveInputZone = event == null)
+                }
                 OutlinedTextField(
                     value = durationText,
                     onValueChange = { value ->
@@ -725,7 +727,7 @@ internal fun CalendarEventEditorDialog(
                 onClick = {
                     val parsed = runCatching {
                         require(title.isNotBlank()) { "Введите название события." }
-                        require(event != null || (zoneState.isLoaded && creationInputZone != null)) { "Дождитесь загрузки привычного часового пояса." }
+                        require(event != null || creationContext != null) { zoneState.error ?: "Дождитесь загрузки настроек часового пояса." }
                         val start = CalendarTime.time(startTimeText.trim())
                         val end = endTimeText.trim().takeIf { it.isNotEmpty() }?.let(CalendarTime::time)
                         require(!needsZoneConfirmation) { "Подтвердите часовой пояс события." }

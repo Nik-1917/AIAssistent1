@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.aiassistent1.calendar.core.domain.*
 import com.example.aiassistent1.data.repository.DataStoreSettingsRepository
 import com.example.aiassistent1.data.repository.TestPreferencesDataStore
+import com.example.aiassistent1.data.repository.DataStoreCalendarTimeZoneRepository
+import com.example.aiassistent1.domain.model.CalendarCreationMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -19,6 +21,51 @@ import java.time.ZoneId
 @OptIn(ExperimentalCoroutinesApi::class)
 class CalendarViewModelTest {
     private val date = LocalDate.of(2030, 9, 12)
+
+    @Test fun manualCreationUsesSelectedRuleAndKeepsEarlierEventsWhenSwitching() = runTest {
+        val samara = ZoneId.of("Europe/Samara")
+        val moscow = ZoneId.of("Europe/Moscow")
+        var phone = samara
+        val zones = DataStoreCalendarTimeZoneRepository(TestPreferencesDataStore(), backgroundScope) { phone }
+        withCalendar(zones) { vm, repo ->
+            val nine = LocalTime.of(9, 0)
+            zones.selectCreationMode(CalendarCreationMode.FIXED_MOMENT)
+            vm.createEvent("Звонок", date, nine, null, null, null)
+            runCurrent()
+            val call = repo.created!!
+            phone = moscow
+            zones.refreshDeviceZone()
+            val fixedStart = java.time.Instant.ofEpochMilli(call.startsAtEpochMillis)
+            assertEquals(date.atTime(8, 0), fixedStart.atZone(moscow).toLocalDateTime())
+
+            zones.selectCreationMode(CalendarCreationMode.LOCAL_TIME)
+            vm.createEvent("Прогулка", date, nine, null, null, null)
+            runCurrent()
+            val walk = repo.created!!.schedule!!
+            assertEquals(CalendarTimeMode.FLOATING, walk.mode)
+            val event = CalendarEvent("walk", "Прогулка", 0, 0, 0, 0, schedule = walk)
+            for (zone in listOf(samara, moscow)) {
+                assertEquals(date.atTime(nine).atZone(zone).toInstant().toEpochMilli(), walk.project(event, date, zone)!!.startsAtEpochMillis)
+            }
+
+            zones.selectZone(samara.id)
+            val fifteen = LocalTime.of(15, 0)
+            zones.selectCreationMode(CalendarCreationMode.PHONE_TIME)
+            vm.createEvent("Парикмахер", date, fifteen, null, null, null)
+            runCurrent()
+            assertEquals(date.atTime(16, 0).atZone(samara).toInstant().toEpochMilli(), repo.created!!.startsAtEpochMillis)
+            zones.selectCreationMode(CalendarCreationMode.FIXED_MOMENT)
+            vm.createEvent("Звонок", date, fifteen, null, null, null)
+            runCurrent()
+            assertEquals(date.atTime(fifteen).atZone(samara).toInstant().toEpochMilli(), repo.created!!.startsAtEpochMillis)
+            zones.selectZone(moscow.id)
+            zones.selectHomeZone(samara.id)
+            vm.createEvent("Планёрка", date, nine, null, null, null)
+            runCurrent()
+            assertEquals(fixedStart.toEpochMilli(), repo.created!!.startsAtEpochMillis)
+            assertNull(repo.changed)
+        }
+    }
 
     @Test fun `new manual input uses its captured zone exactly once across a date boundary`() = runTest {
         withCalendar { viewModel, repository ->
@@ -128,6 +175,7 @@ class CalendarViewModelTest {
         val zones = com.example.aiassistent1.domain.interfaces.SystemCalendarTimeZoneRepository()
         val berlin = ZoneId.of("Europe/Berlin")
         zones.selectZone(berlin.id)
+        zones.selectCreationMode(CalendarCreationMode.FIXED_MOMENT)
         withCalendar(zones) { viewModel, repository ->
             viewModel.createEvent("Встреча", LocalDate.of(2026, 3, 29), LocalTime.of(2, 30), null, null, null)
             runCurrent()

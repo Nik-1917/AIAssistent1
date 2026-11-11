@@ -46,8 +46,8 @@ class CalendarCompactTimeUiTest {
         } }
         compose.onNodeWithTag("calendar_input_time_preview").assertDoesNotExist()
         compose.onNode(hasSetTextAction() and hasText("Окончание (ЧЧ:ММ)")).performScrollTo().assertTextContains("10:00")
-        compose.onNodeWithTag("calendar_time_mode_toggle").performScrollTo().performClick()
-        compose.onNodeWithText("Домашний пояс: Москва").performScrollTo().assertExists()
+        compose.onNodeWithText("Режим времени").assertDoesNotExist()
+        compose.onNodeWithText("Домашний пояс", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Пояс ввода этого черновика:", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Пояс события:", substring = true).assertDoesNotExist()
     }
@@ -102,8 +102,6 @@ class CalendarCompactTimeUiTest {
             }
         } }
         compose.onNodeWithText("Создать событие").assertIsNotEnabled()
-        compose.onNodeWithText("Требуется подтверждение пояса. Откройте «Режим времени».").assertExists()
-        compose.onNodeWithTag("calendar_time_mode_toggle").performClick()
         compose.onNodeWithTag("calendar_draft_editor_fields").performScrollToNode(hasText("Оставить прежний пояс события"))
         compose.onNodeWithText("Оставить прежний пояс события").assertIsDisplayed()
         compose.onNodeWithText("Показывать в поясе: Москва").assertExists()

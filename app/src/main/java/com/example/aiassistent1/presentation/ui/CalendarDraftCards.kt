@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
+import com.example.aiassistent1.calendar.core.domain.CalendarRepeat
 import com.example.aiassistent1.domain.model.CalendarInputTime
 import java.time.ZoneId
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
@@ -80,8 +81,8 @@ internal fun CalendarDraftCard(
             val date = draft.fieldText(CalendarEventField.Date).ifBlank { "Дата не указана" }
             val time = draft.fieldText(CalendarEventField.Time).ifBlank { "Время не указано" }
             Text("${LocalUserDateTimeFormatter.current.value(date)} · $time")
-            if (draft.scheduleInput != com.example.aiassistent1.domain.model.CalendarScheduleInput())
-                Text(draft.scheduleInput.description(), style = MaterialTheme.typography.bodySmall)
+            if (draft.scheduleInput.repeat != CalendarRepeat.NONE)
+                Text(draft.scheduleInput.description(includeTimeMode = false), style = MaterialTheme.typography.bodySmall)
             if (draft.inputTimeZoneId != null && draft.timeZoneId != null) {
                 CalendarInputTimePreview(
                     start = runCatching { CalendarTime.dateTime("${date}T$time") }.getOrNull(),
@@ -161,10 +162,8 @@ internal fun CalendarDraftEditorSheet(
     storageError: String? = null,
     onTimeZoneConfirm: (keepMoment: Boolean) -> Unit = {},
     onScheduleChange: (com.example.aiassistent1.domain.model.CalendarScheduleInput) -> Unit = {},
-    onInputZoneChange: (ZoneId) -> Unit = {},
 ) {
     var confirmDelete by remember(draft.requestId) { mutableStateOf(false) }
-    val timeModeExpanded = remember(draft.requestId) { mutableStateOf(false) }
     val editable = draft.isEditable && !draft.isFormatting
     val dateFormatter = LocalUserDateTimeFormatter.current
     val currentZone = LocalCalendarTimeZone.current.zoneId
@@ -188,24 +187,7 @@ internal fun CalendarDraftEditorSheet(
             Text("Можно закрыть и продолжить позже", style = MaterialTheme.typography.bodySmall)
             LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("calendar_draft_editor_fields"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
-                    CalendarScheduleControls(draft.scheduleInput, onScheduleChange, editable && !draft.isVoiceInputActive,
-                        needsAttention = needsZoneConfirmation && !draft.saveRequested, expandedState = timeModeExpanded, fixedTimeContent = {
-                            CalendarInputZoneControls(draft.zoneId, editable && !draft.isVoiceInputActive, onInputZoneChange)
-                            if (draft.saveRequested && draft.timeZoneId == null) {
-                                Text("Исходный часовой пояс неизвестен. Сначала проверьте результат предыдущего сохранения.",
-                                    style = MaterialTheme.typography.bodySmall)
-                            } else {
-                                CalendarScheduleTimeZone(
-                                    sourceZone = targetZone, currentZone = currentZone,
-                                    needsConfirmation = needsZoneConfirmation && !draft.saveRequested,
-                                    localStart = runCatching { inputStart?.let { CalendarInputTime.convert(it, draft.zoneId, targetZone ?: draft.zoneId) } }.getOrNull(),
-                                    enabled = editable && !draft.isVoiceInputActive,
-                                    onKeepMoment = { onTimeZoneConfirm(true) }, onUseCurrent = { onTimeZoneConfirm(false) },
-                                    preserveInputZone = draft.inputTimeZoneId != null,
-                                    inputZone = draft.zoneId,
-                                )
-                            }
-                    })
+                    CalendarScheduleControls(draft.scheduleInput, onScheduleChange, editable && !draft.isVoiceInputActive)
                 }
                 items(CalendarEventField.entries, key = { it.name }) { field ->
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -249,6 +231,20 @@ internal fun CalendarDraftEditorSheet(
                                 }
                             }.getOrNull()
                             CalendarInputTimePreview(inputStart, end, draft.zoneId, targetZone, draft.scheduleInput.mode)
+                        }
+                        if (field == CalendarEventField.Time && needsZoneConfirmation) {
+                            if (draft.saveRequested) {
+                                Text("Исходный часовой пояс неизвестен. Сначала проверьте результат предыдущего сохранения.",
+                                    style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                CalendarTimeZoneConfirmation(
+                                    sourceZone = targetZone, currentZone = currentZone,
+                                    localStart = runCatching { inputStart?.let { CalendarInputTime.convert(it, draft.zoneId, targetZone ?: draft.zoneId) } }.getOrNull(),
+                                    enabled = editable && !draft.isVoiceInputActive,
+                                    onKeepMoment = { onTimeZoneConfirm(true) }, onUseCurrent = { onTimeZoneConfirm(false) },
+                                    preserveInputZone = draft.inputTimeZoneId != null,
+                                )
+                            }
                         }
                     }
                 }

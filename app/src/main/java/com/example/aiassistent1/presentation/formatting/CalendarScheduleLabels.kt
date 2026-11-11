@@ -6,8 +6,8 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-fun CalendarScheduleInput.description(): String = buildList {
-    if (mode == CalendarTimeMode.FLOATING) add("Всегда по местному времени")
+fun CalendarScheduleInput.description(includeTimeMode: Boolean = true): String = buildList {
+    if (includeTimeMode && mode == CalendarTimeMode.FLOATING) add("Всегда по местному времени")
     add(when (repeat) {
         CalendarRepeat.NONE -> "Один раз"
         CalendarRepeat.DATES -> "Выбранные даты: $datesText"

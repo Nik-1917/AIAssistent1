@@ -2,7 +2,9 @@ package com.example.aiassistent1.presentation.viewmodel
 
 import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
+import com.example.aiassistent1.domain.model.CalendarAddParams
 import com.example.aiassistent1.domain.model.CalendarScheduleInput
+import com.example.aiassistent1.domain.model.CalendarTimeContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -75,8 +77,7 @@ data class CalendarEventDraftUiState(
         val startTime = fieldInputs[CalendarEventField.Time] ?: time
         val start = if (startDate.isNullOrBlank() || startTime.isNullOrBlank()) null
             else CalendarTime.dateTime("${startDate.trim()}T${startTime.trim()}")
-        if (scheduleInput.mode == CalendarTimeMode.FLOATING) nominalDuration(start, endsAt?.let(CalendarTime::dateTime), null)
-        else CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, zoneId)
+        CalendarTime.durationMinutes(start, endsAt?.let(CalendarTime::dateTime), null, zoneId, scheduleInput.mode)
     }.getOrNull()
 
     val missingFields: List<CalendarEventField>
@@ -131,6 +132,20 @@ data class CalendarEventDraftUiState(
     }.getOrNull()
 }
 
+internal fun CalendarAddParams.toNewCalendarDraft(
+    requestId: String, createdAtEpochMillis: Long, context: CalendarTimeContext,
+): CalendarEventDraftUiState {
+    val start = startsAt?.let(CalendarTime::dateTime)
+    return CalendarEventDraftUiState(
+        title = title, date = start?.toLocalDate()?.toString() ?: date,
+        time = start?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: time,
+        durationMinutes = durationMin, value = value, notes = notes, endsAt = endsAt,
+        requestId = requestId, createdAtEpochMillis = createdAtEpochMillis,
+        timeZoneId = context.zoneId.id, timeZoneConfirmedFor = context.zoneId.id,
+        inputTimeZoneId = context.inputZoneId.id, scheduleInput = CalendarScheduleInput(mode = context.timeMode),
+    ).withNextField()
+}
+
 val CalendarEventField.modelName: String
     get() = when (this) {
         CalendarEventField.Title -> "title"
@@ -156,12 +171,9 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
     durationMinutes?.let { require(it > 0) { "Длительность должна быть больше нуля." } }
     if (scheduleInput.mode != CalendarTimeMode.FLOATING) startsAt?.let { CalendarTime.toEpochMillis(CalendarTime.dateTime(it), zoneId) }
 
-    val resolvedDuration = if (endsAt == null) durationMinutes else if (scheduleInput.mode == CalendarTimeMode.FLOATING)
-        nominalDuration(startsAt?.let(CalendarTime::dateTime), CalendarTime.dateTime(endsAt), durationMinutes)
-    else com.example.aiassistent1.calendar.core.domain.CalendarTime.durationMinutes(
-        startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
-        endsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime),
-        durationMinutes, zoneId,
+    val resolvedDuration = CalendarTime.durationMinutes(
+        startsAt?.let(CalendarTime::dateTime), endsAt?.let(CalendarTime::dateTime),
+        durationMinutes, zoneId, scheduleInput.mode,
     )
     startsAt?.let { start ->
         val localStart = CalendarTime.dateTime(start)
@@ -178,14 +190,6 @@ fun CalendarEventDraftUiState.withNextField(): CalendarEventDraftUiState {
         else -> null
     }
     return copy(durationMinutes = resolvedDuration, activeField = next, input = "", error = null, isFormatting = false, isVoiceInputActive = false)
-}
-
-private fun nominalDuration(start: LocalDateTime?, end: LocalDateTime?, supplied: Int?): Int? {
-    if (start == null || end == null) return supplied
-    val minutes = java.time.Duration.between(start, end).toMinutes()
-    require(minutes in 1..Int.MAX_VALUE.toLong()) { "Окончание должно быть позже начала." }
-    require(supplied == null || supplied.toLong() == minutes) { "Проверьте длительность и окончание." }
-    return minutes.toInt()
 }
 
 /**

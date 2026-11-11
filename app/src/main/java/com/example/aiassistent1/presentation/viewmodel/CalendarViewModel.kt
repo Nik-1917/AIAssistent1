@@ -173,12 +173,21 @@ class CalendarViewModel(
         endTime: LocalTime?,
         value: Long?,
         notes: String?,
-        zoneId: ZoneId = calendarTimeZones.state.value.zoneId,
-        scheduleInput: CalendarScheduleInput = CalendarScheduleInput(),
+        zoneId: ZoneId? = null,
+        scheduleInput: CalendarScheduleInput? = null,
         inputZoneId: ZoneId? = null,
     ) {
         viewModelScope.launch {
-            val draft = buildDraft(title, date, startTime, endTime, value, notes, inputZoneId ?: zoneId, scheduleInput).getOrElse { error ->
+            val capturedZone = inputZoneId ?: zoneId
+            val context = if (capturedZone == null || scheduleInput == null) {
+                try {
+                    calendarTimeZones.snapshot()
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (error: Exception) { showError(error); return@launch }
+            } else null
+            val draft = buildDraft(title, date, startTime, endTime, value, notes,
+                capturedZone ?: requireNotNull(context).inputZoneId,
+                scheduleInput ?: CalendarScheduleInput(mode = requireNotNull(context).timeMode)).getOrElse { error ->
                 showError(error)
                 return@launch
             }

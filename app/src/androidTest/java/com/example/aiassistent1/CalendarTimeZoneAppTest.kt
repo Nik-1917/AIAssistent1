@@ -12,6 +12,7 @@ import com.example.aiassistent1.calendar.storage.android.RoomCalendarEventReposi
 import com.example.aiassistent1.calendar.storage.android.local.CalendarDatabase
 import com.example.aiassistent1.data.repository.DataStoreCalendarTimeZoneRepository
 import com.example.aiassistent1.data.repository.DataStoreSettingsRepository
+import com.example.aiassistent1.domain.model.CalendarCreationMode
 import com.example.aiassistent1.presentation.ui.CalendarScreen
 import com.example.aiassistent1.presentation.ui.CalendarTimeZoneProvider
 import com.example.aiassistent1.presentation.ui.UserDateTimeProvider
@@ -76,8 +77,15 @@ class CalendarTimeZoneAppTest {
             compose.onNodeWithTag("calendar_time_zone_option_Europe/Moscow").performClick()
             compose.waitUntil(10_000) { zones.state.value.selectedZoneId == "Europe/Moscow" }
             compose.onNodeWithText("14:00–15:00").assertIsDisplayed()
-            val after = runBlocking { withContext(Dispatchers.IO) { events.getById(created.id).getOrThrow() } }
-            assertEquals(created, after)
+            runBlocking {
+                zones.selectHomeZone(samara.id)
+                for (mode in CalendarCreationMode.entries) {
+                    zones.selectCreationMode(mode)
+                    val after = withContext(Dispatchers.IO) { events.getById(created.id).getOrThrow() }
+                    assertEquals(created, after)
+                }
+            }
+            compose.onNodeWithText("14:00–15:00").assertIsDisplayed()
         } finally {
             viewModel.viewModelScope.cancel()
             scope.cancel()

@@ -6,9 +6,19 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 object CalendarTime {
-    /** Explicit endpoints use elapsed minutes, including offset transitions. */
-    fun durationMinutes(start: LocalDateTime?, end: LocalDateTime?, supplied: Int?, zoneId: ZoneId): Int? {
+    /** A fixed interval measures elapsed time. A floating interval measures local clock time. */
+    fun durationMinutes(
+        start: LocalDateTime?, end: LocalDateTime?, supplied: Int?, zoneId: ZoneId,
+        mode: CalendarTimeMode = CalendarTimeMode.FIXED,
+    ): Int? {
         if (end == null) return supplied
+        if (mode == CalendarTimeMode.FLOATING) {
+            if (start == null) return supplied
+            val minutes = java.time.Duration.between(start, end).toMinutes()
+            require(minutes in 1..Int.MAX_VALUE.toLong()) { "Окончание должно быть позже начала." }
+            require(supplied == null || supplied.toLong() == minutes) { "Проверьте длительность и окончание." }
+            return minutes.toInt()
+        }
         val endMillis = toEpochMillis(end, zoneId)
         if (start == null) return supplied
         val elapsed = Math.subtractExact(endMillis, toEpochMillis(start, zoneId))

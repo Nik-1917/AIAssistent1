@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository
+import com.example.aiassistent1.domain.model.CalendarCreationMode
 import com.example.aiassistent1.domain.model.CalendarTimeZoneState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -42,8 +43,11 @@ class DataStoreCalendarTimeZoneRepository(
     }
 
     override suspend fun selectHomeZone(zoneId: String?) {
-        zoneId?.let(ZoneId::of)
-        update { it.deviceChangedTo(deviceZone()).copy(homeZoneId = zoneId) }
+        update { it.deviceChangedTo(deviceZone()).withHomeZone(zoneId) }
+    }
+
+    override suspend fun selectCreationMode(mode: CalendarCreationMode) {
+        update { it.deviceChangedTo(deviceZone()).copy(creationMode = mode) }
     }
 
     private suspend fun update(change: (CalendarTimeZoneState) -> CalendarTimeZoneState) {
@@ -67,11 +71,13 @@ class DataStoreCalendarTimeZoneRepository(
     private suspend fun read(): CalendarTimeZoneState {
         val p = store.data.first()
         fun zone(key: Preferences.Key<String>) = p[key]?.also { ZoneId.of(it) }
+        val home = zone(HOME)
         return CalendarTimeZoneState(
             deviceZoneId = zone(DEVICE) ?: deviceZone().id,
             selectedZoneId = zone(SELECTED), previousDeviceZoneId = zone(PREVIOUS),
             hasDetectedChange = p[DETECTED] ?: false, changePending = p[PENDING] ?: false,
-            homeZoneId = zone(HOME),
+            homeZoneId = home,
+            creationMode = p[CREATION_MODE]?.let(CalendarCreationMode::valueOf) ?: CalendarCreationMode.fromLegacyHomeZone(home),
         )
     }
 
@@ -83,6 +89,7 @@ class DataStoreCalendarTimeZoneRepository(
             p[DETECTED] = value.hasDetectedChange
             p[PENDING] = value.changePending
             value.homeZoneId?.let { p[HOME] = it } ?: p.remove(HOME)
+            p[CREATION_MODE] = value.creationMode.name
         }
     }
 
@@ -93,5 +100,6 @@ class DataStoreCalendarTimeZoneRepository(
         val DETECTED = booleanPreferencesKey("change_detected")
         val PENDING = booleanPreferencesKey("change_pending")
         val HOME = stringPreferencesKey("home_input_zone_id")
+        val CREATION_MODE = stringPreferencesKey("event_creation_time_mode")
     }
 }

@@ -931,6 +931,7 @@ class ChatViewModel(
                                 timeZone = timeContext.zoneId,
                                 creationDateContext = dateContext.copy(today = timeContext.inputLocalDateTime.toLocalDate()),
                                 creationTimeZone = timeContext.inputZoneId,
+                                creationTimeMode = timeContext.timeMode,
                             )
                             val parsed = parseOutcome.getOrNull()
                                 ?.resolveImplicitCalendarAddDate(
@@ -1639,21 +1640,12 @@ class ChatViewModel(
 
     private fun startCalendarEventDraft(params: CalendarAddParams, requestId: String, timeContext: com.example.aiassistent1.domain.model.CalendarTimeContext) {
         runCatching {
-            val parsedStartsAt = params.startsAt?.let(com.example.aiassistent1.calendar.core.domain.CalendarTime::dateTime)
-            CalendarEventDraftUiState(
-                title = params.title,
-                date = parsedStartsAt?.toLocalDate()?.toString() ?: params.date,
-                time = parsedStartsAt?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: params.time,
-                durationMinutes = params.durationMin, value = params.value, notes = params.notes,
-                endsAt = params.endsAt,
+            params.toNewCalendarDraft(
                 requestId = requestId.ifBlank { java.util.UUID.randomUUID().toString() },
-                chatId = "calendar",
-                timeZoneId = timeContext.zoneId.id,
-                timeZoneConfirmedFor = timeContext.zoneId.id,
-                inputTimeZoneId = timeContext.inputZoneId.id,
                 createdAtEpochMillis = uiState.value.messages.firstOrNull { it.id == requestId }
                     ?.createdAtEpochMillis ?: System.currentTimeMillis(),
-            ).withNextField()
+                context = timeContext,
+            )
         }.onSuccess(calendarDraftController::add)
             .onFailure { error -> mutableUiState.update { it.copy(error = error.userMessage()) } }
     }
@@ -1685,18 +1677,10 @@ class ChatViewModel(
 
     fun updateCalendarDraftNotes(id: String, value: String) = calendarDraftController.editNotes(id, value)
 
-    fun updateCalendarDraftInputZone(id: String, zone: ZoneId) {
-        val draft = calendarDraftController.find(id) ?: return
-        if (!draft.isEditable || draft.isFormatting || draft.isVoiceInputActive) return
-        calendarDraftController.update(id) { it.copy(inputTimeZoneId = zone.id,
-            durationMinutes = if (it.endsAt != null) null else it.durationMinutes, error = null) }
-    }
-
     fun updateCalendarDraftSchedule(id: String, value: com.example.aiassistent1.domain.model.CalendarScheduleInput) {
         val draft = calendarDraftController.find(id) ?: return
         if (!draft.isEditable || draft.isFormatting || draft.isVoiceInputActive) return
-        calendarDraftController.update(id) { it.copy(scheduleInput = value,
-            durationMinutes = if (it.scheduleInput.mode != value.mode && it.endsAt != null) null else it.durationMinutes, error = null) }
+        calendarDraftController.update(id) { it.copy(scheduleInput = value.copy(mode = it.scheduleInput.mode), error = null) }
     }
 
     fun retryCalendarDraftStorage() = calendarDraftController.retryStorage()

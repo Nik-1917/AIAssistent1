@@ -1,11 +1,63 @@
 package com.example.aiassistent1.data.repository
 
+import androidx.datastore.preferences.core.preferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.aiassistent1.calendar.core.domain.CalendarTimeMode
+import com.example.aiassistent1.domain.model.CalendarCreationMode
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import java.time.ZoneId
 
 class CalendarTimeZoneRepositoryTest {
+    @Test fun legacyHomeBecomesActiveAndIsRememberedAcrossOtherModes() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(stringPreferencesKey("home_input_zone_id") to "Europe/Samara"))
+        val moscow = ZoneId.of("Europe/Moscow")
+        val first = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { moscow }
+        assertEquals("Europe/Samara", first.snapshot().inputZoneId.id)
+        assertEquals(CalendarCreationMode.HOME_TIME, first.state.value.creationMode)
+
+        first.selectCreationMode(CalendarCreationMode.PHONE_TIME)
+        val reopened = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { moscow }
+        assertEquals(moscow, reopened.snapshot().inputZoneId)
+        assertEquals(CalendarCreationMode.PHONE_TIME, reopened.state.value.creationMode)
+        assertEquals("Europe/Samara", reopened.state.value.homeZoneId)
+        reopened.selectCreationMode(CalendarCreationMode.HOME_TIME)
+        assertEquals("Europe/Samara", reopened.snapshot().inputZoneId.id)
+    }
+
+    @Test fun creationModesCaptureOnlyTheirOwnZoneAndTimeRule() = runTest {
+        val moscow = ZoneId.of("Europe/Moscow")
+        val samara = ZoneId.of("Europe/Samara")
+        val berlin = ZoneId.of("Europe/Berlin")
+        var phone = moscow
+        val store = TestPreferencesDataStore()
+        val zones = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { phone }
+        zones.selectZone(samara.id)
+        assertEquals(moscow, zones.snapshot().inputZoneId)
+        assertEquals(CalendarCreationMode.PHONE_TIME, zones.state.value.creationMode)
+        zones.selectHomeZone(berlin.id)
+        val expected = mapOf(
+            CalendarCreationMode.FIXED_MOMENT to (samara to CalendarTimeMode.FIXED),
+            CalendarCreationMode.LOCAL_TIME to (samara to CalendarTimeMode.FLOATING),
+            CalendarCreationMode.PHONE_TIME to (moscow to CalendarTimeMode.FIXED),
+            CalendarCreationMode.HOME_TIME to (berlin to CalendarTimeMode.FIXED),
+        )
+        for ((mode, rule) in expected) {
+            zones.selectCreationMode(mode)
+            val restored = DataStoreCalendarTimeZoneRepository(store, backgroundScope) { phone }
+            val context = restored.snapshot()
+            assertEquals(mode, restored.state.value.creationMode)
+            assertEquals(rule, context.inputZoneId to context.timeMode)
+            assertEquals(samara, context.zoneId)
+        }
+        val openHome = zones.snapshot()
+        phone = ZoneId.of("Asia/Tokyo")
+        zones.selectCreationMode(CalendarCreationMode.PHONE_TIME)
+        assertEquals(phone, zones.snapshot().inputZoneId)
+        assertEquals(berlin, openHome.inputZoneId)
+    }
+
     @Test fun `input defaults to phone independently of a fixed calendar zone`() = runTest {
         var device = ZoneId.of("Europe/Samara")
         val repository = DataStoreCalendarTimeZoneRepository(TestPreferencesDataStore(), backgroundScope) { device }

@@ -1117,7 +1117,6 @@ fun ChatScreen(
                 storageError = uiState.calendarDrafts.storageError,
                 onTimeZoneConfirm = { keepMoment -> viewModel.confirmCalendarDraftTimeZone(draft.requestId, keepMoment) },
                 onScheduleChange = { viewModel.updateCalendarDraftSchedule(draft.requestId, it) },
-                onInputZoneChange = { viewModel.updateCalendarDraftInputZone(draft.requestId, it) },
             )
         }
     }
@@ -2528,6 +2527,10 @@ fun ModelSettingsDialog(
                             modifier = Modifier.semantics { contentDescription = "Скрывать текущий год" },
                         )
                     }
+                }
+
+                SettingsSection(title = "Часовые пояса") {
+                    CalendarTimeModeSettings()
                 }
 
                 SettingsSection(title = "Чат") {

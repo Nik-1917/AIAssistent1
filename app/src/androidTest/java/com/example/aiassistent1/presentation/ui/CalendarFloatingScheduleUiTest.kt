@@ -1,6 +1,9 @@
 package com.example.aiassistent1.presentation.ui
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.aiassistent1.domain.model.CalendarCreationMode
+import com.example.aiassistent1.domain.model.CalendarTimeZoneState
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.aiassistent1.calendar.core.domain.*
@@ -15,10 +18,11 @@ class CalendarFloatingScheduleUiTest {
     private val results = mutableListOf<CalendarEventEditorResult>()
     private fun show(event: CalendarEvent? = null) {
         compose.setContent { MaterialTheme {
-            CalendarEventEditorDialog(date, event, onDismiss = {}, onSave = { _, _, _, _, _ -> },
-                onSaveWithSchedule = { results.add(it) })
+            CompositionLocalProvider(LocalCalendarTimeZone provides CalendarTimeZoneState(creationMode = CalendarCreationMode.LOCAL_TIME)) {
+                CalendarEventEditorDialog(date, event, onDismiss = {}, onSave = { _, _, _, _, _ -> },
+                    onSaveWithSchedule = { results.add(it) })
+            }
         } }
-        compose.onNodeWithTag("calendar_time_mode_toggle").performScrollTo().performClick()
     }
     private fun field(label: String) = compose.onNode(hasSetTextAction() and hasText(label)).performScrollTo()
     private fun repeat(label: String) {
@@ -30,7 +34,6 @@ class CalendarFloatingScheduleUiTest {
     @Test fun floatingWeekdaysRequireSelectionAndRetainNineAndInclusiveUntil() {
         show()
         field("Название").performTextReplacement("Зарядка")
-        compose.onNodeWithText("Всегда по местному времени").performScrollTo().performClick()
         repeat("По дням недели")
         save()
         compose.runOnIdle { assertTrue(results.isEmpty()) }
@@ -55,7 +58,6 @@ class CalendarFloatingScheduleUiTest {
     @Test fun selectedDatesRejectInvalidTextWithoutSavingOlderValues() {
         show()
         field("Название").performTextReplacement("Привычка")
-        compose.onNodeWithText("Всегда по местному времени").performScrollTo().performClick()
         repeat("В выбранные даты")
         field("Даты через запятую (ГГГГ-ММ-ДД)").performTextReplacement("2030-09-13, 2030-09-15")
         save()

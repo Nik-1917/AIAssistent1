@@ -31,14 +31,13 @@ import com.example.aiassistent1.calendar.core.domain.CalendarTime
 import com.example.aiassistent1.domain.interfaces.CalendarTimeZoneRepository
 import com.example.aiassistent1.domain.model.CalendarTimeZoneState
 import com.example.aiassistent1.presentation.formatting.CalendarTimeZoneLabels
-import com.example.aiassistent1.presentation.formatting.CalendarInputTimePresentation
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 internal val LocalCalendarTimeZone = staticCompositionLocalOf { CalendarTimeZoneState() }
-private val LocalCalendarTimeZones = staticCompositionLocalOf<CalendarTimeZoneRepository?> { null }
+internal val LocalCalendarTimeZones = staticCompositionLocalOf<CalendarTimeZoneRepository?> { null }
 internal val LocalCalendarClock = staticCompositionLocalOf { Instant.now() }
 
 @Composable
@@ -114,13 +113,13 @@ private fun CalendarTimeZoneGlyph() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CalendarTimeZonePicker(repository: CalendarTimeZoneRepository, state: CalendarTimeZoneState, onDismiss: () -> Unit,
-    forHome: Boolean = false, onSelected: (ZoneId) -> Unit = {}) {
+internal fun CalendarTimeZonePicker(repository: CalendarTimeZoneRepository, state: CalendarTimeZoneState, onDismiss: () -> Unit,
+    forHome: Boolean = false, onSelected: () -> Unit = {}) {
     var query by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val now = LocalCalendarClock.current
-    val preferredZone = if (forHome) state.inputZoneId else state.zoneId
+    val preferredZone = if (forHome) ZoneId.of(state.homeZoneId ?: state.deviceZoneId) else state.zoneId
     val options = remember(now, preferredZone) {
         ZoneId.getAvailableZoneIds().map(ZoneId::of).sortedWith(
             compareBy<ZoneId> { it != preferredZone }.thenBy { it.rules.getOffset(now).totalSeconds }
@@ -132,18 +131,19 @@ private fun CalendarTimeZonePicker(repository: CalendarTimeZoneRepository, state
         options.filter { needle.isEmpty() || it.id.contains(needle, true) || CalendarTimeZoneLabels.label(it, now).contains(needle, true) }
     }
     fun select(zoneId: String?) {
+        if (saving) return
+        saving = true
         scope.launch {
-            saving = true
             try {
                 if (forHome) repository.selectHomeZone(zoneId) else repository.selectZone(zoneId)
                 if (repository.state.value.error == null) {
-                    if (forHome) onSelected(repository.state.value.inputZoneId)
+                    onSelected()
                     onDismiss()
                 }
             } finally { saving = false }
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    ModalBottomSheet(onDismissRequest = { if (!saving) onDismiss() }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(0.88f).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(if (forHome) "Домашний пояс для ввода времени" else "Часовой пояс календаря", style = MaterialTheme.typography.headlineSmall)
             if (state.changePending && !forHome) {
@@ -158,10 +158,9 @@ private fun CalendarTimeZonePicker(repository: CalendarTimeZoneRepository, state
                 singleLine = true, modifier = Modifier.fillMaxWidth().standardTextEditing().testTag(if (forHome) "calendar_home_zone_search" else "calendar_time_zone_search"))
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 20.dp)) {
-                item(key = "device") {
-                    TimeZoneRow(if (forHome) "По времени телефона" else "Часовой пояс телефона", CalendarTimeZoneLabels.label(ZoneId.of(state.deviceZoneId), now),
-                        (if (forHome) state.homeZoneId else state.selectedZoneId) == null, !saving,
-                        Modifier.testTag(if (forHome) "calendar_home_zone_device" else "calendar_time_zone_device")) { select(null) }
+                if (!forHome) item(key = "device") {
+                    TimeZoneRow("Часовой пояс телефона", CalendarTimeZoneLabels.label(ZoneId.of(state.deviceZoneId), now),
+                        state.selectedZoneId == null, !saving, Modifier.testTag("calendar_time_zone_device")) { select(null) }
                     HorizontalDivider()
                 }
                 if (filtered.isEmpty()) item { Text("Часовой пояс не найден", Modifier.padding(vertical = 16.dp)) }
@@ -173,41 +172,6 @@ private fun CalendarTimeZonePicker(repository: CalendarTimeZoneRepository, state
             }
         }
     }
-}
-
-@Composable
-internal fun CalendarInputZoneControls(inputZone: ZoneId, enabled: Boolean, onSelected: (ZoneId) -> Unit) {
-    val state = LocalCalendarTimeZone.current
-    val repository = LocalCalendarTimeZones.current
-    val scope = rememberCoroutineScope()
-    var picker by remember { mutableStateOf(false) }
-    var saving by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Привычное время", style = MaterialTheme.typography.labelLarge)
-        Text("Если домашний пояс не выбран, используется текущий пояс телефона. Выбранный домашний пояс сохраняется при поездках.", style = MaterialTheme.typography.bodySmall)
-        FilterChip(selected = state.homeZoneId == null, enabled = enabled && state.isLoaded && repository != null && !saving,
-            onClick = {
-                scope.launch {
-                    saving = true
-                    try {
-                        repository?.selectHomeZone(null)
-                        if (repository?.state?.value?.error == null) repository?.state?.value?.inputZoneId?.let(onSelected)
-                    } finally { saving = false }
-                }
-            }, label = { Text("По времени телефона") })
-        FilterChip(selected = state.homeZoneId != null, enabled = enabled && state.isLoaded && repository != null && !saving,
-            onClick = { picker = true }, label = { Text("Домашний пояс: " + (state.homeZoneId?.let { CalendarTimeZoneLabels.name(ZoneId.of(it)) } ?: "выбрать")) })
-        val selectedHomeIsInput = state.homeZoneId?.let { CalendarInputTimePresentation.sameZone(inputZone, ZoneId.of(it)) } == true
-        if (!selectedHomeIsInput) {
-            Text("Пояс ввода этого черновика: ${CalendarTimeZoneLabels.label(inputZone)}", style = MaterialTheme.typography.bodySmall)
-        }
-        if (inputZone != state.inputZoneId) {
-            Text("Для черновика сохранён прежний пояс ввода. Его можно изменить явно.", style = MaterialTheme.typography.bodySmall)
-            TextButton(enabled = enabled && state.isLoaded && !saving, onClick = { onSelected(state.inputZoneId) }) { Text("Применить текущую настройку") }
-        }
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-    }
-    if (picker && repository != null) CalendarTimeZonePicker(repository, state, { picker = false }, forHome = true, onSelected = onSelected)
 }
 
 @Composable
@@ -223,23 +187,16 @@ private fun TimeZoneRow(title: String, subtitle: String, selected: Boolean, enab
 }
 
 @Composable
-internal fun CalendarScheduleTimeZone(
-    sourceZone: ZoneId?, currentZone: ZoneId, needsConfirmation: Boolean, localStart: LocalDateTime?,
+internal fun CalendarTimeZoneConfirmation(
+    sourceZone: ZoneId?, currentZone: ZoneId, localStart: LocalDateTime?,
     enabled: Boolean, onKeepMoment: () -> Unit, onUseCurrent: () -> Unit,
     preserveInputZone: Boolean = false,
-    inputZone: ZoneId? = null,
 ) {
     val now = LocalCalendarClock.current
     val eventInstant = runCatching {
         if (sourceZone == null || localStart == null) now
         else Instant.ofEpochMilli(CalendarTime.toEpochMillis(localStart, sourceZone))
     }.getOrDefault(now)
-    if (!needsConfirmation) {
-        if (inputZone == null || sourceZone == null || !CalendarInputTimePresentation.sameZone(inputZone, sourceZone)) {
-            Text("Пояс события: ${CalendarTimeZoneLabels.label(sourceZone ?: currentZone, eventInstant)}", style = MaterialTheme.typography.bodySmall)
-        }
-        return
-    }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(if (sourceZone == null) "Подтвердите часовой пояс" else "Часовой пояс изменился", style = MaterialTheme.typography.titleSmall)
