@@ -77,7 +77,7 @@ object GgufMetadataReader {
             else -> return@use null
         }
         val reader = MetadataInput(input, littleEndian)
-        reader.unsignedLong() // tensor count, not tensor data
+        val tensorCount = reader.unsignedLong()
         val count = reader.unsignedLong()
         require(count <= 100_000 && count <= reader.remaining / 12)
         var architecture: String? = null
@@ -85,10 +85,15 @@ object GgufMetadataReader {
         val dimensions = mutableMapOf<String, Int?>()
         val layouts = mutableMapOf<String, LayerLayout?>()
         var vocabularySize: Int? = null
+        var alignment = 32L
         repeat(count.toInt()) {
             val key = reader.string(65_535)
             val type = reader.unsignedInt().toInt()
             when {
+                key == "general.alignment" && type == 4 -> {
+                    alignment = reader.unsignedInt()
+                    require(alignment in 1..4096 && alignment and (alignment - 1) == 0L)
+                }
                 key == "general.architecture" -> {
                     require(type == 8 && architecture == null)
                     architecture = reader.string(128)
@@ -126,6 +131,7 @@ object GgufMetadataReader {
         }
         val arch = architecture ?: return@use Metadata(null, null)
         fun dimension(name: String) = dimensions["$arch.$name"]
+        val tensorBytes = readTensorBytes(reader, tensorCount, dimension("block_count"), alignment, file.length())
         // A present but invalid/array-valued dimension must not silently use an optional default.
         val validDimensions = dimensions.filterKeys { it.startsWith("$arch.") }.values.all { it != null }
         val layoutKey = "$arch.attention.recurrent_layers"
@@ -147,8 +153,50 @@ object GgufMetadataReader {
             keyLength = dimension("attention.key_length"), valueLength = dimension("attention.value_length"),
             vocabularySize = listOfNotNull(dimension("vocab_size"), vocabularySize).maxOrNull(),
             hybrid = hybrid,
+            gpuLayerBytes = tensorBytes?.first,
+            gpuSharedBytes = tensorBytes?.second,
         )
         Metadata(contexts["$arch.context_length"], memory)
+    }
+
+    /** Tensor descriptors/offsets only. Unknown layouts retain the conservative full-copy estimate. */
+    private fun readTensorBytes(reader: MetadataInput, count: Long, blocks: Int?, alignment: Long,
+        fileBytes: Long): Pair<List<Long>, Long>? = try {
+        require(count in 1..100_000 && blocks != null && blocks in 1..4096)
+        val tensors = ArrayList<Pair<String, Long>>(count.toInt())
+        repeat(count.toInt()) {
+            val name = reader.string(1024)
+            val dimensions = reader.unsignedInt()
+            require(dimensions in 1..4)
+            repeat(dimensions.toInt()) { require(reader.unsignedLong() > 0) }
+            reader.unsignedInt() // GGML type; extents are bounded by the following data offset.
+            val offset = reader.unsignedLong()
+            require(offset % alignment == 0L)
+            tensors += name to offset
+        }
+        val dataStart = Math.multiplyExact(Math.floorDiv(Math.addExact(reader.offset, alignment - 1), alignment), alignment)
+        val dataBytes = fileBytes - dataStart
+        require(dataBytes > 0 && tensors.all { it.second in 0 until dataBytes })
+        val offsets = (tensors.map { it.second } + dataBytes).distinct().sorted()
+        val extents = offsets.zipWithNext().associate { (start, end) -> start to end - start }
+        val layers = MutableList(blocks) { 0L }
+        var shared = 0L
+        for ((name, offset) in tensors) {
+            val bytes = requireNotNull(extents[offset])
+            val block = if (name.startsWith("blk.")) name.substringAfter("blk.").substringBefore('.').toIntOrNull() else null
+            if (block != null) {
+                require(block in layers.indices)
+                layers[block] = Math.addExact(layers[block], bytes)
+            } else shared = Math.addExact(shared, bytes)
+        }
+        require(layers.all { it > 0 })
+        layers to shared
+    } catch (_: IllegalArgumentException) {
+        null
+    } catch (_: IOException) {
+        null
+    } catch (_: ArithmeticException) {
+        null
     }
 
     private class MetadataInput(private val input: RandomAccessFile, private val littleEndian: Boolean) {
@@ -159,6 +207,7 @@ object GgufMetadataReader {
         private var bufferStart = -1L
         private var bufferedBytes = 0
         val remaining: Long get() = (end - position).coerceAtLeast(0)
+        val offset: Long get() = position
         private var stringElements = 0L
         private var layerElements = 0L
 

@@ -34,4 +34,8 @@ add_library(assistant_metric_kws SHARED metric_kws_jni.cpp)
 target_link_libraries(assistant_metric_kws dl)
 
 add_library(assistant_llama SHARED automatic_llama_jni.cpp)
-target_link_libraries(assistant_llama dl)
+target_link_libraries(assistant_llama dl log)
+
+if(ASSISTANT_GGML_PREBUILT_DIR)
+    add_subdirectory(gpu)
+endif()

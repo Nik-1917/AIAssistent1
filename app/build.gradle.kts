@@ -20,7 +20,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        externalNativeBuild { cmake { arguments += "-DANDROID_STL=c++_shared" } }
+        externalNativeBuild { cmake {
+            arguments += listOf("-DANDROID_STL=c++_shared",
+                "-DASSISTANT_GGML_PREBUILT_DIR=${layout.buildDirectory.dir("llama-native-api").get().asFile.invariantSeparatorsPath}")
+        } }
     }
     ndkVersion = "28.2.13676358"
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
@@ -38,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        aidl = true
     }
     sourceSets {
         getByName("test").kotlin.directories.add("src/sharedTest/java")
@@ -49,6 +53,40 @@ android {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+val llamaNativeApi = configurations.create("llamaNativeApi")
+dependencies {
+    add(llamaNativeApi.name, "com.llamatik:library-android:${libs.versions.llamatik.get()}@aar")
+}
+abstract class PrepareLlamaNativeApi : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val artifacts: ConfigurableFileCollection
+    @get:OutputDirectory
+    abstract val destination: DirectoryProperty
+    @get:javax.inject.Inject
+    abstract val archives: org.gradle.api.file.ArchiveOperations
+    @get:javax.inject.Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun extract() {
+        files.sync {
+            from(archives.zipTree(artifacts.singleFile))
+            include("jni/**/libggml-base.so")
+            into(destination)
+        }
+    }
+}
+val prepareLlamaNativeApi = tasks.register<PrepareLlamaNativeApi>("prepareLlamaNativeApi") {
+    artifacts.from(llamaNativeApi)
+    destination.set(layout.buildDirectory.dir("llama-native-api"))
+}
+tasks.configureEach {
+    if (name.startsWith("configureCMake") || name.startsWith("buildCMake")) {
+        dependsOn(prepareLlamaNativeApi)
+    }
 }
 
 dependencies {

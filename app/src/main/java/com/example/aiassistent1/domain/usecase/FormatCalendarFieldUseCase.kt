@@ -36,7 +36,12 @@ class FormatCalendarFieldUseCase(
         )
 
         var response = ""
-        llmEngine.generateForTask(messages, GenerationTask.CALENDAR).collect { response += it }
+        llmEngine.generateEventsForTask(messages, GenerationTask.CALENDAR).collect { event ->
+            when (event) {
+                is com.example.aiassistent1.domain.model.GenerationEvent.Delta -> response += event.text
+                is com.example.aiassistent1.domain.model.GenerationEvent.Restart -> response = ""
+            }
+        }
 
         parseResponse(modelName, response)
     }

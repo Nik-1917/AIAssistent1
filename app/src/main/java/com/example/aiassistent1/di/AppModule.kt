@@ -47,7 +47,9 @@ object AppModule {
 
     private fun provideModelMemoryGuard(context: Context): com.example.aiassistent1.data.model.ModelMemoryGuard =
         modelMemoryGuard ?: synchronized(this) {
-            modelMemoryGuard ?: com.example.aiassistent1.data.model.DeviceModelMemoryGuard.forAndroid(context)
+            modelMemoryGuard ?: com.example.aiassistent1.data.model.DeviceModelMemoryGuard.forAndroid(context) {
+                com.example.aiassistent1.data.engine.RemoteLlamaRuntime.residentPrivateBytes.get()
+            }
                 .also { modelMemoryGuard = it }
         }
 	@Volatile
@@ -149,6 +151,7 @@ object AppModule {
 	fun provideLlmEngine(context: Context): LLMEngine = LlamatikEngine(
 		modelProvider = provideModelProvider(context),
 		memoryGuard = provideModelMemoryGuard(context),
+		context = context.applicationContext,
 	)
 
 	fun provideVoiceModelProvider(context: Context): VoiceModelProvider = voiceModelProvider ?: synchronized(this) {

@@ -11,12 +11,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import com.example.aiassistent1.domain.model.InferenceExecution
+import com.example.aiassistent1.domain.model.GenerationEvent
 
 private val emptyAutomaticState = MutableStateFlow<AutomaticGenerationState?>(null).asStateFlow()
+private val emptyExecutionState = MutableStateFlow(InferenceExecution()).asStateFlow()
 
 interface LLMEngine : AutoCloseable {
     val state: StateFlow<ModelState>
     val automaticState: StateFlow<AutomaticGenerationState?> get() = emptyAutomaticState
+    val executionState: StateFlow<InferenceExecution> get() = emptyExecutionState
 
     suspend fun ensureLoaded(): Result<Unit>
     fun generate(messages: List<ChatMessage>): Flow<String>
@@ -37,6 +42,9 @@ interface LLMEngine : AutoCloseable {
         }
     }
     suspend fun countTokens(messages: List<ChatMessage>): Int = error("Точный токенизатор недоступен")
+    fun generateEventsForTask(messages: List<ChatMessage>, task: GenerationTask,
+        onReady: suspend () -> Unit = {}): Flow<GenerationEvent> =
+        generateForTask(messages, task, onReady).map { GenerationEvent.Delta(it) }
     suspend fun promptTokenBudget(task: GenerationTask): Int = error("Автоматический бюджет недоступен")
     fun cancelGeneration()
     fun updateParams(params: com.example.aiassistent1.domain.model.GenerationParams)

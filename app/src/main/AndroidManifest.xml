@@ -35,6 +35,8 @@
             </intent-filter>
         </activity>
         <service android:name=".service.ConferenceService" android:exported="false" android:foregroundServiceType="microphone" />
+        <service android:name=".data.engine.LlamaWorkerService"
+            android:exported="false" android:process=":llm" />
         <service android:name=".service.PlaybackReferenceService" android:exported="false" android:foregroundServiceType="mediaProjection" />
         <service
             android:name=".service.GenerationForegroundService"

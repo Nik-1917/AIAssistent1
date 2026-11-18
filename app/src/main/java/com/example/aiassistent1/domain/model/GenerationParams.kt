@@ -10,6 +10,7 @@ data class GenerationParams(
     val topK: Int = 20,
     val repeatPenalty: Float = 1.15f,
     val gpuLayers: Int = 0,
+    val computeMode: ComputeMode = ComputeMode.AUTO,
     val automaticMemory: Boolean = true,
     val manualMemoryConfigured: Boolean = false,
     val batchSizeAuto: Boolean = true,

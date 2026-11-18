@@ -7,6 +7,9 @@ internal object AutomaticLlamaBridge {
     external fun begin()
     external fun prepare(path: ByteArray)
     external fun count(prompt: ByteArray): Int
+    external fun gpuDevice(): Array<String>
+    external fun gpuDriverInfo(): Array<String>
+    external fun backendInfo(): Array<String>
     external fun load(path: ByteArray, context: Int, batch: Int, threads: Int, gpu: Int): Int
     external fun resize(context: Int, batch: Int, threads: Int): Int
     external fun generate(prompt: ByteArray, continuation: Boolean, temperature: Float,

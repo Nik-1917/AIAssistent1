@@ -10,6 +10,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.Flow
 
 /** One immutable request. Waiting for the user happens after the engine has released its mutex. */
 class ChatContextSession(
@@ -25,7 +26,16 @@ class ChatContextSession(
         responseInstruction: String? = null,
         localDateTime: java.time.LocalDateTime = java.time.LocalDateTime.now(),
         onPressure: suspend (ChatContextPressure) -> ChatContextChoice,
-    ) = flow {
+    ): Flow<String> = respondEvents(chatId, history, onReady, responseInstruction, localDateTime, onPressure).textDeltas()
+
+    fun respondEvents(
+        chatId: String,
+        history: List<ChatMessage>,
+        onReady: suspend () -> Unit = {},
+        responseInstruction: String? = null,
+        localDateTime: java.time.LocalDateTime = java.time.LocalDateTime.now(),
+        onPressure: suspend (ChatContextPressure) -> ChatContextChoice,
+    ): Flow<GenerationEvent> = flow {
         require(chatId != "calendar")
         val messages = history.filter { it.chatId == chatId }.toList()
         val turns = ChatContextHistory.turns(messages)
@@ -43,8 +53,8 @@ class ChatContextSession(
             currentCoroutineContext().ensureActive()
             var emitted = false
             try {
-                engine.generateForTask(prompt(excluded), GenerationTask.CHAT, onReady).collect {
-                    emitted = true
+                engine.generateEventsForTask(prompt(excluded), GenerationTask.CHAT, onReady).collect {
+                    if (it is GenerationEvent.Delta) emitted = true
                     emit(it)
                 }
                 break

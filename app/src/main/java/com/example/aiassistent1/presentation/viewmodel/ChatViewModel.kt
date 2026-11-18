@@ -24,6 +24,7 @@ import com.example.aiassistent1.domain.interfaces.CalendarDraftRepository
 import com.example.aiassistent1.domain.interfaces.InputProvider
 import com.example.aiassistent1.domain.interfaces.VoiceInputSessionChangedException
 import com.example.aiassistent1.domain.interfaces.LLMEngine
+import com.example.aiassistent1.domain.usecase.textSnapshots
 import com.example.aiassistent1.domain.interfaces.SettingsRepository
 import com.example.aiassistent1.domain.model.ScreenOrientation
 import com.example.aiassistent1.domain.interfaces.SpeechPlayback
@@ -164,6 +165,7 @@ class ChatViewModel(
     private val modelFilesMutex = Mutex()
     private val modelParamsController = ModelParamsController(llmEngine)
     val automaticGeneration = llmEngine.automaticState
+    val inferenceExecution = llmEngine.executionState
     private var voiceModeShutdownJob: Job? = null
     private var previousSpeechPlaybackState: SpeechPlaybackState = SpeechPlaybackState.Idle
     private var speechPlaybackConversation: ConversationVoiceSession.Ticket? = null
@@ -837,7 +839,7 @@ class ChatViewModel(
                 backgroundSession = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 backgroundSession.awaitReady()
                 val lastUserMessageContent = currentState.messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty()
-                fun chatResponse(instruction: String? = null) = chatContextSession.respond(
+                fun chatResponse(instruction: String? = null) = chatContextSession.respondEvents(
                     currentState.activeChatId, currentState.messages, onReady, responseInstruction = instruction,
                     localDateTime = timeContext.localDateTime,
                 ) { pressure ->
@@ -865,7 +867,7 @@ class ChatViewModel(
                     }
                     choice
                 }
-                val responseFlowResult = if (currentState.isCalendarMode) sendMessage(
+                val responseFlowResult = if (currentState.isCalendarMode) sendMessage.events(
                     modelContextBuilder.build(
                         currentState.messages,
                         appendChatStyleInstruction = !currentState.isCalendarMode,
@@ -898,8 +900,8 @@ class ChatViewModel(
                     },
                 )
                 responseWriter = writer
-                if (currentState.isCalendarMode) writer.collect(response)
-                else writer.collectSnapshots(chatReplyTextStream.snapshots(response, onRepetition = {
+                if (currentState.isCalendarMode) writer.collectSnapshots(response.textSnapshots())
+                else writer.collectSnapshots(chatReplyTextStream.eventSnapshots(response, onRepetition = {
                     llmEngine.cancelGeneration()
                     Log.i(TAG, "CHAT_REPETITION_STOP: repetitions=5")
                 }) {

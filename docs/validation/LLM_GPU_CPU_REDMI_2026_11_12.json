@@ -1,0 +1,89 @@
+[
+  {
+    "requested": "AUTO",
+    "task": "CALENDAR",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "fallback": "GPU недоступен для этого движка: GPU Vulkan 1.1.128; backend requires Vulkan 1.2",
+    "initializationMillis": 1741,
+    "ttftMillis": 970,
+    "prefillTokensPerSecond": 41.087058062537004,
+    "decodeTokensPerSecond": 17.125261089026576,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "AUTO",
+    "task": "CHAT",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "fallback": "GPU недоступен для этого движка: GPU Vulkan 1.1.128; backend requires Vulkan 1.2",
+    "initializationMillis": 140,
+    "ttftMillis": 985,
+    "prefillTokensPerSecond": 41.80178892518159,
+    "decodeTokensPerSecond": 12.848336343683886,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "AUTO",
+    "task": "SUMMARY",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "fallback": "GPU недоступен для этого движка: GPU Vulkan 1.1.128; backend requires Vulkan 1.2",
+    "initializationMillis": 140,
+    "ttftMillis": 1014,
+    "prefillTokensPerSecond": 40.47324530011604,
+    "decodeTokensPerSecond": 14.30437787434757,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "CPU",
+    "task": "CALENDAR",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "initializationMillis": 511,
+    "ttftMillis": 993,
+    "prefillTokensPerSecond": 40.76250675645435,
+    "decodeTokensPerSecond": 13.583367575334858,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "CPU",
+    "task": "CHAT",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "initializationMillis": 137,
+    "ttftMillis": 1004,
+    "prefillTokensPerSecond": 41.15836223717328,
+    "decodeTokensPerSecond": 16.506933731432387,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "CPU",
+    "task": "SUMMARY",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "initializationMillis": 137,
+    "ttftMillis": 973,
+    "prefillTokensPerSecond": 42.074320924241285,
+    "decodeTokensPerSecond": 16.587414184248825,
+    "generatedTokens": 19
+  },
+  {
+    "requested": "CPU",
+    "task": "CALENDAR",
+    "backend": "CPU",
+    "device": "CPU",
+    "layers": 0,
+    "initializationMillis": 518,
+    "ttftMillis": 948,
+    "prefillTokensPerSecond": 41.9653091979483,
+    "decodeTokensPerSecond": 17.23570966900634,
+    "generatedTokens": 19
+  }
+]

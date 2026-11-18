@@ -37,6 +37,20 @@ class DataStoreSettingsRepositoryTest {
     val temporaryFolder = TemporaryFolder()
 
     @Test
+    fun `missing compute mode becomes auto and explicit CPU is saved per profile`() = runTest {
+        val store = TestPreferencesDataStore(preferencesOf(intPreferencesKey("first_gpuLayers") to 0))
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.AUTO,
+            repository.getParamsForModel("first", ModelProfile.CALENDAR).first().computeMode)
+        repository.updateParamsForModel("first", ModelProfile.CHAT,
+            ModelProfile.CHAT.defaults.copy(computeMode = com.example.aiassistent1.domain.model.ComputeMode.CPU))
+        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.CPU,
+            repository.getParamsForModel("first", ModelProfile.CHAT).first().computeMode)
+        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.AUTO,
+            repository.getParamsForModel("first", ModelProfile.CALENDAR).first().computeMode)
+    }
+
+    @Test
     fun `old saved mode is restored when page preference does not yet exist`() = runTest {
         for (isCalendar in listOf(false, true)) {
             val store = TestPreferencesDataStore(preferencesOf(booleanPreferencesKey("system_prompt_enabled") to isCalendar))

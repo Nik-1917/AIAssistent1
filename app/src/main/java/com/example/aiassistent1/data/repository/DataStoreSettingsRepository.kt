@@ -433,6 +433,9 @@ class DataStoreSettingsRepository(
             topK = intValue("topK", defaults.topK),
             repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
+            computeMode = preferences[stringPreferencesKey(prefix + "computeMode")]
+                ?.let { saved -> com.example.aiassistent1.domain.model.ComputeMode.entries.firstOrNull { it.name == saved } }
+                ?: com.example.aiassistent1.domain.model.ComputeMode.AUTO,
             automaticMemory = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true,
             manualMemoryConfigured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] ?: false,
             batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
@@ -475,6 +478,7 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
             preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
+            preferences[stringPreferencesKey(prefix + "computeMode")] = normalized.computeMode.name
             preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
             preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
             preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto

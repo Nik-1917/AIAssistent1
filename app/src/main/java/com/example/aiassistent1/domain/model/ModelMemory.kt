@@ -23,6 +23,8 @@ data class ModelMemoryMetadata(
     val valueLength: Int?,
     val vocabularySize: Int?,
     val hybrid: HybridMemoryMetadata? = null,
+    val gpuLayerBytes: List<Long>? = null,
+    val gpuSharedBytes: Long? = null,
 )
 
 data class HybridMemoryMetadata(
@@ -171,6 +173,15 @@ object ModelMemoryCalculator {
         maxOf(64 * MIB, fileBytes / 10),
     )
 
+    fun gpuWeights(metadata: ModelMemoryMetadata, gpuLayers: Int): Long {
+        if (gpuLayers == 0) return 0
+        val layers = metadata.gpuLayerBytes ?: return metadata.fileBytes
+        val shared = metadata.gpuSharedBytes ?: return metadata.fileBytes
+        val count = if (gpuLayers < 0) layers.size else minOf(gpuLayers, layers.size)
+        val repeating = layers.takeLast(count).fold(0L, Math::addExact)
+        return Math.addExact(repeating, if (gpuLayers < 0 || gpuLayers > layers.size) shared else 0L)
+    }
+
     fun cost(metadata: ModelMemoryMetadata, settings: MemoryRuntimeSettings, context: Int): ModelMemoryCost? = try {
         require(metadata.architecture.length in 1..128 && metadata.architecture.matches(Regex("[a-z0-9_-]+")))
         require(metadata.fileBytes > 0 && context > 0)
@@ -217,7 +228,7 @@ object ModelMemoryCalculator {
             sum(256 * MIB, multiply(2, buffers))
         } else sum(128 * MIB, buffers)
         // File size is a conservative weight estimate, with overhead and a possible GPU-side copy.
-        val weights = weightsBytes(metadata.fileBytes, settings.gpuLayers, profile)
+        val weights = sum(weightsBytes(metadata.fileBytes, 0, profile), gpuWeights(metadata, settings.gpuLayers))
         ModelMemoryCost(weights, working, profile).also { it.totalBytes }
     } catch (_: IllegalArgumentException) {
         null

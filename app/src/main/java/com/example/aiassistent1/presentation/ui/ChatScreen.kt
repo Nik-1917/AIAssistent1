@@ -1087,6 +1087,7 @@ fun ChatScreen(
                 onSpeechRateChange = viewModel::setSpeechRate,
                 onRefreshMemory = viewModel::refreshModelMemory,
                 automaticGeneration = viewModel.automaticGeneration.collectAsStateWithLifecycle().value,
+                inferenceExecution = viewModel.inferenceExecution.collectAsStateWithLifecycle().value,
                 chatHistoryPolicy = uiState.chatHistoryPolicy,
                 onChatHistoryPolicyChange = viewModel::setChatHistoryPolicy,
                 keywordControls = viewModel.personalKeywordControls,
@@ -2155,6 +2156,7 @@ fun ModelSettingsDialog(
     keywordControls: com.example.aiassistent1.domain.interfaces.PersonalKeywordControls? = null,
     onRefreshMemory: () -> Unit = {},
     automaticGeneration: com.example.aiassistent1.domain.model.AutomaticGenerationState? = null,
+    inferenceExecution: com.example.aiassistent1.domain.model.InferenceExecution = com.example.aiassistent1.domain.model.InferenceExecution(),
     chatHistoryPolicy: com.example.aiassistent1.domain.model.ChatHistoryPolicy = com.example.aiassistent1.domain.model.ChatHistoryPolicy.ASK,
     onChatHistoryPolicyChange: (com.example.aiassistent1.domain.model.ChatHistoryPolicy) -> Unit = {},
     screenPreferences: ScreenPreferences? = null,
@@ -2226,6 +2228,22 @@ fun ModelSettingsDialog(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
+                SettingsSection(title = "Вычисления AI") {
+                    InferenceSettingsControls(
+                        profile = editingProfile,
+                        onProfileChange = { profile ->
+                            modelSettings.flush { saveModelParams(editingProfile, it) }
+                            selectedProfile = profile
+                        },
+                        mode = modelParams.computeMode,
+                        onModeChange = { mode ->
+                            modelSettings.update { it.copy(computeMode = mode) }
+                            modelSettings.flush { saveModelParams(editingProfile, it) }
+                        },
+                        enabled = paramsLoaded,
+                        execution = inferenceExecution,
+                    )
+                }
                 SettingsSection(
                     title = "Модель",
                     expanded = modelExpanded,

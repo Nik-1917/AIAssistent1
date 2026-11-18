@@ -34,7 +34,12 @@ class LongTextSummarizer(private val engine: LLMEngine) {
                 val output = StringBuilder()
                 try {
                     withTimeout(300_000) {
-                        engine.generateForTask(prompt(input), GenerationTask.SUMMARY).collect { output.append(it) }
+                        engine.generateEventsForTask(prompt(input), GenerationTask.SUMMARY).collect { event ->
+                            when (event) {
+                                is com.example.aiassistent1.domain.model.GenerationEvent.Delta -> output.append(event.text)
+                                is com.example.aiassistent1.domain.model.GenerationEvent.Restart -> output.clear()
+                            }
+                        }
                     }
                 } catch (capacity: PromptCapacityException) {
                     if (output.isNotEmpty() || capacity.promptBudget >= budget) throw capacity

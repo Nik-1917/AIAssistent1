@@ -20,6 +20,11 @@ import com.example.aiassistent1.domain.model.ModelAllocationException
 import com.example.aiassistent1.domain.model.ModelAllocationFailure
 import com.example.aiassistent1.domain.model.MemoryLimitStatus
 import com.example.aiassistent1.domain.model.ContextResponseRatio
+import com.example.aiassistent1.domain.model.ComputeMode
+import com.example.aiassistent1.domain.model.GenerationEvent
+import com.example.aiassistent1.domain.model.InferenceExecution
+import com.example.aiassistent1.domain.model.ModelMemoryCalculator
+import com.example.aiassistent1.domain.model.MemoryRuntimeSettings
 import com.llamatik.library.platform.GenStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -43,6 +48,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -50,7 +56,7 @@ import kotlinx.coroutines.withContext
 class LlamatikEngine internal constructor(
     private val modelProvider: ModelProvider,
     initialParams: GenerationParams,
-    executor: ExecutorService,
+    private val executor: ExecutorService,
     private val runtime: LlamaRuntime,
     private val processorCount: Int = CpuThreadSettings.availableProcessors,
     private val memoryGuard: ModelMemoryGuard? = null,
@@ -62,17 +68,24 @@ class LlamatikEngine internal constructor(
     ) : this(modelProvider, initialParams, Executors.newSingleThreadExecutor(),
         NativeLlamaRuntime, memoryGuard = memoryGuard)
 
-    private val modelMutex = Mutex()
+    constructor(modelProvider: ModelProvider, memoryGuard: ModelMemoryGuard, context: android.content.Context,
+        initialParams: GenerationParams = GenerationParams()) : this(modelProvider, initialParams,
+        Executors.newSingleThreadExecutor(), RemoteLlamaRuntime(context), memoryGuard = memoryGuard)
+
+    private val modelMutex = runtime.requestMutex ?: Mutex()
     private val lifecycleLock = Any()
+    private val disposalLock = Any()
     private val engineDispatcher = executor.asCoroutineDispatcher()
     private val mutableState = MutableStateFlow<ModelState>(ModelState.Unloaded)
-    private var params = initialParams
+    @Volatile private var params = initialParams
     private var loadedConfiguration: NativeConfiguration? = null
     private var appliedParams: GenerationParams? = null
+    private var selectedGpuLayers = 0
     private var loadedContextLength: Int? = null
     private var loadedMemoryLimit: DeviceContextLimit? = null
     private var loadedModelPath: String? = null
-    private val runtimeParams: GenerationParams get() = params.boundedForRuntime(loadedContextLength, loadedMemoryLimit)
+    private val runtimeParams: GenerationParams get() = params.copy(gpuLayers = appliedParams?.gpuLayers ?: selectedGpuLayers)
+        .boundedForRuntime(loadedContextLength, loadedMemoryLimit)
     private var generationActive = false
     private var automaticSession = false
     private val taskContexts = mutableMapOf<GenerationTask, Int>()
@@ -81,6 +94,7 @@ class LlamatikEngine internal constructor(
     @Volatile private var closed = false
 
     override val state: StateFlow<ModelState> = mutableState.asStateFlow()
+    override val executionState: StateFlow<InferenceExecution> = runtime.executionState ?: MutableStateFlow(InferenceExecution())
 
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
         synchronized(lifecycleLock) {
@@ -94,39 +108,72 @@ class LlamatikEngine internal constructor(
                 val contextLength = GgufMetadataReader.readContextLength(file)
                 synchronized(lifecycleLock) {
                     check(!closed) { "Движок закрыт" }
-                    if (automaticSession && state.value is ModelState.Ready && loadedModelPath == modelPath) {
+                    if (automaticSession && allocationReady() && loadedModelPath == modelPath &&
+                        appliedParams?.computeMode == params.computeMode) {
                         return@runCatching
                     }
                     // A working allocation is not a new allocation. Preserve its proven configuration.
-                    if (state.value is ModelState.Ready && loadedModelPath == modelPath &&
+                    if (allocationReady() && loadedModelPath == modelPath &&
                         loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
                         applyRuntimeParams()
                         return@runCatching
                     }
-                    val assessment = memoryGuard?.assess(file, params)
+                    if (runtime is RemoteLlamaRuntime) runtime.beginRequest()
+                    val selected = selectCompute(file, params,
+                        minOf(params.contextSize, contextLength ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE), false)
+                    selectedGpuLayers = selected.gpuLayers
+                    val assessment = memoryGuard?.assess(file, selected)
                     check(assessment?.canLoad != false) { assessment?.explanation.orEmpty() }
                     check(params.contextSize >= 2) { "Контекст недоступен. Дождитесь обновления настроек памяти и повторите запрос." }
                     loadedContextLength = contextLength
                     loadedMemoryLimit = assessment
-                    if (state.value is ModelState.Ready && loadedModelPath == modelPath &&
+                    if (allocationReady() && loadedModelPath == modelPath &&
                         loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
                         applyRuntimeParams()
                         return@runCatching
                     }
                     // Batch/context/CPU settings take effect at native context creation, not in the setter.
                     if (loadedConfiguration != null) releaseModel()
+                    if (runtime is RemoteLlamaRuntime) runtime.awaitRelease()
                     loadedContextLength = contextLength
+                    selectedGpuLayers = selected.gpuLayers
                     // Assess after unloading, without counting the old allocation as free twice.
-                    loadedMemoryLimit = memoryGuard?.assess(file, params)
+                    loadedMemoryLimit = memoryGuard?.assess(file, selected)
                     check(loadedMemoryLimit?.canLoad != false) { loadedMemoryLimit?.explanation.orEmpty() }
                     mutableState.value = ModelState.Loading
                     val memoryBefore = memoryGuard?.beforeLoad()
                     runtime.beginRequest()
                     applyRuntimeParams()
                     check(runtime.load(modelPath)) { "Не удалось загрузить модель" }
+                    check(!closed) { "Движок закрыт" }
                     loadedConfiguration = NativeConfiguration(runtimeParams, processorCount)
                     loadedModelPath = modelPath
                     memoryGuard?.loaded(file, runtimeParams, memoryBefore)
+                    mutableState.value = ModelState.Ready
+                }
+            }.recoverCatching { failure ->
+                if (failure is CancellationException) throw failure
+                if (selectedGpuLayers == 0) throw failure
+                val path = modelProvider.getModelPath().getOrThrow()
+                val file = File(path)
+                synchronized(lifecycleLock) {
+                    check(!closed) { "Движок закрыт" }
+                    releaseModel()
+                    if (runtime is RemoteLlamaRuntime) runtime.awaitRelease()
+                    runtime.recordFallback(failure.message ?: "Ошибка GPU")
+                    selectedGpuLayers = 0
+                    loadedContextLength = GgufMetadataReader.readContextLength(file)
+                    loadedMemoryLimit = memoryGuard?.assess(file, params.copy(gpuLayers = 0))
+                    checkAllocationAssessment(loadedMemoryLimit, params.contextSize)
+                    mutableState.value = ModelState.Loading
+                    runtime.beginRequest()
+                    val before = memoryGuard?.beforeLoad()
+                    applyRuntimeParams()
+                    check(runtime.load(path)) { "Не удалось загрузить модель на CPU" }
+                    check(!closed) { "Движок закрыт" }
+                    loadedConfiguration = NativeConfiguration(runtimeParams, processorCount)
+                    loadedModelPath = path
+                    memoryGuard?.loaded(file, runtimeParams, before)
                     mutableState.value = ModelState.Ready
                 }
             }.onFailure { error ->
@@ -167,16 +214,17 @@ class LlamatikEngine internal constructor(
             val file = File(modelProvider.getModelPath().getOrThrow())
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
-                if (!params.automaticMemory) {
-                    val selected = manualConfiguration(file, params)
+                val settings = params.copy(gpuLayers = 0)
+                if (!settings.automaticMemory) {
+                    val selected = manualConfiguration(file, settings)
                     return@withContext (selected.contextSize - selected.maxTokens -
                         AutomaticContextPolicy.TECHNICAL_RESERVE).coerceAtLeast(0)
                 }
-                val candidate = automaticConfiguration(file, params, 0, task, 4096)
+                val candidate = automaticConfiguration(file, settings, 0, task, 4096)
                 val current = appliedParams
-                val usableExisting = task != GenerationTask.CALENDAR && state.value is ModelState.Ready &&
-                    loadedModelPath == file.path && current != null && current.gpuLayers == params.gpuLayers &&
-                    current.effectiveCpuThreads(processorCount) == params.effectiveCpuThreads(processorCount)
+                val usableExisting = task != GenerationTask.CALENDAR && allocationReady() &&
+                    loadedModelPath == file.path && current != null && current.gpuLayers == settings.gpuLayers &&
+                    current.effectiveCpuThreads(processorCount) == settings.effectiveCpuThreads(processorCount)
                 val useExisting = usableExisting && (candidate.deviceContextLimit?.canLoad == false ||
                     current!!.contextSize >= candidate.contextSize)
                 val context = if (useExisting) minOf(4096, current!!.contextSize)
@@ -196,9 +244,10 @@ class LlamatikEngine internal constructor(
             val requestContext = currentCoroutineContext()
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
+                val settings = params.copy(gpuLayers = 0)
                 requestContext.ensureActive()
-                if (params.automaticMemory) rejectUnavailableAllocation(file, params)
-                else manualConfiguration(file, params)
+                if (settings.automaticMemory) rejectUnavailableAllocation(file, settings)
+                else manualConfiguration(file, settings)
                 Unit
             }
         }
@@ -207,8 +256,8 @@ class LlamatikEngine internal constructor(
     /** This gate neither initializes the native library nor reads/materializes tokenizer arrays. */
     private fun rejectUnavailableAllocation(file: File, settings: GenerationParams) {
         val current = appliedParams
-        if (state.value is ModelState.Ready && loadedModelPath == file.path && current != null &&
-            current.gpuLayers == settings.gpuLayers &&
+        if (allocationReady() && loadedModelPath == file.path && current != null &&
+            (settings.computeMode == ComputeMode.AUTO || current.gpuLayers == 0) &&
             current.effectiveCpuThreads(processorCount) == settings.effectiveCpuThreads(processorCount)) return
         val assessment = memoryGuard?.assess(file, settings.copy(batchSizeAuto = false, batchSize = 64))
         // No input was tokenized, so its required context is deliberately unknown.
@@ -220,17 +269,62 @@ class LlamatikEngine internal constructor(
 
     /** One request owns its tokenizer, allocation and sampler until natural completion or cancellation. */
     override fun generateForTask(messages: List<ChatMessage>, task: GenerationTask,
-        onReady: suspend () -> Unit): Flow<String> = channelFlow<AutomaticEmission> {
+        onReady: suspend () -> Unit): Flow<String> = kotlinx.coroutines.flow.flow {
+        var emitted = false
+        generateEventsForTask(messages, task, onReady).collect { event ->
+            when (event) {
+                is GenerationEvent.Delta -> { emitted = true; emit(event.text) }
+                is GenerationEvent.Restart -> check(!emitted) {
+                    "Ответ прерван при переключении вычислителя. Повторите запрос."
+                }
+            }
+        }
+    }
+
+    override fun generateEventsForTask(messages: List<ChatMessage>, task: GenerationTask,
+        onReady: suspend () -> Unit): Flow<GenerationEvent> = kotlinx.coroutines.flow.flow {
+        val settings = withContext(engineDispatcher) { synchronized(lifecycleLock) { params } }
+        val path = modelProvider.getModelPath().getOrThrow()
+        var forceCpu = settings.computeMode == ComputeMode.CPU
+        var readyDelivered = false
+        var gpuAttempt = false
+        val ready: suspend () -> Unit = { if (!readyDelivered) { onReady(); readyDelivered = true } }
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            try {
+                generationAttempt(messages, task, ready, settings, path, forceCpu) { gpuAttempt = it }
+                    .collect { emit(GenerationEvent.Delta(it)) }
+                break
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                val retry = !forceCpu && gpuAttempt && (failure is GpuExecutionException ||
+                    failure is ModelAllocationException || (failure is PromptCapacityException &&
+                    failure.reason == ContextCapacityReason.MEMORY))
+                if (!retry) throw failure
+                currentCoroutineContext().ensureActive()
+                val reason = failure.message ?: "Ошибка GPU"
+                withContext(engineDispatcher) { synchronized(lifecycleLock) { releaseModel() } }
+                runtime.recordFallback(reason)
+                forceCpu = true
+                emit(GenerationEvent.Restart(reason))
+            }
+        }
+    }
+
+    private fun generationAttempt(messages: List<ChatMessage>, task: GenerationTask,
+        onReady: suspend () -> Unit, requested: GenerationParams, path: String, forceCpu: Boolean,
+        onBackendSelected: (Boolean) -> Unit): Flow<String> = channelFlow<AutomaticEmission> {
         modelMutex.withLock {
             check(!closed) { "Движок закрыт" }
+            if (runtime is RemoteLlamaRuntime) runtime.awaitRelease()
             val requestContext = currentCoroutineContext()
-            val requestSettings = synchronized(lifecycleLock) { params }
-            val path = modelProvider.getModelPath().getOrThrow()
+            var requestSettings = requested.copy(gpuLayers = 0)
             if (!requestSettings.automaticMemory) {
                 var manualCancelHook: Job? = null
                 try {
                     val file = File(path)
-                    val selected = synchronized(lifecycleLock) {
+                    var selected = synchronized(lifecycleLock) {
                         if (loadedModelPath != null && loadedModelPath != path) releaseModel()
                         requestContext.ensureActive()
                         val checked = manualConfiguration(file, requestSettings)
@@ -259,10 +353,13 @@ class LlamatikEngine internal constructor(
                             selected.contextSize, selected.maxTokens)
                     }
                     synchronized(lifecycleLock) {
+                        requestSettings = selectCompute(File(path), requested, selected.contextSize, forceCpu)
+                        onBackendSelected(requestSettings.gpuLayers != 0)
+                        selected = manualConfiguration(File(path), requestSettings)
                         check(!closed) { "Движок закрыт" }
                         requestContext.ensureActive()
                         val nativeConfig = NativeConfiguration(selected, processorCount)
-                        val reuseAllocation = state.value is ModelState.Ready && loadedModelPath == path &&
+                        val reuseAllocation = allocationReady() && loadedModelPath == path &&
                             loadedConfiguration == nativeConfig
                         generationActive = true
                         if (!reuseAllocation) {
@@ -272,6 +369,7 @@ class LlamatikEngine internal constructor(
                             val loaded = runtime.load(path)
                             if (!loaded) throw ModelAllocationException(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED,
                                 selected.contextSize, selected.deviceContextLimit)
+                            check(!closed) { "Движок закрыт" }
                             loadedModelPath = path
                             loadedConfiguration = nativeConfig
                             loadedContextLength = selected.trainedContextLength
@@ -352,11 +450,13 @@ class LlamatikEngine internal constructor(
                     runtime.prepareTokenizer(path)
                     inputTokens = runtime.countTokens(prompt)
                     val minimum = AutomaticContextPolicy.minimumContext(inputTokens, task)
+                    requestSettings = selectCompute(file, requested, minimum, forceCpu)
+                    onBackendSelected(requestSettings.gpuLayers != 0)
                     val trained = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
                     val desired = maxOf(AutomaticContextPolicy.desiredContext(inputTokens, task), taskContexts[task] ?: 0)
                     val current = appliedParams
                     val sameTask = mutableAutomaticState.value?.task == task
-                    val canReuse = state.value is ModelState.Ready && loadedModelPath == path &&
+                    val canReuse = allocationReady() && loadedModelPath == path &&
                         current != null && sameTask && current.contextSize >= desired &&
                         current.gpuLayers == requestSettings.gpuLayers &&
                         current.effectiveCpuThreads(processorCount) == requestSettings.effectiveCpuThreads(processorCount)
@@ -367,7 +467,7 @@ class LlamatikEngine internal constructor(
                     } else {
                         val planned = automaticConfiguration(file, requestSettings, inputTokens, task, desired)
                         // If growth is currently unavailable, the already allocated context can still serve the input.
-                        if (state.value is ModelState.Ready && loadedModelPath == path && current != null &&
+                        if (allocationReady() && loadedModelPath == path && current != null &&
                             (sameTask || planned.deviceContextLimit?.canLoad == false ||
                                 AutomaticContextPolicy.availableAnswer(planned.contextSize, inputTokens) < AutomaticContextPolicy.minimumAnswer(task)) &&
                             (current.contextSize >= planned.contextSize || planned.deviceContextLimit?.canLoad == false) &&
@@ -379,7 +479,7 @@ class LlamatikEngine internal constructor(
                         } else planned
                     }
                     val nativeConfig = NativeConfiguration(effective, processorCount)
-                    val reuseAllocation = state.value is ModelState.Ready && loadedModelPath == path &&
+                    val reuseAllocation = allocationReady() && loadedModelPath == path &&
                         loadedConfiguration == nativeConfig
                     if (!reuseAllocation) checkAllocationAssessment(effective.deviceContextLimit, minimum)
                     val available = AutomaticContextPolicy.availableAnswer(effective.contextSize, inputTokens)
@@ -398,6 +498,8 @@ class LlamatikEngine internal constructor(
                             runtime.load(path)
                         } catch (cancelled: CancellationException) {
                             throw cancelled
+                        } catch (failure: GpuExecutionException) {
+                            throw failure
                         } catch (error: IllegalStateException) {
                             nativeFailure = error
                             false
@@ -431,6 +533,7 @@ class LlamatikEngine internal constructor(
                             throw ModelAllocationException(ModelAllocationFailure.NATIVE_ALLOCATION_FAILED,
                                 minimum, effective.deviceContextLimit, nativeFailure)
                         }
+                        check(!closed) { "Движок закрыт" }
                         loadedModelPath = path
                         loadedConfiguration = NativeConfiguration(effective, processorCount)
                         loadedContextLength = GgufMetadataReader.readContextLength(file)
@@ -481,6 +584,7 @@ class LlamatikEngine internal constructor(
                     currentCoroutineContext().ensureActive()
                     mutableState.value = ModelState.Loading
                     val resized = runtime.resizeContext(next.contextSize, next.batchSize, next.effectiveCpuThreads(processorCount))
+                    if (!resized && effective.gpuLayers != 0) throw GpuExecutionException("Не удалось расширить GPU-контекст")
                     check(resized) { "Не удалось расширить контекст. Сохранённая часть ответа не завершена." }
                     effective = next.copy(maxTokens = AutomaticContextPolicy.availableAnswer(next.contextSize,
                         inputTokens + result.generatedTokens))
@@ -531,6 +635,40 @@ class LlamatikEngine internal constructor(
     private sealed interface AutomaticEmission {
         data class Text(val value: String) : AutomaticEmission
         data class Failed(val error: Exception) : AutomaticEmission
+    }
+
+    private fun allocationReady(): Boolean = runtime.allocationValid && state.value is ModelState.Ready
+
+    private fun selectCompute(file: File, requested: GenerationParams, minimum: Int, forceCpu: Boolean): GenerationParams {
+        val cpu = requested.copy(gpuLayers = 0)
+        if (forceCpu || requested.computeMode == ComputeMode.CPU) return cpu
+        val device = runtime.gpuDevice(file.path) ?: return cpu
+        val metadata = GgufMetadataReader.readMetadata(file)?.memory ?: return cpu
+        val blocks = metadata.blockCount ?: return cpu
+        val maximum = if (requested.gpuLayers > 0) minOf(requested.gpuLayers, blocks + 1) else blocks + 1
+        val current = appliedParams
+        if (allocationReady() && loadedModelPath == file.path && current != null && current.gpuLayers in 1..maximum) {
+            return requested.copy(gpuLayers = current.gpuLayers)
+        }
+        var lower = 1
+        var upper = maximum
+        var selected = 0
+        while (lower <= upper) {
+            val layers = lower + (upper - lower) / 2
+            val candidate = requested.copy(gpuLayers = layers, contextSize = minimum,
+                batchSizeAuto = false, batchSize = 64)
+            val assessment = memoryGuard?.assess(file, candidate)
+            val cost = ModelMemoryCalculator.cost(metadata, MemoryRuntimeSettings(false, 64, layers), minimum)
+            val gpuBytes = cost?.let { Math.addExact(ModelMemoryCalculator.gpuWeights(metadata, layers), it.workingBytes) }
+            val fits = assessment?.canLoad != false && (assessment == null || assessment.maximumContext >= minimum) &&
+                gpuBytes != null && (device.freeBytes <= 0 || gpuBytes <= device.freeBytes - device.freeBytes / 8)
+            if (fits) {
+                selected = layers
+                lower = layers + 1
+            } else upper = layers - 1
+        }
+        if (selected == 0) runtime.recordFallback("Для GPU-конфигурации сейчас недостаточно доступной памяти")
+        return requested.copy(gpuLayers = selected)
     }
 
     private fun automaticConfiguration(file: File, settings: GenerationParams, promptTokens: Int,
@@ -608,7 +746,7 @@ class LlamatikEngine internal constructor(
         modelMutex.withLock {
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
-                check(state.value is ModelState.Ready) { "Модель не загружена" }
+                check(allocationReady()) { "Модель не загружена" }
                 generationActive = true
             }
             try {
@@ -625,6 +763,7 @@ class LlamatikEngine internal constructor(
                     }
                 }
 
+                runtime.beginRequest()
                 runtime.generateStream(buildPrompt(messages), object : GenStream {
                     override fun onDelta(text: String) {
                         buffer.append(text)
@@ -657,13 +796,19 @@ class LlamatikEngine internal constructor(
         if (!closed) runtime.cancel()
     }
 
-    override fun updateParams(params: GenerationParams) = synchronized(lifecycleLock) {
-        // Cancelled work can still restore its parameters in finally after onCleared.
-        if (closed) return
-        this.params = params
-        // Settings may be saved during a request. Its native parameters remain unchanged.
-        if (!automaticSession && !generationActive && state.value is ModelState.Ready && loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
-            applyRuntimeParams()
+    override fun updateParams(params: GenerationParams) {
+        if (runtime is RemoteLlamaRuntime) {
+            if (!closed) this.params = params
+            return
+        }
+        synchronized(lifecycleLock) {
+            // Cancelled work can still restore its parameters in finally after onCleared.
+            if (closed) return
+            this.params = params
+            // Settings may be saved during a request. Its native parameters remain unchanged.
+            if (!automaticSession && !generationActive && allocationReady() && loadedConfiguration == NativeConfiguration(runtimeParams, processorCount)) {
+                applyRuntimeParams()
+            }
         }
     }
 
@@ -676,17 +821,36 @@ class LlamatikEngine internal constructor(
         }
     }
 
-    override fun unload() = synchronized(lifecycleLock) {
-        if (!closed) releaseModel()
+    override fun unload() {
+        if (runtime is RemoteLlamaRuntime) {
+            runtime.cancel()
+            synchronized(disposalLock) {
+                if (!closed) executor.execute { synchronized(lifecycleLock) { if (!closed) releaseModel() } }
+            }
+        } else synchronized(lifecycleLock) { if (!closed) releaseModel() }
     }
 
-    override fun close() = synchronized(lifecycleLock) {
-        if (closed) return
-        closed = true
-        try {
-            releaseModel()
-        } finally {
-            engineDispatcher.close()
+    override fun close() {
+        if (runtime is RemoteLlamaRuntime) {
+            synchronized(disposalLock) {
+                if (closed) return
+                closed = true
+                runtime.cancel()
+                executor.execute {
+                    try { synchronized(lifecycleLock) { releaseModel() } }
+                    finally { runtime.close(); engineDispatcher.close() }
+                }
+            }
+            return
+        }
+        synchronized(lifecycleLock) {
+            if (closed) return
+            closed = true
+            try {
+                releaseModel()
+            } finally {
+                engineDispatcher.close()
+            }
         }
     }
 
@@ -699,6 +863,7 @@ class LlamatikEngine internal constructor(
             } finally {
                 loadedConfiguration = null
                 appliedParams = null
+                selectedGpuLayers = 0
                 loadedContextLength = null
                 loadedMemoryLimit = null
                 loadedModelPath = null
@@ -746,10 +911,11 @@ class LlamatikEngine internal constructor(
         val batchSize: Int,
         val gpuLayers: Int,
         val cpuThreads: Int,
+        val computeMode: ComputeMode,
     ) {
         constructor(params: GenerationParams, processorCount: Int) : this(
             params.contextSize, params.effectiveBatchSize, params.gpuLayers,
-            params.effectiveCpuThreads(processorCount),
+            params.effectiveCpuThreads(processorCount), params.computeMode,
         )
     }
 

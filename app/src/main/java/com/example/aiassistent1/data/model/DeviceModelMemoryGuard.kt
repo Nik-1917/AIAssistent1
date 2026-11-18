@@ -54,7 +54,7 @@ class DeviceModelMemoryGuard(
         loaded = if (baseline != null && cost != null) {
             // A GPU copy may be private; CPU mmap weights remain in the reclaimable file cache.
             Loaded(baseline.coerceAtLeast(0),
-                cost.workingBytes + if (params.gpuLayers != 0) metadata.fileBytes else 0)
+                cost.workingBytes + ModelMemoryCalculator.gpuWeights(metadata, params.gpuLayers))
         } else null
         refresh()
     }
@@ -67,7 +67,7 @@ class DeviceModelMemoryGuard(
     override fun refresh() { revision.update { it + 1 } }
 
     companion object {
-        fun forAndroid(context: Context): DeviceModelMemoryGuard {
+        fun forAndroid(context: Context, inferencePrivateBytes: (() -> Long)? = null): DeviceModelMemoryGuard {
             val manager = context.applicationContext.getSystemService(ActivityManager::class.java)
             return DeviceModelMemoryGuard {
                 try {
@@ -76,7 +76,7 @@ class DeviceModelMemoryGuard(
                     manager.getMemoryInfo(info)
                     Debug.getMemoryInfo(process)
                     DeviceMemorySnapshot(info.totalMem, info.availMem, info.threshold, info.lowMemory,
-                        process.totalPrivateDirty.toLong() * 1024, Process.is64Bit())
+                        inferencePrivateBytes?.invoke() ?: (process.totalPrivateDirty.toLong() * 1024), Process.is64Bit())
                 } catch (_: RuntimeException) {
                     null
                 }

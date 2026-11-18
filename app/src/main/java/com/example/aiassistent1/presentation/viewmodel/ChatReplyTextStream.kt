@@ -7,6 +7,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.map
+import com.example.aiassistent1.domain.model.GenerationEvent
 
 /** Chat-only text snapshots. The calendar continues to consume the original, unmodified flow. */
 internal class ChatReplyTextStream(
@@ -17,9 +19,16 @@ internal class ChatReplyTextStream(
         response: Flow<String>,
         onRepetition: () -> Unit = {},
         retry: (suspend () -> Flow<String>)? = null,
+    ): Flow<String> = eventSnapshots(response.map { GenerationEvent.Delta(it) }, onRepetition,
+        retry?.let { original -> { original().map { GenerationEvent.Delta(it) } } })
+
+    fun eventSnapshots(
+        response: Flow<GenerationEvent>,
+        onRepetition: () -> Unit = {},
+        retry: (suspend () -> Flow<GenerationEvent>)? = null,
     ): Flow<String> = flow {
         val pending = StringBuilder()
-        val repetitions = ChatRepetitionGuard()
+        var repetitions = ChatRepetitionGuard()
         var displayed = ""
         suspend fun publish(finished: Boolean) {
             val candidate = readable(pending.toString(), finished) ?: return
@@ -28,7 +37,14 @@ internal class ChatReplyTextStream(
                 emit(candidate)
             }
         }
-        response.takeWhile { delta ->
+        response.takeWhile { event ->
+            if (event is GenerationEvent.Restart) {
+                pending.clear()
+                repetitions = ChatRepetitionGuard()
+                displayed = ""
+                return@takeWhile true
+            }
+            val delta = (event as GenerationEvent.Delta).text
             pending.append(delta.take(repetitions.accept(delta)))
             if (repetitions.stopped) onRepetition()
             publish(finished = false)
@@ -45,7 +61,7 @@ internal class ChatReplyTextStream(
         onInvalidReply(pending.toString(), "В ответе нет непустого текста для отображения")
         if (retry != null) {
             currentCoroutineContext().ensureActive()
-            snapshots(retry(), onRepetition).collect { emit(it) }
+            eventSnapshots(retry(), onRepetition).collect { emit(it) }
         } else emit(INVALID_RESPONSE)
     }
 

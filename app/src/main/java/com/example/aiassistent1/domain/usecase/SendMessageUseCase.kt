@@ -4,6 +4,7 @@ import com.example.aiassistent1.domain.interfaces.LLMEngine
 import com.example.aiassistent1.domain.model.ChatMessage
 import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.GenerationTask
+import com.example.aiassistent1.domain.model.GenerationEvent
 import com.example.aiassistent1.domain.provider.SystemPromptProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -20,13 +21,25 @@ class SendMessageUseCase(
         creationLocalDateTime: java.time.LocalDateTime? = null,
         onReady: suspend () -> Unit = {},
     ): Result<Flow<String>> {
+        return events(messages, useSystemPrompt, isCalendarMode, localDateTime, creationLocalDateTime, onReady)
+            .map { it.textDeltas() }
+    }
+
+    suspend fun events(
+        messages: List<ChatMessage>,
+        useSystemPrompt: Boolean = false,
+        isCalendarMode: Boolean = true,
+        localDateTime: java.time.LocalDateTime = java.time.LocalDateTime.now(),
+        creationLocalDateTime: java.time.LocalDateTime? = null,
+        onReady: suspend () -> Unit = {},
+    ): Result<Flow<GenerationEvent>> {
         val systemMessage = ChatMessage(
             role = MessageRole.SYSTEM,
             content = systemPromptProvider.getSystemPrompt(isCalendarMode, localDateTime, creationLocalDateTime)
         )
         val modelMessages = if (useSystemPrompt) listOf(systemMessage) + messages else messages
         return Result.success(flow {
-            llmEngine.generateForTask(modelMessages,
+            llmEngine.generateEventsForTask(modelMessages,
                 if (isCalendarMode) GenerationTask.CALENDAR else GenerationTask.CHAT, onReady).collect {
                 emit(it)
             }
