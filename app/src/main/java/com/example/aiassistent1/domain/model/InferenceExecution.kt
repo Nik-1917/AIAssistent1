@@ -2,13 +2,16 @@ package com.example.aiassistent1.domain.model
 
 enum class ComputeMode { AUTO, CPU }
 
-enum class InferenceBackend { CPU, VULKAN }
+enum class InferenceBackend(val nativeId: Int, val displayName: String) {
+    CPU(0, "CPU"), VULKAN(1, "Vulkan"), OPENCL(2, "OpenCL")
+}
 
 data class GpuDevice(
     val name: String,
     val identity: String,
-    val freeBytes: Long,
+    val freeBytes: Long?,
     val totalBytes: Long,
+    val maxAllocationBytes: Long? = null,
 )
 
 /** Measurements belong to one native allocation and its latest generation. */

@@ -1,0 +1,20 @@
+OpenCL backend for Android arm64
+
+The ggml-opencl plugin and its embedded kernels are from llama.cpp revision
+961e9a3e46ca4cf7e6e86cfceb5b5e32084bf5f0. See llama-vulkan-MIT.txt for the
+ggml authors' MIT license and OpenCL-YaRN-MIT.txt for the YaRN code in rope.cl.
+Local adapters identify the vendor driver and resolve the OpenCL 3.0 buffer API
+at runtime. The optional diagnostic build also traces completed matrix kernels.
+
+OpenCL-Headers and the build-time OpenCL-ICD-Loader use Apache License 2.0.
+See OpenCL-Khronos-Apache-2.0.txt. The OpenCL header and loader sources retain
+their individual copyright notices, including The Khronos Group Inc.
+Both dependencies are from v2025.07.22. The Android vendor driver is supplied
+by the operating system.
+
+The Llamatik v1.10.1 source tag carries the MIT license, copyright 2025
+Ferran Pons (see Llamatik-MIT.txt). The published Maven descriptor for
+com.llamatik:library-android:1.10.1 lists Apache-2.0. Its text is included
+in OpenCL-Khronos-Apache-2.0.txt. The upstream records are available at
+https://github.com/llamatik/Llamatik/blob/v1.10.1/LICENSE and
+https://repo.maven.apache.org/maven2/com/llamatik/library-android/1.10.1/library-android-1.10.1.pom.

@@ -40,14 +40,14 @@ internal fun InferenceSettingsControls(
                 label = { Text(if (value == ComputeMode.AUTO) "Авто" else "CPU") })
         }
     }
-    Text("Авто проверяет совместимость модели с GPU и доступную память. При ошибке GPU ответ перезапускается на CPU.",
+    Text("В режиме «Авто» приложение проверяет Vulkan, затем OpenCL. Если оба способа недоступны, модель работает на CPU.",
         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (execution.checkingGpu) {
         Text("Проверка GPU…", style = MaterialTheme.typography.bodyMedium)
         LinearProgressIndicator(Modifier.fillMaxWidth())
     }
     if (execution.backend == null) {
-        execution.fallbackReason?.let { InferenceValue("Причина выбора CPU", it) }
+        execution.fallbackReason?.let { InferenceValue("Проверка вычислителей", it) }
         Text("Сведения о запуске появятся после загрузки модели.", style = MaterialTheme.typography.bodySmall)
         return
     }
@@ -57,15 +57,15 @@ internal fun InferenceSettingsControls(
         InferenceValue("Запрошено", if (execution.requestedMode == ComputeMode.AUTO) "Авто" else "CPU")
         val backend = when {
             execution.backend == InferenceBackend.CPU -> "CPU"
-            execution.offloadedLayers < execution.totalLayers -> "GPU + CPU · Vulkan"
-            else -> "GPU · Vulkan"
+            execution.offloadedLayers < execution.totalLayers -> "GPU + CPU · ${execution.backend.displayName}"
+            else -> "GPU · ${execution.backend.displayName}"
         }
         InferenceValue("Фактически используется", backend)
         execution.deviceName?.let { InferenceValue("Устройство", it) }
         if (execution.offloadedLayers > 0) {
             InferenceValue("Слоёв на GPU", "${execution.offloadedLayers} из ${execution.totalLayers}")
         }
-        execution.fallbackReason?.let { InferenceValue("Причина перехода на CPU", it) }
+        execution.fallbackReason?.let { InferenceValue("Причина выбора вычислителя", it) }
         execution.initializationMillis?.let { InferenceValue("Подготовка модели", "$it мс") }
         execution.timeToFirstTokenMillis?.let { InferenceValue("До первого токена", "$it мс") }
         execution.prefillTokensPerSecond?.let { InferenceValue("Обработка запроса", "${String.format("%.1f", it)} токенов/с") }

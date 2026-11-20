@@ -34,15 +34,50 @@ class AutomaticComputeTest {
         }
     }
 
-    @Test fun `GPU allocation error retries exactly once on CPU`() = runBlocking {
+    @Test fun `both GPU allocation failures try OpenCL then CPU without restarting visible text`() = runBlocking {
         fixture { engine, runtime, _ ->
             runtime.failLoad = true
             val events = engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList()
-            assertEquals(2, runtime.loadedLayers.size)
+            assertEquals(listOf(InferenceBackend.VULKAN, InferenceBackend.OPENCL, InferenceBackend.CPU), runtime.loadedBackends)
             assertTrue(runtime.loadedLayers.first() > 0)
             assertEquals(0, runtime.loadedLayers.last())
-            assertEquals(1, events.filterIsInstance<GenerationEvent.Restart>().size)
+            assertTrue(events.none { it is GenerationEvent.Restart })
             assertEquals("cpu complete", (events.last() as GenerationEvent.Delta).text)
+        }
+    }
+
+    @Test fun `Vulkan failure before output reaches OpenCL with identical layer count and a single ready callback`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.failBeforeOutput = InferenceBackend.VULKAN
+            var ready = 0
+            val events = engine.generateEventsForTask(emptyList(), GenerationTask.CHAT) { ready++ }.toList()
+            assertEquals(listOf(InferenceBackend.VULKAN, InferenceBackend.OPENCL), runtime.loadedBackends)
+            assertEquals(runtime.loadedLayers.first(), runtime.loadedLayers.last())
+            assertEquals(listOf(GenerationEvent.Delta("gpu complete")), events)
+            assertEquals(1, ready)
+            assertTrue(requireNotNull(runtime.fallback).contains("Vulkan"))
+        }
+    }
+
+    @Test fun `OpenCL partial output is replaced by CPU after Vulkan is unavailable`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.unavailable = InferenceBackend.VULKAN
+            runtime.failGeneration = true
+            val events = engine.generateEventsForTask(emptyList(), GenerationTask.CALENDAR).toList()
+            assertEquals(listOf(InferenceBackend.OPENCL, InferenceBackend.CPU), runtime.loadedBackends)
+            assertEquals(1, events.filterIsInstance<GenerationEvent.Restart>().size)
+            assertTrue(requireNotNull(runtime.fallback).contains("OpenCL"))
+        }
+    }
+
+    @Test fun `zero OpenCL budget and a too-small single buffer each select CPU`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.unavailable = InferenceBackend.VULKAN
+            for (device in listOf(GpuDevice("Adreno", "id", 0, 1024), GpuDevice("Adreno", "id", null, 1024, 1))) {
+                runtime.openClDevice = device
+                engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList()
+                assertEquals(InferenceBackend.CPU, runtime.params.inferenceBackend)
+            }
         }
     }
 
@@ -61,7 +96,7 @@ class AutomaticComputeTest {
             engine.updateParams(GenerationParams(automaticMemory = false, contextSize = 1024, maxTokens = 256))
             runtime.failLoad = true
             val events = engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList()
-            assertEquals(2, runtime.loadedLayers.size)
+            assertEquals(listOf(InferenceBackend.VULKAN, InferenceBackend.OPENCL, InferenceBackend.CPU), runtime.loadedBackends)
             assertTrue(runtime.loadedLayers.first() > 0)
             assertEquals(0, runtime.loadedLayers.last())
             assertEquals("cpu complete", (events.last() as GenerationEvent.Delta).text)
@@ -86,6 +121,29 @@ class AutomaticComputeTest {
             val failure = runCatching { engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
             assertTrue(failure is CancellationException)
             assertEquals(1, runtime.loadedLayers.size)
+        }
+    }
+
+    @Test fun `cancellation during first GPU probe prevents both the next probe and CPU retry`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.unavailable = InferenceBackend.VULKAN
+            runtime.onProbe = { engine.cancelGeneration() }
+            val failure = runCatching { engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList() }.exceptionOrNull()
+            assertTrue(failure is CancellationException)
+            assertEquals(1, runtime.probes)
+            assertTrue(runtime.loadedBackends.isEmpty())
+        }
+    }
+
+    @Test fun `ensureLoaded verifies a changed GGUF at the same path again`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            engine.ensureLoaded().getOrThrow()
+            engine.ensureLoaded().getOrThrow()
+            assertEquals(1, runtime.loadedBackends.size)
+            val file = requireNotNull(folder.root.listFiles()).single()
+            assertTrue(file.setLastModified(file.lastModified() + 2000L))
+            engine.ensureLoaded().getOrThrow()
+            assertEquals(listOf(InferenceBackend.VULKAN, InferenceBackend.VULKAN), runtime.loadedBackends)
         }
     }
 
@@ -135,15 +193,23 @@ class AutomaticComputeTest {
     private class Runtime : LlamaRuntime {
         var params = GenerationParams()
         val loadedLayers = mutableListOf<Int>()
+        val loadedBackends = mutableListOf<InferenceBackend>()
+        var unavailable: InferenceBackend? = null
+        var failBeforeOutput: InferenceBackend? = null
+        var openClDevice: GpuDevice? = null
         var probes = 0
+        var onProbe: () -> Unit = {}
         var failLoad = false
         var failGeneration = false
         var cancelGeneration = false
         var fallback: String? = null
         var outputChunks: List<String>? = null
         override var lastGeneration: GenerationResult? = null
-        override fun gpuDevice(path: String): GpuDevice {
+        override fun gpuDevice(path: String, backend: InferenceBackend): GpuDevice? {
             probes++
+            onProbe()
+            if (backend == unavailable) return null
+            if (backend == InferenceBackend.OPENCL) openClDevice?.let { return it }
             return GpuDevice("Test GPU", "driver-1", 64L * 1024 * 1024 * 1024, 64L * 1024 * 1024 * 1024)
         }
         override fun updateParams(params: GenerationParams, threads: Int, batchSize: Int) { this.params = params }
@@ -151,11 +217,13 @@ class AutomaticComputeTest {
         override fun countTokens(prompt: String) = 32
         override fun load(path: String): Boolean {
             loadedLayers += params.gpuLayers
+            loadedBackends += params.inferenceBackend
             if (params.gpuLayers > 0 && failLoad) throw GpuExecutionException("GPU allocation failed")
             return true
         }
         override fun generateStream(prompt: String, stream: GenStream) {
             if (params.gpuLayers > 0) {
+                if (params.inferenceBackend == failBeforeOutput) throw GpuExecutionException("Kernel failed")
                 if (cancelGeneration) throw CancellationException("User cancelled")
                 if (failGeneration) { stream.onDelta("gpu partial"); throw GpuExecutionException("Device lost") }
             }
@@ -164,7 +232,7 @@ class AutomaticComputeTest {
             lastGeneration = GenerationResult(GenerationStopReason.EOS, 32, 2, params.contextSize)
             stream.onComplete()
         }
-        override fun recordFallback(reason: String) { fallback = reason }
+        override fun recordFallback(reason: String?) { fallback = reason }
         override fun cancel() = Unit
         override fun shutdown() = Unit
     }

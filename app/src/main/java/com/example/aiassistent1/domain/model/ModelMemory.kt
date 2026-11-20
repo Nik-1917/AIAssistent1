@@ -25,6 +25,8 @@ data class ModelMemoryMetadata(
     val hybrid: HybridMemoryMetadata? = null,
     val gpuLayerBytes: List<Long>? = null,
     val gpuSharedBytes: Long? = null,
+    val largestLayerTensorBytes: List<Long>? = null,
+    val largestSharedTensorBytes: Long? = null,
 )
 
 data class HybridMemoryMetadata(
@@ -90,7 +92,8 @@ data class ModelFileBudget(val capacityBytes: Long, val metadata: ModelMemoryMet
 }
 
 data class ModelMemoryCost(val weightsBytes: Long, val workingBytes: Long,
-    val profile: MemoryEstimateProfile = MemoryEstimateProfile.FULL_ATTENTION) {
+    val profile: MemoryEstimateProfile = MemoryEstimateProfile.FULL_ATTENTION,
+    val largestWorkingTensorBytes: Long = 0) {
     val totalBytes: Long get() = Math.addExact(weightsBytes, workingBytes)
 }
 
@@ -177,9 +180,19 @@ object ModelMemoryCalculator {
         if (gpuLayers == 0) return 0
         val layers = metadata.gpuLayerBytes ?: return metadata.fileBytes
         val shared = metadata.gpuSharedBytes ?: return metadata.fileBytes
-        val count = if (gpuLayers < 0) layers.size else minOf(gpuLayers, layers.size)
+        // This GGML places the output layer first, then the last repeating blocks.
+        // Shared weights include the output projection or its tied token embedding.
+        val count = if (gpuLayers < 0) layers.size else minOf(gpuLayers - 1, layers.size)
         val repeating = layers.takeLast(count).fold(0L, Math::addExact)
-        return Math.addExact(repeating, if (gpuLayers < 0 || gpuLayers > layers.size) shared else 0L)
+        return Math.addExact(repeating, shared)
+    }
+
+    fun largestGpuTensor(metadata: ModelMemoryMetadata, gpuLayers: Int): Long {
+        if (gpuLayers == 0) return 0
+        val layers = metadata.largestLayerTensorBytes ?: return gpuWeights(metadata, gpuLayers)
+        val shared = metadata.largestSharedTensorBytes ?: return gpuWeights(metadata, gpuLayers)
+        val count = if (gpuLayers < 0) layers.size else minOf(gpuLayers - 1, layers.size)
+        return maxOf(shared, layers.takeLast(count).maxOrNull() ?: 0)
     }
 
     fun cost(metadata: ModelMemoryMetadata, settings: MemoryRuntimeSettings, context: Int): ModelMemoryCost? = try {
@@ -229,7 +242,9 @@ object ModelMemoryCalculator {
         } else sum(128 * MIB, buffers)
         // File size is a conservative weight estimate, with overhead and a possible GPU-side copy.
         val weights = sum(weightsBytes(metadata.fileBytes, 0, profile), gpuWeights(metadata, settings.gpuLayers))
-        ModelMemoryCost(weights, working, profile).also { it.totalBytes }
+        val largestWorkingTensor = maxOf(multiply(cacheHeads, maxOf(key, value), 4, paddedContext),
+            logits, attention, multiply(batch, maxOf(embedding, feedForward), 4))
+        ModelMemoryCost(weights, working, profile, largestWorkingTensor).also { it.totalBytes }
     } catch (_: IllegalArgumentException) {
         null
     } catch (_: ArithmeticException) {

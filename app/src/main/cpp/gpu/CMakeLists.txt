@@ -1,7 +1,7 @@
 include(FetchContent)
 
 # This is the GGML revision used by the audited Llamatik 1.10.1 ABI.
-# Build only its optional Vulkan plugin. The base/CPU/llama libraries come from
+# Build its optional GPU plugins. The base/CPU/llama libraries come from
 # the existing AAR, so there is one backend registry in the process.
 set(ASSISTANT_GPU_CACHE "${CMAKE_CURRENT_LIST_DIR}/../../../../../build/llama-gpu")
 file(MAKE_DIRECTORY "${ASSISTANT_GPU_CACHE}")
@@ -93,7 +93,6 @@ function(ggml_add_backend_library target)
     target_compile_features(${target} PRIVATE cxx_std_17)
     target_compile_definitions(${target} PRIVATE GGML_BACKEND_BUILD GGML_BACKEND_DL GGML_SHARED)
     target_include_directories(${target} PRIVATE "${ggml_source}/include" "${ggml_source}/src")
-    target_link_libraries(${target} PRIVATE SPIRV-Headers::SPIRV-Headers)
     target_link_libraries(${target} PRIVATE "${ASSISTANT_GGML_PREBUILT_DIR}/jni/${ANDROID_ABI}/libggml-base.so")
 endfunction()
 
@@ -123,13 +122,34 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     endif()
     set(vulkan_cmake "${ggml_source}/src/ggml-vulkan/CMakeLists.txt")
     file(READ "${vulkan_cmake}" vulkan_build)
+    set(original_vulkan_build "${vulkan_build}")
     if(NOT vulkan_build MATCHES "CMAKE_GENERATOR_PLATFORM x64")
         string(REPLACE "SOURCE_DIR \${CMAKE_CURRENT_SOURCE_DIR}/vulkan-shaders"
             "CMAKE_GENERATOR \"${host_generator}\"\n        CMAKE_GENERATOR_PLATFORM x64\n        SOURCE_DIR \${CMAKE_CURRENT_SOURCE_DIR}/vulkan-shaders"
             vulkan_build "${vulkan_build}")
+    endif()
+    # MSBuild FileTracker still limits compiler-identification paths on Windows.
+    if(NOT vulkan_build MATCHES "BINARY_DIR .*vk-host")
+        string(REPLACE "SOURCE_DIR \${CMAKE_CURRENT_SOURCE_DIR}/vulkan-shaders"
+            "BINARY_DIR \${CMAKE_BINARY_DIR}/vk-host\n        SOURCE_DIR \${CMAKE_CURRENT_SOURCE_DIR}/vulkan-shaders"
+            vulkan_build "${vulkan_build}")
+    endif()
+    # Each generator already launches up to 16 glslc processes for one shader family.
+    set_property(GLOBAL APPEND PROPERTY JOB_POOLS assistant_vk_shaders=1)
+    if(NOT vulkan_build MATCHES "JOB_POOL assistant_vk_shaders")
+        string(REPLACE "DEPFILE \${_ggml_vk_target_cpp}.d"
+            "JOB_POOL assistant_vk_shaders\n            DEPFILE \${_ggml_vk_target_cpp}.d"
+            vulkan_build "${vulkan_build}")
+    endif()
+    if(NOT vulkan_build STREQUAL original_vulkan_build)
         file(WRITE "${vulkan_cmake}" "${vulkan_build}")
     endif()
 endif()
 file(LOCK "${ASSISTANT_GPU_CACHE}/sources.lock" RELEASE)
 add_subdirectory("${ggml_source}/src/ggml-vulkan" "${CMAKE_CURRENT_BINARY_DIR}/vulkan-961e9a3e")
 target_sources(ggml-vulkan PRIVATE "${CMAKE_CURRENT_LIST_DIR}/driver_info.cpp")
+target_link_libraries(ggml-vulkan PRIVATE SPIRV-Headers::SPIRV-Headers)
+
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    add_subdirectory(opencl)
+endif()

@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 
 internal class GpuExecutionException(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)
-private class NativeWorkerException(message: String, val memoryPressure: Boolean, cause: Throwable) : IllegalStateException(message, cause)
+private class NativeWorkerException(message: String, cause: Throwable) : IllegalStateException(message, cause)
 
 /** Native calls run on the engine executor. Synchronous callbacks bound the output queue. */
 internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
@@ -57,10 +57,9 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
     private var threads = 4
     private var batch = 64
     private var path = ""
-    private var device: GpuDevice? = null
+    private val driverIdentities = mutableMapOf<InferenceBackend, String>()
     private var workerPid = 0
     @Volatile private var loaded = false
-    private var probeFailure: String? = null
     override var lastGeneration: GenerationResult? = null
         private set
     override val allocationValid: Boolean
@@ -79,42 +78,29 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
         execute("begin")
     }
 
-    override fun gpuDevice(path: String): GpuDevice? {
+    override fun gpuDevice(path: String, backend: InferenceBackend): GpuDevice? {
         this.path = path
-        probeFailure?.let { recordFallback(it); return null }
+        require(backend != InferenceBackend.CPU)
+        val args = Bundle().apply { putString("inferenceBackend", backend.name) }
         mutableExecution.value = mutableExecution.value.copy(checkingGpu = true)
         try {
-            // This query does not register Vulkan in GGML. A rejected/cached
-            // driver must leave subsequent CPU allocations completely clean.
-            val info = execute("gpuInfo")
-            device = GpuDevice("", info.getString("identity").orEmpty(), 0, 0)
-            info.getString("unsupported")?.takeIf { it.isNotBlank() }?.let {
-                probeFailure = "GPU недоступен для этого движка: $it"
-                recordFallback(requireNotNull(probeFailure))
-                return null
-            }
-            preferences.getString(compatibilityKey(path), null)?.let {
-                recordFallback(it)
-                return null
-            }
-            val candidate = execute("gpu").let { reply ->
-                val name = reply.getString("device")
-                if (name == null) {
-                    recordFallback("Совместимый Vulkan GPU недоступен")
-                    return null
-                }
-                GpuDevice(name, reply.getString("identity").orEmpty(),
-                    reply.getLong("freeBytes"), reply.getLong("totalBytes")).also { device = it }
-            }
-            return candidate
+            val info = execute("gpuInfo", args)
+            driverIdentities[backend] = info.getString("identity").orEmpty()
+            // Missing libraries and known-incompatible drivers require no GGML registration.
+            info.getString("unsupported")?.takeIf(String::isNotBlank)?.let { throw GpuExecutionException(it) }
+            preferences.getString(compatibilityKey(path, backend), null)?.let { throw GpuExecutionException(it) }
+            val reply = execute("gpu", args)
+            val name = reply.getString("device") ?: return null
+            return GpuDevice(name, reply.getString("identity").orEmpty(),
+                reply.getLong("freeBytes").takeIf { reply.containsKey("freeBytes") }, reply.getLong("totalBytes"),
+                reply.getLong("maxAllocationBytes").takeIf { reply.containsKey("maxAllocationBytes") })
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (rejected: GpuExecutionException) {
+            throw rejected
         } catch (failure: IllegalStateException) {
-            val reason = "Проверка Vulkan завершилась ошибкой: ${failure.message}"
-            if (!transientGpuFailure(failure)) probeFailure = reason
             discardGpuWorker()
-            recordFallback(reason)
-            return null
+            throw GpuExecutionException(failure.message ?: "Ошибка проверки устройства", failure)
         } finally {
             mutableExecution.value = mutableExecution.value.copy(checkingGpu = false)
         }
@@ -137,8 +123,10 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
             fallbackReason = mutableExecution.value.fallbackReason)
         val reply = executeInference("load", arguments().apply { putString("path", path) })
         loaded = reply.getBoolean("loaded")
-        if (loaded && params.gpuLayers != 0 && mutableExecution.value.offloadedLayers == 0) {
-            throw GpuExecutionException("Движок не разместил слои модели на GPU")
+        if (loaded && (mutableExecution.value.backend != params.inferenceBackend ||
+                (params.gpuLayers != 0 && mutableExecution.value.offloadedLayers == 0))) {
+            discardGpuWorker()
+            throw GpuExecutionException("Движок не подтвердил выбранный вычислитель")
         }
         return loaded
     }
@@ -175,19 +163,17 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
             throw cancelled
         } catch (failure: IllegalStateException) {
             if (params.gpuLayers == 0) throw failure
-            val reason = failure.message ?: "Ошибка Vulkan"
-            // Memory pressure is transient; stable failures are tied to this model and driver.
-            if (!transientGpuFailure(failure)) preferences.edit().putString(compatibilityKey(path), reason).apply()
+            val reason = failure.message ?: "Ошибка GPU"
+            // A lost process or allocation failure alone does not establish model incompatibility.
+            val message = reason.lowercase()
+            if (failure !is NativeWorkerException &&
+                listOf("unsupported", "not supported", "incompatible", "not implemented", "cl_build_program_failure")
+                    .any(message::contains)) {
+                preferences.edit().putString(compatibilityKey(path, params.inferenceBackend), reason).apply()
+            }
             discardGpuWorker()
             throw GpuExecutionException(reason, failure)
         }
-    }
-
-    private fun transientGpuFailure(failure: IllegalStateException): Boolean {
-        if (failure is NativeWorkerException) return failure.memoryPressure
-        val reason = failure.message.orEmpty().lowercase()
-        if (listOf("unsupported", "not supported", "incompatible", "not implemented").any(reason::contains)) return false
-        return reason.contains("alloc") || reason.contains("memory")
     }
 
     /** A failed driver can leave backend globals half initialized; model_free is insufficient. */
@@ -225,10 +211,9 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
         val outputTokens = timing?.getOrNull(3) ?: 0L
         mutableExecution.value = mutableExecution.value.copy(
             requestedMode = params.computeMode,
-            backend = if (offloaded > 0) InferenceBackend.VULKAN else InferenceBackend.CPU,
+            backend = InferenceBackend.valueOf(info[0]),
             deviceName = info[1], offloadedLayers = offloaded,
             totalLayers = info[3].toIntOrNull() ?: 0, modelName = File(path).name,
-            fallbackReason = if (offloaded > 0) null else mutableExecution.value.fallbackReason,
             initializationMillis = info[4].toLongOrNull(),
             timeToFirstTokenMillis = timing?.getOrNull(2)?.takeIf { it >= 0 }?.div(1_000_000),
             prefillTokensPerSecond = if (prefillNanos > 0) inputTokens * 1e9 / prefillNanos else null,
@@ -237,7 +222,7 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
         )
     }
 
-    override fun recordFallback(reason: String) {
+    override fun recordFallback(reason: String?) {
         mutableExecution.value = mutableExecution.value.copy(fallbackReason = reason, checkingGpu = false)
     }
 
@@ -312,14 +297,16 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
             loaded = false
             residentPrivateBytes.set(0)
             if (cancelledAt != 0L) throw CancellationException("Генерация остановлена")
-            val memoryPressure = try {
-                workerPid > 0 && context.getSystemService(ActivityManager::class.java)
-                    .getHistoricalProcessExitReasons(context.packageName, workerPid, 1)
-                    .firstOrNull()?.reason == ApplicationExitInfo.REASON_LOW_MEMORY
-            } catch (_: RuntimeException) { false }
-            val message = if (memoryPressure) "Android завершил рабочий процесс из-за нехватки памяти"
-                else "Рабочий процесс генерации завершился или перестал отвечать"
-            throw NativeWorkerException(message, memoryPressure, failure)
+            val exit = try {
+                if (workerPid > 0) context.getSystemService(ActivityManager::class.java)
+                    .getHistoricalProcessExitReasons(context.packageName, workerPid, 1).firstOrNull() else null
+            } catch (_: RuntimeException) { null }
+            val message = when {
+                exit?.reason == ApplicationExitInfo.REASON_LOW_MEMORY -> "Android завершил рабочий процесс из-за нехватки памяти"
+                exit?.description?.contains("MiuiMemoryService") == true -> "Служба памяти MIUI завершила процесс модели"
+                else -> "Рабочий процесс генерации завершился или перестал отвечать"
+            }
+            throw NativeWorkerException(message, failure)
         } finally {
             watchdog.cancel(false)
         }
@@ -367,6 +354,7 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
         putFloat("penalty", params.repeatPenalty)
         putInt("gpuLayers", params.gpuLayers)
         putString("computeMode", params.computeMode.name)
+        putString("inferenceBackend", params.inferenceBackend.name)
         putBoolean("automaticMemory", params.automaticMemory)
         putInt("threads", threads)
         putInt("batch", batch)
@@ -382,9 +370,9 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
         }
     }
 
-    private fun compatibilityKey(path: String): String {
+    private fun compatibilityKey(path: String, backend: InferenceBackend): String {
         val file = File(path)
-        val identity = "961e9a3e-1|$appRevision|${Build.FINGERPRINT}|${device?.identity.orEmpty()}|${file.absolutePath}|${file.length()}|${file.lastModified()}"
+        val identity = "961e9a3e-2|$appRevision|${Build.FINGERPRINT}|$backend|${driverIdentities[backend]}|${file.absolutePath}|${file.length()}|${file.lastModified()}"
         return MessageDigest.getInstance("SHA-256").digest(identity.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 

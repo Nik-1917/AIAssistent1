@@ -84,22 +84,64 @@ struct Api {
 };
 
 static Api & api() { static Api value; return value; }
-static ggml_backend_dev_t find_gpu_device(void * ggml) {
-    auto find = Api::symbol<decltype(&ggml_backend_dev_by_type)>(ggml, "ggml_backend_dev_by_type");
-    if (auto device = find(GGML_BACKEND_DEVICE_TYPE_GPU)) return device;
-    return find(GGML_BACKEND_DEVICE_TYPE_IGPU);
-}
-static ggml_backend_dev_t gpu_device() {
+
+static void * ggml_library() {
     api();
-    void * ggml = dlopen("libggml.so", RTLD_NOW | RTLD_GLOBAL);
-    if (auto device = find_gpu_device(ggml)) return device;
-    void * plugin = dlopen("libggml-vulkan.so", RTLD_NOW | RTLD_GLOBAL);
-    if (!plugin) throw std::runtime_error(std::string("Vulkan library unavailable: ") + dlerror());
-    const char * unsupported = Api::symbol<const char *(*)()>(plugin, "assistant_gpu_support_error")();
-    if (unsupported[0]) throw std::runtime_error(unsupported);
-    auto load = Api::symbol<decltype(&ggml_backend_load)>(ggml, "ggml_backend_load");
-    if (!load("libggml-vulkan.so")) throw std::runtime_error("Vulkan backend initialization failed");
-    return find_gpu_device(ggml);
+    static void * handle = dlopen("libggml.so", RTLD_NOW | RTLD_GLOBAL);
+    return handle;
+}
+
+// Inspected and used under operation_mutex. Device registration lives in the worker process.
+struct GpuPlugin {
+    const char * library;
+    const char * registry;
+    const char * wire_name;
+    void * handle = nullptr;
+    ggml_backend_dev_t device = nullptr;
+    std::string identity, error;
+    bool inspected = false;
+
+    void inspect() {
+        if (inspected) return;
+        handle = dlopen(library, RTLD_NOW | RTLD_LOCAL);
+        if (handle) {
+            identity = Api::symbol<const char *(*)()>(handle, "assistant_gpu_driver_identity")();
+            error = Api::symbol<const char *(*)()>(handle, "assistant_gpu_support_error")();
+        } else {
+            error = std::string(registry) + " library unavailable: " + dlerror();
+        }
+        inspected = true;
+    }
+
+    ggml_backend_dev_t select() {
+        inspect();
+        if (!error.empty()) throw std::runtime_error(error);
+        if (device) return device;
+        void * ggml = ggml_library();
+        auto reg = Api::symbol<decltype(&ggml_backend_reg_by_name)>(ggml, "ggml_backend_reg_by_name")(registry);
+        if (!reg) reg = Api::symbol<decltype(&ggml_backend_load)>(ggml, "ggml_backend_load")(library);
+        if (!reg || strcmp(Api::symbol<decltype(&ggml_backend_reg_name)>(ggml, "ggml_backend_reg_name")(reg), registry))
+            throw std::runtime_error(std::string(registry) + " registry unavailable");
+        auto count = Api::symbol<decltype(&ggml_backend_reg_dev_count)>(ggml, "ggml_backend_reg_dev_count")(reg);
+        auto get = Api::symbol<decltype(&ggml_backend_reg_dev_get)>(ggml, "ggml_backend_reg_dev_get");
+        auto type = Api::symbol<decltype(&ggml_backend_dev_type)>(ggml, "ggml_backend_dev_type");
+        for (size_t i = 0; i < count; ++i) {
+            auto candidate = get(reg, i);
+            auto kind = type(candidate);
+            if (kind == GGML_BACKEND_DEVICE_TYPE_GPU || kind == GGML_BACKEND_DEVICE_TYPE_IGPU) {
+                device = candidate;
+                break;
+            }
+        }
+        return device;
+    }
+};
+static GpuPlugin & gpu_plugin(jint backend) {
+    static GpuPlugin vulkan{"libggml-vulkan.so", "Vulkan", "VULKAN"};
+    static GpuPlugin opencl{"libggml-opencl.so", "OpenCL", "OPENCL"};
+    if (backend == 1) return vulkan;
+    if (backend == 2) return opencl;
+    throw std::invalid_argument("Unknown GPU backend");
 }
 static std::mutex operation_mutex;
 static std::atomic<bool> cancelled{false};
@@ -110,6 +152,7 @@ static std::string model_path;
 static std::string model_stamp;
 static bool vocabulary_only = false;
 static int loaded_gpu_layers = 0;
+static GpuPlugin * loaded_plugin = nullptr;
 static std::vector<llama_token> history;
 static int prompt_count = 0;
 static int generated_count = 0;
@@ -138,6 +181,8 @@ static void reset() {
     pending_output.clear();
     actual_gpu_layers.store(0); total_gpu_layers.store(0);
     model_stamp.clear();
+    loaded_gpu_layers = 0;
+    loaded_plugin = nullptr;
 }
 
 static std::string bytes(JNIEnv * env, jbyteArray input) {
@@ -156,11 +201,12 @@ static void fail(JNIEnv * env, const char * message) {
     }
 }
 
-static void prepare(const std::string & path, bool vocab_only, int gpu) {
+static void prepare(const std::string & path, bool vocab_only, int gpu, GpuPlugin * plugin) {
     struct stat file{};
     if (stat(path.c_str(), &file) != 0) throw std::runtime_error("Model file is unavailable");
-    const auto stamp = path + ":" + std::to_string(file.st_size) + ":" + std::to_string(file.st_mtime);
-    if (model && model_stamp == stamp && (vocab_only || (!vocabulary_only && loaded_gpu_layers == gpu))) return;
+    const auto stamp = path + ":" + std::to_string(file.st_ino) + ":" + std::to_string(file.st_size)
+        + ":" + std::to_string(file.st_mtime) + ":" + std::to_string(file.st_mtim.tv_nsec);
+    if (model && model_stamp == stamp && (vocab_only || (!vocabulary_only && loaded_gpu_layers == gpu && loaded_plugin == plugin))) return;
     reset();
     auto params = api().llama_model_default_params();
     params.vocab_only = vocab_only;
@@ -168,15 +214,16 @@ static void prepare(const std::string & path, bool vocab_only, int gpu) {
     params.use_mlock = false;
     params.n_gpu_layers = vocab_only ? 0 : gpu;
     ggml_backend_dev_t devices[] = { nullptr, nullptr };
-    if (!vocab_only && gpu != 0) {
-        devices[0] = gpu_device();
-        if (!devices[0]) throw std::runtime_error("No compatible Vulkan GPU");
+    if (plugin) {
+        devices[0] = plugin->select();
+        if (!devices[0]) throw std::runtime_error(std::string("No compatible GPU for ") + plugin->registry);
     }
     params.devices = devices;
     params.progress_callback = [](float, void *) { return !cancelled.load(); };
     model = api().llama_model_load_from_file(path.c_str(), params);
     if (!model) throw std::runtime_error(native_failure("Model allocation failed"));
     model_path = path; model_stamp = stamp; vocabulary_only = vocab_only; loaded_gpu_layers = gpu;
+    loaded_plugin = plugin;
     if (total_gpu_layers.load() == 0) total_gpu_layers.store(api().llama_model_n_layer(model) + 1);
 }
 
@@ -238,8 +285,10 @@ static bool decode(const std::vector<llama_token> & tokens, int start_position) 
 }
 
 static void verify_gpu_model() {
-    if (loaded_gpu_layers == 0 || verified_gpu_models.count(model_stamp)) return;
+    if (!loaded_plugin) return;
     if (actual_gpu_layers.load() == 0) throw std::runtime_error("No model layers were offloaded to GPU");
+    const auto key = model_stamp + "|" + loaded_plugin->wire_name + "|" + loaded_plugin->identity + "|" + std::to_string(loaded_gpu_layers);
+    if (verified_gpu_models.count(key)) return;
     auto tokens = tokenize("Hello");
     if (tokens.empty() || !decode(tokens, 0)) throw std::runtime_error("GPU prefill verification failed");
     using SamplerPtr = std::unique_ptr<llama_sampler, decltype(&llama_sampler_free)>;
@@ -247,14 +296,17 @@ static void verify_gpu_model() {
     if (!probe) throw std::runtime_error("GPU probe sampler allocation failed");
     for (int i = 0; i < 4 && !cancelled.load(); ++i) {
         auto token = api().llama_sampler_sample(probe.get(), context, -1);
-        if (api().llama_vocab_is_eog(api().llama_model_get_vocab(model), token)) break;
+        if (api().llama_vocab_is_eog(api().llama_model_get_vocab(model), token)) {
+            if (i > 0) break;
+            token = tokens.back(); // Exercise a one-token decode even when the probe immediately samples EOS.
+        }
         if (!decode(std::vector<llama_token>{token}, static_cast<int>(tokens.size()))) {
             throw std::runtime_error("GPU decode verification failed");
         }
         tokens.push_back(token);
     }
     api().llama_memory_clear(api().llama_get_memory(context), true);
-    if (!cancelled.load()) verified_gpu_models.insert(model_stamp);
+    if (!cancelled.load()) verified_gpu_models.insert(key);
 }
 
 static jobjectArray strings(JNIEnv * env, const std::vector<std::string> & values) {
@@ -270,30 +322,29 @@ static jobjectArray strings(JNIEnv * env, const std::vector<std::string> & value
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_gpuDriverInfo(JNIEnv * env, jobject) {
+Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_gpuDriverInfo(JNIEnv * env, jobject, jint backend) {
     std::lock_guard<std::mutex> lock(operation_mutex);
     try {
-        void * plugin = dlopen("libggml-vulkan.so", RTLD_NOW | RTLD_GLOBAL);
-        if (!plugin) throw std::runtime_error(std::string("Vulkan library unavailable: ") + dlerror());
-        std::string identity = Api::symbol<const char *(*)()>(plugin, "assistant_gpu_driver_identity")();
-        const char * unsupported = Api::symbol<const char *(*)()>(plugin, "assistant_gpu_support_error")();
-        return strings(env, {identity, unsupported});
+        auto & plugin = gpu_plugin(backend);
+        plugin.inspect();
+        return strings(env, {plugin.identity, plugin.error});
     } catch (const std::exception & e) { fail(env, e.what()); return nullptr; }
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_gpuDevice(JNIEnv * env, jobject) {
+Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_gpuDevice(JNIEnv * env, jobject, jint backend) {
     std::lock_guard<std::mutex> lock(operation_mutex);
     try {
-        auto device = gpu_device();
+        auto & plugin = gpu_plugin(backend);
+        auto device = plugin.select();
         if (!device) return strings(env, {});
-        void * ggml = dlopen("libggml.so", RTLD_NOW | RTLD_GLOBAL);
-        auto name = Api::symbol<decltype(&ggml_backend_dev_name)>(ggml, "ggml_backend_dev_name")(device);
+        void * ggml = ggml_library();
+        auto name = Api::symbol<decltype(&ggml_backend_dev_description)>(ggml, "ggml_backend_dev_description")(device);
         size_t free = 0, total = 0;
         Api::symbol<decltype(&ggml_backend_dev_memory)>(ggml, "ggml_backend_dev_memory")(device, &free, &total);
-        void * plugin = dlopen("libggml-vulkan.so", RTLD_NOW | RTLD_GLOBAL);
-        auto identity = Api::symbol<const char *(*)()>(plugin, "assistant_gpu_driver_identity")();
-        return strings(env, {name, identity, std::to_string(free), std::to_string(total)});
+        auto max_buffer = backend == 2 ? std::to_string(Api::symbol<uint64_t (*)(const char *)>(
+            plugin.handle, "assistant_opencl_max_allocation")(name)) : "";
+        return strings(env, {name, plugin.identity, std::to_string(free), std::to_string(total), max_buffer});
     } catch (const std::exception & e) { fail(env, e.what()); return nullptr; }
 }
 
@@ -302,13 +353,11 @@ Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_backendInfo(JNIEn
     std::lock_guard<std::mutex> lock(operation_mutex);
     try {
     std::string name = "CPU";
-    if (actual_gpu_layers.load() > 0) {
-        void * ggml = dlopen("libggml.so", RTLD_NOW | RTLD_GLOBAL);
-        if (auto device = find_gpu_device(ggml)) {
-            name = Api::symbol<decltype(&ggml_backend_dev_description)>(ggml, "ggml_backend_dev_description")(device);
-        }
+    const bool on_gpu = actual_gpu_layers.load() > 0 && loaded_plugin;
+    if (on_gpu) {
+        name = Api::symbol<decltype(&ggml_backend_dev_description)>(ggml_library(), "ggml_backend_dev_description")(loaded_plugin->device);
     }
-    return strings(env, {actual_gpu_layers.load() > 0 ? "VULKAN" : "CPU", name,
+    return strings(env, {on_gpu ? loaded_plugin->wire_name : "CPU", name,
         std::to_string(actual_gpu_layers.load()), std::to_string(total_gpu_layers.load()),
         std::to_string(initialization_millis), context ? "1" : "0"});
     } catch (const std::exception & e) { fail(env, e.what()); return nullptr; }
@@ -344,7 +393,7 @@ Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_begin(JNIEnv *, j
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_prepare(JNIEnv * env, jobject, jbyteArray path) {
     std::lock_guard<std::mutex> lock(operation_mutex);
-    try { prepare(bytes(env, path), true, 0); } catch (const std::exception & e) { fail(env, e.what()); }
+    try { prepare(bytes(env, path), true, 0, nullptr); } catch (const std::exception & e) { fail(env, e.what()); }
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -355,12 +404,13 @@ Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_count(JNIEnv * en
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_load(JNIEnv * env, jobject, jbyteArray path, jint size, jint batch, jint threads, jint gpu) {
+Java_com_example_aiassistent1_data_engine_AutomaticLlamaBridge_load(JNIEnv * env, jobject, jbyteArray path, jint size, jint batch, jint threads, jint gpu, jint backend) {
     std::lock_guard<std::mutex> lock(operation_mutex);
     try {
         const auto started = InferenceClock::now();
         { std::lock_guard<std::mutex> diagnostics(diagnostics_mutex); native_errors.clear(); }
-        prepare(bytes(env, path), false, gpu);
+        if ((gpu == 0) != (backend == 0)) throw std::invalid_argument("GPU layer count and backend disagree");
+        prepare(bytes(env, path), false, gpu, gpu ? &gpu_plugin(backend) : nullptr);
         free_sampler(); history.clear(); needs_replay = false;
         if (!allocate_context(size, batch, threads)) {
             if (gpu != 0) throw std::runtime_error(native_failure("GPU context allocation failed"));

@@ -22,6 +22,8 @@ data class GenerationParams(
     /** Fresh device assessment; not stored in preferences. Null only outside Android's memory guard. */
     val deviceContextLimit: DeviceContextLimit? = null,
     val contextResponseRatio: ContextResponseRatio = ContextResponseRatio.TWO_TO_ONE,
+    /** Selected for this allocation. Only computeMode is a user preference. */
+    val inferenceBackend: InferenceBackend = InferenceBackend.CPU,
 ) {
     val contextLimits: ModelContextLimits get() = ModelContextLimits(trainedContextLength,
         deviceContextLimit?.maximumContext, contextResponseRatio.divisor)

@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val openClProbeEnabled = providers.gradleProperty("assistantOpenClProbe").orNull == "true"
+
 android {
     namespace = "com.example.aiassistent1"
     compileSdk {
@@ -29,6 +31,9 @@ android {
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
 
     buildTypes {
+        getByName("debug") {
+            if (openClProbeEnabled) externalNativeBuild.cmake.arguments += "-DASSISTANT_OPENCL_DIAGNOSTIC=ON"
+        }
         release {
             optimization {
                 enable = false
@@ -43,11 +48,23 @@ android {
         compose = true
         aidl = true
     }
+    // Khronos provides the link-time library. Android supplies the implementation at run time.
+    packaging.jniLibs.excludes.add("**/libOpenCL.so")
     sourceSets {
         getByName("test").kotlin.directories.add("src/sharedTest/java")
         getByName("androidTest").kotlin.directories.add("src/sharedTest/java")
         // Analytic DSP fixtures belong only to test APKs, never the application assets.
         getByName("androidTest").assets.directories.add("src/test/resources/metric_kws")
+    }
+}
+
+val hideOpenClDriverInDebug = providers.gradleProperty("assistantOpenClProbeHideDriver").orNull == "true"
+androidComponents.onVariants { variant ->
+    val debug = variant.buildType == "debug"
+    if (!(debug && hideOpenClDriverInDebug)) variant.sources.manifests.addStaticManifestFile("src/main/opencl/AndroidManifest.xml")
+    if (debug && openClProbeEnabled) {
+        variant.sources.manifests.addStaticManifestFile("src/openclProbe/AndroidManifest.xml")
+        variant.sources.kotlin?.addStaticSourceDirectory("src/openclProbe/kotlin")
     }
 }
 
@@ -63,6 +80,8 @@ abstract class PrepareLlamaNativeApi : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val artifacts: ConfigurableFileCollection
+    @get:Input
+    abstract val includeProbeLibraries: Property<Boolean>
     @get:OutputDirectory
     abstract val destination: DirectoryProperty
     @get:javax.inject.Inject
@@ -75,12 +94,14 @@ abstract class PrepareLlamaNativeApi : DefaultTask() {
         files.sync {
             from(archives.zipTree(artifacts.singleFile))
             include("jni/**/libggml-base.so")
+            if (includeProbeLibraries.get()) include("jni/**/libggml.so", "jni/**/libggml-cpu.so", "jni/**/libllama.so")
             into(destination)
         }
     }
 }
 val prepareLlamaNativeApi = tasks.register<PrepareLlamaNativeApi>("prepareLlamaNativeApi") {
     artifacts.from(llamaNativeApi)
+    includeProbeLibraries.set(openClProbeEnabled)
     destination.set(layout.buildDirectory.dir("llama-native-api"))
 }
 tasks.configureEach {

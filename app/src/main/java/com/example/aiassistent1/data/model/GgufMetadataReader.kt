@@ -7,11 +7,14 @@ import java.io.EOFException
 import java.io.IOException
 import java.io.RandomAccessFile
 
+internal data class ModelFileStamp(val path: String, val size: Long, val modified: Long) {
+    constructor(file: File) : this(file.path, file.length(), file.lastModified())
+}
+
 /** Reads only GGUF metadata. Tensor weights and tokenizer arrays are never materialized. */
 object GgufMetadataReader {
     data class Metadata(val contextLength: Int?, val memory: ModelMemoryMetadata?)
-    private data class Stamp(val path: String, val size: Long, val modified: Long)
-    private data class Entry(val stamp: Stamp, val metadata: Metadata?)
+    private data class Entry(val stamp: ModelFileStamp, val metadata: Metadata?)
     private val cache = object : LinkedHashMap<String, Entry>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?): Boolean = size > 16
     }
@@ -21,7 +24,7 @@ object GgufMetadataReader {
 
     fun readMetadata(file: File): Metadata? = try {
         val canonical = file.canonicalFile
-        val stamp = Stamp(canonical.path, canonical.length(), canonical.lastModified())
+        val stamp = ModelFileStamp(canonical)
         if (!canonical.isFile || stamp.size < 24) {
             null
         } else {
@@ -153,15 +156,20 @@ object GgufMetadataReader {
             keyLength = dimension("attention.key_length"), valueLength = dimension("attention.value_length"),
             vocabularySize = listOfNotNull(dimension("vocab_size"), vocabularySize).maxOrNull(),
             hybrid = hybrid,
-            gpuLayerBytes = tensorBytes?.first,
-            gpuSharedBytes = tensorBytes?.second,
+            gpuLayerBytes = tensorBytes?.layers,
+            gpuSharedBytes = tensorBytes?.shared,
+            largestLayerTensorBytes = tensorBytes?.largestLayerTensors,
+            largestSharedTensorBytes = tensorBytes?.largestSharedTensor,
         )
         Metadata(contexts["$arch.context_length"], memory)
     }
 
+    private data class TensorBytes(val layers: List<Long>, val shared: Long,
+        val largestLayerTensors: List<Long>, val largestSharedTensor: Long)
+
     /** Tensor descriptors/offsets only. Unknown layouts retain the conservative full-copy estimate. */
     private fun readTensorBytes(reader: MetadataInput, count: Long, blocks: Int?, alignment: Long,
-        fileBytes: Long): Pair<List<Long>, Long>? = try {
+        fileBytes: Long): TensorBytes? = try {
         require(count in 1..100_000 && blocks != null && blocks in 1..4096)
         val tensors = ArrayList<Pair<String, Long>>(count.toInt())
         repeat(count.toInt()) {
@@ -180,17 +188,23 @@ object GgufMetadataReader {
         val offsets = (tensors.map { it.second } + dataBytes).distinct().sorted()
         val extents = offsets.zipWithNext().associate { (start, end) -> start to end - start }
         val layers = MutableList(blocks) { 0L }
+        val largest = MutableList(blocks) { 0L }
         var shared = 0L
+        var largestShared = 0L
         for ((name, offset) in tensors) {
             val bytes = requireNotNull(extents[offset])
             val block = if (name.startsWith("blk.")) name.substringAfter("blk.").substringBefore('.').toIntOrNull() else null
             if (block != null) {
                 require(block in layers.indices)
                 layers[block] = Math.addExact(layers[block], bytes)
-            } else shared = Math.addExact(shared, bytes)
+                largest[block] = maxOf(largest[block], bytes)
+            } else {
+                shared = Math.addExact(shared, bytes)
+                largestShared = maxOf(largestShared, bytes)
+            }
         }
         require(layers.all { it > 0 })
-        layers to shared
+        TensorBytes(layers, shared, largest, largestShared)
     } catch (_: IllegalArgumentException) {
         null
     } catch (_: IOException) {

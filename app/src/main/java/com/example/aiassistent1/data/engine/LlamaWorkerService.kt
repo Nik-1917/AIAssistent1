@@ -8,6 +8,7 @@ import android.os.Process
 import android.os.SharedMemory
 import com.example.aiassistent1.domain.model.ComputeMode
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.InferenceBackend
 import com.llamatik.library.platform.GenStream
 
 /** Owns native state only. Preferences, Room and audio stay with their existing owners. */
@@ -30,6 +31,7 @@ class LlamaWorkerService : Service() {
                             if (activeOwner != owner) {
                                 NativeLlamaRuntime.shutdown()
                                 activeOwner = owner
+                                NativeLlamaRuntime.beginRequest()
                             }
                             executeNative(operation, arguments, stream, reply)
                         }
@@ -56,17 +58,18 @@ class LlamaWorkerService : Service() {
         when (operation) {
             "begin" -> NativeLlamaRuntime.beginRequest()
             "gpuInfo" -> {
-                val info = AutomaticLlamaBridge.gpuDriverInfo()
+                val info = AutomaticLlamaBridge.gpuDriverInfo(backend(args).nativeId)
                 reply.putString("identity", info[0])
                 reply.putString("unsupported", info[1])
             }
             "gpu" -> {
-                val device = NativeLlamaRuntime.gpuDevice("")
+                val device = NativeLlamaRuntime.gpuDevice("", backend(args))
                 if (device != null) {
                     reply.putString("device", device.name)
                     reply.putString("identity", device.identity)
-                    reply.putLong("freeBytes", device.freeBytes)
+                    device.freeBytes?.let { reply.putLong("freeBytes", it) }
                     reply.putLong("totalBytes", device.totalBytes)
+                    device.maxAllocationBytes?.let { reply.putLong("maxAllocationBytes", it) }
                 }
             }
             "prepare" -> {
@@ -80,6 +83,7 @@ class LlamaWorkerService : Service() {
                     temperature = args.getFloat("temperature"), topP = args.getFloat("topP"),
                     topK = args.getInt("topK"), repeatPenalty = args.getFloat("penalty"),
                     gpuLayers = args.getInt("gpuLayers"), automaticMemory = args.getBoolean("automaticMemory"),
+                    inferenceBackend = backend(args),
                     computeMode = ComputeMode.entries.firstOrNull { it.name == args.getString("computeMode") } ?: ComputeMode.AUTO,
                 )
                 val threads = args.getInt("threads")
@@ -108,6 +112,8 @@ class LlamaWorkerService : Service() {
             else -> error("Unknown inference operation")
         }
     }
+
+    private fun backend(args: Bundle) = InferenceBackend.valueOf(requireNotNull(args.getString("inferenceBackend")))
 
     @Suppress("DEPRECATION")
     private fun readInput(args: Bundle): String {
