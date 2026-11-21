@@ -22,6 +22,10 @@ internal class ModelSettingsState(initialParams: GenerationParams) {
 
     fun acceptPersisted(value: GenerationParams) {
         val normalized = value.normalizedForAutomaticSettings()
+        // Compute mode is owned by the global setting, including during pending profile saves.
+        params = params.copy(computeMode = normalized.computeMode)
+        persisted = persisted.copy(computeMode = normalized.computeMode)
+        submitted = submitted?.copy(computeMode = normalized.computeMode)
         if (params.trainedContextLength != normalized.trainedContextLength ||
             params.deviceContextLimit != normalized.deviceContextLimit) {
             val wasBlocked = params.deviceContextLimit?.canLoad == false

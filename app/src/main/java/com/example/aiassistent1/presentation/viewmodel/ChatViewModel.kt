@@ -307,7 +307,8 @@ class ChatViewModel(
             try {
                 session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
                 session.awaitReady()
-                modelParamsController.applyForRequest(uiState.value.modelParams)
+                val currentState = uiState.value
+                modelParamsController.applyForRequest(readRequestParams(currentState.selectedModel, currentState.modelProfile))
                 val result = com.example.aiassistent1.domain.usecase.CreateConferenceSummaryUseCase(llmEngine,
                     com.example.aiassistent1.di.AppModule.provideConferenceRepository(context)).execute(id)
                 mutableSummaryState.value = result.fold({ "Выжимка сохранена" }, { it.message ?: "Ошибка выжимки" })
@@ -418,6 +419,12 @@ class ChatViewModel(
             modelParamsWrites.withLock {
                 settingsRepository.updateParamsForModel(modelName, profile, params)
             }
+        }
+    }
+
+    fun setComputeMode(mode: com.example.aiassistent1.domain.model.ComputeMode) {
+        viewModelScope.launch {
+            modelParamsWrites.withLock { settingsRepository.setComputeMode(mode) }
         }
     }
 

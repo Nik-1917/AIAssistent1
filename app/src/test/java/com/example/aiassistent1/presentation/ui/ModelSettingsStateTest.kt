@@ -17,6 +17,26 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelSettingsStateTest {
+    @Test fun `global compute update preserves pending edits and allows their acknowledgement`() {
+        val state = ModelSettingsState(ModelProfile.CHAT.defaults)
+        val writes = mutableListOf<GenerationParams>()
+        state.update { it.copy(temperature = 0.9f) }
+        state.flush { writes += it }
+        state.update { it.copy(topP = 0.7f) }
+        val saved = writes.single().copy(computeMode = com.example.aiassistent1.domain.model.ComputeMode.CPU)
+        state.acceptPersisted(saved)
+        assertEquals(saved.computeMode, state.params.computeMode)
+        assertEquals(0.9f, state.params.temperature)
+        assertEquals(0.7f, state.params.topP)
+        state.flush { writes += it }
+        state.acceptPersisted(writes.last())
+        state.flush { writes += it }
+        assertEquals(2, writes.size)
+        val external = writes.last().copy(temperature = 0.6f)
+        state.acceptPersisted(external)
+        assertEquals(external, state.params)
+    }
+
     @Test fun `ratio selection survives delayed echoes and pairs both token sliders`() {
         val initial = ModelProfile.CHAT.defaults.withContextResponseRatio(com.example.aiassistent1.domain.model.ContextResponseRatio.TWO_TO_ONE).withContextSize(4096)
         val state = ModelSettingsState(initial)

@@ -17,6 +17,7 @@ import com.example.aiassistent1.domain.model.MemoryLimitStatus
 import com.example.aiassistent1.domain.model.ContextResponseRatio
 import com.example.aiassistent1.domain.model.ModelContextLimits
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ComputeMode
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
@@ -75,6 +76,7 @@ class DataStoreSettingsRepository(
 
     private val appDestinationKey = stringPreferencesKey("last_app_destination")
     private val selectedModelKey = stringPreferencesKey("selected_model")
+    private val computeModeKey = stringPreferencesKey("compute_mode")
     private val showDeleteMessageConfirmationKey = booleanPreferencesKey("show_delete_message_confirmation")
     private val showClearChatConfirmationKey = booleanPreferencesKey("show_clear_chat_confirmation")
     private val legacyCompactDatesEnabledKey = booleanPreferencesKey("compact_dates_enabled")
@@ -413,6 +415,21 @@ class DataStoreSettingsRepository(
 
     override fun refreshModelMemory() = refreshMemory()
 
+    override suspend fun setComputeMode(mode: ComputeMode) {
+        dataStore.edit { it[computeModeKey] = mode.name }
+    }
+
+    private fun readComputeMode(preferences: Preferences): ComputeMode {
+        preferences[computeModeKey]?.let { saved ->
+            return ComputeMode.entries.firstOrNull { it.name == saved } ?: ComputeMode.AUTO
+        }
+        // Preserve an explicit CPU choice when merging old per-model/profile settings.
+        return if (preferences.asMap().any { (key, value) ->
+                key.name.startsWith("model_params/") && key.name.endsWith("/computeMode") &&
+                    value == ComputeMode.CPU.name
+            }) ComputeMode.CPU else ComputeMode.AUTO
+    }
+
     private fun modelParamsPrefix(modelName: String, profile: ModelProfile) =
         "model_params/${profile.storageKey}/$modelName/"
 
@@ -433,9 +450,7 @@ class DataStoreSettingsRepository(
             topK = intValue("topK", defaults.topK),
             repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
-            computeMode = preferences[stringPreferencesKey(prefix + "computeMode")]
-                ?.let { saved -> com.example.aiassistent1.domain.model.ComputeMode.entries.firstOrNull { it.name == saved } }
-                ?: com.example.aiassistent1.domain.model.ComputeMode.AUTO,
+            computeMode = readComputeMode(preferences),
             automaticMemory = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true,
             manualMemoryConfigured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] ?: false,
             batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
@@ -458,6 +473,9 @@ class DataStoreSettingsRepository(
         ).normalizedForAutomaticSettings()
         val prefix = modelParamsPrefix(modelName, profile)
         dataStore.edit { preferences ->
+            if (preferences[computeModeKey] == null) {
+                preferences[computeModeKey] = readComputeMode(preferences).name
+            }
             // A transient memory block must not overwrite the last usable pair with zero.
             // Low RAM must never replace a manual choice with the old automatic profile size.
             if (!normalized.automaticMemory || normalized.deviceContextLimit?.canLoad != false) {
@@ -478,7 +496,6 @@ class DataStoreSettingsRepository(
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
             preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
-            preferences[stringPreferencesKey(prefix + "computeMode")] = normalized.computeMode.name
             preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
             preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
             preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto

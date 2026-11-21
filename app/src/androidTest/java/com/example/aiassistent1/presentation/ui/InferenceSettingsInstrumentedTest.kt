@@ -16,7 +16,7 @@ class InferenceSettingsInstrumentedTest {
         val actual = mutableStateOf(InferenceExecution(backend = InferenceBackend.OPENCL,
             deviceName = "Adreno", offloadedLayers = 29, totalLayers = 29))
         compose.setContent { MaterialTheme {
-            InferenceSettingsControls(ModelProfile.CHAT, {}, ComputeMode.AUTO, {}, true, actual.value)
+            InferenceSettingsControls(ComputeMode.AUTO, {}, true, actual.value)
         } }
         compose.onNodeWithText("GPU · OpenCL").assertExists()
         compose.onNodeWithText("29 из 29").assertExists()
@@ -28,14 +28,19 @@ class InferenceSettingsInstrumentedTest {
 
     @Test fun computeInformationOpensFromItsOwnSettingsEntry() {
         var savedMode: ComputeMode? = null
+        val mode = mutableStateOf(ComputeMode.AUTO)
         compose.setContent {
             MaterialTheme {
                 ModelSettingsDialog(
-                    profiles = ModelParameterProfiles(), initialProfile = ModelProfile.CHAT, paramsLoaded = true,
+                    profiles = ModelParameterProfiles(
+                        calendar = ModelProfile.CALENDAR.defaults.copy(computeMode = mode.value),
+                        chat = ModelProfile.CHAT.defaults.copy(computeMode = mode.value)),
+                    initialProfile = ModelProfile.CHAT, paramsLoaded = true,
                     hideCurrentMonth = true, onHideCurrentMonthChange = {},
                     hideCurrentYear = false, onHideCurrentYearChange = {}, smoothResponseEnabled = true,
                     dialogueModeEnabled = false, autoPlaybackEnabled = false, speechRate = 1f,
-                    onDismiss = {}, onParamsChange = { _, params -> savedMode = params.computeMode },
+                    onDismiss = {}, onParamsChange = { _, _ -> error("Compute choice must not save a profile") },
+                    onComputeModeChange = { savedMode = it; mode.value = it },
                     onSmoothResponseChange = {}, onDialogueModeChange = {}, onAutoPlaybackChange = {},
                     onSpeechRateChange = {},
                     inferenceExecution = InferenceExecution(backend = InferenceBackend.CPU,
@@ -43,11 +48,16 @@ class InferenceSettingsInstrumentedTest {
                 )
             }
         }
-        compose.onNodeWithText("Вычисления AI").performClick()
+        compose.onNodeWithText("Вычисления").performClick()
+        compose.onNodeWithText("Календарь").assertDoesNotExist()
+        compose.onNodeWithText("Чат и выжимки").assertDoesNotExist()
         compose.onNodeWithText("Вычислитель для следующих запросов").assertIsDisplayed()
         compose.onNodeWithText("Фактически используется").assertExists()
         compose.onNodeWithText("Тестовый отказ GPU").assertExists()
         compose.onNode(hasText("CPU") and hasClickAction()).performClick()
         compose.runOnIdle { assertEquals(ComputeMode.CPU, savedMode) }
+        compose.onNode(hasText("CPU") and hasClickAction()).assertIsSelected()
+        compose.onNode(hasText("Авто") and hasClickAction()).performClick()
+        compose.runOnIdle { assertEquals(ComputeMode.AUTO, savedMode) }
     }
 }

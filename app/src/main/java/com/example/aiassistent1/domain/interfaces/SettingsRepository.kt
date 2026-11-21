@@ -1,6 +1,7 @@
 package com.example.aiassistent1.domain.interfaces
 
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ComputeMode
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
@@ -32,6 +33,8 @@ interface SettingsRepository {
     /** Emits only after reading storage, without a temporary default snapshot. */
     fun getParamsForModel(modelName: String, profile: ModelProfile): Flow<GenerationParams>
     suspend fun updateParamsForModel(modelName: String, profile: ModelProfile, params: GenerationParams)
+    /** Shared by every model and profile; profile writes must not change this setting. */
+    suspend fun setComputeMode(mode: ComputeMode)
     fun refreshModelMemory() = Unit
 
     val showDeleteMessageConfirmation: StateFlow<Boolean>

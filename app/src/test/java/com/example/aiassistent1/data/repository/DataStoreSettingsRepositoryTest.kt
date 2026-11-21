@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.ComputeMode
 import com.example.aiassistent1.domain.model.CpuThreadSettings
 import com.example.aiassistent1.domain.model.DeviceContextLimit
 import com.example.aiassistent1.domain.model.MemoryLimitStatus
@@ -37,17 +38,74 @@ class DataStoreSettingsRepositoryTest {
     val temporaryFolder = TemporaryFolder()
 
     @Test
-    fun `missing compute mode becomes auto and explicit CPU is saved per profile`() = runTest {
+    fun `compute mode is shared by all models and stale profile saves cannot change it`() = runTest {
         val store = TestPreferencesDataStore(preferencesOf(intPreferencesKey("first_gpuLayers") to 0))
         val repository = DataStoreSettingsRepository(store, backgroundScope)
-        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.AUTO,
+        assertEquals(ComputeMode.AUTO,
             repository.getParamsForModel("first", ModelProfile.CALENDAR).first().computeMode)
+        repository.setComputeMode(ComputeMode.CPU)
         repository.updateParamsForModel("first", ModelProfile.CHAT,
-            ModelProfile.CHAT.defaults.copy(computeMode = com.example.aiassistent1.domain.model.ComputeMode.CPU))
-        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.CPU,
-            repository.getParamsForModel("first", ModelProfile.CHAT).first().computeMode)
-        assertEquals(com.example.aiassistent1.domain.model.ComputeMode.AUTO,
-            repository.getParamsForModel("first", ModelProfile.CALENDAR).first().computeMode)
+            ModelProfile.CHAT.defaults.copy(temperature = 0.9f, computeMode = ComputeMode.AUTO))
+        for (model in listOf("first", "second")) {
+            for (profile in ModelProfile.entries) {
+                assertEquals(ComputeMode.CPU, repository.getParamsForModel(model, profile).first().computeMode)
+            }
+        }
+        assertEquals(0.9f, repository.getParamsForModel("first", ModelProfile.CHAT).first().temperature)
+        repository.setComputeMode(ComputeMode.AUTO)
+        repository.updateParamsForModel("first", ModelProfile.CALENDAR,
+            ModelProfile.CALENDAR.defaults.copy(computeMode = ComputeMode.CPU))
+        assertEquals(ComputeMode.AUTO, repository.getParamsForModel("first", ModelProfile.CALENDAR).first().computeMode)
+    }
+
+    @Test
+    fun `legacy CPU in any profile becomes shared until an explicit global choice`() = runTest {
+        for (legacyProfile in ModelProfile.entries) {
+            val store = TestPreferencesDataStore(preferencesOf(
+                stringPreferencesKey("model_params/${legacyProfile.storageKey}/old.gguf/computeMode") to "CPU",
+                stringPreferencesKey("model_params/chat/new.gguf/computeMode") to "AUTO",
+            ))
+            val repository = DataStoreSettingsRepository(store, backgroundScope)
+            for (profile in ModelProfile.entries) {
+                assertEquals(ComputeMode.CPU, repository.getParamsForModel("new.gguf", profile).first().computeMode)
+            }
+            repository.updateParamsForModel("new.gguf", ModelProfile.CHAT, ModelProfile.CHAT.defaults)
+            assertEquals("CPU", store.data.first()[stringPreferencesKey("compute_mode")])
+            repository.setComputeMode(ComputeMode.AUTO)
+            assertEquals(ComputeMode.AUTO, repository.getParamsForModel("old.gguf", legacyProfile).first().computeMode)
+        }
+    }
+
+    @Test
+    fun `global compute mode survives reopening the preferences file`() = runTest {
+        val file = File(temporaryFolder.root, "compute.preferences_pb")
+        val writerJob = Job(backgroundScope.coroutineContext[Job])
+        val writerStore = PreferenceDataStoreFactory.create(
+            scope = CoroutineScope(backgroundScope.coroutineContext + writerJob), produceFile = { file })
+        DataStoreSettingsRepository(writerStore, backgroundScope).setComputeMode(ComputeMode.CPU)
+        writerJob.cancelAndJoin()
+        val reader = DataStoreSettingsRepository(PreferenceDataStoreFactory.create(
+            scope = backgroundScope, produceFile = { file }), backgroundScope)
+        for (profile in ModelProfile.entries) {
+            assertEquals(ComputeMode.CPU, reader.getParamsForModel("another.gguf", profile).first().computeMode)
+        }
+    }
+
+    @Test
+    fun `global mode change reaches both active profile observers`() = runTest {
+        val repository = DataStoreSettingsRepository(TestPreferencesDataStore(), backgroundScope)
+        val observed = ModelProfile.entries.associateWith { mutableListOf<ComputeMode>() }
+        for (profile in ModelProfile.entries) {
+            backgroundScope.launch {
+                repository.getParamsForModel("model.gguf", profile).collect { observed.getValue(profile) += it.computeMode }
+            }
+        }
+        runCurrent()
+        repository.setComputeMode(ComputeMode.CPU)
+        runCurrent()
+        repository.setComputeMode(ComputeMode.AUTO)
+        runCurrent()
+        observed.values.forEach { assertEquals(listOf(ComputeMode.AUTO, ComputeMode.CPU, ComputeMode.AUTO), it) }
     }
 
     @Test

@@ -114,6 +114,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -1081,6 +1082,7 @@ fun ChatScreen(
                 speechRate = uiState.speechRate,
                 onDismiss = { showSettingsDialog = false },
                 onParamsChange = { profile, params -> viewModel.updateModelParams(settingsModel, profile, params) },
+                onComputeModeChange = viewModel::setComputeMode,
                 onSmoothResponseChange = viewModel::setSmoothResponseEnabled,
                 onDialogueModeChange = viewModel::setDialogueModeEnabled,
                 onAutoPlaybackChange = viewModel::setAutoPlaybackEnabled,
@@ -2165,6 +2167,7 @@ fun ModelSettingsDialog(
     onProximityScreenOffChange: (Boolean) -> Unit = {},
     calendarModelReplyEnabled: Boolean = true,
     onCalendarModelReplyChange: (Boolean) -> Unit = {},
+    onComputeModeChange: (com.example.aiassistent1.domain.model.ComputeMode) -> Unit = {},
 ) {
     val calendarSettings = remember { ModelSettingsState(profiles.calendar) }
     val chatSettings = remember { ModelSettingsState(profiles.chat) }
@@ -2210,11 +2213,15 @@ fun ModelSettingsDialog(
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        val settingsColors = CardDefaults.cardColors()
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
+            colors = settingsColors.copy(
+                containerColor = lerp(settingsColors.containerColor, Color.Black, 0.16f),
+            ),
         ) {
             Column(
                 modifier = Modifier
@@ -2228,18 +2235,10 @@ fun ModelSettingsDialog(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                SettingsSection(title = "Вычисления AI") {
+                SettingsSection(title = "Вычисления") {
                     InferenceSettingsControls(
-                        profile = editingProfile,
-                        onProfileChange = { profile ->
-                            modelSettings.flush { saveModelParams(editingProfile, it) }
-                            selectedProfile = profile
-                        },
-                        mode = modelParams.computeMode,
-                        onModeChange = { mode ->
-                            modelSettings.update { it.copy(computeMode = mode) }
-                            modelSettings.flush { saveModelParams(editingProfile, it) }
-                        },
+                        mode = profiles.calendar.computeMode,
+                        onModeChange = onComputeModeChange,
                         enabled = paramsLoaded,
                         execution = inferenceExecution,
                     )
@@ -2703,7 +2702,12 @@ private fun SettingsSection(
         }
         AnimatedVisibility(visible = expanded) {
             Column(
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+                    // Preserve the original dialog background inside expanded sections.
+                    .background(CardDefaults.cardColors().containerColor, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 content()
