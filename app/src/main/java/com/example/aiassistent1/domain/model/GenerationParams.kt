@@ -45,12 +45,13 @@ data class GenerationParams(
     fun withContextResponseRatio(ratio: ContextResponseRatio): GenerationParams =
         copy(contextResponseRatio = ratio).normalizedForSettings()
 
-    /** The first manual entry has a predictable 256-token answer and a 1:4 ratio. */
-    fun withAutomaticMemory(enabled: Boolean): GenerationParams = when {
+    /** First manual entry uses the profile's batch preset; subsequent entries restore user values. */
+    fun withAutomaticMemory(enabled: Boolean, defaultManualBatchSize: Int = batchSize): GenerationParams = when {
         enabled -> copy(automaticMemory = true, batchSizeAuto = true)
         manualMemoryConfigured -> copy(automaticMemory = false, batchSizeAuto = false)
         else -> copy(automaticMemory = false, manualMemoryConfigured = true, batchSizeAuto = false,
             contextSize = DEFAULT_MANUAL_CONTEXT_SIZE, maxTokens = DEFAULT_MANUAL_ANSWER_TOKENS,
+            batchSize = defaultManualBatchSize,
             contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE)
     }
 

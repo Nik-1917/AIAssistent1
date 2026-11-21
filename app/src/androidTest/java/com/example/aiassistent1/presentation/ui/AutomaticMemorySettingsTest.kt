@@ -56,7 +56,13 @@ class AutomaticMemorySettingsTest {
         compose.onNodeWithText("Лимит ответа: 256 токенов").assertExists()
         compose.onNodeWithText("Контекст: 1024 токенов").assertExists()
         compose.onNodeWithText("1/4").assertExists()
+        compose.onNodeWithText("Размер пакета: 128 токенов").assertExists()
+        compose.onNodeWithText("По умолчанию: 128 токенов").assertExists()
         compose.onNodeWithText("Приложение измеряет полный запрос", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Модель календарь").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").performScrollTo().performClick()
+        compose.onNodeWithText("Размер пакета: 64 токенов").assertExists()
+        compose.onNodeWithText("По умолчанию: 64 токенов").assertExists()
     }
     @Test fun pastedLongChatTextReachesSendWithoutTruncation() {
         val text = "Длинный текст 🙂 12345. ".repeat(180)

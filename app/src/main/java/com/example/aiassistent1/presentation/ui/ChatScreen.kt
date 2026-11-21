@@ -2220,7 +2220,7 @@ fun ModelSettingsDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
             colors = settingsColors.copy(
-                containerColor = lerp(settingsColors.containerColor, Color.Black, 0.16f),
+                containerColor = lerp(settingsColors.containerColor, Color.Black, 0.08f),
             ),
         ) {
             Column(
@@ -2274,7 +2274,7 @@ fun ModelSettingsDialog(
                             Switch(
                                 checked = modelParams.automaticMemory,
                                 onCheckedChange = { enabled ->
-                                    modelSettings.update { it.withAutomaticMemory(enabled) }
+                                    modelSettings.update { it.withAutomaticMemory(enabled, defaults.batchSize) }
                                 },
                                 modifier = Modifier.semantics {
                                     contentDescription = "Подбирать контекст и пакет автоматически"
@@ -2348,6 +2348,7 @@ fun ModelSettingsDialog(
                                 steps = (batchOptions.size - 2).coerceAtLeast(0),
                                 enabled = batchOptions.size > 1,
                                 defaultValue = batchOptions.indexOf(defaults.batchSize).coerceAtLeast(0).toFloat(),
+                                defaultValueText = "${defaults.batchSize} токенов",
                             )
                             Text("Пакет — часть входного текста, обрабатываемая за один шаг. " +
                                 "Он не увеличивает контекст и лимит ответа.",
@@ -2413,88 +2414,98 @@ fun ModelSettingsDialog(
                             )
                         } ?: Text("Данные последнего запроса появятся после его завершения.",
                             style = MaterialTheme.typography.bodySmall)
-                        SettingSlider(
-                            label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
-                            value = modelParams.temperature,
-                            onValueChange = { value -> modelSettings.update { it.copy(temperature = value) } },
-                            valueRange = 0f..2f,
-                            defaultValue = defaults.temperature,
-                            defaultValueDecimals = 2,
-                        )
-                        Text("Влияет на разброс вариантов при выборе продолжения ответа.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        SettingSlider(
-                            label = "Top P: ${String.format("%.2f", modelParams.topP)}",
-                            value = modelParams.topP,
-                            onValueChange = { value -> modelSettings.update { it.copy(topP = value) } },
-                            valueRange = 0f..1f,
-                            defaultValue = defaults.topP,
-                            defaultValueDecimals = 2,
-                        )
-                        Text("Ограничивает варианты продолжения по их суммарной вероятности.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ModelSettingBlock {
+                            SettingSlider(
+                                label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
+                                value = modelParams.temperature,
+                                onValueChange = { value -> modelSettings.update { it.copy(temperature = value) } },
+                                valueRange = 0f..2f,
+                                defaultValue = defaults.temperature,
+                                defaultValueDecimals = 2,
+                            )
+                            Text("Влияет на разброс вариантов при выборе продолжения ответа.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        ModelSettingBlock {
+                            SettingSlider(
+                                label = "Top P: ${String.format("%.2f", modelParams.topP)}",
+                                value = modelParams.topP,
+                                onValueChange = { value -> modelSettings.update { it.copy(topP = value) } },
+                                valueRange = 0f..1f,
+                                defaultValue = defaults.topP,
+                                defaultValueDecimals = 2,
+                            )
+                            Text("Ограничивает варианты продолжения по их суммарной вероятности.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
 
-                        SettingSlider(
-                            label = "Top K: ${modelParams.topK}",
-                            value = modelParams.topK.toFloat(),
-                            onValueChange = { value -> modelSettings.update { it.copy(topK = value.roundToInt()) } },
-                            valueRange = GenerationParams.MIN_TOP_K.toFloat()..GenerationParams.MAX_TOP_K.toFloat(),
-                            steps = GenerationParams.MAX_TOP_K - GenerationParams.MIN_TOP_K - 1,
-                            defaultValue = defaults.topK.toFloat(),
-                        )
-                        Text("Оставляет для выбора указанное число наиболее вероятных вариантов.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ModelSettingBlock {
+                            SettingSlider(
+                                label = "Top K: ${modelParams.topK}",
+                                value = modelParams.topK.toFloat(),
+                                onValueChange = { value -> modelSettings.update { it.copy(topK = value.roundToInt()) } },
+                                valueRange = GenerationParams.MIN_TOP_K.toFloat()..GenerationParams.MAX_TOP_K.toFloat(),
+                                steps = GenerationParams.MAX_TOP_K - GenerationParams.MIN_TOP_K - 1,
+                                defaultValue = defaults.topK.toFloat(),
+                            )
+                            Text("Оставляет для выбора указанное число наиболее вероятных вариантов.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
 
-                        SettingSlider(
-                            label = "Repeat Penalty: ${String.format("%.2f", modelParams.repeatPenalty)}",
-                            value = modelParams.repeatPenalty,
-                            onValueChange = { value -> modelSettings.update { it.copy(repeatPenalty = value) } },
-                            valueRange = 1f..2f,
-                            defaultValue = defaults.repeatPenalty,
-                            defaultValueDecimals = 2,
-                        )
-                        Text("Снижает вероятность повторения уже использованных токенов.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ModelSettingBlock {
+                            SettingSlider(
+                                label = "Repeat Penalty: ${String.format("%.2f", modelParams.repeatPenalty)}",
+                                value = modelParams.repeatPenalty,
+                                onValueChange = { value -> modelSettings.update { it.copy(repeatPenalty = value) } },
+                                valueRange = 1f..2f,
+                                defaultValue = defaults.repeatPenalty,
+                                defaultValueDecimals = 2,
+                            )
+                            Text("Снижает вероятность повторения уже использованных токенов.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Потоки CPU")
-                                Text(
-                                    if (modelParams.cpuThreadsAuto) "Режим: Авто" else "Режим: Вручную",
-                                    style = MaterialTheme.typography.bodySmall,
+                        ModelSettingBlock {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Потоки CPU")
+                                    Text(
+                                        if (modelParams.cpuThreadsAuto) "Режим: Авто" else "Режим: Вручную",
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                                Switch(
+                                    checked = modelParams.cpuThreadsAuto,
+                                    onCheckedChange = { enabled -> modelSettings.update { it.copy(cpuThreadsAuto = enabled) } },
+                                    modifier = Modifier.semantics { contentDescription = "Подбирать число потоков CPU автоматически" },
                                 )
                             }
-                            Switch(
-                                checked = modelParams.cpuThreadsAuto,
-                                onCheckedChange = { enabled -> modelSettings.update { it.copy(cpuThreadsAuto = enabled) } },
-                                modifier = Modifier.semantics { contentDescription = "Подбирать число потоков CPU автоматически" },
+                            val availableCpuProcessors = CpuThreadSettings.availableProcessors
+                            val automaticCpuThreads = CpuThreadSettings.automaticThreadCount()
+                            SettingSlider(
+                                label = "Число потоков: ${modelParams.effectiveCpuThreads()}",
+                                value = modelParams.effectiveCpuThreads().toFloat(),
+                                onValueChange = { value -> modelSettings.update { it.copy(cpuThreads = value.roundToInt()) } },
+                                valueRange = 1f..availableCpuProcessors.toFloat(),
+                                steps = (availableCpuProcessors - 2).coerceAtLeast(0),
+                                enabled = !modelParams.cpuThreadsAuto && availableCpuProcessors > 1,
+                                defaultValue = automaticCpuThreads.toFloat(),
+                                defaultValueText = "$automaticCpuThreads (Авто)",
+                            )
+                            Text(
+                                "Доступно процессоров: $availableCpuProcessors. Число вычислительных потоков CPU " +
+                                    "при генерации ответа. Новое значение применяется перед следующим запросом.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        val availableCpuProcessors = CpuThreadSettings.availableProcessors
-                        val automaticCpuThreads = CpuThreadSettings.automaticThreadCount()
-                        SettingSlider(
-                            label = "Число потоков: ${modelParams.effectiveCpuThreads()}",
-                            value = modelParams.effectiveCpuThreads().toFloat(),
-                            onValueChange = { value -> modelSettings.update { it.copy(cpuThreads = value.roundToInt()) } },
-                            valueRange = 1f..availableCpuProcessors.toFloat(),
-                            steps = (availableCpuProcessors - 2).coerceAtLeast(0),
-                            enabled = !modelParams.cpuThreadsAuto && availableCpuProcessors > 1,
-                            defaultValue = automaticCpuThreads.toFloat(),
-                            defaultValueText = "$automaticCpuThreads (Авто)",
-                        )
-                        Text(
-                            "Доступно процессоров: $availableCpuProcessors. Число вычислительных потоков CPU " +
-                                "при генерации ответа. Новое значение применяется перед следующим запросом.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
 
@@ -2713,6 +2724,19 @@ private fun SettingsSection(
                 content()
             }
         }
+    }
+}
+
+@Composable
+private fun ModelSettingBlock(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        content()
     }
 }
 

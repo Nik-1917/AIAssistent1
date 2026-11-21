@@ -26,7 +26,7 @@ class ManualGenerationTest {
             assertEquals(listOf("answer"), engine.generateForTask(emptyList(), GenerationTask.CHAT).toList())
             assertEquals(1024, runtime.loads.single())
             assertEquals(256, runtime.params.maxTokens)
-            assertEquals(64, runtime.batch)
+            assertEquals(128, runtime.batch)
             assertEquals(100, engine.automaticState.value?.promptTokens)
             assertEquals(40, engine.automaticState.value?.generatedTokens)
             assertEquals(false, engine.automaticState.value?.automaticMemory)

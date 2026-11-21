@@ -38,6 +38,34 @@ class DataStoreSettingsRepositoryTest {
     val temporaryFolder = TemporaryFolder()
 
     @Test
+    fun `manual batch presets apply to new profiles while saved manual batches survive reload`() = runTest {
+        val store = TestPreferencesDataStore()
+        val repository = DataStoreSettingsRepository(store, backgroundScope)
+        for ((profile, expected) in listOf(ModelProfile.CALENDAR to 64, ModelProfile.CHAT to 128)) {
+            val fresh = repository.getParamsForModel("new.gguf", profile).first()
+                .withAutomaticMemory(false, profile.defaults.batchSize)
+            assertEquals(expected, fresh.effectiveBatchSize)
+            for (configured in listOf(false, true)) {
+                val name = "saved-$configured.gguf"
+                val prefix = "model_params/${profile.storageKey}/$name/"
+                store.edit {
+                    it[booleanPreferencesKey(prefix + "automaticMemory")] = false
+                    it[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = configured
+                    it[booleanPreferencesKey(prefix + "batchSizeAuto")] = false
+                    it[intPreferencesKey(prefix + "batchSize")] = 256
+                }
+                val saved = repository.getParamsForModel(name, profile).first()
+                assertEquals(256, saved.effectiveBatchSize)
+                val roundTrip = saved.withAutomaticMemory(true)
+                    .withAutomaticMemory(false, profile.defaults.batchSize)
+                repository.updateParamsForModel(name, profile, roundTrip)
+                val reopened = DataStoreSettingsRepository(store, backgroundScope)
+                assertEquals(256, reopened.getParamsForModel(name, profile).first().effectiveBatchSize)
+            }
+        }
+    }
+
+    @Test
     fun `compute mode is shared by all models and stale profile saves cannot change it`() = runTest {
         val store = TestPreferencesDataStore(preferencesOf(intPreferencesKey("first_gpuLayers") to 0))
         val repository = DataStoreSettingsRepository(store, backgroundScope)
@@ -354,7 +382,7 @@ class DataStoreSettingsRepositoryTest {
 
     @Test
     fun `new profiles have independent defaults and only calendar inherits legacy settings`() = runTest {
-        val legacy = GenerationParams(contextSize = 1952, maxTokens = 64, temperature = 0.55f,
+        val legacy = ModelProfile.CALENDAR.defaults.copy(contextSize = 1952, maxTokens = 64, temperature = 0.55f,
             topP = 0.72f, topK = 32, repeatPenalty = 1.3f, gpuLayers = 2)
         val store = TestPreferencesDataStore(preferencesOf(
             intPreferencesKey("legacy_contextSize") to legacy.contextSize,
