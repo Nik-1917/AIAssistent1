@@ -6,7 +6,7 @@ enum class ModelProfile(val storageKey: String) {
 
     val defaults: GenerationParams
         get() = when (this) {
-            CALENDAR -> GenerationParams(batchSize = 64)
+            CALENDAR -> GenerationParams(temperature = 0.07f, batchSize = 64)
             CHAT -> GenerationParams(contextSize = 2048, maxTokens = 512, temperature = 0.70f, topP = 0.80f,
                 batchSize = 128, contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE)
         }

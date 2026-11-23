@@ -2283,7 +2283,10 @@ fun ModelSettingsDialog(
                         }
                         if (modelParams.automaticMemory) {
                             Text(
-                                "Приложение измеряет полный запрос и подбирает контекст и размер пакета " +
+                                (if (editingProfile == ModelProfile.CALENDAR)
+                                    "Приложение измеряет полный запрос и подбирает контекст "
+                                else
+                                    "Приложение измеряет полный запрос и подбирает контекст и размер пакета ") +
                                     "с учётом предела модели и доступной памяти. Если ответ заполняет контекст, " +
                                     "приложение пробует увеличить его.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -2355,42 +2358,40 @@ fun ModelSettingsDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Text(
-                            text = modelParams.trainedContextLength?.let { "Предел контекста модели: $it токенов" }
-                                ?: "Предел контекста модели не определён. Потолок приложения: ${ModelContextLimits.FALLBACK_CONTEXT_SIZE} токенов.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        modelParams.deviceContextLimit?.let { memory ->
-                            val context = LocalContext.current
-                            if (memory.totalBytes > 0) {
-                                Text(
-                                    text = "Доступно оперативной памяти: " +
-                                        android.text.format.Formatter.formatShortFileSize(context, memory.availableBytes) +
-                                        " из " + android.text.format.Formatter.formatShortFileSize(context, memory.totalBytes),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                        ModelSettingBlock {
                             Text(
-                                "Свободная память меняется вместе с нагрузкой телефона. Работающая модель сохраняет выделенный контекст.",
+                                text = modelParams.trainedContextLength?.let { "Предел контекста модели: $it токенов" }
+                                    ?: "Предел контекста модели не определён. Потолок приложения: ${ModelContextLimits.FALLBACK_CONTEXT_SIZE} токенов.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (!memory.canLoad) {
-                                Text(memory.explanation, style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error)
-                            }
-                            if (!modelParams.automaticMemory && memory.canLoad &&
-                                memory.maximumContext < modelParams.contextSize) {
-                                Text("Выбранный контекст превышает текущую оценку памяти: ${memory.maximumContext} токенов.",
+                            modelParams.deviceContextLimit?.let { memory ->
+                                val context = LocalContext.current
+                                if (memory.totalBytes > 0) {
+                                    Text(
+                                        text = "Доступно оперативной памяти: " +
+                                            android.text.format.Formatter.formatShortFileSize(context, memory.availableBytes) +
+                                            " из " + android.text.format.Formatter.formatShortFileSize(context, memory.totalBytes),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Text(
+                                    "Свободная память меняется в реальном времени вместе с нагрузкой вашего устройства.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (!memory.canLoad) {
+                                    Text(memory.explanation, style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error)
+                                }
+                                if (!modelParams.automaticMemory && memory.canLoad &&
+                                    memory.maximumContext < modelParams.contextSize) {
+                                    Text("Выбранный контекст превышает текущую оценку памяти: ${memory.maximumContext} токенов.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error)
+                                }
                             }
-                        }
-                        if (editingProfile == ModelProfile.CHAT) {
-                            ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange,
-                                automaticMemory = modelParams.automaticMemory)
                         }
                         val lastRequest = automaticGeneration?.takeIf { actual ->
                             (editingProfile == ModelProfile.CALENDAR && actual.task ==
@@ -2398,22 +2399,28 @@ fun ModelSettingsDialog(
                                 (editingProfile == ModelProfile.CHAT && actual.task !=
                                     com.example.aiassistent1.domain.model.GenerationTask.CALENDAR)
                         }
-                        lastRequest?.takeIf { it.stopReason != null || it.requestRejected }?.let { actual ->
-                            val taskName = when (actual.task) {
-                                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
-                                com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
-                                com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
-                            }
-                            Text(
-                                "Последний запрос · $taskName · ${if (actual.automaticMemory) "авто" else "вручную"}\n" +
-                                    "Контекст: ${actual.contextSize} · вход: ${actual.promptTokens} · пакет: ${actual.batchSize} токенов\n" +
-                                    "Доступно под ответ: ${actual.availableAnswerTokens} · создано: ${actual.generatedTokens} токенов" +
-                                    (if (actual.automaticMemory) "" else "\nВыбранный лимит ответа: ${actual.initialAnswerReserve} токенов") +
-                                    (if (actual.requestRejected) "\nЗапрос не поместился в выбранный контекст." else ""),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        } ?: Text("Данные последнего запроса появятся после его завершения.",
-                            style = MaterialTheme.typography.bodySmall)
+                        ModelSettingBlock {
+                            lastRequest?.takeIf { it.stopReason != null || it.requestRejected }?.let { actual ->
+                                val taskName = when (actual.task) {
+                                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
+                                    com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
+                                    com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
+                                }
+                                Text(
+                                    "Последний запрос · $taskName · ${if (actual.automaticMemory) "авто" else "вручную"}\n" +
+                                        "Контекст: ${actual.contextSize} · вход: ${actual.promptTokens} · пакет: ${actual.batchSize} токенов\n" +
+                                        "Доступно под ответ: ${actual.availableAnswerTokens} · создано: ${actual.generatedTokens} токенов" +
+                                        (if (actual.automaticMemory) "" else "\nВыбранный лимит ответа: ${actual.initialAnswerReserve} токенов") +
+                                        (if (actual.requestRejected) "\nЗапрос не поместился в выбранный контекст." else ""),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            } ?: Text("Данные последнего запроса появятся здесь после его завершения",
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (editingProfile == ModelProfile.CHAT) {
+                            ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange,
+                                automaticMemory = modelParams.automaticMemory)
+                        }
                         ModelSettingBlock {
                             SettingSlider(
                                 label = "Temperature: ${String.format("%.2f", modelParams.temperature)}",
@@ -2422,6 +2429,7 @@ fun ModelSettingsDialog(
                                 valueRange = 0f..2f,
                                 defaultValue = defaults.temperature,
                                 defaultValueDecimals = 2,
+                                resetContentDescription = "Сбросить Temperature по умолчанию",
                             )
                             Text("Влияет на разброс вариантов при выборе продолжения ответа.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -2435,6 +2443,7 @@ fun ModelSettingsDialog(
                                 valueRange = 0f..1f,
                                 defaultValue = defaults.topP,
                                 defaultValueDecimals = 2,
+                                resetContentDescription = "Сбросить Top P по умолчанию",
                             )
                             Text("Ограничивает варианты продолжения по их суммарной вероятности.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -2449,6 +2458,7 @@ fun ModelSettingsDialog(
                                 valueRange = GenerationParams.MIN_TOP_K.toFloat()..GenerationParams.MAX_TOP_K.toFloat(),
                                 steps = GenerationParams.MAX_TOP_K - GenerationParams.MIN_TOP_K - 1,
                                 defaultValue = defaults.topK.toFloat(),
+                                resetContentDescription = "Сбросить Top K по умолчанию",
                             )
                             Text("Оставляет для выбора указанное число наиболее вероятных вариантов.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -2463,6 +2473,7 @@ fun ModelSettingsDialog(
                                 valueRange = 1f..2f,
                                 defaultValue = defaults.repeatPenalty,
                                 defaultValueDecimals = 2,
+                                resetContentDescription = "Сбросить Repeat Penalty по умолчанию",
                             )
                             Text("Снижает вероятность повторения уже использованных токенов.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -2752,6 +2763,7 @@ private fun SettingSlider(
     defaultValueDecimals: Int = 0,
     defaultValueText: String? = null,
     enabled: Boolean = true,
+    resetContentDescription: String? = null,
 ) {
     val markerColor = MaterialTheme.colorScheme.onSurface
     val markerOutline = MaterialTheme.colorScheme.surface
@@ -2788,11 +2800,31 @@ private fun SettingSlider(
             },
         )
         if (defaultValue != null) {
-            Text(
-                text = "По умолчанию: ${defaultValueText ?: String.format(java.util.Locale.ROOT, "%.${defaultValueDecimals}f", defaultValue)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "По умолчанию: ${defaultValueText ?: String.format(java.util.Locale.ROOT, "%.${defaultValueDecimals}f", defaultValue)}",
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (resetContentDescription != null) {
+                    IconButton(
+                        onClick = { onValueChange(defaultValue) },
+                        enabled = enabled,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = resetContentDescription,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+                                .padding(6.dp)
+                                .size(18.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }
