@@ -2352,7 +2352,7 @@ fun ModelSettingsDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             SettingSlider(
-                                label = "Лимит ответа: ${modelParams.maxTokens} токенов",
+                                label = "Лимит для ответа (входит в контекст): ${modelParams.maxTokens} токенов",
                                 value = modelParams.maxTokens.toFloat(),
                                 onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
                                 valueRange = modelParams.contextResponseRatio.maximumFor(manualLimits.minimum).toFloat()..
