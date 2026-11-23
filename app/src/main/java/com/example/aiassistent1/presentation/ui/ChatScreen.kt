@@ -87,6 +87,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -109,6 +110,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -2251,17 +2253,37 @@ fun ModelSettingsDialog(
                         modelExpanded = expanded
                     },
                 ) {
-                    PrimaryTabRow(selectedTabIndex = editingProfile.ordinal) {
+                    Text("Профили модели:", style = MaterialTheme.typography.titleSmall)
+                    PrimaryTabRow(
+                        selectedTabIndex = editingProfile.ordinal,
+                        containerColor = Color.Transparent,
+                        indicator = {
+                            TabRowDefaults.PrimaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(editingProfile.ordinal, matchContentSize = true),
+                                width = Dp.Unspecified,
+                                color = Color(0xFF2196F3),
+                            )
+                        },
+                        divider = {},
+                    ) {
                         ModelProfile.entries.forEach { profile ->
+                            val selected = editingProfile == profile
                             Tab(
-                                selected = editingProfile == profile,
+                                selected = selected,
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (selected) MaterialTheme.colorScheme.secondaryContainer
+                                        else MaterialTheme.colorScheme.surfaceContainerHigh),
+                                selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 onClick = {
                                     if (editingProfile != profile) {
                                         modelSettings.flush { saveModelParams(editingProfile, it) }
                                         selectedProfile = profile
                                     }
                                 },
-                                text = { Text(if (profile == ModelProfile.CALENDAR) "Модель календарь" else "Модель чат") },
+                                text = { Text(if (profile == ModelProfile.CALENDAR) "Календарь" else "Чат") },
                             )
                         }
                     }
@@ -2269,26 +2291,32 @@ fun ModelSettingsDialog(
                         Text("Загрузка настроек модели…", style = MaterialTheme.typography.bodySmall)
                     } else {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Автоматический подбор контекста и пакета",
-                                modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                            Switch(
-                                checked = modelParams.automaticMemory,
-                                onCheckedChange = { enabled ->
-                                    modelSettings.update { it.withAutomaticMemory(enabled, defaults.batchSize) }
-                                },
-                                modifier = Modifier.semantics {
-                                    contentDescription = "Подбирать контекст и пакет автоматически"
-                                },
-                            )
-                        }
-                        if (modelParams.automaticMemory) {
                             Text(
-                                (if (editingProfile == ModelProfile.CALENDAR)
-                                    "Приложение измеряет полный запрос и подбирает контекст "
-                                else
-                                    "Приложение измеряет полный запрос и подбирает контекст и размер пакета ") +
-                                    "с учётом предела модели и доступной памяти. Если ответ заполняет контекст, " +
-                                    "приложение пробует увеличить его.",
+                                text = if (editingProfile == ModelProfile.CALENDAR) "Автоматический подбор контекста"
+                                    else "Автоматический подбор контекста и пакета",
+                                modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                            if (editingProfile == ModelProfile.CHAT) {
+                                Switch(
+                                    checked = modelParams.automaticMemory,
+                                    onCheckedChange = { enabled ->
+                                        modelSettings.update { it.withAutomaticMemory(enabled, defaults.batchSize) }
+                                    },
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Подбирать контекст и пакет автоматически"
+                                    },
+                                )
+                            }
+                        }
+                        if (editingProfile == ModelProfile.CALENDAR || modelParams.automaticMemory) {
+                            val description = if (editingProfile == ModelProfile.CALENDAR) {
+                                "Приложение измеряет полный запрос и подбирает контекст с учётом предела модели и доступной памяти. " +
+                                    "Размер пакета для календаря составляет ${AutomaticContextPolicy.MINIMUM_BATCH} токена."
+                            } else {
+                                "Приложение измеряет полный запрос и подбирает контекст и размер пакета " +
+                                    "с учётом предела модели и доступной памяти."
+                            }
+                            Text(
+                                "$description Если ответ заполняет контекст, приложение пробует увеличить его.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

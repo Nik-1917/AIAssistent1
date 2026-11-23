@@ -83,7 +83,7 @@ class ModelMemorySettingsRepositoryTest {
         assertEquals(quarter, reader.getParamsForModel("model.gguf", ModelProfile.CHAT).first())
     }
 
-    @Test fun `editing ratio during a memory block retains legacy calendar context`() = runTest {
+    @Test fun `calendar ignores legacy context and manual ratio even during a memory block`() = runTest {
         var device = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)
         val store = TestPreferencesDataStore(preferencesOf(intPreferencesKey("model.gguf_contextSize") to 4096))
         val repository = DataStoreSettingsRepository(store, backgroundScope,
@@ -93,8 +93,7 @@ class ModelMemorySettingsRepositoryTest {
             blocked.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE))
         device = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED)
         val restored = repository.getParamsForModel("model.gguf", ModelProfile.CALENDAR).first()
-        assertEquals(4096, restored.contextSize)
-        assertEquals(1024, restored.maxTokens)
+        assertEquals(ModelProfile.CALENDAR.defaults.copy(deviceContextLimit = device), restored)
     }
 
     @Test fun `memory refresh does not persist a smaller ceiling or change the selected profile`() = runTest {

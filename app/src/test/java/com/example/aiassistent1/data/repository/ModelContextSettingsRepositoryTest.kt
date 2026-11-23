@@ -34,8 +34,9 @@ class ModelContextSettingsRepositoryTest {
         val repository = DataStoreSettingsRepository(store, backgroundScope, readModelContextLength = readContext)
         for (profile in ModelProfile.entries) {
             val small = repository.getParamsForModel("small.gguf", profile).first()
-            assertEquals(1024, small.contextSize)
-            assertEquals(1024 / profile.defaults.contextResponseRatio.divisor, small.maxTokens)
+            val expectedContext = if (profile == ModelProfile.CALENDAR) profile.defaults.contextSize else 1024
+            assertEquals(expectedContext, small.contextSize)
+            assertEquals(expectedContext / profile.defaults.contextResponseRatio.divisor, small.maxTokens)
             assertEquals(1024, small.trainedContextLength)
         }
         val large = repository.getParamsForModel("large.gguf", ModelProfile.CHAT).first()

@@ -61,7 +61,7 @@ class ManualGenerationTest {
             runtime.reason = GenerationStopReason.OUTPUT_LIMIT
             val received = mutableListOf<String>()
             val failure = runCatching {
-                engine.generateForTask(emptyList(), GenerationTask.CALENDAR).collect { received += it }
+                engine.generateForTask(emptyList(), GenerationTask.CHAT).collect { received += it }
             }.exceptionOrNull()
             assertEquals(listOf("answer"), received)
             assertTrue(failure?.message?.contains("лимита 256 токенов") == true)
@@ -78,6 +78,18 @@ class ManualGenerationTest {
             val failure = runCatching { engine.checkModelAvailability(GenerationTask.CHAT) }.exceptionOrNull()
             assertTrue(failure?.message?.contains("вручную выбрано 1024") == true)
             assertTrue(runtime.loads.isEmpty())
+        }
+    }
+
+    @Test fun `calendar preflight and generation ignore manual chat settings`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            guard.limit = DeviceContextLimit(512, MemoryLimitStatus.ESTIMATED)
+            engine.checkModelAvailability(GenerationTask.CALENDAR)
+            assertEquals(368, engine.promptTokenBudget(GenerationTask.CALENDAR))
+            assertEquals(listOf("answer"), engine.generateForTask(emptyList(), GenerationTask.CALENDAR).toList())
+            assertEquals(true, engine.automaticState.value?.automaticMemory)
+            assertEquals(512, runtime.params.contextSize)
+            assertEquals(64, runtime.batch)
         }
     }
 

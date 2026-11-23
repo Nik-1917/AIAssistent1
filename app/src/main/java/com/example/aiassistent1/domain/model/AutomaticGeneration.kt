@@ -94,7 +94,7 @@ object AutomaticContextPolicy {
         (context.toLong() - promptTokens - TECHNICAL_RESERVE).coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
 
     fun preferredBatch(promptTokens: Int, task: GenerationTask): Int = when {
-        task == GenerationTask.CALENDAR || promptTokens <= STEP -> 64
+        task == GenerationTask.CALENDAR || promptTokens <= STEP -> MINIMUM_BATCH
         promptTokens <= 1024 -> 128
         promptTokens <= 4096 -> 256
         else -> 512

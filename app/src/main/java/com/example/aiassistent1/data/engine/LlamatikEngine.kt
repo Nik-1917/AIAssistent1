@@ -183,12 +183,15 @@ class LlamatikEngine internal constructor(
         }
     }
 
+    private fun paramsForTask(task: GenerationTask): GenerationParams =
+        if (task == GenerationTask.CALENDAR && !params.automaticMemory) params.withAutomaticMemory(true) else params
+
     override suspend fun promptTokenBudget(task: GenerationTask): Int = modelMutex.withLock {
         withContext(engineDispatcher) {
             val file = File(modelProvider.getModelPath().getOrThrow())
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
-                val settings = params.copy(gpuLayers = 0)
+                val settings = paramsForTask(task).copy(gpuLayers = 0)
                 if (!settings.automaticMemory) {
                     val selected = manualConfiguration(file, settings)
                     return@withContext (selected.contextSize - selected.maxTokens -
@@ -218,7 +221,7 @@ class LlamatikEngine internal constructor(
             val requestContext = currentCoroutineContext()
             synchronized(lifecycleLock) {
                 check(!closed) { "Движок закрыт" }
-                val settings = params.copy(gpuLayers = 0)
+                val settings = paramsForTask(task).copy(gpuLayers = 0)
                 requestContext.ensureActive()
                 if (settings.automaticMemory) rejectUnavailableAllocation(file, settings)
                 else manualConfiguration(file, settings)
@@ -258,7 +261,7 @@ class LlamatikEngine internal constructor(
     override fun generateEventsForTask(messages: List<ChatMessage>, task: GenerationTask,
         onReady: suspend () -> Unit): Flow<GenerationEvent> = kotlinx.coroutines.flow.flow {
         val cancellation = cancellationEpoch.get()
-        val settings = withContext(engineDispatcher) { synchronized(lifecycleLock) { params } }
+        val settings = withContext(engineDispatcher) { synchronized(lifecycleLock) { paramsForTask(task) } }
         val path = modelProvider.getModelPath().getOrThrow()
         val attempts = ComputeAttempts(settings.computeMode)
         var readyDelivered = false
@@ -431,7 +434,9 @@ class LlamatikEngine internal constructor(
                 requestSettings = selectCompute(file, requested, minimum, attempts, cancellation)
                 val trained = GgufMetadataReader.readContextLength(file) ?: ModelContextLimits.FALLBACK_CONTEXT_SIZE
                 val desired = maxOf(AutomaticContextPolicy.desiredContext(inputTokens, task), taskContexts[task] ?: 0)
-                val current = appliedParams
+                val current = appliedParams?.takeIf {
+                    task != GenerationTask.CALENDAR || it.batchSize == AutomaticContextPolicy.MINIMUM_BATCH
+                }
                 val sameTask = mutableAutomaticState.value?.task == task
                 val canReuse = allocationReady() && loadedModel == ModelFileStamp(file) &&
                     current != null && sameTask && current.contextSize >= desired &&

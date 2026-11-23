@@ -442,22 +442,29 @@ class DataStoreSettingsRepository(
             ?: legacyPrefix?.let { preferences[intPreferencesKey(it + name)] } ?: default
         fun floatValue(name: String, default: Float): Float = preferences[floatPreferencesKey(prefix + name)]
             ?: legacyPrefix?.let { preferences[floatPreferencesKey(it + name)] } ?: default
-        val params = GenerationParams(
-            contextSize = intValue("contextSize", defaults.contextSize),
-            maxTokens = intValue("maxTokens", defaults.maxTokens),
+        val common = defaults.copy(
             temperature = floatValue("temperature", defaults.temperature),
             topP = floatValue("topP", defaults.topP),
             topK = intValue("topK", defaults.topK),
             repeatPenalty = floatValue("repeatPenalty", defaults.repeatPenalty),
             gpuLayers = intValue("gpuLayers", defaults.gpuLayers),
             computeMode = readComputeMode(preferences),
+            cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
+            cpuThreads = preferences[intPreferencesKey(prefix + "cpuThreads")] ?: defaults.cpuThreads,
+            trainedContextLength = readModelContextLength(modelName),
+        )
+        if (profile == ModelProfile.CALENDAR) {
+            // Calendar always allocates for the request with its fixed batch, including on upgrade.
+            val limit = readModelMemoryLimit(modelName, common.copy(batchSizeAuto = false))
+            return common.copy(deviceContextLimit = limit).normalizedForAutomaticSettings()
+        }
+        val params = common.copy(
+            contextSize = intValue("contextSize", defaults.contextSize),
+            maxTokens = intValue("maxTokens", defaults.maxTokens),
             automaticMemory = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true,
             manualMemoryConfigured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] ?: false,
             batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
             batchSize = intValue("batchSize", defaults.batchSize),
-            cpuThreadsAuto = preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] ?: defaults.cpuThreadsAuto,
-            cpuThreads = preferences[intPreferencesKey(prefix + "cpuThreads")] ?: defaults.cpuThreads,
-            trainedContextLength = readModelContextLength(modelName),
             contextResponseRatio = ContextResponseRatio.fromStored(intValue("contextResponseRatio", defaults.contextResponseRatio.divisor)),
         )
         val resolved = if (!params.automaticMemory && !params.manualMemoryConfigured)
@@ -476,30 +483,25 @@ class DataStoreSettingsRepository(
             if (preferences[computeModeKey] == null) {
                 preferences[computeModeKey] = readComputeMode(preferences).name
             }
-            // A transient memory block must not overwrite the last usable pair with zero.
-            // Low RAM must never replace a manual choice with the old automatic profile size.
-            if (!normalized.automaticMemory || normalized.deviceContextLimit?.canLoad != false) {
-                preferences[intPreferencesKey(prefix + "contextSize")] = normalized.contextSize
-                preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.maxTokens
-            } else {
-                val retainedContext = ModelContextLimits(normalized.trainedContextLength,
-                    contextMultiple = normalized.contextResponseRatio.divisor).normalize(
-                    preferences[intPreferencesKey(prefix + "contextSize")]
-                        ?: if (profile == ModelProfile.CALENDAR) preferences[intPreferencesKey("${modelName}_contextSize")]
-                            ?: profile.defaults.contextSize else profile.defaults.contextSize)
-                preferences[intPreferencesKey(prefix + "contextSize")] = retainedContext
-                preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.contextResponseRatio.maximumFor(retainedContext)
+            if (profile == ModelProfile.CHAT) {
+                // A transient RAM block must not overwrite the last usable automatic context.
+                val context = if (normalized.automaticMemory && normalized.deviceContextLimit?.canLoad == false) {
+                    ModelContextLimits(normalized.trainedContextLength, contextMultiple = normalized.contextResponseRatio.divisor)
+                        .normalize(preferences[intPreferencesKey(prefix + "contextSize")] ?: profile.defaults.contextSize)
+                } else normalized.contextSize
+                preferences[intPreferencesKey(prefix + "contextSize")] = context
+                preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.contextResponseRatio.maximumFor(context)
+                preferences[intPreferencesKey(prefix + "contextResponseRatio")] = normalized.contextResponseRatio.divisor
+                preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
+                preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
+                preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto
+                preferences[intPreferencesKey(prefix + "batchSize")] = normalized.batchSize
             }
-            preferences[intPreferencesKey(prefix + "contextResponseRatio")] = normalized.contextResponseRatio.divisor
             preferences[floatPreferencesKey(prefix + "temperature")] = normalized.temperature
             preferences[floatPreferencesKey(prefix + "topP")] = normalized.topP
             preferences[intPreferencesKey(prefix + "topK")] = normalized.topK
             preferences[floatPreferencesKey(prefix + "repeatPenalty")] = normalized.repeatPenalty
             preferences[intPreferencesKey(prefix + "gpuLayers")] = normalized.gpuLayers
-            preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
-            preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
-            preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto
-            preferences[intPreferencesKey(prefix + "batchSize")] = normalized.batchSize
             preferences[booleanPreferencesKey(prefix + "cpuThreadsAuto")] = normalized.cpuThreadsAuto
             preferences[intPreferencesKey(prefix + "cpuThreads")] = normalized.cpuThreads
         }

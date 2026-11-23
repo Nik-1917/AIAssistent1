@@ -276,6 +276,21 @@ class AutomaticGenerationTest {
             assertEquals(1, runtime.loads)
         }
     }
+    @Test fun `calendar cannot reuse a larger chat batch when the device rejects a new allocation`() = runBlocking {
+        fixture { engine, runtime, guard ->
+            runtime.tokens = 600
+            engine.generateForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(128, runtime.params.batchSize)
+            guard.limit = DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY)
+            val failure = runCatching { engine.generateForTask(emptyList(), GenerationTask.CALENDAR).toList() }.exceptionOrNull()
+            assertTrue(failure is ModelAllocationException)
+            assertEquals(1, runtime.generations)
+            guard.limit = DeviceContextLimit(8192, MemoryLimitStatus.ESTIMATED)
+            engine.generateForTask(emptyList(), GenerationTask.CALENDAR).toList()
+            assertEquals(64, runtime.params.batchSize)
+        }
+    }
+
     @Test fun `stop signal does not wait for the model loading lock`() = runBlocking {
         fixture { engine, runtime, _ ->
             val started = CountDownLatch(1)
