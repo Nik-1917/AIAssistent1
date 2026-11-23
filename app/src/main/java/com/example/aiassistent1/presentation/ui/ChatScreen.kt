@@ -2316,7 +2316,10 @@ fun ModelSettingsDialog(
                                     "с учётом предела модели и доступной памяти."
                             }
                             Text(
-                                "$description Если ответ заполняет контекст, приложение пробует увеличить его.",
+                                if (editingProfile == ModelProfile.CHAT)
+                                    "$description Если ответ заполняет контекст, приложение пробует увеличить его автоматически."
+                                else
+                                    "$description Если ответ заполняет контекст, приложение пробует увеличить его автоматически.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
