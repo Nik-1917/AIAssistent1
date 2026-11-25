@@ -29,7 +29,7 @@ internal class ModelSettingsState(initialParams: GenerationParams) {
         if (params.trainedContextLength != normalized.trainedContextLength ||
             params.deviceContextLimit != normalized.deviceContextLimit) {
             val wasBlocked = params.deviceContextLimit?.canLoad == false
-            val restoreSavedSizes = wasBlocked && params.automaticMemory
+            val restoreSavedSizes = wasBlocked && params.automaticMemory && !params.manualMemoryConfigured
             // A new file limit also bounds unsaved edits and pending DataStore acknowledgements.
             fun GenerationParams.withCurrentLimit() =
                 copy(trainedContextLength = normalized.trainedContextLength,

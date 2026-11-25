@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.engine
 
 import com.example.aiassistent1.data.model.GgufTestFile
+import com.example.aiassistent1.data.model.GgufMetadataReader
 import com.example.aiassistent1.data.model.ModelMemoryGuard
 import com.example.aiassistent1.domain.interfaces.ModelProvider
 import com.example.aiassistent1.domain.model.*
@@ -88,6 +89,24 @@ class AutomaticComputeTest {
             assertTrue(runtime.loadedLayers.first() > 0)
             assertEquals(0, runtime.loadedLayers.last())
             assertNotNull(runtime.fallback)
+        }
+    }
+
+    @Test fun `first chat after startup can grow its context without budgeting resident weights again`() = runBlocking {
+        fixture { engine, runtime, _ ->
+            runtime.unavailable = InferenceBackend.VULKAN
+            engine.ensureLoaded().getOrThrow()
+            val layers = runtime.loadedLayers.single()
+            runtime.unavailable = null // A new task should keep the already loaded OpenCL weights.
+            val model = requireNotNull(GgufMetadataReader.readMetadata(folder.root.listFiles()!!.single())?.memory)
+            val minimum = AutomaticContextPolicy.minimumContext(32, GenerationTask.CHAT)
+            val working = requireNotNull(ModelMemoryCalculator.cost(model, MemoryRuntimeSettings(false, 64, layers), minimum)).workingBytes
+            val free = working * 8 / 7 + 1
+            runtime.openClDevice = GpuDevice("Adreno", "driver", free, free * 2)
+            engine.generateEventsForTask(emptyList(), GenerationTask.CHAT).toList()
+            assertEquals(InferenceBackend.OPENCL, runtime.params.inferenceBackend)
+            assertEquals(layers, runtime.params.gpuLayers)
+            assertTrue(runtime.params.contextSize >= minimum)
         }
     }
 

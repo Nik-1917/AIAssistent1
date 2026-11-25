@@ -24,6 +24,8 @@ data class GenerationParams(
     val contextResponseRatio: ContextResponseRatio = ContextResponseRatio.TWO_TO_ONE,
     /** Selected for this allocation. Only computeMode is a user preference. */
     val inferenceBackend: InferenceBackend = InferenceBackend.CPU,
+    /** The active manual size lives in contextSize. Null means the other ratio has no saved position. */
+    val otherRatioContextSize: Int? = null,
 ) {
     val contextLimits: ModelContextLimits get() = ModelContextLimits(trainedContextLength,
         deviceContextLimit?.maximumContext, contextResponseRatio.divisor)
@@ -31,6 +33,14 @@ data class GenerationParams(
     /** Manual values stay fixed when available RAM changes; allocation is checked per request. */
     private val editableContextLimits: ModelContextLimits get() = if (automaticMemory) contextLimits
         else ModelContextLimits(trainedContextLength, contextMultiple = contextResponseRatio.divisor)
+
+    /** Manual presets depend on the selected ratio and file limit, never on changing free RAM. */
+    val defaultManualContextSize: Int
+        get() = ModelContextLimits(trainedContextLength, contextMultiple = contextResponseRatio.divisor)
+            .normalize(DEFAULT_MANUAL_ANSWER_TOKENS * contextResponseRatio.divisor)
+
+    val defaultManualAnswerTokens: Int
+        get() = contextResponseRatio.maximumFor(defaultManualContextSize)
 
     /** Both settings sliders share the selected model's bounded grid. */
     fun withContextSize(value: Int): GenerationParams {
@@ -42,17 +52,23 @@ data class GenerationParams(
         withContextSize(value.coerceIn(contextResponseRatio.maximumFor(editableContextLimits.minimum),
             contextResponseRatio.maximumFor(editableContextLimits.maximum)) * contextResponseRatio.divisor)
 
-    fun withContextResponseRatio(ratio: ContextResponseRatio): GenerationParams =
-        copy(contextResponseRatio = ratio).normalizedForSettings()
+    fun withContextResponseRatio(ratio: ContextResponseRatio): GenerationParams {
+        if (ratio == contextResponseRatio) return this
+        val next = copy(contextResponseRatio = ratio)
+        if (automaticMemory) return next.normalizedForSettings()
+        return next.copy(
+            contextSize = otherRatioContextSize ?: next.defaultManualContextSize,
+            otherRatioContextSize = contextSize,
+        ).normalizedForSettings()
+    }
 
     /** First manual entry uses the profile's batch preset; subsequent entries restore user values. */
     fun withAutomaticMemory(enabled: Boolean, defaultManualBatchSize: Int = batchSize): GenerationParams = when {
         enabled -> copy(automaticMemory = true, batchSizeAuto = true)
         manualMemoryConfigured -> copy(automaticMemory = false, batchSizeAuto = false)
         else -> copy(automaticMemory = false, manualMemoryConfigured = true, batchSizeAuto = false,
-            contextSize = DEFAULT_MANUAL_CONTEXT_SIZE, maxTokens = DEFAULT_MANUAL_ANSWER_TOKENS,
-            batchSize = defaultManualBatchSize,
-            contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE)
+            contextSize = defaultManualContextSize, maxTokens = defaultManualAnswerTokens,
+            batchSize = defaultManualBatchSize)
     }
 
     /** Keep smaller temporary response budgets, including conference summaries. */
@@ -113,8 +129,7 @@ data class GenerationParams(
     companion object {
         const val DEFAULT_CONTEXT_SIZE = 512
         const val DEFAULT_MAX_TOKENS = 256
-        const val DEFAULT_MANUAL_CONTEXT_SIZE = 1024
-        const val DEFAULT_MANUAL_ANSWER_TOKENS = 256
+        const val DEFAULT_MANUAL_ANSWER_TOKENS = 1024
         const val MIN_CONTEXT_SIZE = 512
         const val CONTEXT_STEP = 512
         const val MIN_TOP_K = 1

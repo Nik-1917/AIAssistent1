@@ -17,6 +17,49 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelSettingsStateTest {
+    @Test
+    fun `manual slider movements snap immediately for both ratios and large model windows`() {
+        // 262144 uses the UI's continuous-track fallback instead of hundreds of tick marks.
+        for (modelLimit in listOf(8192, 262144)) {
+            for ((ratio, answerStep) in listOf(
+                ContextResponseRatio.FOUR_TO_ONE to 128,
+                ContextResponseRatio.TWO_TO_ONE to 256,
+            )) {
+                val state = ModelSettingsState(ModelProfile.CHAT.defaults
+                    .copy(trainedContextLength = modelLimit)
+                    .withAutomaticMemory(false)
+                    .withContextResponseRatio(ratio))
+
+                // Cross a rounding boundary in both directions without waiting for persistence.
+                for ((input, expectedContext) in listOf(
+                    1024 to 1024, 1279 to 1024, 1280 to 1536,
+                    1537 to 1536, 1279 to 1024,
+                )) {
+                    state.update { it.withContextSize(input) }
+                    assertEquals(expectedContext, state.params.contextSize)
+                    assertEquals(expectedContext / 512 * answerStep, state.params.maxTokens)
+                }
+
+                val boundary = 2 * answerStep + answerStep / 2
+                for ((input, expectedContext) in listOf(
+                    boundary - 1 to 1024, boundary to 1536, boundary - 1 to 1024,
+                )) {
+                    state.update { it.withMaxTokens(input) }
+                    assertEquals(expectedContext, state.params.contextSize)
+                    assertEquals(expectedContext / 512 * answerStep, state.params.maxTokens)
+                }
+
+                val saved = mutableListOf<GenerationParams>()
+                state.flush { saved += it }
+                // Change from the previous 1024 before checking that a snapped pair is saved.
+                state.update { it.withMaxTokens(boundary) }
+                state.flush { saved += it }
+                assertEquals(1536, saved.last().contextSize)
+                assertEquals(3 * answerStep, saved.last().maxTokens)
+            }
+        }
+    }
+
     @Test fun `global compute update preserves pending edits and allows their acknowledgement`() {
         val state = ModelSettingsState(ModelProfile.CHAT.defaults)
         val writes = mutableListOf<GenerationParams>()

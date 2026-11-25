@@ -15,7 +15,7 @@ class GenerationParamsTest {
         assertEquals(GenerationParams(contextSize = 512, maxTokens = 256, temperature = 0.07f,
             topP = 0.90f, topK = 20, repeatPenalty = 1.15f, batchSize = 64), ModelProfile.CALENDAR.defaults)
         assertEquals(GenerationParams(contextSize = 2048, maxTokens = 512, temperature = 0.70f,
-            topP = 0.80f, topK = 20, repeatPenalty = 1.15f, batchSize = 128,
+            topP = 0.80f, topK = 20, repeatPenalty = 1.15f, batchSize = 64,
             contextResponseRatio = ContextResponseRatio.FOUR_TO_ONE), ModelProfile.CHAT.defaults)
     }
 

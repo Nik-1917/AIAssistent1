@@ -174,7 +174,11 @@ static void free_sampler() { if (sampler) api().llama_sampler_free(sampler); sam
 static void free_context() { if (context) api().llama_free(context); context = nullptr; }
 static void reset() {
     free_sampler(); free_context();
-    if (model) api().llama_model_free(model);
+    if (model) {
+        api().llama_model_free(model);
+        if (!vocabulary_only) __android_log_print(ANDROID_LOG_INFO, "AssistantLlama",
+            "Released model weights on %s", loaded_plugin ? loaded_plugin->wire_name : "CPU");
+    }
     model = nullptr; model_path.clear(); history.clear();
     vocabulary_only = false; needs_replay = false; prompt_count = generated_count = 0;
     pending_token = LLAMA_TOKEN_NULL;
@@ -224,6 +228,8 @@ static void prepare(const std::string & path, bool vocab_only, int gpu, GpuPlugi
     if (!model) throw std::runtime_error(native_failure("Model allocation failed"));
     model_path = path; model_stamp = stamp; vocabulary_only = vocab_only; loaded_gpu_layers = gpu;
     loaded_plugin = plugin;
+    if (!vocab_only) __android_log_print(ANDROID_LOG_INFO, "AssistantLlama",
+        "Loaded model weights on %s, GPU layers: %d", plugin ? plugin->wire_name : "CPU", actual_gpu_layers.load());
     if (total_gpu_layers.load() == 0) total_gpu_layers.store(api().llama_model_n_layer(model) + 1);
 }
 

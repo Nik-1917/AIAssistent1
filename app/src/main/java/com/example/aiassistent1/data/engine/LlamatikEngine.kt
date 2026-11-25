@@ -100,7 +100,14 @@ class LlamatikEngine internal constructor(
     @Volatile private var closed = false
 
     override val state: StateFlow<ModelState> = mutableState.asStateFlow()
+    override val isModelReady: Boolean get() = allocationReady()
     override val executionState: StateFlow<InferenceExecution> = runtime.executionState ?: MutableStateFlow(InferenceExecution())
+
+    init {
+        if (runtime is RemoteLlamaRuntime) runtime.onWorkerLost = {
+            if (!runtime.allocationValid) mutableState.compareAndSet(ModelState.Ready, ModelState.Unloaded)
+        }
+    }
 
     override suspend fun ensureLoaded(): Result<Unit> = modelMutex.withLock {
         if (closed) return Result.failure(IllegalStateException("Движок закрыт"))
@@ -631,7 +638,15 @@ class LlamatikEngine internal constructor(
         var selected = InferenceBackend.CPU
         var budget: GpuBudget? = null
         private val reasons = linkedMapOf<InferenceBackend, String>()
-        val reason: String? get() = reasons.entries.joinToString("\n") { "${it.key.displayName}: ${it.value}" }.ifEmpty { null }
+        private var residentReason: String? = null
+        val reason: String? get() = (listOfNotNull(residentReason) + reasons.map { "${it.key.displayName}: ${it.value}" })
+            .joinToString("\n").ifEmpty { null }
+        fun preferResident(backend: InferenceBackend, previousReason: String?) {
+            if (reasons.isEmpty()) {
+                next = backend
+                residentReason = previousReason
+            }
+        }
         fun reject(backend: InferenceBackend, reason: String, partialOutput: Boolean = false) {
             reasons[backend] = when {
                 reason.startsWith("GPU Vulkan ") && reason.contains("backend requires Vulkan ") ->
@@ -650,6 +665,11 @@ class LlamatikEngine internal constructor(
 
     private fun selectCompute(file: File, requested: GenerationParams, minimum: Int, attempts: ComputeAttempts,
         cancellation: Long): GenerationParams {
+        val resident = appliedParams
+        if (allocationReady() && loadedModel == ModelFileStamp(file) && resident?.computeMode == requested.computeMode &&
+            (requested.gpuLayers <= 0 || requested.gpuLayers == resident.gpuLayers)) {
+            attempts.preferResident(resident.inferenceBackend, executionState.value.fallbackReason)
+        }
         while (attempts.next != InferenceBackend.CPU) {
             checkCancellation(cancellation)
             val backend = attempts.next
@@ -664,7 +684,10 @@ class LlamatikEngine internal constructor(
                 continue
             }
             val metadata = GgufMetadataReader.readMetadata(file)?.memory
-            val budget = metadata?.let { GpuBudget(device, it) }
+            val residentLayers = loadedConfiguration?.takeIf {
+                allocationReady() && loadedModel == ModelFileStamp(file) && it.backend == backend
+            }?.gpuLayers ?: 0
+            val budget = metadata?.let { GpuBudget(device, it, residentLayers) }
             val layers = budget?.let { selectGpuLayers(file, requested, minimum, backend, it) } ?: 0
             if (layers > 0) {
                 checkCancellation(cancellation)
@@ -681,14 +704,17 @@ class LlamatikEngine internal constructor(
         return requested.copy(gpuLayers = 0, inferenceBackend = InferenceBackend.CPU)
     }
 
-    private class GpuBudget(private val device: GpuDevice, val metadata: ModelMemoryMetadata) {
+    private class GpuBudget(private val device: GpuDevice, val metadata: ModelMemoryMetadata,
+        private val residentLayers: Int) {
         fun fits(layers: Int, batch: Int, context: Int): Boolean {
             val cost = ModelMemoryCalculator.cost(metadata, MemoryRuntimeSettings(false, batch, layers), context) ?: return false
             val limit = device.maxAllocationBytes
             if (limit != null && (ModelMemoryCalculator.largestGpuTensor(metadata, layers) > limit ||
                     cost.largestWorkingTensorBytes > limit)) return false
             val free = device.freeBytes ?: return true
-            return ModelMemoryCalculator.gpuWeights(metadata, layers) + cost.workingBytes <= free - free / 8
+            // With the same placement llama.cpp keeps the weight buffers when it rebuilds a context.
+            val newWeights = if (layers == residentLayers) 0L else ModelMemoryCalculator.gpuWeights(metadata, layers)
+            return newWeights + cost.workingBytes <= free - free / 8
         }
     }
 
@@ -697,14 +723,13 @@ class LlamatikEngine internal constructor(
         val blocks = budget.metadata.blockCount ?: return 0
         val maximum = if (requested.gpuLayers > 0) minOf(requested.gpuLayers, blocks + 1) else blocks + 1
         val current = appliedParams
+        val batch = if (requested.automaticMemory) 64 else requested.effectiveBatchSize
         if (allocationReady() && loadedModel == ModelFileStamp(file) && current?.inferenceBackend == backend &&
-            current.contextSize >= minimum && current.gpuLayers in 1..maximum) {
-            return current.gpuLayers
-        }
+            current.gpuLayers in 1..maximum && (current.contextSize >= minimum ||
+                budget.fits(current.gpuLayers, batch, minimum))) return current.gpuLayers
         var lower = 1
         var upper = maximum
         var selected = 0
-        val batch = if (requested.automaticMemory) 64 else requested.effectiveBatchSize
         while (lower <= upper) {
             val layers = lower + (upper - lower) / 2
             val candidate = requested.copy(gpuLayers = layers, contextSize = minimum,

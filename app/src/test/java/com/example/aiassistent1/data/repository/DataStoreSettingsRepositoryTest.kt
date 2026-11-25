@@ -568,8 +568,8 @@ class DataStoreSettingsRepositoryTest {
         val first = repository.getParamsForModel("first.gguf", ModelProfile.CHAT).first()
         assertEquals(true, first.automaticMemory)
         val manual = first.withAutomaticMemory(false).copy(topK = 35)
-        assertEquals(1024, manual.contextSize)
-        assertEquals(256, manual.maxTokens)
+        assertEquals(4096, manual.contextSize)
+        assertEquals(1024, manual.maxTokens)
         assertEquals(4, manual.contextResponseRatio.divisor)
         repository.updateParamsForModel("first.gguf", ModelProfile.CHAT, manual)
         assertEquals(manual, repository.getParamsForModel("first.gguf", ModelProfile.CHAT).first())
@@ -585,7 +585,7 @@ class DataStoreSettingsRepositoryTest {
         val saved = store.data.first()
         assertEquals(true, saved[booleanPreferencesKey("model_params/chat/first.gguf/automaticMemory")])
         assertEquals(true, saved[booleanPreferencesKey("model_params/chat/first.gguf/manualMemoryConfigured")])
-        assertEquals(256, saved[intPreferencesKey("model_params/chat/first.gguf/maxTokens")])
+        assertEquals(1024, saved[intPreferencesKey("model_params/chat/first.gguf/maxTokens")])
     }
 
     @Test
@@ -594,7 +594,7 @@ class DataStoreSettingsRepositoryTest {
         val repository = DataStoreSettingsRepository(store, backgroundScope,
             readModelContextLength = { 8192 },
             readModelMemoryLimit = { _, _ -> DeviceContextLimit(0, MemoryLimitStatus.LOW_MEMORY) })
-        val manual = ModelProfile.CHAT.defaults.withAutomaticMemory(false)
+        val manual = ModelProfile.CHAT.defaults.withAutomaticMemory(false).withContextSize(1024)
         repository.updateParamsForModel("blocked.gguf", ModelProfile.CHAT, manual)
         val saved = store.data.first()
         assertEquals(1024, saved[intPreferencesKey("model_params/chat/blocked.gguf/contextSize")])
@@ -602,5 +602,28 @@ class DataStoreSettingsRepositoryTest {
         val restored = repository.getParamsForModel("blocked.gguf", ModelProfile.CHAT).first()
         assertEquals(1024, restored.contextSize)
         assertEquals(256, restored.maxTokens)
+    }
+
+    @Test
+    fun `new manual presets preserve previously stored sizes and ratios`() = runTest {
+        for (divisor in listOf(2, 4)) {
+            val prefix = "model_params/chat/existing.gguf/"
+            val store = TestPreferencesDataStore(preferencesOf(
+                booleanPreferencesKey(prefix + "automaticMemory") to false,
+                booleanPreferencesKey(prefix + "manualMemoryConfigured") to true,
+                booleanPreferencesKey(prefix + "batchSizeAuto") to false,
+                intPreferencesKey(prefix + "contextSize") to 1024,
+                intPreferencesKey(prefix + "maxTokens") to 1024 / divisor,
+                intPreferencesKey(prefix + "contextResponseRatio") to divisor,
+                intPreferencesKey(prefix + "batchSize") to 256,
+            ))
+            val repository = DataStoreSettingsRepository(store, backgroundScope)
+            val restored = repository.getParamsForModel("existing.gguf", ModelProfile.CHAT).first()
+            assertEquals(1024, restored.contextSize)
+            assertEquals(1024 / divisor, restored.maxTokens)
+            assertEquals(divisor, restored.contextResponseRatio.divisor)
+            assertEquals(256, restored.batchSize)
+            assertEquals(restored, restored.withAutomaticMemory(true).withAutomaticMemory(false))
+        }
     }
 }

@@ -10,27 +10,33 @@ import com.example.aiassistent1.domain.model.ComputeMode
 import com.example.aiassistent1.domain.model.GenerationParams
 import com.example.aiassistent1.domain.model.InferenceBackend
 import com.llamatik.library.platform.GenStream
+import kotlin.concurrent.thread
 
 /** Owns native state only. Preferences, Room and audio stay with their existing owners. */
 class LlamaWorkerService : Service() {
-    private val operationLock = Any()
     @Volatile private var activeOwner: String? = null
+    @Volatile private var destroyed = false
+
+    private companion object {
+        // JNI state is process-wide. A new binding may arrive while an old instance is releasing it.
+        val operationLock = Any()
+        @Volatile var nativeService: LlamaWorkerService? = null
+    }
 
     private val binder = object : ILlamaWorker.Stub() {
         override fun execute(owner: String, operation: String, arguments: Bundle, stream: ILlamaStream?): Bundle =
             synchronized(operationLock) {
                 val reply = Bundle()
                 try {
+                    check(!destroyed) { "Рабочий сервис модели закрыт" }
                     if (operation != "hello") {
                         if (operation == "shutdown") {
-                            if (activeOwner == owner) {
-                                NativeLlamaRuntime.shutdown()
-                                activeOwner = null
-                            }
+                            if (activeOwner == owner) releaseNative()
                         } else {
                             if (activeOwner != owner) {
                                 NativeLlamaRuntime.shutdown()
                                 activeOwner = owner
+                                nativeService = this@LlamaWorkerService
                                 NativeLlamaRuntime.beginRequest()
                             }
                             executeNative(operation, arguments, stream, reply)
@@ -47,10 +53,10 @@ class LlamaWorkerService : Service() {
             }
 
         override fun cancel(owner: String) {
-            if (activeOwner == owner) NativeLlamaRuntime.cancel()
+            if (nativeService === this@LlamaWorkerService && activeOwner == owner) NativeLlamaRuntime.cancel()
         }
         override fun abort(owner: String) {
-            if (activeOwner == owner) Process.killProcess(Process.myPid())
+            if (nativeService === this@LlamaWorkerService && activeOwner == owner) Process.killProcess(Process.myPid())
         }
     }
 
@@ -131,4 +137,22 @@ class LlamaWorkerService : Service() {
     }
 
     override fun onBind(intent: Intent) = binder
+
+    private fun releaseNative() {
+        if (nativeService === this) {
+            NativeLlamaRuntime.shutdown()
+            nativeService = null
+        }
+        activeOwner = null
+    }
+
+    override fun onDestroy() {
+        destroyed = true
+        if (nativeService === this) NativeLlamaRuntime.cancel()
+        // The UI client can disappear during an in-flight call. Drain it off the service main thread.
+        thread(name = "llm-release", isDaemon = true) {
+            synchronized(operationLock) { releaseNative() }
+        }
+        super.onDestroy()
+    }
 }

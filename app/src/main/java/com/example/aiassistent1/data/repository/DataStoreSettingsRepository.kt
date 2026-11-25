@@ -458,12 +458,18 @@ class DataStoreSettingsRepository(
             val limit = readModelMemoryLimit(modelName, common.copy(batchSizeAuto = false))
             return common.copy(deviceContextLimit = limit).normalizedForAutomaticSettings()
         }
+        val automatic = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true
+        val storedContext = preferences[intPreferencesKey(prefix + "contextSize")]
+        // Older manual records can already contain a chosen size without the configured flag.
+        val configured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] == true ||
+            (!automatic && storedContext != null)
         val params = common.copy(
-            contextSize = intValue("contextSize", defaults.contextSize),
+            contextSize = storedContext ?: defaults.contextSize,
             maxTokens = intValue("maxTokens", defaults.maxTokens),
-            automaticMemory = preferences[booleanPreferencesKey(prefix + "automaticMemory")] ?: true,
-            manualMemoryConfigured = preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] ?: false,
-            batchSizeAuto = preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto,
+            automaticMemory = automatic,
+            manualMemoryConfigured = configured,
+            otherRatioContextSize = preferences[intPreferencesKey(prefix + "otherRatioContextSize")],
+            batchSizeAuto = automatic && (preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] ?: defaults.batchSizeAuto),
             batchSize = intValue("batchSize", defaults.batchSize),
             contextResponseRatio = ContextResponseRatio.fromStored(intValue("contextResponseRatio", defaults.contextResponseRatio.divisor)),
         )
@@ -485,13 +491,18 @@ class DataStoreSettingsRepository(
             }
             if (profile == ModelProfile.CHAT) {
                 // A transient RAM block must not overwrite the last usable automatic context.
-                val context = if (normalized.automaticMemory && normalized.deviceContextLimit?.canLoad == false) {
+                val context = if (normalized.automaticMemory && !normalized.manualMemoryConfigured &&
+                    normalized.deviceContextLimit?.canLoad == false) {
                     ModelContextLimits(normalized.trainedContextLength, contextMultiple = normalized.contextResponseRatio.divisor)
                         .normalize(preferences[intPreferencesKey(prefix + "contextSize")] ?: profile.defaults.contextSize)
                 } else normalized.contextSize
                 preferences[intPreferencesKey(prefix + "contextSize")] = context
                 preferences[intPreferencesKey(prefix + "maxTokens")] = normalized.contextResponseRatio.maximumFor(context)
                 preferences[intPreferencesKey(prefix + "contextResponseRatio")] = normalized.contextResponseRatio.divisor
+                val otherContextKey = intPreferencesKey(prefix + "otherRatioContextSize")
+                val otherContext = normalized.otherRatioContextSize
+                if (otherContext == null) preferences.remove(otherContextKey)
+                else preferences[otherContextKey] = otherContext
                 preferences[booleanPreferencesKey(prefix + "automaticMemory")] = normalized.automaticMemory
                 preferences[booleanPreferencesKey(prefix + "manualMemoryConfigured")] = normalized.manualMemoryConfigured
                 preferences[booleanPreferencesKey(prefix + "batchSizeAuto")] = normalized.batchSizeAuto

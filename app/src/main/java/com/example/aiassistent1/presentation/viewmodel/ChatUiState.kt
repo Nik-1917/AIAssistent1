@@ -19,6 +19,13 @@ enum class ModelAvailability {
     Available,
 }
 
+sealed interface ModelStartup {
+    data object Idle : ModelStartup
+    data class Loading(val fileName: String, val startedAtMillis: Long) : ModelStartup
+    data class Failed(val message: String) : ModelStartup
+    data object Ready : ModelStartup
+}
+
 data class ChatUiState(
     val navigationState: AppNavigationState? = null,
     val sessionError: String? = null,
@@ -30,6 +37,7 @@ data class ChatUiState(
     val floatingControlPositions: FloatingControlPositions = FloatingControlPositions(),
     val isFloatingControlPositionsLoaded: Boolean = false,
     val modelState: ModelState = ModelState.Unloaded,
+    val modelStartup: ModelStartup = ModelStartup.Idle,
     val modelAvailability: ModelAvailability = ModelAvailability.Checking,
     val calendarDrafts: CalendarDraftsState = CalendarDraftsState(),
     val calendarChatPrompt: CalendarChatPromptUiState? = null,

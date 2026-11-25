@@ -8,7 +8,8 @@ internal class ModelParamsController(private val engine: LLMEngine) {
     private var applied: GenerationParams? = null
 
     fun applyWhenIdle(state: ChatUiState, summarizing: Boolean) {
-        if (state.areModelParamsLoaded && !state.isProcessing && !state.isStopping && !summarizing) {
+        if (state.areModelParamsLoaded && state.modelStartup !is ModelStartup.Loading &&
+            !state.isProcessing && !state.isStopping && !summarizing) {
             applyForRequest(state.modelParams)
         }
     }

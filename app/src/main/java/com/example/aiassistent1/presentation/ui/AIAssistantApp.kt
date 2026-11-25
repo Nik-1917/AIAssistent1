@@ -1,5 +1,7 @@
 package com.example.aiassistent1.presentation.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -130,6 +132,14 @@ fun AIAssistantApp(
             onDelete = chatViewModel::deleteSavedTextDraft,
         )
     }
+    val modelFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let(chatViewModel::importModel)
+    }
+    ModelStartupDialog(
+        state = uiState, onStart = chatViewModel::startModel,
+        onSelect = chatViewModel::selectModel, onDelete = chatViewModel::deleteModel,
+        onImport = { modelFilePicker.launch("*/*") },
+    )
     SideEffect(onContentReady)
 }
 

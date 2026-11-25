@@ -38,6 +38,7 @@ import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.domain.model.ChatScrollPosition
 import com.example.aiassistent1.domain.model.GenerationParams
+import com.example.aiassistent1.domain.model.AutomaticContextPolicy
 import com.example.aiassistent1.domain.model.ModelProfile
 import com.example.aiassistent1.domain.model.ModelParameterProfiles
 import com.example.aiassistent1.domain.model.FloatingControlPositions
@@ -163,6 +164,7 @@ class ChatViewModel(
     private var paramsJob: Job? = null
     private val modelParamsWrites = Mutex()
     private val modelFilesMutex = Mutex()
+    private var modelStartJob: Job? = null
     private val modelParamsController = ModelParamsController(llmEngine)
     val automaticGeneration = llmEngine.automaticState
     val inferenceExecution = llmEngine.executionState
@@ -279,13 +281,14 @@ class ChatViewModel(
         }
         viewModelScope.launch {
             val manager = com.example.aiassistent1.di.AppModule.provideConferenceManager(context)
-            kotlinx.coroutines.flow.combine(manager.summaryRequest, uiState) { id, state -> id to state.isProcessing }
-                .collect { (id, busy) ->
-                    if (id != null && !busy) {
-                        manager.summaryHandled(id)
-                        summarizeConference(id)
-                    }
+            kotlinx.coroutines.flow.combine(manager.summaryRequest, uiState) { id, state ->
+                id?.takeIf { state.modelStartup == ModelStartup.Ready && !state.isProcessing }
+            }.distinctUntilChanged().collect { id ->
+                if (id != null && llmEngine.isModelReady) {
+                    manager.summaryHandled(id)
+                    summarizeConference(id)
                 }
+            }
         }
     }
 
@@ -296,6 +299,7 @@ class ChatViewModel(
     }
 
     fun summarizeConference(id: Long) {
+        if (!readyForModelRequest()) { mutableSummaryState.value = "Сначала запустите ИИ"; return }
         if (uiState.value.isClearingChat) { mutableSummaryState.value = "Дождитесь завершения очистки чата"; return }
         if (uiState.value.isProcessing) { mutableSummaryState.value = "Дождитесь завершения текущего ответа"; return }
         prepareForConference()
@@ -440,8 +444,54 @@ class ChatViewModel(
     }
 
     fun refreshModelStatus() {
+        if (uiState.value.modelStartup == ModelStartup.Ready && !uiState.value.isProcessing &&
+            !llmEngine.isModelReady) {
+            mutableUiState.update { it.copy(modelStartup = ModelStartup.Idle) }
+        }
         checkModelPresence(settingsRepository.selectedModel.value)
         updateAvailableModels()
+    }
+
+    private fun readyForModelRequest(): Boolean =
+        uiState.value.modelStartup == ModelStartup.Ready && llmEngine.isModelReady
+
+    fun startModel() {
+        val state = uiState.value
+        if (modelStartJob?.isActive == true || readyForModelRequest() || state.isProcessing ||
+            state.modelState is ModelState.Importing || state.selectedModel.isBlank()) return
+        val startedAt = android.os.SystemClock.elapsedRealtime()
+        mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(state.selectedModel, startedAt)) }
+        modelStartJob = viewModelScope.launch {
+            var session: GenerationForegroundService.Session? = null
+            try {
+                session = GenerationForegroundService.acquire(context, GenerationForegroundService.Kind.Generation)
+                session.awaitReady()
+                modelFilesMutex.withLock {
+                    val name = settingsRepository.selectedModel.first { it != null }.orEmpty()
+                    check(name.isNotBlank()) { "Выберите файл модели GGUF" }
+                    mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(name, startedAt)) }
+                    val settings = readRequestParams(name, state.modelProfile)
+                    // No prompt exists yet. Allocate the weights and a small usable context.
+                    // Each real request applies its own profile and can resize the context.
+                    modelParamsController.applyForRequest(settings.copy(
+                        automaticMemory = true, contextSize = GenerationParams.MIN_CONTEXT_SIZE,
+                        maxTokens = AutomaticContextPolicy.MINIMUM_ANSWER,
+                        batchSizeAuto = false, batchSize = AutomaticContextPolicy.MINIMUM_BATCH,
+                    ))
+                    llmEngine.ensureLoaded().getOrThrow()
+                    check(llmEngine.isModelReady) { "Рабочий процесс модели завершился. Повторите запуск." }
+                    mutableUiState.update { it.copy(modelStartup = ModelStartup.Ready) }
+                }
+            } catch (cancelled: CancellationException) {
+                mutableUiState.update { it.copy(modelStartup = ModelStartup.Idle) }
+                throw cancelled
+            } catch (error: Exception) {
+                mutableUiState.update { it.copy(modelStartup = ModelStartup.Failed(error.userMessage())) }
+            } finally {
+                session?.close()
+                applyCurrentModelParamsIfIdle()
+            }
+        }
     }
 
     private fun updateAvailableModels() {
@@ -516,7 +566,11 @@ class ChatViewModel(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    mutableUiState.update { it.copy(modelState = ModelState.Error(error.message ?: "Ошибка импорта")) }
+                    val message = error.message ?: "Ошибка импорта"
+                    mutableUiState.update { state ->
+                        state.copy(modelState = ModelState.Error(message), modelStartup =
+                            if (state.modelStartup == ModelStartup.Ready) state.modelStartup else ModelStartup.Failed(message))
+                    }
                 } finally {
                     refreshAvailableModels()
                 }
@@ -574,7 +628,7 @@ class ChatViewModel(
             val privateFile = File(context.getExternalFilesDir("models"), fileName)
             val privateExists = privateFile.exists() && privateFile.length() > 0
             mutableUiState.update {
-                it.copy(
+                if (it.selectedModel != fileName) it else it.copy(
                     modelAvailability = if (privateExists) {
                         ModelAvailability.Available
                     } else {
@@ -766,6 +820,7 @@ class ChatViewModel(
     }
 
     private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false, voiceReply: Boolean = false): Boolean {
+        if (!readyForModelRequest()) return false
         val trimmedText = text.trim()
         val state = mutableUiState.value
         val messageLimit = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(state.isCalendarMode)
@@ -1031,7 +1086,11 @@ class ChatViewModel(
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    mutableUiState.update { it.copy(error = error.message ?: "Не удалось выбрать модель") }
+                    val message = error.message ?: "Не удалось выбрать модель"
+                    mutableUiState.update { state ->
+                        if (state.modelStartup == ModelStartup.Ready) state.copy(error = message)
+                        else state.copy(modelStartup = ModelStartup.Failed(message))
+                    }
                 } finally {
                     refreshAvailableModels()
                 }
@@ -1047,6 +1106,7 @@ class ChatViewModel(
         val currentModel = settingsRepository.selectedModel.first { it != null }.orEmpty()
         if (currentModel == modelName) {
             // Import may restore a previously selected but missing file.
+            mutableUiState.update { if (it.modelStartup is ModelStartup.Failed) it.copy(modelStartup = ModelStartup.Idle) else it }
             observeParams(modelName)
             checkModelPresence(modelName)
             return
@@ -1087,6 +1147,7 @@ class ChatViewModel(
     }
 
     private suspend fun unloadActiveModel() {
+        mutableUiState.update { it.copy(modelStartup = ModelStartup.Idle) }
         val previousGeneration = generationJob
         stopGeneration(resumeDialogue = false)
         previousGeneration?.join()
@@ -1128,6 +1189,7 @@ class ChatViewModel(
 
     fun retry() {
         val state = uiState.value
+        if (!readyForModelRequest()) return
         if (state.isProcessing || state.isStopping || state.isClearingChat) return
         val conversation = voiceConversation.ticket(state.activeChatId) ?: return
 
@@ -1809,6 +1871,7 @@ class ChatViewModel(
             calendarDraftController.update(id, persist = false) { it.copy(error = "Дождитесь завершения ответа перед форматированием поля.") }
             return
         }
+        if (!readyForModelRequest()) return
         stopCalendarDraftVoiceInput()
         calendarDraftController.update(id, persist = false) { it.copy(isFormatting = true, formattingField = field, error = null) }
         mutableUiState.update { it.copy(isProcessing = true) }
@@ -2228,7 +2291,16 @@ class ChatViewModel(
     private fun observeModelState() {
         viewModelScope.launch {
             llmEngine.state.collect { modelState ->
-                mutableUiState.update { it.copy(modelState = modelState) }
+                mutableUiState.update { current ->
+                    val startup = when {
+                        current.modelStartup is ModelStartup.Loading -> current.modelStartup
+                        modelState == ModelState.Ready && llmEngine.isModelReady -> ModelStartup.Ready
+                        modelState is ModelState.Error -> ModelStartup.Failed(modelState.message)
+                        modelState == ModelState.Unloaded && current.modelStartup == ModelStartup.Ready -> ModelStartup.Idle
+                        else -> current.modelStartup
+                    }
+                    current.copy(modelState = modelState, modelStartup = startup)
+                }
             }
         }
     }

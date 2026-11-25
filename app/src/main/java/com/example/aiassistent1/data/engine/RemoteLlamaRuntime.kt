@@ -49,7 +49,8 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
     override val executionState = mutableExecution
     override val requestMutex = processMutex
     @Volatile private var worker: ILlamaWorker? = null
-    private var connection: ServiceConnection? = null
+    @Volatile private var connection: ServiceConnection? = null
+    var onWorkerLost: () -> Unit = {}
     @Volatile private var closed = false
     @Volatile private var cancelledAt = 0L
     private var cleanup: Future<*>? = null
@@ -244,9 +245,13 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
 
     override fun close() {
         closed = true
-        connection?.let { try { context.unbindService(it) } catch (_: IllegalArgumentException) { } }
-        connection = null
-        worker = null
+        try {
+            awaitCleanup()
+        } finally {
+            connection?.let { try { context.unbindService(it) } catch (_: IllegalArgumentException) { } }
+            connection = null
+            worker = null
+        }
     }
 
     private fun awaitCleanup() {
@@ -296,6 +301,7 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
             worker = null
             loaded = false
             residentPrivateBytes.set(0)
+            onWorkerLost()
             if (cancelledAt != 0L) throw CancellationException("Генерация остановлена")
             val exit = try {
                 if (workerPid > 0) context.getSystemService(ActivityManager::class.java)
@@ -326,6 +332,7 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
                     worker = null
                     loaded = false
                     residentPrivateBytes.set(0)
+                    onWorkerLost()
                 }
             }
             override fun onBindingDied(name: ComponentName) = onServiceDisconnected(name)
@@ -340,7 +347,7 @@ internal class RemoteLlamaRuntime(context: Context) : LlamaRuntime {
                 if (!bound && attempt < 2) Thread.sleep(250L * (attempt + 1))
             }
         }
-        check(bound) { "Не удалось запустить рабочий процесс модели" }
+        check(bound) { "Android не запустил рабочий процесс модели. Повторите запуск чуть позже." }
         check(ready.await(15, TimeUnit.SECONDS)) { "Рабочий процесс модели не подключился" }
         return checkNotNull(worker) { "Рабочий процесс модели недоступен" }
     }

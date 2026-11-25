@@ -64,6 +64,13 @@ class GpuAutomaticInstrumentedTest {
                 }, GenerationParams(computeMode = mode, temperature = 0f, topK = 1),
                     Executors.newSingleThreadExecutor(), runtime, memoryGuard = guard)
                 try {
+                    if (args.getString("prestartModel") == "true") {
+                        engine.updateParams(GenerationParams(computeMode = mode, temperature = 0f, topK = 1,
+                            contextSize = GenerationParams.MIN_CONTEXT_SIZE, maxTokens = AutomaticContextPolicy.MINIMUM_ANSWER,
+                            batchSizeAuto = false, batchSize = AutomaticContextPolicy.MINIMUM_BATCH))
+                        engine.ensureLoaded().getOrThrow()
+                        assertTrue(engine.isModelReady)
+                    }
                     suspend fun generate(task: GenerationTask, interruptGpu: Boolean = false) {
                         val calendar = task == GenerationTask.CALENDAR
                         val system = if (task == GenerationTask.SUMMARY) "Кратко перескажи текст одним предложением."
@@ -131,7 +138,7 @@ class GpuAutomaticInstrumentedTest {
                     if (mode == ComputeMode.AUTO && args.getString("exerciseGpuFailure") == "true") {
                         generate(GenerationTask.CALENDAR, interruptGpu = true)
                     }
-                    if (mode == ComputeMode.CPU) {
+                    if (mode == ComputeMode.CPU && args.getString("exerciseCpuFailure") != "false") {
                         val worker = app.getSystemService(ActivityManager::class.java).runningAppProcesses
                             .first { it.uid == Process.myUid() && it.processName == "${app.packageName}:llm" }
                         assertNotEquals(Process.myPid(), worker.pid)

@@ -20,6 +20,7 @@ private val emptyExecutionState = MutableStateFlow(InferenceExecution()).asState
 
 interface LLMEngine : AutoCloseable {
     val state: StateFlow<ModelState>
+    val isModelReady: Boolean get() = state.value == ModelState.Ready
     val automaticState: StateFlow<AutomaticGenerationState?> get() = emptyAutomaticState
     val executionState: StateFlow<InferenceExecution> get() = emptyExecutionState
 

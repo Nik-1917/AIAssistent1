@@ -136,7 +136,7 @@ class AutomaticGenerationInstrumentedTest {
             if (args.getString("manualMemory") == "true") {
                 low = false
                 engine.unload()
-                engine.updateParams(ModelProfile.CHAT.defaults.withAutomaticMemory(false).copy(
+                engine.updateParams(ModelProfile.CHAT.defaults.withAutomaticMemory(false).withContextSize(1024).copy(
                     maxTokens = 1, temperature = 0f, topK = 1,
                     cpuThreadsAuto = false, cpuThreads = 4))
                 val request = listOf(ChatMessage(role = MessageRole.USER,

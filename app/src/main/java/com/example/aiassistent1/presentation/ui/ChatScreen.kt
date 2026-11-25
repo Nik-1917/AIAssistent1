@@ -1295,10 +1295,6 @@ internal fun ChatTopBar(
     onDeleteModel: (String) -> Unit = {},
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    var modelToDelete by remember { mutableStateOf<StoredModel?>(null) }
-    var showModelLimit by remember { mutableStateOf(false) }
-    val menuWidth = minOf(360.dp, (LocalConfiguration.current.screenWidthDp - 48).coerceAtLeast(1).dp)
-    val context = LocalContext.current
 
     TopAppBar(
         title = {
@@ -1344,64 +1340,11 @@ internal fun ChatTopBar(
 
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    availableModels.forEach { model ->
-                        val selected = model.fileName == selectedModel
-                        DropdownMenuItem(
-                            modifier = Modifier.width(menuWidth).semantics {
-                                stateDescription = if (selected) "Выбрана" else "Не выбрана"
-                            },
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = model.displayName,
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = Formatter.formatShortFileSize(context, model.sizeBytes),
-                                        modifier = Modifier.width(76.dp),
-                                        maxLines = 1,
-                                        textAlign = TextAlign.End,
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onSelectModel(model.fileName)
-                                showMenu = false
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    showMenu = false
-                                    modelToDelete = model
-                                }) {
-                                    Icon(Icons.Default.DeleteOutline,
-                                        contentDescription = "Удалить модель ${model.displayName}")
-                                }
-                            },
-                        )
-                    }
-                    DropdownMenuItem(
-                        modifier = Modifier.width(menuWidth),
-                        text = { Text("Загрузить модель .gguf") },
-                        onClick = {
-                            showMenu = false
-                            if (availableModels.size >= StoredModel.MAX_COUNT) showModelLimit = true
-                            else onLoadModel()
-                        },
-                        leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null) },
-                        trailingIcon = { Text("${availableModels.size}/${StoredModel.MAX_COUNT}") },
-                        enabled = modelState !is ModelState.Importing,
-                    )
-                }
+                ModelPickerMenu(
+                    expanded = showMenu, onDismiss = { showMenu = false }, modelState = modelState,
+                    selectedModel = selectedModel, availableModels = availableModels,
+                    onSelectModel = onSelectModel, onDeleteModel = onDeleteModel, onLoadModel = onLoadModel,
+                )
             }
         },
         actions = {
@@ -1441,6 +1384,82 @@ internal fun ChatTopBar(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
     )
+}
+
+@Composable
+internal fun ModelPickerMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    modelState: ModelState,
+    selectedModel: String,
+    availableModels: List<StoredModel>,
+    onSelectModel: (String) -> Unit,
+    onDeleteModel: (String) -> Unit,
+    onLoadModel: () -> Unit,
+) {
+    var modelToDelete by remember { mutableStateOf<StoredModel?>(null) }
+    var showModelLimit by remember { mutableStateOf(false) }
+    val menuWidth = minOf(360.dp, (LocalConfiguration.current.screenWidthDp - 48).coerceAtLeast(1).dp)
+    val context = LocalContext.current
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss
+    ) {
+        availableModels.forEach { model ->
+            val selected = model.fileName == selectedModel
+            DropdownMenuItem(
+                modifier = Modifier.width(menuWidth).semantics {
+                    stateDescription = if (selected) "Выбрана" else "Не выбрана"
+                },
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = model.displayName,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = Formatter.formatShortFileSize(context, model.sizeBytes),
+                            modifier = Modifier.width(76.dp),
+                            maxLines = 1,
+                            textAlign = TextAlign.End,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                },
+                onClick = {
+                    onSelectModel(model.fileName)
+                    onDismiss()
+                },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        onDismiss()
+                        modelToDelete = model
+                    }) {
+                        Icon(Icons.Default.DeleteOutline,
+                            contentDescription = "Удалить модель ${model.displayName}")
+                    }
+                },
+            )
+        }
+        DropdownMenuItem(
+            modifier = Modifier.width(menuWidth),
+            text = { Text("Загрузить модель .gguf") },
+            onClick = {
+                onDismiss()
+                if (availableModels.size >= StoredModel.MAX_COUNT) showModelLimit = true
+                else onLoadModel()
+            },
+            leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null) },
+            trailingIcon = { Text("${availableModels.size}/${StoredModel.MAX_COUNT}") },
+            enabled = modelState !is ModelState.Importing,
+        )
+    }
 
     modelToDelete?.let { model ->
         AlertDialog(
@@ -2290,6 +2309,13 @@ fun ModelSettingsDialog(
                     if (!paramsLoaded) {
                         Text("Загрузка настроек модели…", style = MaterialTheme.typography.bodySmall)
                     } else {
+                        val lastRequest = automaticGeneration?.takeIf { actual ->
+                            (editingProfile == ModelProfile.CALENDAR && actual.task ==
+                                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR) ||
+                                (editingProfile == ModelProfile.CHAT && actual.task !=
+                                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR)
+                        }
+                        LastModelRequestBlock(lastRequest)
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = if (editingProfile == ModelProfile.CALENDAR) "Автоматический подбор контекста"
@@ -2330,15 +2356,46 @@ fun ModelSettingsDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("Доля контекста для ответа", style = MaterialTheme.typography.titleSmall)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ContextResponseRatio.entries.reversed().forEach { ratio ->
-                                    FilterChip(
-                                        selected = modelParams.contextResponseRatio == ratio,
+                            val responseRatios = ContextResponseRatio.entries.reversed()
+                            val selectedRatioIndex = responseRatios.indexOf(modelParams.contextResponseRatio)
+                            PrimaryTabRow(
+                                selectedTabIndex = selectedRatioIndex,
+                                containerColor = Color.Transparent,
+                                indicator = {
+                                    TabRowDefaults.PrimaryIndicator(
+                                        modifier = Modifier.tabIndicatorOffset(selectedRatioIndex, matchContentSize = true),
+                                        width = Dp.Unspecified,
+                                        color = Color(0xFF2196F3),
+                                    )
+                                },
+                                divider = {},
+                            ) {
+                                responseRatios.forEach { ratio ->
+                                    val selected = modelParams.contextResponseRatio == ratio
+                                    Tab(
+                                        selected = selected,
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer
+                                                else MaterialTheme.colorScheme.surfaceContainerHigh),
+                                        selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                         onClick = { modelSettings.update { it.withContextResponseRatio(ratio) } },
-                                        label = { Text(if (ratio == ContextResponseRatio.FOUR_TO_ONE) "1/4" else "1/2") },
+                                        text = { Text(if (ratio == ContextResponseRatio.FOUR_TO_ONE) "1/4" else "1/2") },
                                     )
                                 }
                             }
+                            Text(
+                                text = when (modelParams.contextResponseRatio) {
+                                    ContextResponseRatio.FOUR_TO_ONE ->
+                                        "Формула расчёта: под ответ выделяется четвёртая часть контекста."
+                                    ContextResponseRatio.TWO_TO_ONE ->
+                                        "Формула расчёта: под ответ выделяется половина контекста"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             SettingSlider(
                                 label = "Контекст: ${modelParams.contextSize} токенов",
                                 value = modelParams.contextSize.toFloat(),
@@ -2346,20 +2403,21 @@ fun ModelSettingsDialog(
                                 valueRange = manualLimits.minimum.toFloat()..manualLimits.maximum.toFloat(),
                                 steps = manualLimits.sliderSteps,
                                 enabled = manualLimits.adjustable,
-                                defaultValue = GenerationParams.DEFAULT_MANUAL_CONTEXT_SIZE.toFloat(),
+                                defaultValue = modelParams.defaultManualContextSize.toFloat(),
+                                resetContentDescription = "Сбросить контекст по умолчанию",
                             )
-                            Text("Контекст вмещает полный запрос, историю и ответ.",
+                            Text("Контекст вмещает инструкцию, полный запрос, историю и ответ.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             SettingSlider(
-                                label = "Лимит для ответа (входит в контекст): ${modelParams.maxTokens} токенов",
+                                label = "Размер ответа (входит в контекст): ${modelParams.maxTokens} токенов",
                                 value = modelParams.maxTokens.toFloat(),
                                 onValueChange = { value -> modelSettings.update { it.withMaxTokens(value.roundToInt()) } },
                                 valueRange = modelParams.contextResponseRatio.maximumFor(manualLimits.minimum).toFloat()..
                                     modelParams.contextResponseRatio.maximumFor(manualLimits.maximum).toFloat(),
                                 steps = manualLimits.sliderSteps,
                                 enabled = manualLimits.adjustable,
-                                defaultValue = GenerationParams.DEFAULT_MANUAL_ANSWER_TOKENS.toFloat(),
+                                defaultValue = modelParams.defaultManualAnswerTokens.toFloat(),
                             )
                             Text("Шкалы связаны: изменение одной пересчитывает другую. При достижении лимита " +
                                 "ответ отмечается как незавершённый.",
@@ -2423,30 +2481,6 @@ fun ModelSettingsDialog(
                                         color = MaterialTheme.colorScheme.error)
                                 }
                             }
-                        }
-                        val lastRequest = automaticGeneration?.takeIf { actual ->
-                            (editingProfile == ModelProfile.CALENDAR && actual.task ==
-                                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR) ||
-                                (editingProfile == ModelProfile.CHAT && actual.task !=
-                                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR)
-                        }
-                        ModelSettingBlock {
-                            lastRequest?.takeIf { it.stopReason != null || it.requestRejected }?.let { actual ->
-                                val taskName = when (actual.task) {
-                                    com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
-                                    com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
-                                    com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
-                                }
-                                Text(
-                                    "Последний запрос · $taskName · ${if (actual.automaticMemory) "авто" else "вручную"}\n" +
-                                        "Контекст: ${actual.contextSize} · вход: ${actual.promptTokens} · пакет: ${actual.batchSize} токенов\n" +
-                                        "Доступно под ответ: ${actual.availableAnswerTokens} · создано: ${actual.generatedTokens} токенов" +
-                                        (if (actual.automaticMemory) "" else "\nВыбранный лимит ответа: ${actual.initialAnswerReserve} токенов") +
-                                        (if (actual.requestRejected) "\nЗапрос не поместился в выбранный контекст." else ""),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            } ?: Text("Данные последнего запроса появятся здесь после его завершения",
-                                style = MaterialTheme.typography.bodySmall)
                         }
                         if (editingProfile == ModelProfile.CHAT) {
                             ChatHistorySettings(chatHistoryPolicy, onChatHistoryPolicyChange,
@@ -2766,6 +2800,28 @@ private fun SettingsSection(
                 content()
             }
         }
+    }
+}
+
+@Composable
+private fun LastModelRequestBlock(lastRequest: com.example.aiassistent1.domain.model.AutomaticGenerationState?) {
+    ModelSettingBlock {
+        lastRequest?.takeIf { it.stopReason != null || it.requestRejected }?.let { actual ->
+            val taskName = when (actual.task) {
+                com.example.aiassistent1.domain.model.GenerationTask.CALENDAR -> "Календарь"
+                com.example.aiassistent1.domain.model.GenerationTask.CHAT -> "Чат"
+                com.example.aiassistent1.domain.model.GenerationTask.SUMMARY -> "Выжимка"
+            }
+            Text(
+                "Последний запрос · $taskName · ${if (actual.automaticMemory) "авто" else "вручную"}\n" +
+                    "Контекст: ${actual.contextSize} · вход: ${actual.promptTokens} · пакет: ${actual.batchSize} токенов\n" +
+                    "Доступно под ответ: ${actual.availableAnswerTokens} · создано: ${actual.generatedTokens} токенов" +
+                    (if (actual.automaticMemory) "" else "\nВыбранный лимит ответа: ${actual.initialAnswerReserve} токенов") +
+                    (if (actual.requestRejected) "\nЗапрос не поместился в выбранный контекст." else ""),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        } ?: Text("Данные последнего запроса появятся здесь после его завершения",
+            style = MaterialTheme.typography.bodySmall)
     }
 }
 

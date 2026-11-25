@@ -1,6 +1,7 @@
 package com.example.aiassistent1.data.repository
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.preferencesOf
 import com.example.aiassistent1.domain.model.*
@@ -66,21 +67,33 @@ class ModelMemorySettingsRepositoryTest {
     }
 
     @Test fun `ratio is scoped to model and profile and survives a real preferences reopen`() = runTest {
-        val snapshot = TestPreferencesDataStore()
+        // An older manual record only has the selected ratio and context.
+        val snapshot = TestPreferencesDataStore(preferencesOf(key("contextSize") to 6144,
+            key("contextResponseRatio") to 4, booleanPreferencesKey(prefix + "automaticMemory") to false))
         val repository = DataStoreSettingsRepository(snapshot, backgroundScope)
-        val quarter = ModelProfile.CHAT.defaults.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE)
-        repository.updateParamsForModel("model.gguf", ModelProfile.CHAT, quarter)
+        val quarter = repository.getParamsForModel("model.gguf", ModelProfile.CHAT).first()
+        assertEquals(6144, quarter.contextSize)
+        val half = quarter.withContextResponseRatio(ContextResponseRatio.TWO_TO_ONE)
+        assertEquals(2048, half.contextSize)
+        val editedHalf = half.withMaxTokens(2560)
+        repository.updateParamsForModel("model.gguf", ModelProfile.CHAT, editedHalf)
         assertEquals(ContextResponseRatio.TWO_TO_ONE,
             repository.getParamsForModel("model.gguf", ModelProfile.CALENDAR).first().contextResponseRatio)
-        assertEquals(ContextResponseRatio.FOUR_TO_ONE,
-            repository.getParamsForModel("other.gguf", ModelProfile.CHAT).first().contextResponseRatio)
+        val other = repository.getParamsForModel("other.gguf", ModelProfile.CHAT).first().withAutomaticMemory(false)
+        assertEquals(4096, other.contextSize)
+        assertEquals(2048, other.withContextResponseRatio(ContextResponseRatio.TWO_TO_ONE).contextSize)
         val file = File(directory.root, "ratio.preferences_pb")
         val job = Job(backgroundScope.coroutineContext[Job])
         val writer = PreferenceDataStoreFactory.create(scope = CoroutineScope(backgroundScope.coroutineContext + job), produceFile = { file })
         writer.updateData { snapshot.data.first() }
         job.cancelAndJoin()
         val reader = DataStoreSettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file }), backgroundScope)
-        assertEquals(quarter, reader.getParamsForModel("model.gguf", ModelProfile.CHAT).first())
+        val reopened = reader.getParamsForModel("model.gguf", ModelProfile.CHAT).first()
+        assertEquals(editedHalf, reopened)
+        val restored = reopened.withContextResponseRatio(ContextResponseRatio.FOUR_TO_ONE)
+        assertEquals(6144, restored.contextSize)
+        assertEquals(1536, restored.maxTokens)
+        assertEquals(editedHalf, restored.withContextResponseRatio(ContextResponseRatio.TWO_TO_ONE))
     }
 
     @Test fun `calendar ignores legacy context and manual ratio even during a memory block`() = runTest {

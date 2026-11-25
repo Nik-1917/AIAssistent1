@@ -13,6 +13,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.AnnotatedString
 
 class AutomaticMemorySettingsTest {
@@ -36,7 +37,7 @@ class AutomaticMemorySettingsTest {
         compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").assertExists()
         compose.onNodeWithText("вход: 100", substring = true).assertExists()
         compose.onNodeWithText("Доступно под ответ: 1932", substring = true).assertExists()
-        compose.onNodeWithText("Лимит ответа: 256 токенов").assertDoesNotExist()
+        compose.onNodeWithText("Размер ответа (входит в контекст):", substring = true).assertDoesNotExist()
     }
     @Test fun firstManualEntryShowsFixedPresetAndHidesAutomaticDescription() {
         compose.setContent {
@@ -53,21 +54,38 @@ class AutomaticMemorySettingsTest {
         }
         compose.onNodeWithText("Модель", useUnmergedTree = true).performClick()
         compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").performClick()
-        compose.onNodeWithText("Лимит ответа: 256 токенов").assertExists()
-        compose.onNodeWithText("Контекст: 1024 токенов").assertExists()
-        compose.onNodeWithText("1/4").assertExists()
-        compose.onNodeWithText("Размер пакета: 128 токенов").assertExists()
-        compose.onNodeWithText("По умолчанию: 128 токенов").assertExists()
+        compose.onNodeWithText("Размер ответа (входит в контекст): 1024 токенов").assertExists()
+        compose.onNodeWithText("Контекст: 4096 токенов").assertExists()
+        compose.onNodeWithText("По умолчанию: 4096").assertExists()
+        compose.onNodeWithText("По умолчанию: 1024").assertExists()
+        compose.onNodeWithContentDescription("Контекст: 4096 токенов")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(6144f) }
+        compose.onNodeWithText("1/2").performScrollTo().performClick()
+        compose.onNodeWithText("По умолчанию: 2048").assertExists()
+        compose.onNodeWithText("По умолчанию: 1024").assertExists()
+        compose.onNodeWithText("Контекст: 2048 токенов").assertExists()
+        compose.onNodeWithContentDescription("Размер ответа (входит в контекст): 1024 токенов")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(1536f) }
+        compose.onNodeWithText("1/4").performScrollTo().performClick()
+        compose.onNodeWithText("Контекст: 6144 токенов").assertExists()
+        compose.onNodeWithText("Размер ответа (входит в контекст): 1536 токенов").assertExists()
+        compose.onNodeWithContentDescription("Сбросить контекст по умолчанию").performScrollTo().performClick()
+        compose.onNodeWithText("Контекст: 4096 токенов").assertExists()
+        compose.onNodeWithText("1/2").performScrollTo().performClick()
+        compose.onNodeWithText("Контекст: 3072 токенов").assertExists()
+        compose.onNodeWithText("Размер ответа (входит в контекст): 1536 токенов").assertExists()
+        compose.onNodeWithText("Размер пакета: 64 токенов").assertExists()
+        compose.onNodeWithText("По умолчанию: 64 токенов").assertExists()
         compose.onNodeWithText("Приложение измеряет полный запрос", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Календарь").performScrollTo().performClick()
         compose.onNodeWithText("Автоматический подбор контекста").assertExists()
         compose.onNodeWithText("Размер пакета для календаря составляет 64 токена.", substring = true).assertExists()
         compose.onNodeWithContentDescription("Подбирать контекст и пакет автоматически").assertDoesNotExist()
         compose.onNodeWithText("Доля контекста для ответа").assertDoesNotExist()
-        compose.onNodeWithText("Лимит ответа:", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Размер ответа (входит в контекст):", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Размер пакета:", substring = true).assertDoesNotExist()
         compose.onNode(hasText("Чат") and isSelectable()).performScrollTo().performClick()
-        compose.onNodeWithText("Размер пакета: 128 токенов").assertExists()
+        compose.onNodeWithText("Размер пакета: 64 токенов").assertExists()
     }
     @Test fun pastedLongChatTextReachesSendWithoutTruncation() {
         val text = "Длинный текст 🙂 12345. ".repeat(180)

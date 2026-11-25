@@ -6,7 +6,7 @@ import org.junit.Test
 class BatchSizeTest {
     @Test
     fun `first manual entry uses the profile preset instead of a saved automatic batch`() {
-        for ((profile, expected) in listOf(ModelProfile.CALENDAR to 64, ModelProfile.CHAT to 128)) {
+        for ((profile, expected) in listOf(ModelProfile.CALENDAR to 64, ModelProfile.CHAT to 64)) {
             val initial = profile.defaults.copy(batchSize = 512)
             val manual = initial.withAutomaticMemory(false, profile.defaults.batchSize)
                 .normalizedForAutomaticSettings()
@@ -14,8 +14,8 @@ class BatchSizeTest {
             assertEquals(expected, manual.effectiveBatchSize)
             assertTrue(manual.manualMemoryConfigured)
             assertFalse(manual.automaticMemory)
-            assertEquals(1024, manual.contextSize)
-            assertEquals(256, manual.maxTokens)
+            assertEquals(1024 * initial.contextResponseRatio.divisor, manual.contextSize)
+            assertEquals(1024, manual.maxTokens)
         }
     }
 
