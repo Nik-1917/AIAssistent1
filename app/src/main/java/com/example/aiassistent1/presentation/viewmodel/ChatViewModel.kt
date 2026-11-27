@@ -299,7 +299,7 @@ class ChatViewModel(
     }
 
     fun summarizeConference(id: Long) {
-        if (!readyForModelRequest()) { mutableSummaryState.value = "Сначала запустите ИИ"; return }
+        if (!checkModelReadyForRequest()) { mutableSummaryState.value = "Сначала запустите ИИ"; return }
         if (uiState.value.isClearingChat) { mutableSummaryState.value = "Дождитесь завершения очистки чата"; return }
         if (uiState.value.isProcessing) { mutableSummaryState.value = "Дождитесь завершения текущего ответа"; return }
         prepareForConference()
@@ -455,12 +455,22 @@ class ChatViewModel(
     private fun readyForModelRequest(): Boolean =
         uiState.value.modelStartup == ModelStartup.Ready && llmEngine.isModelReady
 
+    private fun checkModelReadyForRequest(): Boolean {
+        if (readyForModelRequest()) return true
+        mutableUiState.update {
+            it.copy(
+                modelStartup = if (it.modelStartup == ModelStartup.Ready) ModelStartup.Idle else it.modelStartup,
+                modelStartupDialogRequestId = it.modelStartupDialogRequestId + 1,
+            )
+        }
+        return false
+    }
+
     fun startModel() {
         val state = uiState.value
         if (modelStartJob?.isActive == true || readyForModelRequest() || state.isProcessing ||
             state.modelState is ModelState.Importing || state.selectedModel.isBlank()) return
-        val startedAt = android.os.SystemClock.elapsedRealtime()
-        mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(state.selectedModel, startedAt)) }
+        mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(state.selectedModel)) }
         modelStartJob = viewModelScope.launch {
             var session: GenerationForegroundService.Session? = null
             try {
@@ -469,7 +479,7 @@ class ChatViewModel(
                 modelFilesMutex.withLock {
                     val name = settingsRepository.selectedModel.first { it != null }.orEmpty()
                     check(name.isNotBlank()) { "Выберите файл модели GGUF" }
-                    mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(name, startedAt)) }
+                    mutableUiState.update { it.copy(modelStartup = ModelStartup.Loading(name)) }
                     val settings = readRequestParams(name, state.modelProfile)
                     // No prompt exists yet. Allocate the weights and a small usable context.
                     // Each real request applies its own profile and can resize the context.
@@ -820,7 +830,7 @@ class ChatViewModel(
     }
 
     private fun sendMessageInternal(text: String, preserveVoiceMode: Boolean = false, voiceReply: Boolean = false): Boolean {
-        if (!readyForModelRequest()) return false
+        if (!checkModelReadyForRequest()) return false
         val trimmedText = text.trim()
         val state = mutableUiState.value
         val messageLimit = com.example.aiassistent1.domain.model.MessageInputLimits.forMode(state.isCalendarMode)
@@ -1189,7 +1199,7 @@ class ChatViewModel(
 
     fun retry() {
         val state = uiState.value
-        if (!readyForModelRequest()) return
+        if (!checkModelReadyForRequest()) return
         if (state.isProcessing || state.isStopping || state.isClearingChat) return
         val conversation = voiceConversation.ticket(state.activeChatId) ?: return
 
@@ -1871,7 +1881,7 @@ class ChatViewModel(
             calendarDraftController.update(id, persist = false) { it.copy(error = "Дождитесь завершения ответа перед форматированием поля.") }
             return
         }
-        if (!readyForModelRequest()) return
+        if (!checkModelReadyForRequest()) return
         stopCalendarDraftVoiceInput()
         calendarDraftController.update(id, persist = false) { it.copy(isFormatting = true, formattingField = field, error = null) }
         mutableUiState.update { it.copy(isProcessing = true) }

@@ -21,7 +21,7 @@ enum class ModelAvailability {
 
 sealed interface ModelStartup {
     data object Idle : ModelStartup
-    data class Loading(val fileName: String, val startedAtMillis: Long) : ModelStartup
+    data class Loading(val fileName: String) : ModelStartup
     data class Failed(val message: String) : ModelStartup
     data object Ready : ModelStartup
 }
@@ -38,6 +38,7 @@ data class ChatUiState(
     val isFloatingControlPositionsLoaded: Boolean = false,
     val modelState: ModelState = ModelState.Unloaded,
     val modelStartup: ModelStartup = ModelStartup.Idle,
+    val modelStartupDialogRequestId: Long = 0L,
     val modelAvailability: ModelAvailability = ModelAvailability.Checking,
     val calendarDrafts: CalendarDraftsState = CalendarDraftsState(),
     val calendarChatPrompt: CalendarChatPromptUiState? = null,

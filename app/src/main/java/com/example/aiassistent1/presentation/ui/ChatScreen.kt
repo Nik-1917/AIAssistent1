@@ -2496,7 +2496,7 @@ fun ModelSettingsDialog(
                                 defaultValueDecimals = 2,
                                 resetContentDescription = "Сбросить Temperature по умолчанию",
                             )
-                            Text("Влияет на разброс вариантов при выборе продолжения ответа.",
+                            Text("Фантазия. Чем больше значение, тем креативнее ответ. Чем меньше значение, ответ более точен.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

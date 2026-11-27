@@ -134,7 +134,7 @@ class CalendarNavigationInstrumentedTest {
     private fun startModel(afterForcedDeath: Boolean = false) {
         val retryUntil = if (afterForcedDeath) SystemClock.elapsedRealtime() + 360_000 else 0L
         while (true) {
-            click("Запустить ИИ")
+            click("Запустить")
             await("загрузка GGUF", 180_000) {
                 vm.uiState.value.modelStartup.let { it == ModelStartup.Ready || it is ModelStartup.Failed }
             }
@@ -142,7 +142,7 @@ class CalendarNavigationInstrumentedTest {
             if (result is ModelStartup.Failed && result.message.startsWith("Android не запустил рабочий процесс модели") &&
                 SystemClock.elapsedRealtime() < retryUntil) {
                 // MIUI can temporarily refuse to start a process after repeated forced deaths.
-                await("ошибка и кнопка повтора") { visible(result.message) && visible("Запустить ИИ") }
+                await("ошибка и кнопка повтора") { visible(result.message) && visible("Запустить") }
                 Log.i("ModelStartupTest", "Android declined the worker restart; retrying after 30s")
                 SystemClock.sleep(30_000)
                 continue
@@ -150,7 +150,7 @@ class CalendarNavigationInstrumentedTest {
             assertEquals(ModelStartup.Ready, result)
             break
         }
-        await("закрытие диалога") { !visible("Запустить ИИ") && !visible("Выбрать модель") }
+        await("закрытие диалога") { !visible("Запустить") && !visible("Выбрать модель") }
         val actual = vm.inferenceExecution.value
         assertNotNull(actual.backend)
         Log.i("ModelStartupTest", "Ready ${actual.modelName} ${actual.backend} ${actual.offloadedLayers}/${actual.totalLayers} init=${actual.initializationMillis}")
