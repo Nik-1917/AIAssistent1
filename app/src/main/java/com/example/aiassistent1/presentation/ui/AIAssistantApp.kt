@@ -22,7 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.referentialEqualityPolicy
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
 import com.example.aiassistent1.presentation.viewmodel.CalendarViewModel
+import com.example.aiassistent1.presentation.viewmodel.ChatUiState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -41,7 +46,7 @@ fun AIAssistantApp(
     modifier: Modifier = Modifier,
     onContentReady: () -> Unit = {},
 ) {
-    val uiState by chatViewModel.uiState.collectAsStateWithLifecycle()
+    val uiState = chatViewModel.uiState.collectAsStateWithLifecycle().value
     val scope = rememberCoroutineScope()
     val voiceNotice = uiState.voiceModeNotice
     LaunchedEffect(voiceNotice?.id) {
@@ -98,6 +103,7 @@ fun AIAssistantApp(
             when (currentNavigation.destination) {
                 AppDestination.CHAT -> ChatScreen(
                     viewModel = chatViewModel,
+                    uiState = rememberChatPageState(uiState),
                     onOpenCalendar = chatViewModel::openCalendar,
                     onOpenSavedCalendarEvent = { eventId ->
                         chatViewModel.clearSnackbar()
@@ -141,6 +147,17 @@ fun AIAssistantApp(
         onImport = { modelFilePicker.launch("*/*") },
     )
     SideEffect(onContentReady)
+}
+
+@Composable
+private fun rememberChatPageState(state: ChatUiState): ChatUiState {
+    var lastChatState by remember { mutableStateOf(state, referentialEqualityPolicy()) }
+    if (state.navigationState?.destination == AppDestination.CHAT) {
+        SideEffect { lastChatState = state }
+        return state
+    }
+    // AnimatedContent is still drawing the chat that the user just left.
+    return lastChatState
 }
 
 /** Left to right: calendar conversation, calendar, general conversation. */

@@ -127,6 +127,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.stateDescription
@@ -171,6 +172,7 @@ import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.domain.model.ModelState
 import com.example.aiassistent1.domain.model.SpeechRate
 import com.example.aiassistent1.domain.model.StoredModel
+import com.example.aiassistent1.presentation.viewmodel.ChatUiState
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventDraftUiState
 import com.example.aiassistent1.presentation.viewmodel.CalendarEventField
@@ -192,11 +194,11 @@ private val FLOATING_CARD_GAP = 5.dp
 @OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
 fun ChatScreen(
     viewModel: ChatViewModel,
+    uiState: ChatUiState,
     onOpenCalendar: () -> Unit,
     onOpenSavedCalendarEvent: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val assistantName by viewModel.assistantDisplayName.collectAsStateWithLifecycle(
         initialValue = com.example.aiassistent1.domain.model.AssistantDisplayName.DEFAULT)
     val context = LocalContext.current
@@ -1310,6 +1312,7 @@ internal fun ChatTopBar(
                             text = if (!isCalendarMode) "Чат" else "Календарь",
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier
+                                .testTag("chat_profile")
                                 .background(
                                     color = if (!isCalendarMode) MaterialTheme.colorScheme.primary.copy(
                                         alpha = 0.8f

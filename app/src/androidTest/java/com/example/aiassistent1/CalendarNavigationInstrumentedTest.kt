@@ -6,9 +6,13 @@ import android.os.Process
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -18,6 +22,9 @@ import androidx.test.runner.lifecycle.Stage
 import com.example.aiassistent1.di.AppModule
 import com.example.aiassistent1.domain.model.AppDestination
 import com.example.aiassistent1.domain.model.AppNavigationState
+import com.example.aiassistent1.domain.model.ChatMessage
+import com.example.aiassistent1.domain.model.ChatScrollPosition
+import com.example.aiassistent1.domain.model.MessageRole
 import com.example.aiassistent1.presentation.viewmodel.ChatViewModel
 import com.example.aiassistent1.presentation.viewmodel.ModelAvailability
 import com.example.aiassistent1.presentation.viewmodel.ModelStartup
@@ -37,8 +44,11 @@ class CalendarNavigationInstrumentedTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val app get() = instrumentation.targetContext
     private val settings get() = AppModule.provideSettingsRepository(app)
+    private val chats by lazy { AppModule.provideChatRepository(app) }
     private lateinit var originalPage: AppNavigationState
     private lateinit var originalModel: String
+    private var originalScrollPosition: ChatScrollPosition? = null
+    private var transitionMessages = emptyList<ChatMessage>()
     private var fixture: File? = null
     private lateinit var activity: MainActivity
     private lateinit var vm: ChatViewModel
@@ -66,6 +76,8 @@ class CalendarNavigationInstrumentedTest {
             await("закрытие Activity") { activity.isDestroyed }
         }
         runBlocking {
+            transitionMessages.forEach { chats.deleteMessage(it.id) }
+            originalScrollPosition?.let { settings.setChatScrollPosition(it) }
             if (::originalPage.isInitialized) settings.setNavigationState(originalPage)
             fixture?.let { file ->
                 settings.setSelectedModel(originalModel)
@@ -167,6 +179,56 @@ class CalendarNavigationInstrumentedTest {
         click("Вернуться в чат")
         await("кнопка календаря") { visible("Открыть календарь") }
         assertEquals(pid, workerPid())
+    }
+
+    @Test fun generalChatRemainsVisibleWhileCalendarEntersFromLeft() =
+        checkChatExit(isCalendarMode = false)
+
+    @Test fun calendarChatRemainsVisibleWhileCalendarEntersFromRight() =
+        checkChatExit(isCalendarMode = true)
+
+    private fun checkChatExit(isCalendarMode: Boolean) {
+        val source = AppNavigationState(AppDestination.CHAT, isCalendarMode)
+        val general = ChatMessage(role = MessageRole.USER, content = "Тест перехода из обычного чата", chatId = "general")
+        val calendar = ChatMessage(role = MessageRole.USER, content = "Тест перехода из календарного чата", chatId = "calendar")
+        val outgoing = if (isCalendarMode) calendar else general
+        val other = if (isCalendarMode) general else calendar
+        transitionMessages = listOf(general, calendar)
+        runBlocking {
+            originalScrollPosition = settings.chatScrollPosition.first()
+            transitionMessages.forEach { chats.saveMessage(it) }
+            settings.setChatScrollPosition(ChatScrollPosition(anchorMessageId = outgoing.id))
+        }
+        openPage(source)
+        click("Закрыть окно запуска ИИ")
+        val profile = compose.onNodeWithTag("chat_profile")
+        val profileName = if (isCalendarMode) "Календарь" else "Чат"
+        val calendarBack = compose.onNodeWithTag("back_to_chat")
+        compose.onNodeWithText(outgoing.content).assertIsDisplayed()
+        profile.assertTextEquals(profileName)
+
+        compose.mainClock.autoAdvance = false
+        try {
+            click("Открыть календарь")
+            await("календарная сессия") { vm.uiState.value.navigationState?.destination == AppDestination.CALENDAR }
+            var previousX: Float? = null
+            repeat(3) {
+                compose.mainClock.advanceTimeBy(64)
+                profile.assertTextEquals(profileName)
+                assertTrue("На уходящей странице должна быть исходная переписка", visible(outgoing.content))
+                assertFalse("На уходящей странице появилась другая переписка", visible(other.content))
+                val x = calendarBack.fetchSemanticsNode().positionInRoot.x
+                previousX?.let {
+                    assertTrue("Направление входа календаря, x: $it → $x", if (isCalendarMode) x < it else x > it)
+                }
+                previousX = x
+            }
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
+        calendarBack.assertIsDisplayed()
+        profile.assertDoesNotExist()
+        compose.onNodeWithText(outgoing.content).assertDoesNotExist()
     }
 
     @Test fun calendarPageSurvivesActivityRecreation() {
